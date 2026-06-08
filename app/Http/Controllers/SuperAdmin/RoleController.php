@@ -7,7 +7,9 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\MessageBag;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -77,6 +79,13 @@ class RoleController extends Controller
             ],
         );
 
+        Log::info('Authorization granted by super admin.', [
+            'actor_id' => Auth::id(),
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'role_name' => $validated['role_name'],
+        ]);
+
         return redirect()
             ->route('super-admin.roles')
             ->with('status', 'Authorization granted successfully.');
@@ -95,6 +104,12 @@ class RoleController extends Controller
             ->where('user_id', $validated['user_id'])
             ->where('role_id', $roleId)
             ->delete();
+
+        Log::info('Authorization removed by super admin.', [
+            'actor_id' => Auth::id(),
+            'user_id' => (int) $validated['user_id'],
+            'role_name' => $validated['role_name'],
+        ]);
 
         return redirect()
             ->route('super-admin.roles')

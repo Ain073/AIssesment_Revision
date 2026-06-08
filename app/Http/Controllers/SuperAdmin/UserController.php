@@ -7,7 +7,9 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\MessageBag;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -76,6 +78,13 @@ class UserController extends Controller
             ]);
 
             $this->syncUserRoles($user, $validated['base_role']);
+
+            Log::info('User account created by super admin.', [
+                'actor_id' => Auth::id(),
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'base_role' => $validated['base_role'],
+            ]);
         });
 
         return redirect()
@@ -117,6 +126,15 @@ class UserController extends Controller
             $user->save();
 
             $this->syncUserRoles($user, $validated['base_role'], $validated['authorizations'] ?? []);
+
+            Log::info('User account updated by super admin.', [
+                'actor_id' => Auth::id(),
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'base_role' => $validated['base_role'],
+                'authorizations' => $validated['authorizations'] ?? [],
+                'status' => $validated['status'],
+            ]);
         });
 
         return redirect()
@@ -131,6 +149,12 @@ class UserController extends Controller
                 ->route('super-admin.users')
                 ->withErrors(new MessageBag(['user' => 'Super Admin account cannot be deleted.']));
         }
+
+        Log::warning('User account deleted by super admin.', [
+            'actor_id' => Auth::id(),
+            'user_id' => $user->id,
+            'email' => $user->email,
+        ]);
 
         $user->delete();
 

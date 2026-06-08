@@ -184,6 +184,87 @@
             color: var(--psu-navy);
         }
 
+        .profile-menu-shell {
+            position: relative;
+            margin-top: auto;
+            padding: 0.75rem;
+        }
+
+        .profile-menu-toggle {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            text-align: left;
+        }
+
+        .profile-menu-toggle:hover,
+        .profile-menu-toggle:focus {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .profile-menu-panel {
+            position: absolute;
+            left: calc(100% + 12px);
+            bottom: 12px;
+            width: 220px;
+            padding: 0.75rem;
+            background: #fff;
+            border: 1px solid rgba(0, 17, 58, 0.12);
+            border-radius: 0.6rem;
+            box-shadow: 0 18px 40px rgba(0, 17, 58, 0.2);
+            z-index: 1080;
+        }
+
+        .profile-menu-link {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.75rem 0.85rem;
+            border: 1px solid #d7dceb;
+            background: #f8faff;
+            color: var(--psu-navy);
+            text-decoration: none;
+            font-weight: 600;
+            border-radius: 0.4rem;
+        }
+
+        .profile-menu-link:hover,
+        .profile-menu-link:focus {
+            background: #eef4ff;
+            color: var(--psu-navy);
+        }
+
+        .profile-menu-link.disabled {
+            opacity: 0.55;
+            pointer-events: none;
+        }
+
+        .profile-menu-form {
+            margin: 0;
+        }
+
+        .profile-logout-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.75rem 0.85rem;
+            border: 1px solid #f0c7cc;
+            background: #fff5f6;
+            color: #9f1d2a;
+            font-weight: 700;
+            border-radius: 0.4rem;
+        }
+
+        .profile-logout-btn:hover,
+        .profile-logout-btn:focus {
+            background: #ffe8eb;
+            color: #9f1d2a;
+        }
+
         .modal-header {
             background: var(--psu-navy);
             color: #fff;
@@ -233,18 +314,31 @@
                 <span class="material-symbols-outlined">person_search</span>
                 <span class="sidebar-text">Users</span>
             </a>
-            <a class="sidebar-link" href="#">
-                <span class="material-symbols-outlined">settings</span>
-                <span class="sidebar-text">Settings</span>
-            </a>
         </nav>
 
-        <div class="p-3 border-top border-white border-opacity-10">
-            <div class="d-flex align-items-center gap-3">
-                <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 44px; height: 44px; background: var(--psu-gold); color: var(--psu-navy);">SA</div>
-                <div class="sidebar-text">
-                    <p class="fw-bold text-white mb-0">Super Admin</p>
-                    <p class="small text-white-50 text-uppercase mb-0">System Controller</p>
+        <div class="border-top border-white border-opacity-10 profile-menu-shell">
+            <button class="profile-menu-toggle" data-bs-target="#sidebarProfileMenu" data-bs-toggle="collapse" type="button" aria-expanded="false" aria-controls="sidebarProfileMenu">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 44px; height: 44px; background: var(--psu-gold); color: var(--psu-navy);">SA</div>
+                    <div class="sidebar-text">
+                        <p class="fw-bold text-white mb-0">Super Admin</p>
+                        <p class="small text-white-50 text-uppercase mb-0">System Controller</p>
+                    </div>
+                </div>
+            </button>
+            <div class="collapse profile-menu-panel" id="sidebarProfileMenu">
+                <div class="d-grid gap-2">
+                    <a class="profile-menu-link disabled" href="#" aria-disabled="true">
+                        <span class="material-symbols-outlined">settings</span>
+                        <span class="sidebar-text">Settings</span>
+                    </a>
+                    <form action="{{ route('logout') }}" class="profile-menu-form" method="POST">
+                        @csrf
+                        <button class="profile-logout-btn" type="submit">
+                            <span class="material-symbols-outlined">logout</span>
+                            <span class="sidebar-text">Logout</span>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

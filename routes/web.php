@@ -10,18 +10,25 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::get('/login', [LoginController::class, 'show'])->name('login');
-Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::middleware('no_cache')->group(function () {
+    Route::get('/login', [LoginController::class, 'show'])->name('login');
+    Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
+    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+});
 
-Route::get('/super-admin/dashboard', [CollegeController::class, 'dashboard'])->name('super-admin.dashboard');
-Route::get('/super-admin/colleges', [CollegeController::class, 'index'])->name('super-admin.colleges');
-Route::post('/super-admin/colleges', [CollegeController::class, 'storeCollege'])->name('super-admin.colleges.store');
-Route::post('/super-admin/departments', [CollegeController::class, 'storeDepartment'])->name('super-admin.departments.store');
-Route::get('/super-admin/roles', [RoleController::class, 'index'])->name('super-admin.roles');
-Route::post('/super-admin/authorization/grant', [RoleController::class, 'grant'])->name('super-admin.roles.grant');
-Route::delete('/super-admin/authorization/revoke', [RoleController::class, 'revoke'])->name('super-admin.roles.revoke');
-Route::get('/super-admin/users', [UserController::class, 'index'])->name('super-admin.users');
-Route::post('/super-admin/users', [UserController::class, 'store'])->name('super-admin.users.store');
-Route::put('/super-admin/users/{user}', [UserController::class, 'update'])->name('super-admin.users.update');
-Route::delete('/super-admin/users/{user}', [UserController::class, 'destroy'])->name('super-admin.users.destroy');
+Route::middleware(['super_admin', 'no_cache'])
+    ->prefix('super-admin')
+    ->name('super-admin.')
+    ->group(function () {
+        Route::get('/dashboard', [CollegeController::class, 'dashboard'])->name('dashboard');
+        Route::get('/colleges', [CollegeController::class, 'index'])->name('colleges');
+        Route::post('/colleges', [CollegeController::class, 'storeCollege'])->name('colleges.store');
+        Route::post('/departments', [CollegeController::class, 'storeDepartment'])->name('departments.store');
+        Route::get('/roles', [RoleController::class, 'index'])->name('roles');
+        Route::post('/authorization/grant', [RoleController::class, 'grant'])->name('roles.grant');
+        Route::delete('/authorization/revoke', [RoleController::class, 'revoke'])->name('roles.revoke');
+        Route::get('/users', [UserController::class, 'index'])->name('users');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    });

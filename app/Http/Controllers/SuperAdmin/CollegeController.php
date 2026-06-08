@@ -7,7 +7,9 @@ use App\Models\College;
 use App\Models\Department;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -43,7 +45,13 @@ class CollegeController extends Controller
             'college_name' => ['required', 'string', 'max:255', 'unique:colleges,college_name'],
         ]);
 
-        College::create($validated);
+        $college = College::create($validated);
+
+        Log::info('College created by super admin.', [
+            'actor_id' => Auth::id(),
+            'college_id' => $college->college_id,
+            'college_name' => $college->college_name,
+        ]);
 
         return redirect()
             ->route('super-admin.colleges')
@@ -63,7 +71,14 @@ class CollegeController extends Controller
             ],
         ]);
 
-        Department::create($validated);
+        $department = Department::create($validated);
+
+        Log::info('Department created by super admin.', [
+            'actor_id' => Auth::id(),
+            'department_id' => $department->department_id,
+            'department_name' => $department->dept_name,
+            'college_id' => $department->college_id,
+        ]);
 
         return redirect()
             ->route('super-admin.colleges')
