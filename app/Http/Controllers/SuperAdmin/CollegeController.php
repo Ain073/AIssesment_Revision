@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -32,6 +33,7 @@ class CollegeController extends Controller
                 ->orderBy('college_name')
                 ->get(),
             'departments' => Department::with('college')
+                ->withCount('instructorProfiles')
                 ->orderBy('dept_name')
                 ->get(),
             'totalColleges' => College::count(),
@@ -83,6 +85,70 @@ class CollegeController extends Controller
         return redirect()
             ->route('super-admin.colleges')
             ->with('status', 'Department added successfully.');
+    }
+
+    public function destroyCollege(College $college): RedirectResponse
+    {
+        $collegeName = $college->college_name;
+        $departmentCount = $college->departments()->count();
+        $programCount = $college->programs()->count();
+
+        try {
+            $college->delete();
+        } catch (Throwable $exception) {
+            Log::warning('College delete failed.', [
+                'actor_id' => Auth::id(),
+                'college_id' => $college->college_id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return redirect()
+                ->route('super-admin.colleges')
+                ->withErrors("Unable to delete {$collegeName} right now. Please try again.");
+        }
+
+        Log::info('College deleted by super admin.', [
+            'actor_id' => Auth::id(),
+            'college_id' => $college->college_id,
+            'college_name' => $collegeName,
+            'departments_removed' => $departmentCount,
+            'programs_removed' => $programCount,
+        ]);
+
+        return redirect()
+            ->route('super-admin.colleges')
+            ->with('status', "{$collegeName} deleted successfully.");
+    }
+
+    public function destroyDepartment(Department $department): RedirectResponse
+    {
+        $departmentName = $department->dept_name;
+        $instructorCount = $department->instructorProfiles()->count();
+
+        try {
+            $department->delete();
+        } catch (Throwable $exception) {
+            Log::warning('Department delete failed.', [
+                'actor_id' => Auth::id(),
+                'department_id' => $department->department_id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return redirect()
+                ->route('super-admin.colleges')
+                ->withErrors("Unable to delete {$departmentName} right now. Please try again.");
+        }
+
+        Log::info('Department deleted by super admin.', [
+            'actor_id' => Auth::id(),
+            'department_id' => $department->department_id,
+            'department_name' => $departmentName,
+            'instructor_profiles_affected' => $instructorCount,
+        ]);
+
+        return redirect()
+            ->route('super-admin.colleges')
+            ->with('status', "{$departmentName} deleted successfully.");
     }
 
     private function countUsersByRole(string $roleName): int

@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Login | PSU Assessment Portal</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -171,7 +172,7 @@
                     <label class="form-label fw-bold" for="email">Email Address</label>
                     <div class="position-relative">
                         <span class="material-symbols-outlined form-icon">person</span>
-                        <input class="form-control form-control-lg with-icon" id="email" name="email" placeholder="Enter your email address" required type="email" value="{{ old('email') }}">
+                        <input autocomplete="username" class="form-control form-control-lg with-icon" id="email" name="email" placeholder="Enter your email address" required type="email" value="{{ old('email') }}">
                     </div>
                 </div>
 
@@ -179,7 +180,7 @@
                     <label class="form-label fw-bold" for="password">Password</label>
                     <div class="position-relative">
                         <span class="material-symbols-outlined form-icon">lock</span>
-                        <input class="form-control form-control-lg with-icon pe-5" id="password" name="password" placeholder="Password" required type="password">
+                        <input autocomplete="current-password" class="form-control form-control-lg with-icon pe-5" id="password" name="password" placeholder="Password" required type="password">
                         <button aria-label="Show password" class="password-toggle" id="togglePassword" type="button">
                             <span class="material-symbols-outlined">visibility</span>
                         </button>
@@ -222,6 +223,16 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        window.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+
+        if (window.jQuery && window.csrfToken) {
+            window.jQuery.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': window.csrfToken,
+                },
+            });
+        }
+
         document.getElementById("loginForm").addEventListener("submit", function (event) {
             const button = event.target.querySelector('button[type="submit"]');
             button.innerHTML = '<span class="material-symbols-outlined spinner-icon">progress_activity</span> Authenticating...';

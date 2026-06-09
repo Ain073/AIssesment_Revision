@@ -18,10 +18,22 @@ class LoginController extends Controller
 
     private const LOGIN_DECAY_SECONDS = 60;
 
-    public function show(): View|RedirectResponse
+    public function show(Request $request): View|RedirectResponse
     {
         if (Auth::check()) {
-            return redirect()->to($this->redirectPath());
+            $redirectPath = $this->redirectPath();
+
+            if ($redirectPath !== null) {
+                return redirect()->to($redirectPath);
+            }
+
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()
+                ->route('login')
+                ->withErrors(['email' => 'This account does not have an assigned portal yet.']);
         }
 
         return view('auth.login');
@@ -29,10 +41,16 @@ class LoginController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        $credentials = $request->validate([
+        $validated = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
+            'remember' => ['nullable', 'boolean'],
         ]);
+
+        $credentials = [
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+        ];
 
         $throttleKey = $this->throttleKey($request);
 
@@ -46,7 +64,7 @@ class LoginController extends Controller
                 ->onlyInput('email');
         }
 
-        $remember = $request->boolean('remember');
+        $remember = (bool) ($validated['remember'] ?? false);
 
         if (! Auth::attempt($credentials, $remember)) {
             RateLimiter::hit($throttleKey, self::LOGIN_DECAY_SECONDS);
@@ -86,7 +104,25 @@ class LoginController extends Controller
             'ip' => $request->ip(),
         ]);
 
-        return redirect()->intended($this->redirectPath());
+        $redirectPath = $this->redirectPath();
+
+        if ($redirectPath === null) {
+            Log::warning('Login blocked because the account has no assigned portal.', [
+                'user_id' => Auth::id(),
+                'email' => Auth::user()->email,
+                'ip' => $request->ip(),
+            ]);
+
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()
+                ->withErrors(['email' => 'This account does not have an assigned portal yet.'])
+                ->onlyInput('email');
+        }
+
+        return redirect()->intended($redirectPath);
     }
 
     public function logout(Request $request): RedirectResponse
@@ -105,17 +141,30 @@ class LoginController extends Controller
         return redirect()->route('login');
     }
 
-    private function redirectPath(): string
+    private function redirectPath(): ?string
     {
-        $role = DB::table('roles')
+        $roles = DB::table('roles')
             ->join('user_roles', 'roles.role_id', '=', 'user_roles.role_id')
             ->where('user_roles.user_id', Auth::id())
-            ->value('roles.role_name');
+            ->pluck('roles.role_name');
 
-        return match ($role) {
-            'super_admin' => route('super-admin.dashboard'),
-            default => route('login'),
-        };
+        if ($roles->contains('super_admin')) {
+            return route('super-admin.dashboard');
+        }
+
+        if ($roles->contains('admin_dean')) {
+            return route('admin-dean.dashboard');
+        }
+
+        if ($roles->intersect(['instructor', 'admin_dean', 'department_chair'])->isNotEmpty()) {
+            return route('instructor.dashboard');
+        }
+
+        if ($roles->contains('student')) {
+            return route('student.dashboard');
+        }
+
+        return null;
     }
 
     private function throttleKey(Request $request): string

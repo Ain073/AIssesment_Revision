@@ -8,6 +8,8 @@ These are the baseline security rules currently applied in the project and shoul
 - Allow only active `super_admin` accounts to access super-admin pages.
 - Throttle login attempts to reduce brute-force attacks.
 - Hash passwords with Laravel's hashing system. Never store plain-text passwords.
+- Default password hashing now uses `argon2id`.
+- `HASH_VERIFY=false` is enabled for backward compatibility with older bcrypt hashes; existing passwords can still be checked and then rehashed on login via Laravel's `rehash_on_login` behavior.
 - Validate all create and update requests on the server.
 - Regenerate the session after successful login.
 - Invalidate the session and regenerate the CSRF token on logout.

@@ -13,17 +13,19 @@
 
     <style>
         :root {
-            --psu-navy: #00113a;
-            --psu-navy-2: #002366;
-            --psu-gold: #ffe16d;
-            --psu-bg: #f8f9ff;
-            --psu-line: #c5c6d2;
-            --psu-muted: #444650;
+            --psu-navy: #001a70;
+            --psu-navy-2: #0927d8;
+            --psu-gold: #ffda27;
+            --psu-gold-soft: #fff5bf;
+            --psu-bg: #f7f9ff;
+            --psu-line: #d6ddf5;
+            --psu-muted: #5f6780;
+            --psu-text: #1a1f2c;
         }
 
         body {
             background: var(--psu-bg);
-            color: #0d1c2f;
+            color: var(--psu-text);
             font-family: "Inter", sans-serif;
             overflow-x: hidden;
         }
@@ -40,7 +42,10 @@
             position: fixed;
             inset: 0 auto 0 0;
             width: 280px;
-            background: var(--psu-navy);
+            background:
+                radial-gradient(circle at 100% 0%, rgba(255, 218, 39, 0.28) 0%, rgba(255, 218, 39, 0) 28%),
+                linear-gradient(180deg, #00124f 0%, var(--psu-navy) 46%, var(--psu-navy-2) 82%, #2346ff 100%);
+            box-shadow: 12px 0 28px rgba(0, 26, 112, 0.16);
             z-index: 1040;
         }
 
@@ -49,21 +54,23 @@
             align-items: center;
             gap: 0.75rem;
             padding: 0.9rem 1.25rem;
-            color: rgba(255, 255, 255, 0.72);
+            color: rgba(255, 255, 255, 0.82);
             text-decoration: none;
             font-weight: 700;
             letter-spacing: 0.02em;
+            transition: background-color 0.18s ease, color 0.18s ease;
         }
 
         .sidebar-link:hover,
         .sidebar-link.active {
             color: #fff;
-            background: var(--psu-navy-2);
+            background: rgba(255, 255, 255, 0.12);
         }
 
         .sidebar-link.active {
             border-left: 4px solid var(--psu-gold);
             padding-left: calc(1.25rem - 4px);
+            box-shadow: inset 0 -1px 0 rgba(255, 218, 39, 0.12), inset 0 1px 0 rgba(255, 218, 39, 0.12);
         }
 
         .topbar {
@@ -72,8 +79,9 @@
             right: 0;
             left: 280px;
             height: 64px;
-            background: #fff;
+            background: rgba(255, 255, 255, 0.96);
             border-bottom: 1px solid var(--psu-line);
+            box-shadow: 0 8px 24px rgba(9, 39, 216, 0.05);
             z-index: 1030;
         }
 
@@ -93,15 +101,16 @@
             background: #fff;
             border: 1px solid var(--psu-line);
             border-radius: 0.5rem;
+            box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
         }
 
         .directory-header {
-            background: var(--psu-navy);
+            background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 100%);
             color: #fff;
         }
 
         .table thead th {
-            background: #eff4ff;
+            background: #edf2ff;
             color: var(--psu-muted);
             font-size: 0.78rem;
             text-transform: uppercase;
@@ -120,23 +129,24 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: var(--psu-navy-2);
-            color: var(--psu-gold);
+            background: var(--psu-gold-soft);
+            color: var(--psu-navy-2);
             border-radius: 50%;
             font-weight: 800;
         }
 
         .btn-psu {
-            background: var(--psu-navy);
-            border-color: var(--psu-navy);
+            background: var(--psu-navy-2);
+            border-color: var(--psu-navy-2);
             color: #fff;
             font-weight: 700;
+            box-shadow: 0 10px 18px rgba(9, 39, 216, 0.16);
         }
 
         .btn-psu:hover,
         .btn-psu:focus {
-            background: var(--psu-navy-2);
-            border-color: var(--psu-navy-2);
+            background: var(--psu-navy);
+            border-color: var(--psu-navy);
             color: #fff;
         }
 
@@ -147,7 +157,7 @@
         }
 
         .btn-outline-psu:hover {
-            background: #eff4ff;
+            background: #edf2ff;
             border-color: var(--psu-navy);
             color: var(--psu-navy);
         }
@@ -158,19 +168,56 @@
             border: 0;
             border-bottom: 2px solid transparent;
             border-radius: 0;
+            white-space: nowrap;
         }
 
         .nav-tabs .nav-link.active {
             color: var(--psu-navy);
             background: transparent;
-            border-bottom-color: var(--psu-navy);
+            border-bottom-color: var(--psu-gold);
+        }
+
+        #userTabs {
+            flex-wrap: nowrap;
+            gap: 1rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+        }
+
+        #userTabs::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        #userTabs::-webkit-scrollbar-thumb {
+            background: rgba(9, 39, 216, 0.22);
+            border-radius: 999px;
         }
 
         .action-buttons {
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             justify-content: flex-end;
             gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .users-table {
+            min-width: 1180px;
+        }
+
+        .user-summary {
+            min-width: 0;
+        }
+
+        .user-name {
+            margin-bottom: 0;
+            color: var(--psu-navy);
+            white-space: nowrap;
+        }
+
+        .user-subtext {
+            white-space: nowrap;
         }
 
         .empty-icon {
@@ -180,7 +227,7 @@
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            background: #eff4ff;
+            background: var(--psu-gold-soft);
             color: var(--psu-navy);
         }
 
@@ -223,8 +270,8 @@
             align-items: center;
             gap: 0.65rem;
             padding: 0.75rem 0.85rem;
-            border: 1px solid #d7dceb;
-            background: #f8faff;
+            border: 1px solid #d8e0fb;
+            background: #f5f8ff;
             color: var(--psu-navy);
             text-decoration: none;
             font-weight: 600;
@@ -233,7 +280,7 @@
 
         .profile-menu-link:hover,
         .profile-menu-link:focus {
-            background: #eef4ff;
+            background: #edf2ff;
             color: var(--psu-navy);
         }
 
@@ -270,6 +317,10 @@
             color: #fff;
         }
 
+        .profile-section[hidden] {
+            display: none !important;
+        }
+
         @media (max-width: 991.98px) {
             .sidebar {
                 width: 86px;
@@ -293,7 +344,7 @@
     <aside class="sidebar d-flex flex-column">
         <div class="p-4">
             <div class="d-flex align-items-center gap-3">
-                <img src="{{ asset('images/psu-logo-transparent.png') }}" alt="PSU Seal" style="width: 48px; height: 48px; object-fit: contain;">
+                <img src="{{ asset('images/psu-logo-transparent.png') }}" alt="PSU Seal" style="width: 64px; height: 64px; object-fit: contain;">
                 <div class="sidebar-text">
                     <h1 class="brand-text h3 fw-bold text-white mb-1">AIssessment</h1>
                     <p class="small fw-bold text-white-50 mb-0">Super Admin Panel</p>
@@ -427,11 +478,13 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0 users-table">
                             <thead>
                                 <tr>
                                     <th>User</th>
                                     <th>Email</th>
+                                    <th>Employee No.</th>
+                                    <th>Department</th>
                                     <th>Elevated Access</th>
                                     <th>Status</th>
                                     <th class="text-end">Actions</th>
@@ -443,13 +496,26 @@
                                         <td>
                                             <div class="d-flex align-items-center gap-3">
                                                 <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
-                                                <div>
-                                                    <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $user->displayName() }}</p>
-                                                    <p class="small text-secondary mb-0">{{ $user->name }}</p>
+                                                <div class="user-summary">
+                                                    <p class="fw-bold user-name">{{ $user->displayName() }}</p>
+                                                    @if ($user->name !== $user->displayName())
+                                                        <p class="small text-secondary mb-0 user-subtext">{{ $user->name }}</p>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </td>
                                         <td>{{ $user->email }}</td>
+                                        <td>{{ $user->instructorProfile?->employee_number ?? 'Not assigned' }}</td>
+                                        <td>
+                                            @if ($user->instructorProfile?->department)
+                                                <div>
+                                                    <p class="fw-semibold mb-0">{{ $user->instructorProfile->department->dept_name }}</p>
+                                                    <p class="small text-secondary mb-0">{{ $user->instructorProfile->department->college?->college_name }}</p>
+                                                </div>
+                                            @else
+                                                <span class="text-secondary fst-italic">Not assigned</span>
+                                            @endif
+                                        </td>
                                         <td>
                                             <div class="d-flex flex-wrap gap-2">
                                                 @if ($user->hasRole('admin_dean'))
@@ -487,7 +553,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="text-center py-5" colspan="5">
+                                        <td class="text-center py-5" colspan="7">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">school</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No teacher accounts yet</h4>
                                             <p class="text-secondary mb-4">Create the first teacher account to start assigning academic roles.</p>
@@ -515,11 +581,13 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0 users-table">
                             <thead>
                                 <tr>
                                     <th>User</th>
                                     <th>Email</th>
+                                    <th>Student No.</th>
+                                    <th>Program</th>
                                     <th>Status</th>
                                     <th class="text-end">Actions</th>
                                 </tr>
@@ -530,13 +598,26 @@
                                         <td>
                                             <div class="d-flex align-items-center gap-3">
                                                 <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
-                                                <div>
-                                                    <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $user->displayName() }}</p>
-                                                    <p class="small text-secondary mb-0">{{ $user->name }}</p>
+                                                <div class="user-summary">
+                                                    <p class="fw-bold user-name">{{ $user->displayName() }}</p>
+                                                    @if ($user->name !== $user->displayName())
+                                                        <p class="small text-secondary mb-0 user-subtext">{{ $user->name }}</p>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </td>
                                         <td>{{ $user->email }}</td>
+                                        <td>{{ $user->studentProfile?->student_number ?? 'Not assigned' }}</td>
+                                        <td>
+                                            @if ($user->studentProfile?->program)
+                                                <div>
+                                                    <p class="fw-semibold mb-0">{{ $user->studentProfile->program->program_name }}</p>
+                                                    <p class="small text-secondary mb-0">{{ $user->studentProfile->program->college?->college_name }}</p>
+                                                </div>
+                                            @else
+                                                <span class="text-secondary fst-italic">Not assigned</span>
+                                            @endif
+                                        </td>
                                         <td>
                                             <span class="badge {{ $user->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
                                                 {{ ucfirst($user->status) }}
@@ -561,7 +642,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="text-center py-5" colspan="4">
+                                        <td class="text-center py-5" colspan="6">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No student accounts yet</h4>
                                             <p class="text-secondary mb-4">Create the first student account to populate the student list.</p>
@@ -589,11 +670,12 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0 users-table">
                             <thead>
                                 <tr>
                                     <th>User</th>
                                     <th>Email</th>
+                                    <th>Employee No.</th>
                                     <th>Status</th>
                                     <th class="text-end">Actions</th>
                                 </tr>
@@ -604,13 +686,14 @@
                                         <td>
                                             <div class="d-flex align-items-center gap-3">
                                                 <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
-                                                <div>
-                                                    <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $user->displayName() }}</p>
-                                                    <p class="small text-secondary mb-0">Teacher Account</p>
+                                                <div class="user-summary">
+                                                    <p class="fw-bold user-name">{{ $user->displayName() }}</p>
+                                                    <p class="small text-secondary mb-0 user-subtext">Teacher Account</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td>{{ $user->email }}</td>
+                                        <td>{{ $user->instructorProfile?->employee_number ?? 'Not assigned' }}</td>
                                         <td>
                                             <span class="badge {{ $user->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
                                                 {{ ucfirst($user->status) }}
@@ -631,7 +714,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="text-center py-5" colspan="4">
+                                        <td class="text-center py-5" colspan="5">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">supervisor_account</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No Admin/Dean accounts yet</h4>
                                             <p class="text-secondary mb-0">Assign authorization from `Teachers > Edit` to make them appear here.</p>
@@ -655,11 +738,13 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0 users-table">
                             <thead>
                                 <tr>
                                     <th>User</th>
                                     <th>Email</th>
+                                    <th>Employee No.</th>
+                                    <th>Department</th>
                                     <th>Status</th>
                                     <th class="text-end">Actions</th>
                                 </tr>
@@ -670,13 +755,15 @@
                                         <td>
                                             <div class="d-flex align-items-center gap-3">
                                                 <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
-                                                <div>
-                                                    <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $user->displayName() }}</p>
-                                                    <p class="small text-secondary mb-0">Teacher Account</p>
+                                                <div class="user-summary">
+                                                    <p class="fw-bold user-name">{{ $user->displayName() }}</p>
+                                                    <p class="small text-secondary mb-0 user-subtext">Teacher Account</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td>{{ $user->email }}</td>
+                                        <td>{{ $user->instructorProfile?->employee_number ?? 'Not assigned' }}</td>
+                                        <td>{{ $user->instructorProfile?->department?->dept_name ?? 'Not assigned' }}</td>
                                         <td>
                                             <span class="badge {{ $user->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
                                                 {{ ucfirst($user->status) }}
@@ -697,7 +784,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="text-center py-5" colspan="4">
+                                        <td class="text-center py-5" colspan="6">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No Department Chair accounts yet</h4>
                                             <p class="text-secondary mb-0">Assign authorization from `Teachers > Edit` to make them appear here.</p>
@@ -768,6 +855,30 @@
                                     {{ $elevatedAccess !== '' ? $elevatedAccess : 'None' }}
                                 </div>
                             </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-uppercase small">Department</label>
+                                <div class="form-control bg-light">
+                                    {{ $user->instructorProfile?->department?->dept_name ?? 'Not assigned' }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-uppercase small">Employee Number</label>
+                                <div class="form-control bg-light">
+                                    {{ $user->instructorProfile?->employee_number ?? 'Not assigned' }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-uppercase small">Program</label>
+                                <div class="form-control bg-light">
+                                    {{ $user->studentProfile?->program?->program_name ?? 'Not assigned' }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-uppercase small">Student Number</label>
+                                <div class="form-control bg-light">
+                                    {{ $user->studentProfile?->student_number ?? 'Not assigned' }}
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -832,6 +943,54 @@
                                         <option value="inactive" @selected($editStatus === 'inactive')>Inactive</option>
                                     </select>
                                 </div>
+                                <div class="col-md-6 profile-section teacher-profile-section" id="edit_teacher_department_section_{{ $user->id }}">
+                                    <label class="form-label fw-bold text-uppercase small" for="edit_department_id_{{ $user->id }}">Department</label>
+                                    @php
+                                        $editDepartmentId = old('form_mode') === 'edit' && (int) old('user_id') === $user->id
+                                            ? old('department_id')
+                                            : $user->instructorProfile?->department_id;
+                                    @endphp
+                                    <select class="form-select department-select" id="edit_department_id_{{ $user->id }}" name="department_id">
+                                        <option value="">Select department</option>
+                                        @forelse ($departments as $department)
+                                            <option value="{{ $department->department_id }}" @selected((string) $editDepartmentId === (string) $department->department_id)>
+                                                {{ $department->dept_name }} - {{ $department->college?->college_name }}
+                                            </option>
+                                        @empty
+                                            <option value="">No departments available yet</option>
+                                        @endforelse
+                                    </select>
+                                    <div class="form-text">Required for teacher accounts.</div>
+                                </div>
+                                <div class="col-md-6 profile-section teacher-profile-section" id="edit_teacher_employee_section_{{ $user->id }}">
+                                    <label class="form-label fw-bold text-uppercase small" for="edit_employee_number_{{ $user->id }}">Employee Number</label>
+                                    <input class="form-control teacher-profile-field" id="edit_employee_number_{{ $user->id }}" name="employee_number" type="text" value="{{ old('form_mode') === 'edit' && (int) old('user_id') === $user->id ? old('employee_number') : $user->instructorProfile?->employee_number }}">
+                                    <div class="form-text">Required for teacher accounts.</div>
+                                </div>
+                                <div class="col-md-6 profile-section student-profile-section" id="edit_student_program_section_{{ $user->id }}">
+                                    <label class="form-label fw-bold text-uppercase small" for="edit_program_id_{{ $user->id }}">Program</label>
+                                    @php
+                                        $editProgramId = old('form_mode') === 'edit' && (int) old('user_id') === $user->id
+                                            ? old('program_id')
+                                            : $user->studentProfile?->program_id;
+                                    @endphp
+                                    <select class="form-select student-profile-field" id="edit_program_id_{{ $user->id }}" name="program_id">
+                                        <option value="">Select program</option>
+                                        @forelse ($programs as $program)
+                                            <option value="{{ $program->program_id }}" @selected((string) $editProgramId === (string) $program->program_id)>
+                                                {{ $program->program_name }} - {{ $program->college?->college_name }}
+                                            </option>
+                                        @empty
+                                            <option value="">No programs available yet</option>
+                                        @endforelse
+                                    </select>
+                                    <div class="form-text">Required for student accounts.</div>
+                                </div>
+                                <div class="col-md-6 profile-section student-profile-section" id="edit_student_number_section_{{ $user->id }}">
+                                    <label class="form-label fw-bold text-uppercase small" for="edit_student_number_{{ $user->id }}">Student Number</label>
+                                    <input class="form-control student-profile-field" id="edit_student_number_{{ $user->id }}" name="student_number" type="text" value="{{ old('form_mode') === 'edit' && (int) old('user_id') === $user->id ? old('student_number') : $user->studentProfile?->student_number }}">
+                                    <div class="form-text">Required for student accounts.</div>
+                                </div>
                                 @php
                                     $isEditTarget = old('form_mode') === 'edit' && (int) old('user_id') === $user->id;
                                     $selectedAuthorizations = collect($isEditTarget ? old('authorizations', []) : [
@@ -839,7 +998,7 @@
                                         $user->hasRole('department_chair') ? 'department_chair' : null,
                                     ])->filter()->values();
                                 @endphp
-                                <div class="col-12">
+                                <div class="col-12 profile-section teacher-profile-section" id="edit_authorization_section_{{ $user->id }}">
                                     <div class="border rounded p-3" style="background: #eff4ff;">
                                         <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
                                             <div>
@@ -949,6 +1108,44 @@
                                 <option value="inactive" @selected(old('status') === 'inactive')>Inactive</option>
                             </select>
                         </div>
+                        <div class="col-md-6 profile-section teacher-profile-section" id="create_teacher_department_section">
+                            <label class="form-label fw-bold text-uppercase small" for="department_id">Department</label>
+                            <select class="form-select department-select" id="department_id" name="department_id">
+                                <option value="">Select department</option>
+                                @forelse ($departments as $department)
+                                    <option value="{{ $department->department_id }}" @selected((string) old('department_id') === (string) $department->department_id)>
+                                        {{ $department->dept_name }} - {{ $department->college?->college_name }}
+                                    </option>
+                                @empty
+                                    <option value="">No departments available yet</option>
+                                @endforelse
+                            </select>
+                            <div class="form-text">Required for teacher accounts.</div>
+                        </div>
+                        <div class="col-md-6 profile-section teacher-profile-section" id="create_teacher_employee_section">
+                            <label class="form-label fw-bold text-uppercase small" for="employee_number">Employee Number</label>
+                            <input class="form-control teacher-profile-field" id="employee_number" name="employee_number" type="text" value="{{ old('employee_number') }}">
+                            <div class="form-text">Required for teacher accounts.</div>
+                        </div>
+                        <div class="col-md-6 profile-section student-profile-section" id="create_student_program_section">
+                            <label class="form-label fw-bold text-uppercase small" for="program_id">Program</label>
+                            <select class="form-select student-profile-field" id="program_id" name="program_id">
+                                <option value="">Select program</option>
+                                @forelse ($programs as $program)
+                                    <option value="{{ $program->program_id }}" @selected((string) old('program_id') === (string) $program->program_id)>
+                                        {{ $program->program_name }} - {{ $program->college?->college_name }}
+                                    </option>
+                                @empty
+                                    <option value="">No programs available yet</option>
+                                @endforelse
+                            </select>
+                            <div class="form-text">Required for student accounts.</div>
+                        </div>
+                        <div class="col-md-6 profile-section student-profile-section" id="create_student_number_section">
+                            <label class="form-label fw-bold text-uppercase small" for="student_number">Student Number</label>
+                            <input class="form-control student-profile-field" id="student_number" name="student_number" type="text" value="{{ old('student_number') }}">
+                            <div class="form-text">Required for student accounts.</div>
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-uppercase small" for="password">Password</label>
                             <input class="form-control" id="password" name="password" required type="password">
@@ -988,10 +1185,110 @@
             });
         }
 
+        function syncDepartmentInput(selectId, departmentSelectId) {
+            const roleSelect = document.getElementById(selectId);
+            const departmentSelect = document.getElementById(departmentSelectId);
+
+            if (! roleSelect || ! departmentSelect) {
+                return;
+            }
+
+            const isTeacher = roleSelect.value === 'instructor';
+            departmentSelect.disabled = ! isTeacher;
+            departmentSelect.required = isTeacher;
+
+            if (! isTeacher) {
+                departmentSelect.value = '';
+            }
+        }
+
+        function syncProfileFields(selectId) {
+            const roleSelect = document.getElementById(selectId);
+
+            if (! roleSelect) {
+                return;
+            }
+
+            const isCreate = selectId === 'base_role';
+            const suffix = isCreate ? '' : selectId.replace('edit_base_role_', '');
+            const employeeInput = document.getElementById(isCreate ? 'employee_number' : `edit_employee_number_${suffix}`);
+            const programSelect = document.getElementById(isCreate ? 'program_id' : `edit_program_id_${suffix}`);
+            const studentNumberInput = document.getElementById(isCreate ? 'student_number' : `edit_student_number_${suffix}`);
+            const teacherDepartmentSection = document.getElementById(isCreate ? 'create_teacher_department_section' : `edit_teacher_department_section_${suffix}`);
+            const teacherEmployeeSection = document.getElementById(isCreate ? 'create_teacher_employee_section' : `edit_teacher_employee_section_${suffix}`);
+            const studentProgramSection = document.getElementById(isCreate ? 'create_student_program_section' : `edit_student_program_section_${suffix}`);
+            const studentNumberSection = document.getElementById(isCreate ? 'create_student_number_section' : `edit_student_number_section_${suffix}`);
+            const authorizationSection = isCreate
+                ? null
+                : document.getElementById(`edit_authorization_section_${suffix}`);
+            const isTeacher = roleSelect.value === 'instructor';
+            const isStudent = roleSelect.value === 'student';
+
+            if (teacherDepartmentSection) {
+                teacherDepartmentSection.hidden = ! isTeacher;
+            }
+
+            if (teacherEmployeeSection) {
+                teacherEmployeeSection.hidden = ! isTeacher;
+            }
+
+            if (studentProgramSection) {
+                studentProgramSection.hidden = ! isStudent;
+            }
+
+            if (studentNumberSection) {
+                studentNumberSection.hidden = ! isStudent;
+            }
+
+            if (authorizationSection) {
+                authorizationSection.hidden = ! isTeacher;
+            }
+
+            if (employeeInput) {
+                employeeInput.disabled = ! isTeacher;
+                employeeInput.required = isTeacher;
+
+                if (! isTeacher) {
+                    employeeInput.value = '';
+                }
+            }
+
+            if (programSelect) {
+                programSelect.disabled = ! isStudent;
+                programSelect.required = isStudent;
+
+                if (! isStudent) {
+                    programSelect.value = '';
+                }
+            }
+
+            if (studentNumberInput) {
+                studentNumberInput.disabled = ! isStudent;
+                studentNumberInput.required = isStudent;
+
+                if (! isStudent) {
+                    studentNumberInput.value = '';
+                }
+            }
+        }
+
         document.querySelectorAll('select[id^="edit_base_role_"]').forEach((select) => {
             syncAuthorizationInputs(select.id);
             select.addEventListener('change', () => syncAuthorizationInputs(select.id));
+            syncDepartmentInput(select.id, select.id.replace('edit_base_role_', 'edit_department_id_'));
+            select.addEventListener('change', () => syncDepartmentInput(select.id, select.id.replace('edit_base_role_', 'edit_department_id_')));
+            syncProfileFields(select.id);
+            select.addEventListener('change', () => syncProfileFields(select.id));
         });
+
+        syncDepartmentInput('base_role', 'department_id');
+        syncProfileFields('base_role');
+        const createRoleSelect = document.getElementById('base_role');
+
+        if (createRoleSelect) {
+            createRoleSelect.addEventListener('change', () => syncDepartmentInput('base_role', 'department_id'));
+            createRoleSelect.addEventListener('change', () => syncProfileFields('base_role'));
+        }
     </script>
     @if ($errors->any())
         <script>

@@ -13,17 +13,19 @@
 
     <style>
         :root {
-            --psu-navy: #00113a;
-            --psu-navy-2: #002366;
-            --psu-gold: #ffe16d;
-            --psu-bg: #f8f9ff;
-            --psu-line: #c5c6d2;
-            --psu-muted: #444650;
+            --psu-navy: #001a70;
+            --psu-navy-2: #0927d8;
+            --psu-gold: #ffda27;
+            --psu-gold-soft: #fff5bf;
+            --psu-bg: #f7f9ff;
+            --psu-line: #d6ddf5;
+            --psu-muted: #5f6780;
+            --psu-text: #1a1f2c;
         }
 
         body {
             background: var(--psu-bg);
-            color: #0d1c2f;
+            color: var(--psu-text);
             font-family: "Inter", sans-serif;
             overflow-x: hidden;
         }
@@ -40,7 +42,10 @@
             position: fixed;
             inset: 0 auto 0 0;
             width: 280px;
-            background: var(--psu-navy);
+            background:
+                radial-gradient(circle at 100% 0%, rgba(255, 218, 39, 0.28) 0%, rgba(255, 218, 39, 0) 28%),
+                linear-gradient(180deg, #00124f 0%, var(--psu-navy) 46%, var(--psu-navy-2) 82%, #2346ff 100%);
+            box-shadow: 12px 0 28px rgba(0, 26, 112, 0.16);
             z-index: 1040;
         }
 
@@ -49,21 +54,23 @@
             align-items: center;
             gap: 0.75rem;
             padding: 0.9rem 1.25rem;
-            color: rgba(255, 255, 255, 0.72);
+            color: rgba(255, 255, 255, 0.82);
             text-decoration: none;
             font-weight: 700;
             letter-spacing: 0.02em;
+            transition: background-color 0.18s ease, color 0.18s ease;
         }
 
         .sidebar-link:hover,
         .sidebar-link.active {
             color: #fff;
-            background: var(--psu-navy-2);
+            background: rgba(255, 255, 255, 0.12);
         }
 
         .sidebar-link.active {
             border-left: 4px solid var(--psu-gold);
             padding-left: calc(1.25rem - 4px);
+            box-shadow: inset 0 -1px 0 rgba(255, 218, 39, 0.12), inset 0 1px 0 rgba(255, 218, 39, 0.12);
         }
 
         .topbar {
@@ -72,8 +79,9 @@
             right: 0;
             left: 280px;
             height: 64px;
-            background: #fff;
+            background: rgba(255, 255, 255, 0.96);
             border-bottom: 1px solid var(--psu-line);
+            box-shadow: 0 8px 24px rgba(9, 39, 216, 0.05);
             z-index: 1030;
         }
 
@@ -93,15 +101,16 @@
             background: #fff;
             border: 1px solid var(--psu-line);
             border-radius: 0.5rem;
+            box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
         }
 
         .directory-header {
-            background: var(--psu-navy);
+            background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 100%);
             color: #fff;
         }
 
         .table thead th {
-            background: #eff4ff;
+            background: #edf2ff;
             color: var(--psu-muted);
             font-size: 0.78rem;
             text-transform: uppercase;
@@ -120,22 +129,23 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: var(--psu-navy-2);
-            color: #b3c5ff;
+            background: var(--psu-gold-soft);
+            color: var(--psu-navy-2);
             border-radius: 0.25rem;
         }
 
         .btn-psu {
-            background: var(--psu-navy);
-            border-color: var(--psu-navy);
+            background: var(--psu-navy-2);
+            border-color: var(--psu-navy-2);
             color: #fff;
             font-weight: 700;
+            box-shadow: 0 10px 18px rgba(9, 39, 216, 0.16);
         }
 
         .btn-psu:hover,
         .btn-psu:focus {
-            background: var(--psu-navy-2);
-            border-color: var(--psu-navy-2);
+            background: var(--psu-navy);
+            border-color: var(--psu-navy);
             color: #fff;
         }
 
@@ -146,7 +156,7 @@
         }
 
         .btn-outline-psu:hover {
-            background: #eff4ff;
+            background: #edf2ff;
             border-color: var(--psu-navy);
             color: var(--psu-navy);
         }
@@ -162,11 +172,11 @@
         .nav-tabs .nav-link.active {
             color: var(--psu-navy);
             background: transparent;
-            border-bottom-color: var(--psu-navy);
+            border-bottom-color: var(--psu-gold);
         }
 
         .modal-header {
-            background: var(--psu-navy);
+            background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 100%);
             color: #fff;
         }
 
@@ -177,7 +187,7 @@
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            background: #eff4ff;
+            background: var(--psu-gold-soft);
             color: var(--psu-navy);
         }
 
@@ -220,8 +230,8 @@
             align-items: center;
             gap: 0.65rem;
             padding: 0.75rem 0.85rem;
-            border: 1px solid #d7dceb;
-            background: #f8faff;
+            border: 1px solid #d8e0fb;
+            background: #f5f8ff;
             color: var(--psu-navy);
             text-decoration: none;
             font-weight: 600;
@@ -230,7 +240,7 @@
 
         .profile-menu-link:hover,
         .profile-menu-link:focus {
-            background: #eef4ff;
+            background: #edf2ff;
             color: var(--psu-navy);
         }
 
@@ -285,7 +295,7 @@
     <aside class="sidebar d-flex flex-column">
         <div class="p-4">
             <div class="d-flex align-items-center gap-3">
-                <img src="{{ asset('images/psu-logo-transparent.png') }}" alt="PSU Seal" style="width: 48px; height: 48px; object-fit: contain;">
+                <img src="{{ asset('images/psu-logo-transparent.png') }}" alt="PSU Seal" style="width: 64px; height: 64px; object-fit: contain;">
                 <div class="sidebar-text">
                     <h1 class="brand-text h3 fw-bold text-white mb-1">AIssessment</h1>
                     <p class="small fw-bold text-white-50 mb-0">Super Admin Panel</p>
@@ -440,6 +450,13 @@
                                         <td class="text-end">
                                             <button class="btn btn-sm btn-outline-secondary" type="button"><span class="material-symbols-outlined fs-6">visibility</span></button>
                                             <button class="btn btn-sm btn-outline-secondary" type="button"><span class="material-symbols-outlined fs-6">edit</span></button>
+                                            <form action="{{ route('super-admin.colleges.destroy', $college) }}" class="d-inline" method="POST" onsubmit="return confirm('Delete {{ addslashes($college->college_name) }}? Related departments and programs under this college will also be removed.');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="btn btn-sm btn-outline-danger" type="submit">
+                                                    <span class="material-symbols-outlined fs-6">delete</span>
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
                                 @empty
@@ -480,6 +497,7 @@
                                 <tr>
                                     <th>Department Name</th>
                                     <th>College</th>
+                                    <th>Instructors</th>
                                     <th class="text-end">Actions</th>
                                 </tr>
                             </thead>
@@ -488,14 +506,25 @@
                                     <tr>
                                         <td class="fw-bold" style="color: var(--psu-navy);">{{ $department->dept_name }}</td>
                                         <td>{{ $department->college?->college_name }}</td>
+                                        <td>
+                                            {{ $department->instructor_profiles_count }}
+                                            {{ $department->instructor_profiles_count === 1 ? 'Instructor' : 'Instructors' }}
+                                        </td>
                                         <td class="text-end">
                                             <button class="btn btn-sm btn-outline-secondary" type="button"><span class="material-symbols-outlined fs-6">visibility</span></button>
                                             <button class="btn btn-sm btn-outline-secondary" type="button"><span class="material-symbols-outlined fs-6">edit</span></button>
+                                            <form action="{{ route('super-admin.departments.destroy', $department) }}" class="d-inline" method="POST" onsubmit="return confirm('Delete {{ addslashes($department->dept_name) }}? This may remove the department assignment from linked instructor profiles.');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="btn btn-sm btn-outline-danger" type="submit">
+                                                    <span class="material-symbols-outlined fs-6">delete</span>
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="text-center py-5" colspan="3">
+                                        <td class="text-center py-5" colspan="4">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">add_business</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No departments yet</h4>
                                             <p class="text-secondary mb-4">Add a department after creating at least one college.</p>

@@ -20,4 +20,9 @@ class College extends Model
     {
         return $this->hasMany(Department::class, 'college_id', 'college_id');
     }
+
+    public function programs(): HasMany
+    {
+        return $this->hasMany(Program::class, 'college_id', 'college_id');
+    }
 }

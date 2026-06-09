@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title')</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --psu-navy: #001a70;
+            --psu-navy-2: #0927d8;
+            --psu-gold: #ffda27;
+            --psu-gold-soft: #fff5bf;
+            --psu-bg: #f7f9ff;
+            --psu-line: #d6ddf5;
+            --psu-muted: #5f6780;
+            --psu-text: #1a1f2c;
+        }
+
+        body {
+            background: var(--psu-bg);
+            color: var(--psu-text);
+            font-family: "Inter", sans-serif;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, .brand-text {
+            font-family: "Oswald", sans-serif;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+        }
+
+        .sidebar {
+            position: fixed;
+            inset: 0 auto 0 0;
+            width: 280px;
+            background:
+                radial-gradient(circle at 100% 0%, rgba(255, 218, 39, 0.28) 0%, rgba(255, 218, 39, 0) 28%),
+                linear-gradient(180deg, #00124f 0%, var(--psu-navy) 46%, var(--psu-navy-2) 82%, #2346ff 100%);
+            box-shadow: 12px 0 28px rgba(0, 26, 112, 0.16);
+            z-index: 1040;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.9rem 1.25rem;
+            color: rgba(255, 255, 255, 0.82);
+            text-decoration: none;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            transition: background-color 0.18s ease, color 0.18s ease;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .sidebar-link.active {
+            border-left: 4px solid var(--psu-gold);
+            padding-left: calc(1.25rem - 4px);
+            box-shadow: inset 0 -1px 0 rgba(255, 218, 39, 0.12), inset 0 1px 0 rgba(255, 218, 39, 0.12);
+        }
+
+        .topbar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 280px;
+            min-height: 64px;
+            background: rgba(255, 255, 255, 0.96);
+            border-bottom: 1px solid var(--psu-line);
+            box-shadow: 0 8px 24px rgba(9, 39, 216, 0.05);
+            z-index: 1030;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding-top: 64px;
+            min-height: 100vh;
+        }
+
+        .page-container {
+            max-width: 1440px;
+            padding: 1.5rem;
+        }
+
+        .surface-card {
+            background: #fff;
+            border: 1px solid var(--psu-line);
+            border-radius: 0.5rem;
+            box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
+        }
+
+        .icon-tile {
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.35rem;
+            background: var(--psu-gold-soft);
+            color: var(--psu-navy-2);
+        }
+
+        .btn-psu {
+            background: var(--psu-navy-2);
+            border-color: var(--psu-navy-2);
+            color: #fff;
+            font-weight: 700;
+            box-shadow: 0 10px 18px rgba(9, 39, 216, 0.16);
+        }
+
+        .btn-psu:hover,
+        .btn-psu:focus {
+            background: var(--psu-navy);
+            border-color: var(--psu-navy);
+            color: #fff;
+        }
+
+        .mode-switcher {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.4rem;
+            padding: 0.35rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 0.85rem;
+        }
+
+        .mode-switcher.mode-switcher-stacked {
+            grid-template-columns: 1fr;
+        }
+
+        .mode-switcher.mode-switcher-stacked .mode-switch-link {
+            justify-content: flex-start;
+            padding-inline: 1rem;
+        }
+
+        .mode-switch-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            min-height: 40px;
+            min-width: 0;
+            padding: 0.65rem 0.8rem;
+            border-radius: 0.7rem;
+            color: rgba(255, 255, 255, 0.76);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.92rem;
+            white-space: nowrap;
+        }
+
+        .mode-switch-link:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .mode-switch-link.active {
+            background: #fff;
+            color: var(--psu-navy);
+            border: 1px solid rgba(255, 218, 39, 0.8);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+        }
+
+        .mode-switch-link .material-symbols-outlined {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .sidebar-mode-switcher {
+            padding: 0 1rem 1rem;
+        }
+
+        .sidebar-mode-switcher .sidebar-text {
+            display: inline;
+        }
+
+        .profile-menu-shell {
+            position: relative;
+            margin-top: auto;
+            padding: 0.75rem;
+        }
+
+        .profile-menu-toggle {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            text-align: left;
+        }
+
+        .profile-menu-toggle:hover,
+        .profile-menu-toggle:focus {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .profile-menu-panel {
+            position: absolute;
+            left: calc(100% + 12px);
+            bottom: 12px;
+            width: 220px;
+            padding: 0.75rem;
+            background: #fff;
+            border: 1px solid rgba(0, 17, 58, 0.12);
+            border-radius: 0.6rem;
+            box-shadow: 0 18px 40px rgba(0, 17, 58, 0.2);
+            z-index: 1080;
+        }
+
+        .profile-menu-link {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.75rem 0.85rem;
+            border: 1px solid #d8e0fb;
+            background: #f5f8ff;
+            color: var(--psu-navy);
+            text-decoration: none;
+            font-weight: 600;
+            border-radius: 0.4rem;
+        }
+
+        .profile-menu-link:hover,
+        .profile-menu-link:focus {
+            background: #edf2ff;
+            color: var(--psu-navy);
+        }
+
+        .profile-menu-link.disabled {
+            opacity: 0.55;
+            pointer-events: none;
+        }
+
+        .profile-menu-form {
+            margin: 0;
+        }
+
+        .profile-logout-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.75rem 0.85rem;
+            border: 1px solid #f0c7cc;
+            background: #fff5f6;
+            color: #9f1d2a;
+            font-weight: 700;
+            border-radius: 0.4rem;
+        }
+
+        .profile-logout-btn:hover,
+        .profile-logout-btn:focus {
+            background: #ffe8eb;
+            color: #9f1d2a;
+        }
+
+        @media (max-width: 991.98px) {
+            .sidebar {
+                width: 86px;
+            }
+
+            .sidebar .sidebar-text,
+            .sidebar .small,
+            .sidebar .brand-text {
+                display: none;
+            }
+
+            .topbar,
+            .main-content {
+                left: 86px;
+                margin-left: 86px;
+            }
+
+            .mode-switcher {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+    @stack('styles')
+</head>
+<body>
+    <aside class="sidebar d-flex flex-column">
+        <div class="p-4">
+            <div class="d-flex align-items-center gap-3">
+                <img src="{{ asset('images/psu-logo-transparent.png') }}" alt="PSU Seal" style="width: 64px; height: 64px; object-fit: contain;">
+                <div class="sidebar-text">
+                    <h1 class="brand-text h3 fw-bold text-white mb-1">AIssessment</h1>
+                    <p class="small fw-bold text-white-50 mb-0">{{ $portalSubtitle ?? '' }}</p>
+                </div>
+            </div>
+        </div>
+
+        @if (! empty($viewSwitches))
+            <div class="sidebar-mode-switcher">
+                <div class="mode-switcher {{ count($viewSwitches) > 2 ? 'mode-switcher-stacked' : '' }}">
+                    @foreach ($viewSwitches as $switch)
+                        <a class="mode-switch-link {{ !empty($switch['active']) ? 'active' : '' }}" href="{{ $switch['href'] }}">
+                            <span class="material-symbols-outlined">{{ $switch['icon'] }}</span>
+                            <span class="sidebar-text">{{ $switch['label'] }}</span>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        <nav class="flex-grow mt-4">
+            @foreach (($navItems ?? []) as $item)
+                <a class="sidebar-link {{ !empty($item['active']) ? 'active' : '' }}" href="{{ $item['href'] }}">
+                    <span class="material-symbols-outlined">{{ $item['icon'] }}</span>
+                    <span class="sidebar-text">{{ $item['label'] }}</span>
+                </a>
+            @endforeach
+        </nav>
+
+        <div class="border-top border-white border-opacity-10 profile-menu-shell">
+            <button class="profile-menu-toggle" data-bs-target="#sidebarProfileMenu" data-bs-toggle="collapse" type="button" aria-expanded="false" aria-controls="sidebarProfileMenu">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 44px; height: 44px; background: var(--psu-gold); color: var(--psu-navy);">
+                        {{ $profileInitials ?? 'U' }}
+                    </div>
+                    <div class="sidebar-text">
+                        <p class="fw-bold text-white mb-0">{{ $profileName ?? 'User' }}</p>
+                        <p class="small text-white-50 text-uppercase mb-0">{{ $profileMeta ?? '' }}</p>
+                    </div>
+                </div>
+            </button>
+            <div class="collapse profile-menu-panel" id="sidebarProfileMenu">
+                <div class="d-grid gap-2">
+                    <a class="profile-menu-link disabled" href="#" aria-disabled="true">
+                        <span class="material-symbols-outlined">settings</span>
+                        <span class="sidebar-text">Settings</span>
+                    </a>
+                    <form action="{{ route('logout') }}" class="profile-menu-form" method="POST">
+                        @csrf
+                        <button class="profile-logout-btn" type="submit">
+                            <span class="material-symbols-outlined">logout</span>
+                            <span class="sidebar-text">Logout</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <header class="topbar d-flex align-items-center justify-content-between px-4">
+        <div class="d-flex align-items-center gap-4">
+            <h2 class="brand-text h4 fw-semibold mb-0" style="color: var(--psu-navy);">@yield('header')</h2>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            @yield('topbar-actions')
+            @if (! empty($showTopbarSearch))
+                <div class="input-group d-none d-lg-flex" style="width: 320px;">
+                    <input class="form-control" placeholder="{{ $topbarSearchPlaceholder ?? 'Search records...' }}" type="text">
+                    <span class="input-group-text bg-white"><span class="material-symbols-outlined fs-6">search</span></span>
+                </div>
+            @endif
+            <button class="btn btn-link text-secondary p-1" type="button"><span class="material-symbols-outlined">notifications</span></button>
+            <button class="btn btn-link text-secondary p-1" type="button"><span class="material-symbols-outlined">help_outline</span></button>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="page-container mx-auto">
+            @yield('content')
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        window.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+
+        if (window.jQuery && window.csrfToken) {
+            window.jQuery.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': window.csrfToken,
+                },
+            });
+        }
+    </script>
+    @stack('scripts')
+</body>
+</html>
