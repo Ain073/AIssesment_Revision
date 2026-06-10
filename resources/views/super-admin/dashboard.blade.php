@@ -8,6 +8,9 @@
     $navItems = [
         ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('super-admin.dashboard'), 'active' => true],
         ['label' => 'Colleges & Departments', 'icon' => 'account_balance', 'href' => route('super-admin.colleges'), 'active' => false],
+        ['label' => 'Programs', 'icon' => 'school', 'href' => route('super-admin.programs'), 'active' => false],
+        ['label' => 'Subjects', 'icon' => 'menu_book', 'href' => route('super-admin.subjects'), 'active' => false],
+        ['label' => 'Deans & Department Chairs', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active' => false],
         ['label' => 'Users', 'icon' => 'person_search', 'href' => route('super-admin.users'), 'active' => false],
     ];
 @endphp
@@ -39,9 +42,17 @@
 
 @section('content')
     <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-end gap-3 mb-4">
-        <a class="btn btn-psu d-inline-flex align-items-center gap-2" href="{{ route('super-admin.colleges') }}">
-            <span class="material-symbols-outlined fs-5">account_balance</span>
-            Manage Colleges &amp; Departments
+                    <a class="btn btn-psu d-inline-flex align-items-center gap-2" href="{{ route('super-admin.colleges') }}">
+                        <span class="material-symbols-outlined fs-5">account_balance</span>
+                        Manage Colleges &amp; Departments
+                    </a>
+        <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('super-admin.programs') }}">
+            <span class="material-symbols-outlined fs-5">school</span>
+            Manage Programs
+        </a>
+        <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('super-admin.subjects') }}">
+            <span class="material-symbols-outlined fs-5">menu_book</span>
+            Manage Subjects
         </a>
     </div>
 
@@ -123,6 +134,8 @@
                 <div class="d-grid gap-2">
                     <a class="btn btn-psu" href="{{ route('super-admin.colleges') }}">Add College</a>
                     <a class="btn btn-outline-secondary" href="{{ route('super-admin.colleges') }}">Add Department</a>
+                    <a class="btn btn-outline-secondary" href="{{ route('super-admin.programs') }}">Add Program</a>
+                    <a class="btn btn-outline-secondary" href="{{ route('super-admin.subjects') }}">Add Subject</a>
                     <a class="btn btn-outline-secondary" href="{{ route('super-admin.users') }}">Manage Users</a>
                 </div>
             </section>

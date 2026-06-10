@@ -58,7 +58,7 @@ class DashboardController extends Controller
             'quickActions' => [
                 [
                     'label' => 'Open Subjects',
-                    'description' => 'Prepare subject records for your department.',
+                    'description' => 'Review the shared subject records used by your department.',
                     'href' => route('department-chair.subjects'),
                     'icon' => 'menu_book',
                 ],

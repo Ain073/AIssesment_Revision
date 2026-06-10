@@ -5,6 +5,9 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\College;
 use App\Models\Department;
+use App\Models\Program;
+use App\Models\Subject;
+use App\Models\SubjectProgram;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -29,15 +32,32 @@ class CollegeController extends Controller
     public function index(): View
     {
         return view('super-admin.colleges', [
-            'colleges' => College::withCount('departments')
-                ->orderBy('college_name')
-                ->get(),
-            'departments' => Department::with('college')
-                ->withCount('instructorProfiles')
-                ->orderBy('dept_name')
-                ->get(),
+            'colleges' => $this->colleges(),
+            'departments' => $this->departments(),
             'totalColleges' => College::count(),
             'totalDepartments' => Department::count(),
+        ]);
+    }
+
+    public function programs(): View
+    {
+        return view('super-admin.programs', [
+            'colleges' => College::query()
+                ->orderBy('college_name')
+                ->get(),
+            'programs' => $this->programsList(),
+            'totalPrograms' => Program::count(),
+            'activePrograms' => Program::query()->where('is_active', true)->count(),
+        ]);
+    }
+
+    public function subjects(): View
+    {
+        return view('super-admin.subjects', [
+            'programs' => $this->programsList(),
+            'subjectMappings' => $this->subjectMappings(),
+            'totalSubjects' => Subject::count(),
+            'totalSubjectMappings' => SubjectProgram::count(),
         ]);
     }
 
@@ -85,6 +105,78 @@ class CollegeController extends Controller
         return redirect()
             ->route('super-admin.colleges')
             ->with('status', 'Department added successfully.');
+    }
+
+    public function storeProgram(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'college_id' => ['required', 'exists:colleges,college_id'],
+            'program_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('programs', 'program_name')
+                    ->where('college_id', $request->input('college_id')),
+            ],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $program = Program::create($validated);
+
+        Log::info('Program created by super admin.', [
+            'actor_id' => Auth::id(),
+            'program_id' => $program->program_id,
+            'program_name' => $program->program_name,
+            'college_id' => $program->college_id,
+            'is_active' => $program->is_active,
+        ]);
+
+        return redirect()
+            ->route('super-admin.programs')
+            ->with('status', 'Program added successfully.');
+    }
+
+    public function storeSubject(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'program_id' => ['required', 'exists:programs,program_id'],
+            'subject_code' => ['required', 'string', 'max:255'],
+            'subject_name' => ['required', 'string', 'max:255'],
+            'year_level' => ['required', Rule::in([1, 2, 3, 4])],
+            'semester' => ['required', Rule::in(['First Semester', 'Second Semester', 'Summer'])],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $subject = Subject::updateOrCreate(
+            ['subject_code' => $validated['subject_code']],
+            [
+                'subject_name' => $validated['subject_name'],
+                'is_active' => $validated['is_active'],
+            ],
+        );
+
+        $mapping = SubjectProgram::firstOrCreate(
+            [
+                'subject_id' => $subject->subject_id,
+                'program_id' => $validated['program_id'],
+                'year_level' => $validated['year_level'],
+                'semester' => $validated['semester'],
+            ],
+        );
+
+        Log::info('Subject mapped by super admin.', [
+            'actor_id' => Auth::id(),
+            'subject_id' => $subject->subject_id,
+            'subject_code' => $subject->subject_code,
+            'program_id' => $validated['program_id'],
+            'subject_program_id' => $mapping->subject_program_id,
+            'year_level' => $validated['year_level'],
+            'semester' => $validated['semester'],
+        ]);
+
+        return redirect()
+            ->route('super-admin.subjects')
+            ->with('status', 'Subject saved and mapped to the selected program.');
     }
 
     public function destroyCollege(College $college): RedirectResponse
@@ -158,5 +250,44 @@ class CollegeController extends Controller
             ->join('roles', 'user_roles.role_id', '=', 'roles.role_id')
             ->where('roles.role_name', $roleName)
             ->count();
+    }
+
+    private function colleges()
+    {
+        return College::withCount('departments')
+            ->orderBy('college_name')
+            ->get();
+    }
+
+    private function departments()
+    {
+        return Department::with('college')
+            ->withCount('instructorProfiles')
+            ->orderBy('dept_name')
+            ->get();
+    }
+
+    private function programsList()
+    {
+        return Program::with('college')
+            ->withCount(['studentProfiles', 'subjectPrograms'])
+            ->orderBy('program_name')
+            ->get();
+    }
+
+    private function subjectMappings()
+    {
+        return SubjectProgram::with(['program.college', 'subject'])
+            ->orderBy(
+                Program::select('program_name')
+                    ->whereColumn('programs.program_id', 'subject_program.program_id')
+            )
+            ->orderBy('year_level')
+            ->orderBy('semester')
+            ->orderBy(
+                Subject::select('subject_code')
+                    ->whereColumn('subjects.subject_id', 'subject_program.subject_id')
+            )
+            ->get();
     }
 }

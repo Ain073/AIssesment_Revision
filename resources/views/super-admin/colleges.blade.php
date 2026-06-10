@@ -312,6 +312,18 @@
                 <span class="material-symbols-outlined">account_balance</span>
                 <span class="sidebar-text">Colleges &amp; Departments</span>
             </a>
+            <a class="sidebar-link" href="{{ route('super-admin.programs') }}">
+                <span class="material-symbols-outlined">school</span>
+                <span class="sidebar-text">Programs</span>
+            </a>
+            <a class="sidebar-link" href="{{ route('super-admin.subjects') }}">
+                <span class="material-symbols-outlined">menu_book</span>
+                <span class="sidebar-text">Subjects</span>
+            </a>
+            <a class="sidebar-link" href="{{ route('super-admin.roles') }}">
+                <span class="material-symbols-outlined">admin_panel_settings</span>
+                <span class="sidebar-text">Deans &amp; Department Chairs</span>
+            </a>
             <a class="sidebar-link" href="{{ route('super-admin.users') }}">
                 <span class="material-symbols-outlined">person_search</span>
                 <span class="sidebar-text">Users</span>
@@ -544,6 +556,7 @@
                         <span class="badge text-bg-primary rounded-1">1</span>
                     </div>
                 </section>
+
             </div>
         </div>
     </main>

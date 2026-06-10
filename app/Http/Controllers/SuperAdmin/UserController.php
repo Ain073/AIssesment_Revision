@@ -64,6 +64,7 @@ class UserController extends Controller
             'totalStudents' => $students->count(),
             'totalAdminDeans' => $adminDeans->count(),
             'totalDepartmentChairs' => $departmentChairs->count(),
+            'totalActiveUsers' => $users->where('status', 'active')->count(),
             'departments' => $departments,
             'programs' => $programs,
         ]);

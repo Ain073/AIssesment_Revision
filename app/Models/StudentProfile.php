@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class StudentProfile extends Model
 {
@@ -26,5 +27,11 @@ class StudentProfile extends Model
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class, 'program_id', 'program_id');
+    }
+
+    public function classes(): BelongsToMany
+    {
+        return $this->belongsToMany(AcademicClass::class, 'class_students', 'student_profile_id', 'class_id')
+            ->withTimestamps();
     }
 }

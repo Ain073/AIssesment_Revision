@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +23,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        RedirectIfAuthenticated::redirectUsing(function (Request $request): string {
+            /** @var User|null $user */
+            $user = Auth::user();
+
+            if (! $user) {
+                return route('login');
+            }
+
+            $routeName = $user->loadMissing('roles')->portalRouteName();
+
+            return $routeName ? route($routeName) : route('login');
+        });
     }
 }

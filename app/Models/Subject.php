@@ -34,4 +34,9 @@ class Subject extends Model
             ->withPivot(['subject_program_id', 'year_level', 'semester'])
             ->withTimestamps();
     }
+
+    public function classes(): HasMany
+    {
+        return $this->hasMany(AcademicClass::class, 'subject_id', 'subject_id');
+    }
 }

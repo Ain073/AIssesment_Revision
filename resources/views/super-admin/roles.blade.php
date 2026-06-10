@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Authorization | AIssessment Super Admin</title>
+    <title>Deans &amp; Department Chairs | AIssessment Super Admin</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com" rel="preconnect">
@@ -314,9 +314,17 @@
                 <span class="material-symbols-outlined">account_balance</span>
                 <span class="sidebar-text">Colleges &amp; Departments</span>
             </a>
+            <a class="sidebar-link" href="{{ route('super-admin.programs') }}">
+                <span class="material-symbols-outlined">school</span>
+                <span class="sidebar-text">Programs</span>
+            </a>
+            <a class="sidebar-link" href="{{ route('super-admin.subjects') }}">
+                <span class="material-symbols-outlined">menu_book</span>
+                <span class="sidebar-text">Subjects</span>
+            </a>
             <a class="sidebar-link active" href="{{ route('super-admin.roles') }}">
                 <span class="material-symbols-outlined">admin_panel_settings</span>
-                <span class="sidebar-text">Authorization</span>
+                <span class="sidebar-text">Deans &amp; Department Chairs</span>
             </a>
             <a class="sidebar-link" href="{{ route('super-admin.users') }}">
                 <span class="material-symbols-outlined">person_search</span>
@@ -353,7 +361,7 @@
     </aside>
 
     <header class="topbar d-flex align-items-center justify-content-between px-4">
-        <h2 class="brand-text h4 fw-semibold mb-0" style="color: var(--psu-navy);">Authorization</h2>
+        <h2 class="brand-text h4 fw-semibold mb-0" style="color: var(--psu-navy);">Deans &amp; Department Chairs</h2>
         <div class="d-flex align-items-center gap-3">
             <div class="input-group d-none d-lg-flex" style="width: 320px;">
                 <input class="form-control" placeholder="Search teachers..." type="text">

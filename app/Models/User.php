@@ -84,4 +84,29 @@ class User extends Authenticatable
 
         return $fullName !== '' ? $fullName : $this->name;
     }
+
+    public function portalRouteName(): ?string
+    {
+        $roles = $this->relationLoaded('roles')
+            ? $this->roles
+            : $this->roles()->get();
+
+        if ($roles->contains('role_name', 'super_admin')) {
+            return 'super-admin.dashboard';
+        }
+
+        if ($roles->contains('role_name', 'admin_dean')) {
+            return 'admin-dean.dashboard';
+        }
+
+        if ($roles->pluck('role_name')->intersect(['instructor', 'department_chair'])->isNotEmpty()) {
+            return 'instructor.dashboard';
+        }
+
+        if ($roles->contains('role_name', 'student')) {
+            return 'student.dashboard';
+        }
+
+        return null;
+    }
 }

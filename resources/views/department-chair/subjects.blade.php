@@ -95,21 +95,8 @@
         </div>
     </div>
 
-    @if ($scopedDepartment)
-        <div class="alert alert-primary border-0 shadow-sm mb-4">
-            This page follows the ERD subject structure. Subject records stay simple first, then the program mapping will be handled in the next step.
-        </div>
-    @else
-        <div class="alert alert-primary border-0 shadow-sm mb-4">
-            This page follows the ERD subject structure. Subject records stay simple first, then the program mapping will be handled in the next step.
-        </div>
-    @endif
-
-    <div class="d-flex flex-wrap justify-content-lg-end gap-2 mb-4">
-        <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#subjectModal" data-bs-toggle="modal" type="button">
-            <span class="material-symbols-outlined fs-5">menu_book</span>
-            Create Subject
-        </button>
+    <div class="alert alert-primary border-0 shadow-sm mb-4">
+        Subject creation is now centralized under the Super Admin. This page stays available so the Department Chair can review the shared subject catalog.
     </div>
 
     <section class="directory-card shadow-sm">
@@ -148,11 +135,7 @@
                             <td class="text-center py-5" colspan="3">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">menu_book</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No subjects yet</h4>
-                                <p class="text-secondary mb-4">Create the first subject record based on the ERD structure.</p>
-                                <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#subjectModal" data-bs-toggle="modal" type="button">
-                                    <span class="material-symbols-outlined fs-5">menu_book</span>
-                                    Create First Subject
-                                </button>
+                                <p class="text-secondary mb-0">The shared subject catalog is still empty. Add the first subject from the Super Admin portal.</p>
                             </td>
                         </tr>
                     @endforelse
@@ -162,38 +145,7 @@
 
         <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #edf2ff;">
             <span class="small text-secondary">Showing {{ $subjects->count() }} {{ $subjects->count() === 1 ? 'entry' : 'entries' }}</span>
-            <span class="small text-secondary">Subject-to-program mapping can follow next</span>
+            <span class="small text-secondary">Subject catalog is centrally managed by Super Admin</span>
         </div>
     </section>
-
-    <div class="modal fade" id="subjectModal" tabindex="-1" aria-labelledby="subjectModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <form action="{{ route('department-chair.subjects.store') }}" class="modal-content" method="POST">
-                @csrf
-                <input name="is_active" type="hidden" value="0">
-                <div class="modal-header">
-                    <h3 class="modal-title h4" id="subjectModalLabel">New Subject</h3>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-uppercase small" for="subject_code">Code</label>
-                        <input class="form-control form-control-lg" id="subject_code" name="subject_code" placeholder="e.g. IT 101" required type="text" value="{{ old('subject_code') }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-uppercase small" for="subject_name">Subject Name</label>
-                        <input class="form-control form-control-lg" id="subject_name" name="subject_name" placeholder="e.g. Introduction to Computing" required type="text" value="{{ old('subject_name') }}">
-                    </div>
-                    <div class="form-check form-switch mt-3">
-                        <input class="form-check-input" id="is_active_switch" name="is_active" type="checkbox" value="1" @checked(old('is_active', '1') === '1')>
-                        <label class="form-check-label fw-semibold" for="is_active_switch">Subject is active</label>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Discard</button>
-                    <button class="btn btn-psu px-4" type="submit">Save Subject</button>
-                </div>
-            </form>
-        </div>
-    </div>
 @endsection

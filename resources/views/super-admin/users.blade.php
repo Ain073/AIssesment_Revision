@@ -361,6 +361,18 @@
                 <span class="material-symbols-outlined">account_balance</span>
                 <span class="sidebar-text">Colleges &amp; Departments</span>
             </a>
+            <a class="sidebar-link" href="{{ route('super-admin.programs') }}">
+                <span class="material-symbols-outlined">school</span>
+                <span class="sidebar-text">Programs</span>
+            </a>
+            <a class="sidebar-link" href="{{ route('super-admin.subjects') }}">
+                <span class="material-symbols-outlined">menu_book</span>
+                <span class="sidebar-text">Subjects</span>
+            </a>
+            <a class="sidebar-link" href="{{ route('super-admin.roles') }}">
+                <span class="material-symbols-outlined">admin_panel_settings</span>
+                <span class="sidebar-text">Deans &amp; Department Chairs</span>
+            </a>
             <a class="sidebar-link active" href="{{ route('super-admin.users') }}">
                 <span class="material-symbols-outlined">person_search</span>
                 <span class="sidebar-text">Users</span>
@@ -442,8 +454,8 @@
                 </div>
                 <div class="col-md-3">
                     <div class="stat-card p-4">
-                        <p class="small fw-bold text-secondary text-uppercase mb-2">Authorized Teachers</p>
-                        <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalAdminDeans + $totalDepartmentChairs }}</span>
+                        <p class="small fw-bold text-secondary text-uppercase mb-2">Active Accounts</p>
+                        <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalActiveUsers }}</span>
                     </div>
                 </div>
             </div>
@@ -461,12 +473,6 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link px-4 py-3" data-bs-target="#studentsPane" data-bs-toggle="tab" type="button" role="tab">Students</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link px-4 py-3" data-bs-target="#adminDeansPane" data-bs-toggle="tab" type="button" role="tab">Admin/Dean</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link px-4 py-3" data-bs-target="#departmentChairsPane" data-bs-toggle="tab" type="button" role="tab">Department Chairs</button>
                 </li>
             </ul>
 
@@ -663,143 +669,6 @@
                     </div>
                 </section>
 
-                <section class="tab-pane fade directory-card shadow-sm" id="adminDeansPane" role="tabpanel">
-                    <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
-                        <h3 class="h4 mb-0">Admin/Dean</h3>
-                        <span class="small text-white-50">Teacher accounts with dean-level authorization</span>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0 users-table">
-                            <thead>
-                                <tr>
-                                    <th>User</th>
-                                    <th>Email</th>
-                                    <th>Employee No.</th>
-                                    <th>Status</th>
-                                    <th class="text-end">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($adminDeans as $user)
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center gap-3">
-                                                <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
-                                                <div class="user-summary">
-                                                    <p class="fw-bold user-name">{{ $user->displayName() }}</p>
-                                                    <p class="small text-secondary mb-0 user-subtext">Teacher Account</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>{{ $user->email }}</td>
-                                        <td>{{ $user->instructorProfile?->employee_number ?? 'Not assigned' }}</td>
-                                        <td>
-                                            <span class="badge {{ $user->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
-                                                {{ ucfirst($user->status) }}
-                                            </span>
-                                        </td>
-                                        <td class="text-end">
-                                            <div class="action-buttons">
-                                                <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button">
-                                                    <span class="material-symbols-outlined fs-6">visibility</span>
-                                                    View
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-psu d-inline-flex align-items-center gap-1" data-bs-target="#editUserModal{{ $user->id }}" data-bs-toggle="modal" type="button">
-                                                    <span class="material-symbols-outlined fs-6">edit</span>
-                                                    Edit
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td class="text-center py-5" colspan="5">
-                                            <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">supervisor_account</span></div>
-                                            <h4 class="h4" style="color: var(--psu-navy);">No Admin/Dean accounts yet</h4>
-                                            <p class="text-secondary mb-0">Assign authorization from `Teachers > Edit` to make them appear here.</p>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #eff4ff;">
-                        <span class="small text-secondary">Showing {{ $adminDeans->count() }} {{ $adminDeans->count() === 1 ? 'entry' : 'entries' }}</span>
-                        <span class="small text-secondary">Managed from teacher edit</span>
-                    </div>
-                </section>
-
-                <section class="tab-pane fade directory-card shadow-sm" id="departmentChairsPane" role="tabpanel">
-                    <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
-                        <h3 class="h4 mb-0">Department Chairs</h3>
-                        <span class="small text-white-50">Teacher accounts with chair-level authorization</span>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0 users-table">
-                            <thead>
-                                <tr>
-                                    <th>User</th>
-                                    <th>Email</th>
-                                    <th>Employee No.</th>
-                                    <th>Department</th>
-                                    <th>Status</th>
-                                    <th class="text-end">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($departmentChairs as $user)
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center gap-3">
-                                                <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
-                                                <div class="user-summary">
-                                                    <p class="fw-bold user-name">{{ $user->displayName() }}</p>
-                                                    <p class="small text-secondary mb-0 user-subtext">Teacher Account</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>{{ $user->email }}</td>
-                                        <td>{{ $user->instructorProfile?->employee_number ?? 'Not assigned' }}</td>
-                                        <td>{{ $user->instructorProfile?->department?->dept_name ?? 'Not assigned' }}</td>
-                                        <td>
-                                            <span class="badge {{ $user->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
-                                                {{ ucfirst($user->status) }}
-                                            </span>
-                                        </td>
-                                        <td class="text-end">
-                                            <div class="action-buttons">
-                                                <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button">
-                                                    <span class="material-symbols-outlined fs-6">visibility</span>
-                                                    View
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-psu d-inline-flex align-items-center gap-1" data-bs-target="#editUserModal{{ $user->id }}" data-bs-toggle="modal" type="button">
-                                                    <span class="material-symbols-outlined fs-6">edit</span>
-                                                    Edit
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td class="text-center py-5" colspan="6">
-                                            <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
-                                            <h4 class="h4" style="color: var(--psu-navy);">No Department Chair accounts yet</h4>
-                                            <p class="text-secondary mb-0">Assign authorization from `Teachers > Edit` to make them appear here.</p>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #eff4ff;">
-                        <span class="small text-secondary">Showing {{ $departmentChairs->count() }} {{ $departmentChairs->count() === 1 ? 'entry' : 'entries' }}</span>
-                        <span class="small text-secondary">Managed from teacher edit</span>
-                    </div>
-                </section>
             </div>
         </div>
     </main>

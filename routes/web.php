@@ -14,8 +14,11 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::middleware(['guest', 'no_cache'])->group(function () {
+Route::middleware(['no_cache'])->group(function () {
     Route::get('/login', [LoginController::class, 'show'])->name('login');
+});
+
+Route::middleware(['guest', 'no_cache'])->group(function () {
     Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 });
 
@@ -29,10 +32,14 @@ Route::middleware(['super_admin', 'no_cache'])
     ->group(function () {
         Route::get('/dashboard', [CollegeController::class, 'dashboard'])->name('dashboard');
         Route::get('/colleges', [CollegeController::class, 'index'])->name('colleges');
+        Route::get('/programs', [CollegeController::class, 'programs'])->name('programs');
+        Route::get('/subjects', [CollegeController::class, 'subjects'])->name('subjects');
         Route::post('/colleges', [CollegeController::class, 'storeCollege'])->name('colleges.store');
         Route::delete('/colleges/{college}', [CollegeController::class, 'destroyCollege'])->name('colleges.destroy');
         Route::post('/departments', [CollegeController::class, 'storeDepartment'])->name('departments.store');
         Route::delete('/departments/{department}', [CollegeController::class, 'destroyDepartment'])->name('departments.destroy');
+        Route::post('/programs', [CollegeController::class, 'storeProgram'])->name('programs.store');
+        Route::post('/subjects', [CollegeController::class, 'storeSubject'])->name('subjects.store');
         Route::get('/roles', [RoleController::class, 'index'])->name('roles');
         Route::post('/authorization/grant', [RoleController::class, 'grant'])->name('roles.grant');
         Route::delete('/authorization/revoke', [RoleController::class, 'revoke'])->name('roles.revoke');
@@ -49,6 +56,12 @@ Route::middleware(['instructor', 'no_cache'])
         Route::get('/dashboard', [InstructorDashboardController::class, 'index'])->name('dashboard');
         Route::get('/classes', [InstructorDashboardController::class, 'classes'])->name('classes');
         Route::post('/classes', [InstructorDashboardController::class, 'storeClass'])->name('classes.store');
+        Route::get('/classes/{class}', [InstructorDashboardController::class, 'showClass'])->name('classes.show');
+        Route::post('/classes/{class}/students', [InstructorDashboardController::class, 'storeClassStudent'])->name('classes.students.store');
+        Route::delete('/classes/{class}/students/{studentProfile}', [InstructorDashboardController::class, 'destroyClassStudent'])->name('classes.students.destroy');
+        Route::get('/classes/{class}/students/import-sample', [InstructorDashboardController::class, 'downloadClassStudentsImportSample'])->name('classes.students.import.sample');
+        Route::post('/classes/{class}/students/import-preview', [InstructorDashboardController::class, 'previewClassStudentsImport'])->name('classes.students.import.preview');
+        Route::post('/classes/{class}/students/import-confirm', [InstructorDashboardController::class, 'confirmClassStudentsImport'])->name('classes.students.import.confirm');
         Route::get('/assessments', [InstructorDashboardController::class, 'assessments'])->name('assessments');
         Route::get('/students', [InstructorDashboardController::class, 'students'])->name('students');
     });
@@ -72,7 +85,6 @@ Route::middleware(['instructor', 'no_cache'])
     ->group(function () {
         Route::get('/dashboard', [DepartmentChairDashboardController::class, 'index'])->name('dashboard');
         Route::get('/subjects', [DepartmentChairDashboardController::class, 'subjects'])->name('subjects');
-        Route::post('/subjects', [DepartmentChairDashboardController::class, 'storeSubject'])->name('subjects.store');
         Route::get('/teachers', [DepartmentChairDashboardController::class, 'teachers'])->name('teachers');
         Route::get('/students', [DepartmentChairDashboardController::class, 'students'])->name('students');
         Route::get('/reports', [DepartmentChairDashboardController::class, 'reports'])->name('reports');

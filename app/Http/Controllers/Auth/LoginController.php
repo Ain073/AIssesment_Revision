@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -143,28 +142,15 @@ class LoginController extends Controller
 
     private function redirectPath(): ?string
     {
-        $roles = DB::table('roles')
-            ->join('user_roles', 'roles.role_id', '=', 'user_roles.role_id')
-            ->where('user_roles.user_id', Auth::id())
-            ->pluck('roles.role_name');
+        $user = Auth::user();
 
-        if ($roles->contains('super_admin')) {
-            return route('super-admin.dashboard');
+        if (! $user) {
+            return null;
         }
 
-        if ($roles->contains('admin_dean')) {
-            return route('admin-dean.dashboard');
-        }
+        $routeName = $user->loadMissing('roles')->portalRouteName();
 
-        if ($roles->intersect(['instructor', 'admin_dean', 'department_chair'])->isNotEmpty()) {
-            return route('instructor.dashboard');
-        }
-
-        if ($roles->contains('student')) {
-            return route('student.dashboard');
-        }
-
-        return null;
+        return $routeName ? route($routeName) : null;
     }
 
     private function throttleKey(Request $request): string
