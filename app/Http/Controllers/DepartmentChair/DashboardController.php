@@ -4,13 +4,19 @@ namespace App\Http\Controllers\DepartmentChair;
 
 use App\Http\Controllers\Controller;
 use App\Models\Department;
-use App\Models\Subject;
+use App\Models\InstructorProfile;
+use App\Models\Program;
+use App\Models\Role;
+use App\Models\StudentProfile;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -20,22 +26,18 @@ class DashboardController extends Controller
         $user = $this->currentUser();
         $scopedDepartment = $this->scopedDepartment($user);
         $scopedDepartmentId = $scopedDepartment?->department_id;
+        $scopedPrograms = $this->scopedPrograms($scopedDepartment);
+        $scopedProgramIds = $scopedPrograms->pluck('program_id');
         $teacherQuery = User::query()
             ->whereHas('roles', fn ($query) => $query->where('role_name', 'instructor'))
             ->when(
                 $scopedDepartmentId,
                 fn ($query) => $query->whereHas('instructorProfile', fn ($inner) => $inner->where('department_id', $scopedDepartmentId)),
-                fn ($query) => $query->whereRaw('1 = 0')
+                fn ($query) => $query->where('id', 0)
             );
 
         return view('department-chair.dashboard', $this->sharedData($user, 'dashboard') + [
             'stats' => [
-                [
-                    'label' => 'Subjects',
-                    'value' => Subject::count(),
-                    'caption' => 'Subject records currently stored',
-                    'icon' => 'menu_book',
-                ],
                 [
                     'label' => 'Teachers',
                     'value' => (clone $teacherQuery)->count(),
@@ -44,8 +46,10 @@ class DashboardController extends Controller
                 ],
                 [
                     'label' => 'Students',
-                    'value' => 0,
-                    'caption' => 'Student accounts under related programs',
+                    'value' => $scopedProgramIds->isNotEmpty()
+                        ? StudentProfile::query()->whereIn('program_id', $scopedProgramIds)->count()
+                        : 0,
+                    'caption' => 'Student accounts under your current program scope',
                     'icon' => 'groups',
                 ],
                 [
@@ -57,16 +61,16 @@ class DashboardController extends Controller
             ],
             'quickActions' => [
                 [
-                    'label' => 'Open Subjects',
-                    'description' => 'Review the shared subject records used by your department.',
-                    'href' => route('department-chair.subjects'),
-                    'icon' => 'menu_book',
-                ],
-                [
                     'label' => 'View Teachers',
                     'description' => 'Check instructor records under your department.',
                     'href' => route('department-chair.teachers'),
                     'icon' => 'badge',
+                ],
+                [
+                    'label' => 'View Students',
+                    'description' => 'Check student records under your current program scope.',
+                    'href' => route('department-chair.students'),
+                    'icon' => 'groups',
                 ],
                 [
                     'label' => 'View Reports',
@@ -78,7 +82,7 @@ class DashboardController extends Controller
             'focusItems' => [
                 [
                     'title' => 'Department-scoped academic setup',
-                    'description' => 'This portal is for subjects, teachers, students, and reports under the assigned department scope.',
+                    'description' => 'This portal is for teacher rosters, student monitoring, and report review under the assigned chair scope.',
                 ],
                 [
                     'title' => 'Instructor functions stay available',
@@ -86,43 +90,6 @@ class DashboardController extends Controller
                 ],
             ],
         ]);
-    }
-
-    public function subjects(): View
-    {
-        $user = $this->currentUser();
-
-        return view('department-chair.subjects', $this->sharedData($user, 'subjects') + [
-            'scopedDepartment' => $this->scopedDepartment($user),
-            'subjects' => Subject::query()
-                ->orderBy('subject_code')
-                ->orderBy('subject_name')
-                ->get(),
-            'totalSubjects' => Subject::count(),
-            'activeSubjects' => Subject::where('is_active', true)->count(),
-        ]);
-    }
-
-    public function storeSubject(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'subject_code' => ['required', 'string', 'max:255', 'unique:subjects,subject_code'],
-            'subject_name' => ['required', 'string', 'max:255'],
-            'is_active' => ['required', 'boolean'],
-        ]);
-
-        $subject = Subject::create($validated);
-
-        Log::info('Subject created by department chair.', [
-            'actor_id' => Auth::id(),
-            'subject_id' => $subject->subject_id,
-            'subject_code' => $subject->subject_code,
-            'subject_name' => $subject->subject_name,
-        ]);
-
-        return redirect()
-            ->route('department-chair.subjects')
-            ->with('status', 'Subject added successfully.');
     }
 
     public function teachers(): View
@@ -136,7 +103,7 @@ class DashboardController extends Controller
             ->when(
                 $scopedDepartmentId,
                 fn ($query) => $query->whereHas('instructorProfile', fn ($inner) => $inner->where('department_id', $scopedDepartmentId)),
-                fn ($query) => $query->whereRaw('1 = 0')
+                fn ($query) => $query->where('id', 0)
             )
             ->orderBy('last_name')
             ->orderBy('first_name')
@@ -156,45 +123,117 @@ class DashboardController extends Controller
 
     public function students(): View
     {
-        return view('department-chair.students', $this->placeholderPageData(
-            'students',
-            'Students',
-            'Student accounts related to the department programs will be visible here.',
-            [
-                'View student accounts under related programs',
-                'Monitor student profile completeness',
-                'Prepare records used by roster and class flows',
+        $user = $this->currentUser();
+        $scopedDepartment = $this->scopedDepartment($user);
+        $scopedPrograms = $this->scopedPrograms($scopedDepartment);
+        $scopedProgramIds = $scopedPrograms->pluck('program_id');
+        $students = $scopedProgramIds->isNotEmpty()
+            ? StudentProfile::query()
+                ->with(['user.roles', 'program.college'])
+                ->whereIn('program_id', $scopedProgramIds)
+                ->get()
+                ->sortBy(fn (StudentProfile $student) => strtolower($student->user?->displayName() ?? ''))
+                ->values()
+            : collect();
+
+        return view('department-chair.students', $this->sharedData($user, 'students') + [
+            'students' => $students,
+            'scopedDepartment' => $scopedDepartment,
+            'scopedPrograms' => $scopedPrograms,
+            'totalStudents' => $students->count(),
+            'activeStudents' => $students->filter(fn (StudentProfile $student) => $student->user?->status === 'active')->count(),
+            'programCount' => $scopedPrograms->count(),
+        ]);
+    }
+
+    public function storeUser(Request $request): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $scopedDepartment = $this->scopedDepartment($user);
+        $scopedPrograms = $this->scopedPrograms($scopedDepartment);
+        $programIds = $scopedPrograms->pluck('program_id')->all();
+
+        abort_unless($scopedDepartment, 403, 'Department Chair account needs an assigned department before creating users.');
+
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'status' => ['required', Rule::in(['active', 'inactive'])],
+            'base_role' => ['required', Rule::in(['instructor', 'student'])],
+            'employee_number' => [
+                Rule::requiredIf(fn () => $request->input('base_role') === 'instructor'),
+                'nullable',
+                'string',
+                'max:255',
+                'unique:instructor_profiles,employee_number',
             ],
-        ));
+            'program_id' => [
+                Rule::requiredIf(fn () => $request->input('base_role') === 'student'),
+                'nullable',
+                'integer',
+                Rule::in($programIds),
+            ],
+            'student_number' => [
+                Rule::requiredIf(fn () => $request->input('base_role') === 'student'),
+                'nullable',
+                'string',
+                'max:255',
+                'unique:student_profiles,student_number',
+            ],
+        ]);
+
+        DB::transaction(function () use ($validated, $user, $scopedDepartment) {
+            $createdUser = User::create([
+                'name' => $this->buildName($validated),
+                'first_name' => $validated['first_name'],
+                'middle_name' => $validated['middle_name'] ?? null,
+                'last_name' => $validated['last_name'],
+                'email' => $validated['email'],
+                'password' => $validated['password'],
+                'status' => $validated['status'],
+            ]);
+
+            $role = Role::where('role_name', $validated['base_role'])->firstOrFail();
+            $createdUser->roles()->attach($role->role_id);
+
+            if ($validated['base_role'] === 'instructor') {
+                InstructorProfile::create([
+                    'user_id' => $createdUser->id,
+                    'department_id' => $scopedDepartment->department_id,
+                    'employee_number' => $validated['employee_number'],
+                ]);
+            }
+
+            if ($validated['base_role'] === 'student') {
+                StudentProfile::create([
+                    'user_id' => $createdUser->id,
+                    'program_id' => $validated['program_id'],
+                    'student_number' => $validated['student_number'],
+                ]);
+            }
+
+            Log::info('User account created by department chair.', [
+                'actor_id' => $user->id,
+                'user_id' => $createdUser->id,
+                'base_role' => $validated['base_role'],
+                'department_id' => $scopedDepartment->department_id,
+                'program_id' => $validated['program_id'] ?? null,
+            ]);
+        });
+
+        return redirect()
+            ->back()
+            ->with('status', 'User account created successfully.');
     }
 
     public function reports(): View
     {
-        return view('department-chair.reports', $this->placeholderPageData(
-            'reports',
-            'Reports',
-            'Finalized instructor reports submitted for department monitoring will be organized here.',
-            [
-                'Review finalized formative reports',
-                'Review finalized summative reports',
-                'Monitor report outputs across instructors',
-            ],
-        ));
-    }
-
-    private function placeholderPageData(
-        string $activeNav,
-        string $pageHeading,
-        string $pageDescription,
-        array $checklist
-    ): array {
         $user = $this->currentUser();
 
-        return $this->sharedData($user, $activeNav) + [
-            'pageHeading' => $pageHeading,
-            'pageDescription' => $pageDescription,
-            'pageChecklist' => $checklist,
-        ];
+        return view('department-chair.reports', $this->sharedData($user, 'reports'));
     }
 
     private function sharedData(User $user, string $activeNav): array
@@ -216,7 +255,6 @@ class DashboardController extends Controller
     {
         $items = [
             ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('department-chair.dashboard')],
-            ['key' => 'subjects', 'label' => 'Subjects', 'icon' => 'menu_book', 'href' => route('department-chair.subjects')],
             ['key' => 'teachers', 'label' => 'Teachers', 'icon' => 'badge', 'href' => route('department-chair.teachers')],
             ['key' => 'students', 'label' => 'Students', 'icon' => 'groups', 'href' => route('department-chair.students')],
             ['key' => 'reports', 'label' => 'Reports', 'icon' => 'summarize', 'href' => route('department-chair.reports')],
@@ -273,5 +311,31 @@ class DashboardController extends Controller
     private function scopedDepartment(User $user): ?Department
     {
         return $user->instructorProfile?->department;
+    }
+
+    /**
+     * @return Collection<int, Program>
+     */
+    private function scopedPrograms(?Department $department): Collection
+    {
+        if (! $department) {
+            return collect();
+        }
+
+        return Program::query()
+            ->with('college')
+            ->where('college_id', $department->college_id)
+            ->withCount('studentProfiles')
+            ->orderBy('program_name')
+            ->get();
+    }
+
+    private function buildName(array $validated): string
+    {
+        return collect([
+            $validated['first_name'],
+            $validated['middle_name'] ?? null,
+            $validated['last_name'],
+        ])->filter()->implode(' ');
     }
 }

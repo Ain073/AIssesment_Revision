@@ -54,15 +54,29 @@ Route::middleware(['instructor', 'no_cache'])
     ->name('instructor.')
     ->group(function () {
         Route::get('/dashboard', [InstructorDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/pending-work', [InstructorDashboardController::class, 'pendingWorkPartial'])->name('dashboard.pending-work');
         Route::get('/classes', [InstructorDashboardController::class, 'classes'])->name('classes');
         Route::post('/classes', [InstructorDashboardController::class, 'storeClass'])->name('classes.store');
+        Route::get('/classes/live', [InstructorDashboardController::class, 'classesLive'])->name('classes.live');
+        Route::put('/classes/{class}', [InstructorDashboardController::class, 'updateClass'])->name('classes.update');
+        Route::delete('/classes/{class}', [InstructorDashboardController::class, 'destroyClass'])->name('classes.destroy');
         Route::get('/classes/{class}', [InstructorDashboardController::class, 'showClass'])->name('classes.show');
         Route::post('/classes/{class}/students', [InstructorDashboardController::class, 'storeClassStudent'])->name('classes.students.store');
         Route::delete('/classes/{class}/students/{studentProfile}', [InstructorDashboardController::class, 'destroyClassStudent'])->name('classes.students.destroy');
+        Route::post('/classes/{class}/join-requests/{joinRequest}/approve', [InstructorDashboardController::class, 'approveClassJoinRequest'])->name('classes.join-requests.approve');
+        Route::post('/classes/{class}/join-requests/{joinRequest}/reject', [InstructorDashboardController::class, 'rejectClassJoinRequest'])->name('classes.join-requests.reject');
         Route::get('/classes/{class}/students/import-sample', [InstructorDashboardController::class, 'downloadClassStudentsImportSample'])->name('classes.students.import.sample');
         Route::post('/classes/{class}/students/import-preview', [InstructorDashboardController::class, 'previewClassStudentsImport'])->name('classes.students.import.preview');
         Route::post('/classes/{class}/students/import-confirm', [InstructorDashboardController::class, 'confirmClassStudentsImport'])->name('classes.students.import.confirm');
         Route::get('/assessments', [InstructorDashboardController::class, 'assessments'])->name('assessments');
+        Route::get('/assessments/create', [InstructorDashboardController::class, 'createAssessment'])->name('assessments.create');
+        Route::get('/assessments/publish', [InstructorDashboardController::class, 'publishAssessmentForm'])->name('assessments.publish.form');
+        Route::post('/assessments/publish', [InstructorDashboardController::class, 'publishSelectedAssessment'])->name('assessments.publish.selected');
+        Route::post('/assessments', [InstructorDashboardController::class, 'storeAssessment'])->name('assessments.store');
+        Route::get('/assessments/{assessment}', [InstructorDashboardController::class, 'showAssessment'])->name('assessments.show');
+        Route::put('/assessments/{assessment}', [InstructorDashboardController::class, 'updateAssessment'])->name('assessments.update');
+        Route::post('/assessments/{assessment}/items', [InstructorDashboardController::class, 'storeAssessmentItem'])->name('assessments.items.store');
+        Route::post('/assessments/{assessment}/publish', [InstructorDashboardController::class, 'publishAssessment'])->name('assessments.publish');
         Route::get('/students', [InstructorDashboardController::class, 'students'])->name('students');
     });
 
@@ -77,16 +91,17 @@ Route::middleware(['admin_dean', 'no_cache'])
         Route::post('/programs', [AdminDeanDashboardController::class, 'storeProgram'])->name('programs.store');
         Route::get('/teachers', [AdminDeanDashboardController::class, 'teachers'])->name('teachers');
         Route::get('/students', [AdminDeanDashboardController::class, 'students'])->name('students');
+        Route::post('/users', [AdminDeanDashboardController::class, 'storeUser'])->name('users.store');
     });
 
-Route::middleware(['instructor', 'no_cache'])
+Route::middleware(['department_chair', 'no_cache'])
     ->prefix('department-chair')
     ->name('department-chair.')
     ->group(function () {
         Route::get('/dashboard', [DepartmentChairDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/subjects', [DepartmentChairDashboardController::class, 'subjects'])->name('subjects');
         Route::get('/teachers', [DepartmentChairDashboardController::class, 'teachers'])->name('teachers');
         Route::get('/students', [DepartmentChairDashboardController::class, 'students'])->name('students');
+        Route::post('/users', [DepartmentChairDashboardController::class, 'storeUser'])->name('users.store');
         Route::get('/reports', [DepartmentChairDashboardController::class, 'reports'])->name('reports');
     });
 
@@ -96,6 +111,13 @@ Route::middleware(['student', 'no_cache'])
     ->group(function () {
         Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
         Route::get('/classes', [StudentDashboardController::class, 'classes'])->name('classes');
+        Route::get('/classes/live', [StudentDashboardController::class, 'classesLive'])->name('classes.live');
+        Route::get('/classes/requests/live', [StudentDashboardController::class, 'classRequestsLive'])->name('classes.requests.live');
+        Route::post('/classes/join-code', [StudentDashboardController::class, 'requestClassJoinByCode'])->name('classes.join-code.request');
+        Route::get('/classes/join/{token}', [StudentDashboardController::class, 'showClassJoinLink'])->name('classes.join.show');
+        Route::post('/classes/join/{token}', [StudentDashboardController::class, 'requestClassJoin'])->name('classes.join.request');
         Route::get('/assessments', [StudentDashboardController::class, 'assessments'])->name('assessments');
+        Route::get('/assessments/live', [StudentDashboardController::class, 'assessmentsLive'])->name('assessments.live');
+        Route::get('/assessments/{classAssessment}/take', [StudentDashboardController::class, 'takeAssessment'])->name('assessments.take');
         Route::get('/results', [StudentDashboardController::class, 'results'])->name('results');
     });

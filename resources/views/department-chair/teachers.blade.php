@@ -120,6 +120,13 @@
         </div>
     @endif
 
+    <div class="d-flex justify-content-end mb-4">
+        <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button" @disabled(! $scopedDepartment)>
+            <span class="material-symbols-outlined fs-5">person_add</span>
+            Create Instructor
+        </button>
+    </div>
+
     <section class="directory-card shadow-sm">
         <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
             <h3 class="h4 mb-0">Teachers List</h3>
@@ -201,4 +208,69 @@
             <span class="small text-secondary">This roster is scoped to the assigned department only</span>
         </div>
     </section>
+
+    <div class="modal fade" id="createInstructorModal" tabindex="-1" aria-labelledby="createInstructorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <form action="{{ route('department-chair.users.store') }}" class="modal-content" method="POST">
+                @csrf
+                <input name="base_role" type="hidden" value="instructor">
+
+                <div class="modal-header">
+                    <h3 class="modal-title h4" id="createInstructorModalLabel">Create Instructor Account</h3>
+                    <button class="btn-close" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    @if ($scopedDepartment)
+                        <div class="alert alert-primary border-0">
+                            New instructor will be assigned to <strong>{{ $scopedDepartment->dept_name }}</strong>.
+                        </div>
+                    @endif
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-uppercase small" for="teacher_first_name">First Name</label>
+                            <input class="form-control" id="teacher_first_name" name="first_name" required type="text" value="{{ old('base_role') === 'instructor' ? old('first_name') : '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-uppercase small" for="teacher_middle_name">Middle Name</label>
+                            <input class="form-control" id="teacher_middle_name" name="middle_name" type="text" value="{{ old('base_role') === 'instructor' ? old('middle_name') : '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-uppercase small" for="teacher_last_name">Last Name</label>
+                            <input class="form-control" id="teacher_last_name" name="last_name" required type="text" value="{{ old('base_role') === 'instructor' ? old('last_name') : '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-uppercase small" for="teacher_email">Email</label>
+                            <input class="form-control" id="teacher_email" name="email" required type="email" value="{{ old('base_role') === 'instructor' ? old('email') : '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-uppercase small" for="teacher_status">Status</label>
+                            <select class="form-select" id="teacher_status" name="status" required>
+                                <option value="active" @selected(old('status', 'active') === 'active')>Active</option>
+                                <option value="inactive" @selected(old('status') === 'inactive')>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-uppercase small" for="employee_number">Employee Number</label>
+                            <input class="form-control" id="employee_number" name="employee_number" required type="text" value="{{ old('base_role') === 'instructor' ? old('employee_number') : '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-uppercase small" for="teacher_password">Password</label>
+                            <input class="form-control" id="teacher_password" name="password" required type="password">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-uppercase small" for="teacher_password_confirmation">Confirm Password</label>
+                            <input class="form-control" id="teacher_password_confirmation" name="password_confirmation" required type="password">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+                    <button class="btn btn-psu px-4" type="submit">Create Instructor</button>
+                </div>
+            </form>
+        </div>
+    </div>
 @endsection

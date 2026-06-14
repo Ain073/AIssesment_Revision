@@ -21,7 +21,7 @@
 
         .stat-grid {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 1rem;
             margin-top: 1.5rem;
         }
@@ -120,7 +120,6 @@
     <section class="hero-card">
         <p class="small fw-bold text-uppercase mb-2" style="color: rgba(255,255,255,.72); letter-spacing: .04em;">Department-Level View</p>
         <h2 class="brand-text h1 mb-3">{{ $user->displayName() }}</h2>
-        <p class="hero-copy">Ito ang Department Chair workspace mo. Dito natin ilalagay ang department-scoped setup para sa subjects, teachers, students, at finalized reports na mino-monitor ng chair.</p>
     </section>
 
     <section class="stat-grid">

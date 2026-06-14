@@ -4,15 +4,22 @@ namespace App\Http\Controllers\Instructor;
 
 use App\Http\Controllers\Controller;
 use App\Models\AcademicClass;
+use App\Models\Assessment;
+use App\Models\ClassJoinRequest;
+use App\Models\ClassAssessment;
 use App\Models\InstructorProfile;
 use App\Models\StudentProfile;
 use App\Models\Subject;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -25,7 +32,27 @@ class DashboardController extends Controller
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
-        $classesCount = $instructorProfile?->classes()->count() ?? 0;
+        $classes = $instructorProfile
+            ? $instructorProfile->classes()->withCount('students')->latest('class_id')->get()
+            : collect();
+        $classIds = $classes->pluck('class_id');
+        $classesCount = $classes->count();
+        $studentsCount = $classIds->isNotEmpty()
+            ? DB::table('class_students')
+                ->whereIn('class_id', $classIds)
+                ->distinct('student_profile_id')
+                ->count('student_profile_id')
+            : 0;
+        $assessmentsCount = $instructorProfile?->assessments()->count() ?? 0;
+        $draftAssessmentsCount = $instructorProfile
+            ? $instructorProfile->assessments()->where('status', Assessment::STATUS_DRAFT)->count()
+            : 0;
+        $publishedUsesCount = $instructorProfile
+            ? ClassAssessment::query()
+                ->whereIn('assessment_id', $instructorProfile->assessments()->select('assessment_id'))
+                ->where('publish_status', ClassAssessment::STATUS_PUBLISHED)
+                ->count()
+            : 0;
 
         return view('instructor.dashboard', $this->sharedData($user, 'dashboard') + [
             'stats' => [
@@ -37,21 +64,21 @@ class DashboardController extends Controller
                 ],
                 [
                     'label' => 'Students',
-                    'value' => 0,
+                    'value' => $studentsCount,
                     'caption' => 'Across your active classes',
                     'icon' => 'groups',
                 ],
                 [
                     'label' => 'Assessments',
-                    'value' => 0,
-                    'caption' => 'Drafts and published items',
+                    'value' => $assessmentsCount,
+                    'caption' => 'Reusable assessments you created',
                     'icon' => 'assignment',
                 ],
                 [
-                    'label' => 'Pending Checks',
-                    'value' => 0,
-                    'caption' => 'Submissions waiting for review',
-                    'icon' => 'fact_check',
+                    'label' => 'Published Uses',
+                    'value' => $publishedUsesCount,
+                    'caption' => 'Assessment publications to classes',
+                    'icon' => 'publish',
                 ],
             ],
             'quickActions' => [
@@ -68,35 +95,44 @@ class DashboardController extends Controller
                     'icon' => 'assignment',
                 ],
                 [
-                    'label' => 'Browse Students',
-                    'description' => 'Review student rosters by class.',
-                    'href' => route('instructor.students'),
-                    'icon' => 'groups',
+                    'label' => 'Build Assessments',
+                    'description' => 'Create reusable assessments and publish them to classes.',
+                    'href' => route('instructor.assessments'),
+                    'icon' => 'assignment_add',
                 ],
             ],
-            'pendingWork' => [
-                [
-                    'title' => 'No classes linked yet',
-                    'description' => 'Once classes are assigned to this instructor, the next teaching tasks will appear here.',
-                    'state' => 'Waiting for setup',
-                ],
-                [
-                    'title' => 'No assessments in draft',
-                    'description' => 'Draft assessments will be listed here for quick continuation.',
-                    'state' => 'Ready',
-                ],
-                [
-                    'title' => 'No submissions to check',
-                    'description' => 'Review tasks will surface here once student work starts coming in.',
-                    'state' => 'Clear',
-                ],
-            ],
+            'pendingWork' => $this->pendingWorkItems($classesCount, $draftAssessmentsCount),
+        ]);
+    }
+
+    public function pendingWorkPartial(): View
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $classesCount = $instructorProfile?->classes()->count() ?? 0;
+        $draftAssessmentsCount = $instructorProfile
+            ? $instructorProfile->assessments()->where('status', Assessment::STATUS_DRAFT)->count()
+            : 0;
+
+        return view('instructor.partials.pending-work', [
+            'pendingWork' => $this->pendingWorkItems($classesCount, $draftAssessmentsCount),
         ]);
     }
 
     public function classes(): View
     {
         $user = $this->currentUser();
+
+        return view('instructor.classes', $this->sharedData($user, 'classes') + $this->instructorClassesData($user));
+    }
+
+    public function classesLive(): View
+    {
+        return view('instructor.partials.classes-live', $this->instructorClassesData($this->currentUser()));
+    }
+
+    private function instructorClassesData(User $user): array
+    {
         $instructorProfile = $this->instructorProfile($user);
         $classes = $instructorProfile
             ? $instructorProfile->classes()
@@ -105,23 +141,23 @@ class DashboardController extends Controller
                 ->latest('class_id')
                 ->get()
             : collect();
-
         $subjects = Subject::query()
             ->where('is_active', true)
             ->orderBy('subject_code')
             ->orderBy('subject_name')
             ->get();
 
-        return view('instructor.classes', $this->sharedData($user, 'classes') + [
+        return [
             'instructorProfile' => $instructorProfile,
             'classes' => $classes,
             'subjects' => $subjects,
             'totalClasses' => $classes->count(),
             'latestSchoolYear' => $classes->pluck('school_year')->filter()->unique()->first(),
-        ]);
+            'profileName' => $user->displayName(),
+        ];
     }
 
-    public function storeClass(Request $request): RedirectResponse
+    public function storeClass(Request $request): RedirectResponse|JsonResponse
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
@@ -134,7 +170,10 @@ class DashboardController extends Controller
             'school_year' => ['required', 'string', 'max:255'],
         ]);
 
-        $class = $instructorProfile->classes()->create($validated);
+        $class = $instructorProfile->classes()->create($validated + [
+            'join_token' => $this->generateClassJoinToken(),
+            'join_code' => $this->generateClassJoinCode(),
+        ]);
 
         Log::info('Class created by instructor.', [
             'actor_id' => $user->id,
@@ -145,9 +184,76 @@ class DashboardController extends Controller
             'school_year' => $class->school_year,
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Class added successfully.']);
+        }
+
         return redirect()
             ->route('instructor.classes')
             ->with('status', 'Class added successfully.');
+    }
+
+    public function updateClass(Request $request, AcademicClass $class): RedirectResponse|JsonResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedClass = $this->ownedClass($class, $instructorProfile);
+
+        $validated = $request->validate([
+            'subject_id' => ['required', 'integer', 'exists:subjects,subject_id'],
+            'class_name' => ['required', 'string', 'max:255'],
+            'school_year' => ['required', 'string', 'max:255'],
+        ]);
+
+        $ownedClass->update($validated);
+
+        Log::info('Class updated by instructor.', [
+            'actor_id' => $user->id,
+            'class_id' => $ownedClass->class_id,
+            'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
+            'subject_id' => $ownedClass->subject_id,
+            'class_name' => $ownedClass->class_name,
+            'school_year' => $ownedClass->school_year,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Class updated successfully.']);
+        }
+
+        return redirect()
+            ->route('instructor.classes')
+            ->with('status', 'Class updated successfully.');
+    }
+
+    public function destroyClass(Request $request, AcademicClass $class): RedirectResponse|JsonResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedClass = $this->ownedClass($class, $instructorProfile);
+        $classId = $ownedClass->class_id;
+        $className = $ownedClass->class_name;
+
+        DB::transaction(function () use ($ownedClass) {
+            $ownedClass->students()->detach();
+            $ownedClass->joinRequests()->delete();
+            $ownedClass->classAssessments()->delete();
+            $ownedClass->delete();
+        });
+
+        Log::warning('Class deleted by instructor.', [
+            'actor_id' => $user->id,
+            'class_id' => $classId,
+            'class_name' => $className,
+            'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Class deleted successfully.']);
+        }
+
+        return redirect()
+            ->route('instructor.classes')
+            ->with('status', 'Class deleted successfully.');
     }
 
     public function showClass(Request $request, AcademicClass $class): View
@@ -164,12 +270,22 @@ class DashboardController extends Controller
             'instructorProfile.department.college',
             'students.user.roles',
             'students.program.college',
+            'joinRequests' => fn ($query) => $query
+                ->where('status', ClassJoinRequest::STATUS_PENDING)
+                ->with(['studentProfile.user.roles', 'studentProfile.program.college'])
+                ->latest('requested_at'),
         ])->loadCount('students');
+
+        $this->ensureClassJoinAccess($ownedClass);
 
         return view('instructor.class-show', $this->sharedData($user, 'classes') + [
             'class' => $ownedClass,
             'activeTab' => $activeTab,
             'classTabs' => $this->classTabs($ownedClass, $activeTab),
+            'classJoinLink' => route('student.classes.join.show', $ownedClass->join_token),
+            'pendingJoinRequests' => $ownedClass->joinRequests
+                ->sortByDesc('requested_at')
+                ->values(),
             'enrolledStudents' => $ownedClass->students
                 ->sortBy(fn (StudentProfile $student) => strtolower($student->user?->displayName() ?? ''))
                 ->values(),
@@ -217,6 +333,7 @@ class DashboardController extends Controller
         }
 
         $ownedClass->students()->attach($studentProfile->student_profile_id);
+        $this->markJoinRequestApproved($ownedClass, $studentProfile, $user->id);
 
         Log::info('Student enrolled into class by instructor.', [
             'actor_id' => $user->id,
@@ -343,6 +460,15 @@ class DashboardController extends Controller
 
         if ($attachIds->isNotEmpty()) {
             $ownedClass->students()->attach($attachIds->all());
+            ClassJoinRequest::query()
+                ->where('class_id', $ownedClass->class_id)
+                ->whereIn('student_profile_id', $attachIds->all())
+                ->update([
+                    'status' => ClassJoinRequest::STATUS_APPROVED,
+                    'responded_at' => now(),
+                    'responded_by' => $user->id,
+                    'updated_at' => now(),
+                ]);
         }
 
         $request->session()->forget($sessionKey);
@@ -379,18 +505,505 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function assessments(): View
+    public function approveClassJoinRequest(AcademicClass $class, ClassJoinRequest $joinRequest): RedirectResponse
     {
-        return view('instructor.assessments', $this->placeholderPageData(
-            'assessments',
-            'Assessments',
-            'This is where we will build quiz, exam, and activity management for instructors.',
-            [
-                'Create and edit assessments',
-                'Publish and monitor availability',
-                'Track completion status by class',
-            ],
-        ));
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedClass = $this->ownedClass($class, $instructorProfile);
+
+        abort_unless($joinRequest->class_id === $ownedClass->class_id, 404);
+
+        $joinRequest->load('studentProfile.user.roles');
+        $studentProfile = $joinRequest->studentProfile;
+
+        if (! $studentProfile || ! $studentProfile->user || ! $studentProfile->user->hasRole('student')) {
+            return redirect()
+                ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
+                ->withErrors(['join_request' => 'The requesting student account no longer exists.']);
+        }
+
+        if ($studentProfile->user->status !== 'active') {
+            return redirect()
+                ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
+                ->withErrors(['join_request' => 'This student account is inactive and cannot be approved yet.']);
+        }
+
+        if (! $ownedClass->students()->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)->exists()) {
+            $ownedClass->students()->attach($studentProfile->student_profile_id);
+        }
+
+        $this->markJoinRequestApproved($ownedClass, $studentProfile, $user->id);
+
+        Log::info('Class join request approved by instructor.', [
+            'actor_id' => $user->id,
+            'class_id' => $ownedClass->class_id,
+            'class_join_request_id' => $joinRequest->class_join_request_id,
+            'student_profile_id' => $studentProfile->student_profile_id,
+        ]);
+
+        return redirect()
+            ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
+            ->with('status', 'Student join request approved.');
+    }
+
+    public function rejectClassJoinRequest(AcademicClass $class, ClassJoinRequest $joinRequest): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedClass = $this->ownedClass($class, $instructorProfile);
+
+        abort_unless($joinRequest->class_id === $ownedClass->class_id, 404);
+
+        if ($joinRequest->status !== ClassJoinRequest::STATUS_PENDING) {
+            return redirect()
+                ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
+                ->withErrors(['join_request' => 'Only pending join requests can be rejected.']);
+        }
+
+        $joinRequest->update([
+            'status' => ClassJoinRequest::STATUS_REJECTED,
+            'responded_at' => now(),
+            'responded_by' => $user->id,
+        ]);
+
+        Log::info('Class join request rejected by instructor.', [
+            'actor_id' => $user->id,
+            'class_id' => $ownedClass->class_id,
+            'class_join_request_id' => $joinRequest->class_join_request_id,
+        ]);
+
+        return redirect()
+            ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
+            ->with('status', 'Student join request rejected.');
+    }
+
+    public function assessments(Request $request): View
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $handledSubjects = $this->handledSubjects($instructorProfile);
+        $activeAssessmentTab = $request->query('tab') === 'published' ? 'published' : 'draft';
+        $assessments = $instructorProfile
+            ? $instructorProfile->assessments()
+                ->with(['subject', 'items.choices', 'classAssessments.class'])
+                ->withCount('items', 'classAssessments')
+                ->latest('assessment_id')
+                ->get()
+            : collect();
+        $classesBySubject = $instructorProfile
+            ? $instructorProfile->classes()
+                ->with('subject')
+                ->orderBy('class_name')
+                ->get()
+                ->groupBy('subject_id')
+            : collect();
+        $publishedAssessments = $instructorProfile
+            ? ClassAssessment::query()
+                ->with(['assessment.subject', 'class.subject'])
+                ->whereHas('assessment', fn ($query) => $query->where('instructor_id', $instructorProfile->instructor_profile_id))
+                ->latest('class_assessment_id')
+                ->get()
+                ->each(function (ClassAssessment $classAssessment) {
+                    $classAssessment->display_status = $classAssessment->publish_status === ClassAssessment::STATUS_CLOSED
+                        || ($classAssessment->due_at && $classAssessment->due_at->isPast())
+                            ? 'completed'
+                            : 'pending';
+                })
+            : collect();
+
+        return view('instructor.assessments', $this->sharedData($user, 'assessments') + [
+            'instructorProfile' => $instructorProfile,
+            'handledSubjects' => $handledSubjects,
+            'assessments' => $assessments,
+            'publishedAssessments' => $publishedAssessments,
+            'activeAssessmentTab' => $activeAssessmentTab,
+            'classesBySubject' => $classesBySubject,
+            'assessmentTypes' => $this->assessmentTypes(),
+            'itemTypes' => $this->itemTypes(),
+        ]);
+    }
+
+    public function createAssessment(): View
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+
+        return view('instructor.assessment-create', $this->sharedData($user, 'assessments') + [
+            'instructorProfile' => $instructorProfile,
+            'handledSubjects' => $this->handledSubjects($instructorProfile),
+            'assessmentTypes' => $this->assessmentTypes(),
+            'reportCategories' => $this->reportCategories(),
+            'reportingTerms' => $this->reportingTerms(),
+        ]);
+    }
+
+    public function publishAssessmentForm(Request $request): View
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $handledSubjects = $this->handledSubjects($instructorProfile);
+        $assessments = $instructorProfile
+            ? $instructorProfile->assessments()
+                ->with('subject')
+                ->withCount('items')
+                ->orderBy('title')
+                ->get()
+            : collect();
+        $classes = $instructorProfile
+            ? $instructorProfile->classes()
+                ->with('subject')
+                ->orderBy('class_name')
+                ->get()
+            : collect();
+
+        $selectedAssessment = $assessments->firstWhere('assessment_id', (int) $request->query('assessment_id'));
+        $selectedSubjectId = (int) old(
+            'subject_id',
+            $selectedAssessment?->subject_id ?? $request->query('subject_id')
+        );
+
+        return view('instructor.assessment-publish', $this->sharedData($user, 'assessments') + [
+            'instructorProfile' => $instructorProfile,
+            'handledSubjects' => $handledSubjects,
+            'assessments' => $assessments,
+            'classes' => $classes,
+            'selectedSubjectId' => $selectedSubjectId,
+            'selectedAssessmentId' => (int) old('assessment_id', $selectedAssessment?->assessment_id),
+        ]);
+    }
+
+    public function showAssessment(Assessment $assessment): View
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
+
+        $ownedAssessment->load([
+            'subject',
+            'items.choices',
+            'classAssessments.class',
+        ])->loadCount('items', 'classAssessments');
+
+        $publishableClasses = $instructorProfile
+            ? $instructorProfile->classes()
+                ->with('subject')
+                ->where('subject_id', $ownedAssessment->subject_id)
+                ->orderBy('class_name')
+                ->get()
+            : collect();
+
+        return view('instructor.assessment-show', $this->sharedData($user, 'assessments') + [
+            'assessment' => $ownedAssessment,
+            'publishableClasses' => $publishableClasses,
+            'assessmentTypes' => $this->assessmentTypes(),
+            'itemTypes' => $this->itemTypes(),
+            'reportCategories' => $this->reportCategories(),
+            'reportingTerms' => $this->reportingTerms(),
+        ]);
+    }
+
+    public function storeAssessment(Request $request): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+
+        abort_unless($instructorProfile, 403, 'Instructor profile is required before creating assessments.');
+
+        $handledSubjectIds = $this->handledSubjects($instructorProfile)->pluck('subject_id')->all();
+
+        $validated = $request->validate([
+            'subject_id' => ['required', 'integer', Rule::in($handledSubjectIds)],
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'type' => ['required', 'string', Rule::in(array_keys($this->assessmentTypes()))],
+            'report_category' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
+            'reporting_term' => ['required', 'string', Rule::in(array_keys($this->reportingTerms()))],
+            'instructions' => ['nullable', 'string', 'max:4000'],
+        ]);
+
+        $assessment = $instructorProfile->assessments()->create($validated + [
+            'status' => Assessment::STATUS_DRAFT,
+        ]);
+
+        Log::info('Assessment created by instructor.', [
+            'actor_id' => $user->id,
+            'assessment_id' => $assessment->assessment_id,
+            'subject_id' => $assessment->subject_id,
+        ]);
+
+        return redirect()
+            ->route('instructor.assessments.show', $assessment)
+            ->with('status', 'Assessment saved as draft. You can now add items.');
+    }
+
+    public function updateAssessment(Request $request, Assessment $assessment): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'type' => ['required', 'string', Rule::in(array_keys($this->assessmentTypes()))],
+            'report_category' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
+            'reporting_term' => ['required', 'string', Rule::in(array_keys($this->reportingTerms()))],
+            'instructions' => ['nullable', 'string', 'max:4000'],
+        ]);
+
+        $ownedAssessment->update($validated);
+
+        Log::info('Assessment details updated by instructor.', [
+            'actor_id' => $user->id,
+            'assessment_id' => $ownedAssessment->assessment_id,
+        ]);
+
+        return redirect()
+            ->route('instructor.assessments.show', $ownedAssessment)
+            ->with('status', 'Assessment details updated.');
+    }
+
+    public function storeAssessmentItem(Request $request, Assessment $assessment): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
+
+        $validated = $request->validate([
+            'item_type' => ['required', 'string', Rule::in(array_keys($this->itemTypes()))],
+            'points' => ['required', 'numeric', 'min:0.01', 'max:999.99'],
+            'items' => ['required', 'array', 'min:1', 'max:50'],
+            'items.*.question_text' => ['required', 'string', 'max:4000'],
+            'items.*.choices' => ['nullable', 'array', 'max:6'],
+            'items.*.choices.*' => ['nullable', 'string', 'max:1000'],
+            'items.*.correct_choice' => ['nullable', 'integer', 'min:0', 'max:5'],
+            'items.*.true_false_answer' => ['nullable', Rule::in(['true', 'false'])],
+            'items.*.accepted_answer' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        foreach ($validated['items'] as $index => $itemData) {
+            $choices = collect($itemData['choices'] ?? [])
+                ->map(fn ($choice) => trim((string) $choice))
+                ->filter()
+                ->values();
+
+            if ($validated['item_type'] === 'multiple_choice' && $choices->count() < 2) {
+                throw ValidationException::withMessages([
+                    "items.{$index}.choices" => 'Multiple choice items need at least two choices.',
+                ]);
+            }
+
+            if ($validated['item_type'] === 'multiple_choice' && ! $choices->has((int) ($itemData['correct_choice'] ?? -1))) {
+                throw ValidationException::withMessages([
+                    "items.{$index}.correct_choice" => 'Please select the correct choice.',
+                ]);
+            }
+
+            if ($validated['item_type'] === 'true_false' && empty($itemData['true_false_answer'])) {
+                throw ValidationException::withMessages([
+                    "items.{$index}.true_false_answer" => 'Please select True or False as the correct answer.',
+                ]);
+            }
+
+            if ($validated['item_type'] === 'identification' && blank($itemData['accepted_answer'] ?? null)) {
+                throw ValidationException::withMessages([
+                    "items.{$index}.accepted_answer" => 'Please enter the accepted answer for identification.',
+                ]);
+            }
+        }
+
+        DB::transaction(function () use ($ownedAssessment, $validated) {
+            $nextOrder = ((int) $ownedAssessment->items()->max('sort_order')) + 1;
+
+            foreach ($validated['items'] as $itemData) {
+                $item = $ownedAssessment->items()->create([
+                    'question_text' => $itemData['question_text'],
+                    'item_type' => $validated['item_type'],
+                    'points' => $validated['points'],
+                    'is_required' => true,
+                    'sort_order' => $nextOrder,
+                ]);
+
+                $nextOrder++;
+
+                if ($validated['item_type'] === 'multiple_choice') {
+                    $choices = collect($itemData['choices'] ?? [])
+                        ->map(fn ($choice) => trim((string) $choice))
+                        ->filter()
+                        ->values();
+                    $correctChoice = (int) ($itemData['correct_choice'] ?? -1);
+
+                    foreach ($choices as $index => $choiceText) {
+                        $item->choices()->create([
+                            'choice_text' => $choiceText,
+                            'is_correct' => $index === $correctChoice,
+                            'sort_order' => $index + 1,
+                        ]);
+                    }
+                }
+
+                if ($validated['item_type'] === 'true_false') {
+                    foreach (['true' => 'True', 'false' => 'False'] as $value => $label) {
+                        $item->choices()->create([
+                            'choice_text' => $label,
+                            'is_correct' => ($itemData['true_false_answer'] ?? null) === $value,
+                            'sort_order' => $value === 'true' ? 1 : 2,
+                        ]);
+                    }
+                }
+
+                if ($validated['item_type'] === 'identification') {
+                    $item->choices()->create([
+                        'choice_text' => trim((string) $itemData['accepted_answer']),
+                        'is_correct' => true,
+                        'sort_order' => 1,
+                    ]);
+                }
+            }
+        });
+
+        Log::info('Assessment items added by instructor.', [
+            'actor_id' => $user->id,
+            'assessment_id' => $ownedAssessment->assessment_id,
+            'item_type' => $validated['item_type'],
+            'item_count' => count($validated['items']),
+        ]);
+
+        return redirect()
+            ->route('instructor.assessments.show', $ownedAssessment)
+            ->with('status', count($validated['items']).' question'.(count($validated['items']) === 1 ? '' : 's').' added.');
+    }
+
+    public function publishAssessment(Request $request, Assessment $assessment): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
+
+        if (! $ownedAssessment->items()->exists()) {
+            return redirect()
+                ->route('instructor.assessments.show', $ownedAssessment)
+                ->withErrors(['publish' => 'Add at least one item before publishing this assessment.']);
+        }
+
+        $validated = $request->validate([
+            'class_ids' => ['required', 'array', 'min:1'],
+            'class_ids.*' => ['integer'],
+            'available_at' => ['nullable', 'date'],
+            'due_at' => ['nullable', 'date', 'after:available_at'],
+            'attempt_limit' => ['required', 'integer', 'min:1', 'max:10'],
+            'warning_limit' => ['nullable', 'integer', 'min:0', 'max:20'],
+            'score_visibility' => ['nullable', 'boolean'],
+            'answer_visibility' => ['nullable', 'boolean'],
+            'shuffle_items' => ['nullable', 'boolean'],
+            'shuffle_choices' => ['nullable', 'boolean'],
+        ]);
+
+        $this->publishAssessmentToClasses($request, $user, $instructorProfile, $ownedAssessment, $validated);
+
+        return redirect()
+            ->route('instructor.assessments.show', $ownedAssessment)
+            ->with('status', 'Assessment published to selected classes.');
+    }
+
+    public function publishSelectedAssessment(Request $request): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+
+        abort_unless($instructorProfile, 403, 'Instructor profile is required before publishing assessments.');
+
+        $handledSubjectIds = $this->handledSubjects($instructorProfile)->pluck('subject_id')->all();
+
+        $validated = $request->validate([
+            'subject_id' => ['required', 'integer', Rule::in($handledSubjectIds)],
+            'assessment_id' => ['required', 'integer'],
+            'class_ids' => ['required', 'array', 'min:1'],
+            'class_ids.*' => ['integer'],
+            'available_at' => ['nullable', 'date'],
+            'due_at' => ['nullable', 'date', 'after:available_at'],
+            'attempt_limit' => ['required', 'integer', 'min:1', 'max:10'],
+            'warning_limit' => ['nullable', 'integer', 'min:0', 'max:20'],
+            'score_visibility' => ['nullable', 'boolean'],
+            'answer_visibility' => ['nullable', 'boolean'],
+            'shuffle_items' => ['nullable', 'boolean'],
+            'shuffle_choices' => ['nullable', 'boolean'],
+        ]);
+
+        $ownedAssessment = $instructorProfile->assessments()
+            ->where('subject_id', $validated['subject_id'])
+            ->where('assessment_id', $validated['assessment_id'])
+            ->first();
+
+        if (! $ownedAssessment) {
+            throw ValidationException::withMessages([
+                'assessment_id' => 'Select one of your assessments under the chosen subject.',
+            ]);
+        }
+
+        if (! $ownedAssessment->items()->exists()) {
+            throw ValidationException::withMessages([
+                'assessment_id' => 'Add at least one item before publishing this assessment.',
+            ]);
+        }
+
+        $this->publishAssessmentToClasses($request, $user, $instructorProfile, $ownedAssessment, $validated);
+
+        return redirect()
+            ->route('instructor.assessments')
+            ->with('status', 'Assessment published to selected classes.');
+    }
+
+    private function publishAssessmentToClasses(
+        Request $request,
+        User $user,
+        ?InstructorProfile $instructorProfile,
+        Assessment $ownedAssessment,
+        array $validated
+    ): void {
+        $classIds = collect($validated['class_ids'])->map(fn ($id) => (int) $id)->unique()->values();
+        $ownedClasses = $instructorProfile
+            ? $instructorProfile->classes()
+                ->where('subject_id', $ownedAssessment->subject_id)
+                ->whereIn('class_id', $classIds)
+                ->get()
+            : collect();
+
+        if ($ownedClasses->count() !== $classIds->count()) {
+            throw ValidationException::withMessages([
+                'class_ids' => 'You can only publish to your own classes under the same subject.',
+            ]);
+        }
+
+        DB::transaction(function () use ($ownedAssessment, $ownedClasses, $validated, $request) {
+            foreach ($ownedClasses as $class) {
+                ClassAssessment::query()->updateOrCreate(
+                    [
+                        'assessment_id' => $ownedAssessment->assessment_id,
+                        'class_id' => $class->class_id,
+                    ],
+                    [
+                        'available_at' => $validated['available_at'] ?? null,
+                        'due_at' => $validated['due_at'] ?? null,
+                        'publish_status' => ClassAssessment::STATUS_PUBLISHED,
+                        'score_visibility' => $request->boolean('score_visibility'),
+                        'answer_visibility' => $request->boolean('answer_visibility'),
+                        'attempt_limit' => (int) $validated['attempt_limit'],
+                        'shuffle_items' => $request->boolean('shuffle_items'),
+                        'shuffle_choices' => $request->boolean('shuffle_choices'),
+                        'warning_limit' => $validated['warning_limit'] ?? null,
+                    ],
+                );
+            }
+
+            $ownedAssessment->update(['status' => Assessment::STATUS_READY]);
+        });
+
+        Log::info('Assessment published to classes by instructor.', [
+            'actor_id' => $user->id,
+            'assessment_id' => $ownedAssessment->assessment_id,
+            'class_ids' => $ownedClasses->pluck('class_id')->all(),
+        ]);
     }
 
     public function students(): View
@@ -422,6 +1035,37 @@ class DashboardController extends Controller
         ];
     }
 
+    private function pendingWorkItems(int $classesCount, int $draftAssessmentsCount): array
+    {
+        return [
+            [
+                'title' => $classesCount > 0
+                    ? $classesCount.' class'.($classesCount === 1 ? '' : 'es').' linked'
+                    : 'No classes linked yet',
+                'description' => $classesCount > 0
+                    ? 'Open your class records to manage students and assessment access.'
+                    : 'Once classes are assigned to this instructor, the next teaching tasks will appear here.',
+                'state' => $classesCount > 0 ? 'Open' : 'Waiting for setup',
+                'href' => route('instructor.classes'),
+            ],
+            [
+                'title' => $draftAssessmentsCount > 0
+                    ? $draftAssessmentsCount.' assessment'.($draftAssessmentsCount === 1 ? '' : 's').' in draft'
+                    : 'No assessments in draft',
+                'description' => $draftAssessmentsCount > 0
+                    ? 'Continue building draft assessments before publishing them to classes.'
+                    : 'Draft assessments will be listed here for quick continuation.',
+                'state' => $draftAssessmentsCount > 0 ? 'Continue' : 'Clear',
+                'href' => route('instructor.assessments'),
+            ],
+            [
+                'title' => 'No submissions to check',
+                'description' => 'Review tasks will surface here once the student submission flow is connected.',
+                'state' => 'Clear',
+            ],
+        ];
+    }
+
     private function sharedData(User $user, string $activeNav): array
     {
         return [
@@ -443,7 +1087,6 @@ class DashboardController extends Controller
             ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('instructor.dashboard')],
             ['key' => 'classes', 'label' => 'Classes', 'icon' => 'school', 'href' => route('instructor.classes')],
             ['key' => 'assessments', 'label' => 'Assessments', 'icon' => 'assignment', 'href' => route('instructor.assessments')],
-            ['key' => 'students', 'label' => 'Students', 'icon' => 'groups', 'href' => route('instructor.students')],
         ];
 
         return array_map(
@@ -484,6 +1127,72 @@ class DashboardController extends Controller
         }
 
         return $switches;
+    }
+
+    private function assessmentTypes(): array
+    {
+        return [
+            'quiz' => 'Quiz',
+            'exam' => 'Exam',
+            'activity' => 'Activity',
+            'assignment' => 'Assignment',
+        ];
+    }
+
+    private function itemTypes(): array
+    {
+        return [
+            'multiple_choice' => 'Multiple Choice',
+            'identification' => 'Identification',
+            'essay' => 'Essay',
+            'true_false' => 'True/False',
+        ];
+    }
+
+    private function reportCategories(): array
+    {
+        return [
+            'formative' => 'Formative',
+            'summative' => 'Summative',
+        ];
+    }
+
+    private function reportingTerms(): array
+    {
+        return [
+            'midterm' => 'Midterm',
+            'final' => 'Final',
+        ];
+    }
+
+    /**
+     * @return Collection<int, Subject>
+     */
+    private function handledSubjects(?InstructorProfile $instructorProfile): Collection
+    {
+        if (! $instructorProfile) {
+            return collect();
+        }
+
+        return Subject::query()
+            ->whereIn('subject_id', $instructorProfile->classes()
+                ->whereNotNull('subject_id')
+                ->select('subject_id'))
+            ->where('is_active', true)
+            ->orderBy('subject_code')
+            ->orderBy('subject_name')
+            ->get();
+    }
+
+    private function ownedAssessment(Assessment $assessment, ?InstructorProfile $instructorProfile): Assessment
+    {
+        abort_unless(
+            $instructorProfile && $assessment->instructor_id === $instructorProfile->instructor_profile_id,
+            403,
+            'You are not allowed to manage this assessment.'
+        );
+
+        return $assessment;
     }
 
     private function classTabs(AcademicClass $class, string $activeTab): array
@@ -532,6 +1241,52 @@ class DashboardController extends Controller
         );
 
         return $class;
+    }
+
+    private function ensureClassJoinAccess(AcademicClass $class): void
+    {
+        if ($class->join_token && $class->join_code) {
+            return;
+        }
+
+        $class->forceFill(array_filter([
+            'join_token' => $class->join_token ?: $this->generateClassJoinToken(),
+            'join_code' => $class->join_code ?: $this->generateClassJoinCode(),
+        ]))->save();
+    }
+
+    private function generateClassJoinToken(): string
+    {
+        do {
+            $token = Str::random(40);
+        } while (AcademicClass::query()->where('join_token', $token)->exists());
+
+        return $token;
+    }
+
+    private function generateClassJoinCode(): string
+    {
+        do {
+            $code = Str::upper(Str::random(6));
+        } while (AcademicClass::query()->where('join_code', $code)->exists());
+
+        return $code;
+    }
+
+    private function markJoinRequestApproved(AcademicClass $class, StudentProfile $studentProfile, int $responderId): void
+    {
+        ClassJoinRequest::query()->updateOrCreate(
+            [
+                'class_id' => $class->class_id,
+                'student_profile_id' => $studentProfile->student_profile_id,
+            ],
+            [
+                'status' => ClassJoinRequest::STATUS_APPROVED,
+                'requested_at' => now(),
+                'responded_at' => now(),
+                'responded_by' => $responderId,
+            ],
+        );
     }
 
     /**

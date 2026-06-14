@@ -83,6 +83,19 @@
         .students-table {
             min-width: 980px;
         }
+
+        .join-link-field,
+        .join-code-field {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            font-size: 0.9rem;
+        }
+
+        .join-code-field {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-align: center;
+        }
     </style>
 @endpush
 
@@ -122,6 +135,26 @@
             });
         </script>
     @endif
+
+    <script>
+        document.addEventListener('click', function (event) {
+            const copyButton = event.target.closest('[data-copy-target]');
+
+            if (! copyButton || ! navigator.clipboard) {
+                return;
+            }
+
+            const input = document.getElementById(copyButton.dataset.copyTarget);
+
+            if (! input) {
+                return;
+            }
+
+            navigator.clipboard.writeText(input.value).then(() => {
+                copyButton.querySelector('.copy-label').textContent = 'Copied';
+            });
+        });
+    </script>
 @endpush
 
 @section('content')
@@ -146,22 +179,34 @@
         </div>
 
         @if ($activeTab === 'students')
-            <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#addStudentModal" data-bs-toggle="modal" type="button">
-                <span class="material-symbols-outlined fs-5">person_add</span>
-                Add Student
-            </button>
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" data-bs-target="#joinLinkModal" data-bs-toggle="modal" type="button">
+                    <span class="material-symbols-outlined fs-5">link</span>
+                    Join Code
+                </button>
+                <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#addStudentModal" data-bs-toggle="modal" type="button">
+                    <span class="material-symbols-outlined fs-5">person_add</span>
+                    Add Student
+                </button>
+            </div>
         @endif
     </div>
 
     <section class="mb-4">
         <div class="row g-3">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="stat-card p-4 h-100">
                     <p class="small fw-bold text-secondary text-uppercase mb-2">Students</p>
                     <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $class->students_count }}</div>
                 </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
+                <div class="stat-card p-4 h-100">
+                    <p class="small fw-bold text-secondary text-uppercase mb-2">Join Requests</p>
+                    <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $pendingJoinRequests->count() }}</div>
+                </div>
+            </div>
+            <div class="col-md-4">
                 <div class="stat-card p-4 h-100">
                     <p class="small fw-bold text-secondary text-uppercase mb-2">Assessments Taken</p>
                     <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $assessmentsTakenCount }}</div>
@@ -221,10 +266,77 @@
             <p class="text-secondary mb-0">We kept this tab ready, but the roster flow comes first so assessment access stays organized and secure.</p>
         </section>
     @else
+        @if ($pendingJoinRequests->isNotEmpty())
+            <section class="directory-card shadow-sm mb-4">
+                <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
+                    <h3 class="h4 mb-0">Pending Join Requests</h3>
+                    <span class="small text-white-50">Approve only students who belong in this class</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 students-table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Student Number</th>
+                                <th>Program</th>
+                                <th>Requested</th>
+                                <th class="text-end">Decision</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($pendingJoinRequests as $joinRequest)
+                                @php($student = $joinRequest->studentProfile)
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <span class="avatar">{{ strtoupper(substr($student?->user?->displayName() ?? 'S', 0, 1)) }}</span>
+                                            <div>
+                                                <div class="fw-bold" style="color: var(--psu-navy);">{{ $student?->user?->displayName() ?? 'Unknown student' }}</div>
+                                                <div class="small text-secondary">{{ $student?->user?->email ?? 'No email' }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ $student?->student_number ?? 'Unavailable' }}</td>
+                                    <td>
+                                        @if ($student?->program)
+                                            <div class="fw-semibold">{{ $student->program->program_name }}</div>
+                                            <div class="small text-secondary">{{ $student->program->college?->college_name }}</div>
+                                        @else
+                                            <span class="text-secondary">Not assigned</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $joinRequest->requested_at?->format('M d, Y g:i A') ?? 'Recently' }}</td>
+                                    <td class="text-end">
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <form action="{{ route('instructor.classes.join-requests.approve', ['class' => $class, 'joinRequest' => $joinRequest]) }}" method="POST">
+                                                @csrf
+                                                <button class="btn btn-success btn-sm d-inline-flex align-items-center gap-1" type="submit">
+                                                    <span class="material-symbols-outlined fs-6">check</span>
+                                                    Approve
+                                                </button>
+                                            </form>
+                                            <form action="{{ route('instructor.classes.join-requests.reject', ['class' => $class, 'joinRequest' => $joinRequest]) }}" method="POST" onsubmit="return confirm('Reject this join request?');">
+                                                @csrf
+                                                <button class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1" type="submit">
+                                                    <span class="material-symbols-outlined fs-6">close</span>
+                                                    Reject
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        @endif
+
         <section class="directory-card shadow-sm">
             <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
                 <h3 class="h4 mb-0">Students in Class</h3>
-                <span class="small text-white-50">Add by student number or import a simple roster file</span>
+                <span class="small text-white-50">Add manually, import a file, or approve join-link requests</span>
             </div>
 
             <div class="table-responsive">
@@ -299,6 +411,45 @@
                 <span class="small text-secondary">Only the class owner can manage this roster</span>
             </div>
         </section>
+
+        <div class="modal fade" id="joinLinkModal" tabindex="-1" aria-labelledby="joinLinkModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title h4" id="joinLinkModalLabel">Class Join Code</h3>
+                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label fw-bold text-uppercase small" for="classJoinCode">Share this code with students</label>
+                        <div class="input-group mb-3">
+                            <input class="form-control join-code-field" id="classJoinCode" readonly type="text" value="{{ $class->join_code }}">
+                            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-1" data-copy-target="classJoinCode" type="button">
+                                <span class="material-symbols-outlined fs-6">content_copy</span>
+                                <span class="copy-label">Copy</span>
+                            </button>
+                        </div>
+
+                        <label class="form-label fw-bold text-uppercase small" for="classJoinLink">Optional join link</label>
+                        <div class="input-group">
+                            <input class="form-control join-link-field" id="classJoinLink" readonly type="text" value="{{ $classJoinLink }}">
+                            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-1" data-copy-target="classJoinLink" type="button">
+                                <span class="material-symbols-outlined fs-6">content_copy</span>
+                                <span class="copy-label">Copy</span>
+                            </button>
+                        </div>
+                        <div class="alert alert-warning border-0 mt-3 mb-2">
+                            Use the class code for now. The join link will only be final after the system is uploaded online.
+                        </div>
+                        <div class="alert alert-primary border-0 mb-0">
+                            Students who use the code or link will only send a request. They will not be enrolled until you approve them.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="modal fade" id="addStudentModal" tabindex="-1" aria-labelledby="addStudentModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">

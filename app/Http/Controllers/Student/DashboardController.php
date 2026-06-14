@@ -3,8 +3,15 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicClass;
+use App\Models\ClassAssessment;
+use App\Models\ClassJoinRequest;
+use App\Models\StudentProfile;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -74,30 +81,184 @@ class DashboardController extends Controller
 
     public function classes(): View
     {
-        return view('student.classes', $this->placeholderPageData(
-            'classes',
-            'Classes',
-            'Students should be able to access their enrolled classes through this page.',
+        $user = $this->currentUser();
+
+        return view('student.classes', $this->sharedData($user, 'classes') + $this->studentClassesData($user));
+    }
+
+    public function classesLive(): View
+    {
+        return view('student.partials.classes-live', $this->studentClassesData($this->currentUser()));
+    }
+
+    public function classRequestsLive(): View
+    {
+        return view('student.partials.join-requests-table', $this->studentClassesData($this->currentUser()));
+    }
+
+    public function showClassJoinLink(string $token): View|RedirectResponse
+    {
+        $user = $this->currentUser();
+        $studentProfile = $this->studentProfileOrRedirect($user);
+
+        if ($studentProfile instanceof RedirectResponse) {
+            return $studentProfile;
+        }
+
+        $class = AcademicClass::query()
+            ->with(['subject', 'instructorProfile.user', 'instructorProfile.department.college'])
+            ->where('join_token', $token)
+            ->firstOrFail();
+
+        $existingRequest = ClassJoinRequest::query()
+            ->where('class_id', $class->class_id)
+            ->where('student_profile_id', $studentProfile->student_profile_id)
+            ->first();
+        $alreadyEnrolled = $class->students()
+            ->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)
+            ->exists();
+
+        return view('student.class-join', $this->sharedData($user, 'classes') + [
+            'class' => $class,
+            'studentProfile' => $studentProfile,
+            'existingRequest' => $existingRequest,
+            'alreadyEnrolled' => $alreadyEnrolled,
+        ]);
+    }
+
+    public function requestClassJoin(Request $request, string $token): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $studentProfile = $this->studentProfileOrRedirect($user);
+
+        if ($studentProfile instanceof RedirectResponse) {
+            return $studentProfile;
+        }
+
+        $class = AcademicClass::query()
+            ->where('join_token', $token)
+            ->firstOrFail();
+
+        return $this->submitClassJoinRequest($class, $studentProfile, $user, 'link');
+    }
+
+    public function requestClassJoinByCode(Request $request): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $studentProfile = $this->studentProfileOrRedirect($user);
+
+        if ($studentProfile instanceof RedirectResponse) {
+            return $studentProfile;
+        }
+
+        $validated = $request->validate([
+            'join_code' => ['required', 'string', 'max:20'],
+        ]);
+
+        $joinCode = Str::upper((string) preg_replace('/[^A-Za-z0-9]/', '', $validated['join_code']));
+
+        $class = AcademicClass::query()
+            ->where('join_code', $joinCode)
+            ->first();
+
+        if (! $class) {
+            return redirect()
+                ->route('student.classes')
+                ->withErrors(['join_code' => 'No class was found for that join code.'])
+                ->withInput();
+        }
+
+        return $this->submitClassJoinRequest($class, $studentProfile, $user, 'code');
+    }
+
+    private function submitClassJoinRequest(AcademicClass $class, StudentProfile $studentProfile, User $user, string $source): RedirectResponse
+    {
+        if ($class->students()->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)->exists()) {
+            return redirect()
+                ->route('student.classes')
+                ->with('status', 'You are already enrolled in that class.');
+        }
+
+        $joinRequest = ClassJoinRequest::query()->updateOrCreate(
             [
-                'View enrolled classes',
-                'Open class details and assigned work',
-                'See which classes are currently active',
+                'class_id' => $class->class_id,
+                'student_profile_id' => $studentProfile->student_profile_id,
             ],
-        ));
+            [
+                'status' => ClassJoinRequest::STATUS_PENDING,
+                'requested_at' => now(),
+                'responded_at' => null,
+                'responded_by' => null,
+            ],
+        );
+
+        Log::info('Student requested to join class.', [
+            'actor_id' => $user->id,
+            'source' => $source,
+            'class_id' => $class->class_id,
+            'class_join_request_id' => $joinRequest->class_join_request_id,
+            'student_profile_id' => $studentProfile->student_profile_id,
+        ]);
+
+        return redirect()
+            ->route('student.classes')
+            ->with('status', 'Join request sent. Please wait for your teacher to approve it.');
     }
 
     public function assessments(): View
     {
-        return view('student.assessments', $this->placeholderPageData(
-            'assessments',
-            'Assessments',
-            'Assigned assessments for the logged-in student will appear here.',
-            [
-                'Open available assessments',
-                'Track open and closed assessment items',
-                'Access assessment instructions and deadlines',
-            ],
-        ));
+        $user = $this->currentUser();
+
+        return view('student.assessments', $this->sharedData($user, 'assessments') + $this->studentAssessmentsData($user));
+    }
+
+    public function assessmentsLive(): View
+    {
+        return view('student.partials.assessments-live', $this->studentAssessmentsData($this->currentUser()));
+    }
+
+    public function takeAssessment(ClassAssessment $classAssessment): View|RedirectResponse
+    {
+        $user = $this->currentUser();
+        $studentProfile = $this->studentProfileOrRedirect($user);
+
+        if ($studentProfile instanceof RedirectResponse) {
+            return $studentProfile;
+        }
+
+        $classAssessment->load(['assessment.subject', 'assessment.items.choices', 'class.instructorProfile.user']);
+
+        abort_unless(
+            $classAssessment->publish_status === ClassAssessment::STATUS_PUBLISHED
+            && $classAssessment->class
+            && $classAssessment->class->students()
+                ->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)
+                ->exists(),
+            403,
+            'You are not allowed to open this assessment.'
+        );
+
+        $studentStatus = $this->studentAssessmentStatus($classAssessment);
+
+        if ($studentStatus !== 'available') {
+            return redirect()
+                ->route('student.assessments')
+                ->withErrors(['assessment' => 'This assessment is not available to take right now.']);
+        }
+
+        Log::info('Student opened published assessment.', [
+            'actor_id' => $user->id,
+            'student_profile_id' => $studentProfile->student_profile_id,
+            'class_assessment_id' => $classAssessment->class_assessment_id,
+            'assessment_id' => $classAssessment->assessment_id,
+            'class_id' => $classAssessment->class_id,
+        ]);
+
+        return view('student.assessment-take', $this->sharedData($user, 'assessments') + [
+            'classAssessment' => $classAssessment,
+            'assessment' => $classAssessment->assessment,
+            'class' => $classAssessment->class,
+        ]);
     }
 
     public function results(): View
@@ -165,5 +326,77 @@ class DashboardController extends Controller
         $user = Auth::user()->loadMissing('roles', 'studentProfile.program.college');
 
         return $user;
+    }
+
+    private function studentProfileOrRedirect(User $user): StudentProfile|RedirectResponse
+    {
+        if ($user->studentProfile) {
+            return $user->studentProfile;
+        }
+
+        return redirect()
+            ->route('student.classes')
+            ->withErrors(['student_profile' => 'Your student profile is not ready yet. Please contact the administrator.']);
+    }
+
+    private function studentClassesData(User $user): array
+    {
+        $studentProfile = $user->studentProfile;
+        $enrolledClasses = $studentProfile
+            ? $studentProfile->classes()
+                ->with(['subject', 'instructorProfile.user'])
+                ->latest('classes.class_id')
+                ->get()
+            : collect();
+        $joinRequests = $studentProfile
+            ? $studentProfile->classJoinRequests()
+                ->with(['class.subject', 'class.instructorProfile.user'])
+                ->latest('requested_at')
+                ->get()
+            : collect();
+
+        return [
+            'studentProfile' => $studentProfile,
+            'enrolledClasses' => $enrolledClasses,
+            'joinRequests' => $joinRequests,
+        ];
+    }
+
+    private function studentAssessmentsData(User $user): array
+    {
+        $studentProfile = $user->studentProfile;
+        $classIds = $studentProfile
+            ? $studentProfile->classes()->pluck('classes.class_id')
+            : collect();
+        $classAssessments = $classIds->isNotEmpty()
+            ? ClassAssessment::query()
+                ->with(['assessment.subject', 'assessment.items.choices', 'class.instructorProfile.user'])
+                ->whereIn('class_id', $classIds)
+                ->where('publish_status', ClassAssessment::STATUS_PUBLISHED)
+                ->latest('class_assessment_id')
+                ->get()
+                ->each(fn (ClassAssessment $classAssessment) => $classAssessment->student_status = $this->studentAssessmentStatus($classAssessment))
+            : collect();
+
+        return [
+            'studentProfile' => $studentProfile,
+            'classAssessments' => $classAssessments,
+            'availableCount' => $classAssessments->where('student_status', 'available')->count(),
+            'pendingCount' => $classAssessments->where('student_status', 'pending')->count(),
+            'completedCount' => $classAssessments->where('student_status', 'completed')->count(),
+        ];
+    }
+
+    private function studentAssessmentStatus(ClassAssessment $classAssessment): string
+    {
+        if ($classAssessment->due_at && $classAssessment->due_at->isPast()) {
+            return 'completed';
+        }
+
+        if ($classAssessment->available_at && $classAssessment->available_at->isFuture()) {
+            return 'pending';
+        }
+
+        return 'available';
     }
 }

@@ -2,28 +2,33 @@
 
 namespace App\Models;
 
-use App\Models\Subject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class AcademicClass extends Model
+class Assessment extends Model
 {
     use HasFactory;
 
-    protected $table = 'classes';
+    public const STATUS_DRAFT = 'draft';
 
-    protected $primaryKey = 'class_id';
+    public const STATUS_READY = 'ready';
+
+    public const STATUS_ARCHIVED = 'archived';
+
+    protected $primaryKey = 'assessment_id';
 
     protected $fillable = [
         'instructor_id',
         'subject_id',
-        'class_name',
-        'school_year',
-        'join_token',
-        'join_code',
+        'title',
+        'description',
+        'type',
+        'report_category',
+        'reporting_term',
+        'instructions',
+        'status',
     ];
 
     public function instructorProfile(): BelongsTo
@@ -36,19 +41,14 @@ class AcademicClass extends Model
         return $this->belongsTo(Subject::class, 'subject_id', 'subject_id');
     }
 
-    public function students(): BelongsToMany
+    public function items(): HasMany
     {
-        return $this->belongsToMany(StudentProfile::class, 'class_students', 'class_id', 'student_profile_id')
-            ->withTimestamps();
-    }
-
-    public function joinRequests(): HasMany
-    {
-        return $this->hasMany(ClassJoinRequest::class, 'class_id', 'class_id');
+        return $this->hasMany(AssessmentItem::class, 'assessment_id', 'assessment_id')
+            ->orderBy('sort_order');
     }
 
     public function classAssessments(): HasMany
     {
-        return $this->hasMany(ClassAssessment::class, 'class_id', 'class_id');
+        return $this->hasMany(ClassAssessment::class, 'assessment_id', 'assessment_id');
     }
 }

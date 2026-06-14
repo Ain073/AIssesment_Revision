@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin_dean' => \App\Http\Middleware\EnsureAdminDean::class,
+            'department_chair' => \App\Http\Middleware\EnsureDepartmentChair::class,
             'instructor' => \App\Http\Middleware\EnsureInstructor::class,
             'no_cache' => \App\Http\Middleware\PreventBrowserCache::class,
             'student' => \App\Http\Middleware\EnsureStudent::class,

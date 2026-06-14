@@ -125,8 +125,7 @@
 
     <section class="hero-card">
         <p class="small fw-bold text-uppercase mb-2" style="color: rgba(255,255,255,.72); letter-spacing: .04em;">Welcome Back</p>
-        <h2 class="brand-text hero-title">{{ $user->displayName() }}</h2>
-        <p class="hero-copy">Ito ang student workspace mo. Dito mo makikita ang enrolled classes, assigned assessments, at released results ayon sa flow na nasa manuscript.</p>
+        <h2 class="brand-text hero-title">{{ $user->displayName() }}</h2>   
     </section>
 
     <section class="stat-grid">

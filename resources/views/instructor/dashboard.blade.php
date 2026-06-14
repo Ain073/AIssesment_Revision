@@ -195,7 +195,6 @@
     <section class="hero-card">
         <p class="small fw-bold text-uppercase mb-2" style="color: rgba(255,255,255,.72); letter-spacing: .04em;">Welcome Back</p>
         <h2 class="brand-text hero-title">{{ $user->displayName() }}</h2>
-        <p class="hero-copy">Ito ang teaching command center mo. Dito natin ilalagay ang pinakamahalagang summary ng classes, assessments, pending checks, at mabilis na daan papunta sa day-to-day instructor work.</p>
     </section>
 
     <section class="stat-grid">
@@ -238,16 +237,8 @@
         <article class="info-card">
             <p class="eyebrow">Work Queue</p>
             <h3 class="brand-text h4 section-title">Pending Work</h3>
-            <div class="task-list">
-                @foreach ($pendingWork as $task)
-                    <article class="task-card">
-                        <div>
-                            <p class="fw-bold mb-1" style="color: var(--psu-navy);">{{ $task['title'] }}</p>
-                            <p class="text-secondary mb-0">{{ $task['description'] }}</p>
-                        </div>
-                        <span class="status-pill">{{ $task['state'] }}</span>
-                    </article>
-                @endforeach
+            <div data-poll-url="{{ route('instructor.dashboard.pending-work') }}" data-poll-interval="5000">
+                @include('instructor.partials.pending-work')
             </div>
         </article>
     </section>

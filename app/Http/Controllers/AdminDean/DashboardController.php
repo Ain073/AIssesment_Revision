@@ -5,11 +5,15 @@ namespace App\Http\Controllers\AdminDean;
 use App\Http\Controllers\Controller;
 use App\Models\College;
 use App\Models\Department;
+use App\Models\InstructorProfile;
 use App\Models\Program;
+use App\Models\Role;
+use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -28,13 +32,17 @@ class DashboardController extends Controller
             'stats' => [
                 [
                     'label' => 'Departments',
-                    'value' => Department::when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId))->count(),
+                    'value' => Department::query()
+                        ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
+                        ->count(),
                     'caption' => 'Academic units under your college',
                     'icon' => 'apartment',
                 ],
                 [
                     'label' => 'Programs',
-                    'value' => Program::when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId))->count(),
+                    'value' => Program::query()
+                        ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
+                        ->count(),
                     'caption' => 'Degree programs to organize',
                     'icon' => 'school',
                 ],
@@ -44,7 +52,7 @@ class DashboardController extends Controller
                         ->whereHas('roles', fn ($query) => $query->where('role_name', 'instructor'))
                         ->whereHas(
                             'instructorProfile.department',
-                            fn ($query) => $query->when($scopedCollegeId, fn ($inner) => $inner->where('college_id', $scopedCollegeId))
+                            fn ($query) => $query->when($scopedCollegeId, fn ($inner) => $inner->where('college_id', $scopedCollegeId), fn ($inner) => $inner->whereRaw('1 = 0'))
                         )
                         ->count(),
                     'caption' => 'Faculty accounts under your scope',
@@ -52,7 +60,9 @@ class DashboardController extends Controller
                 ],
                 [
                     'label' => 'Students',
-                    'value' => 0,
+                    'value' => StudentProfile::query()
+                        ->whereHas('program', fn ($query) => $query->when($scopedCollegeId, fn ($inner) => $inner->where('college_id', $scopedCollegeId), fn ($inner) => $inner->whereRaw('1 = 0')))
+                        ->count(),
                     'caption' => 'Students grouped by program',
                     'icon' => 'groups',
                 ],
@@ -98,16 +108,18 @@ class DashboardController extends Controller
 
         return view('admin-dean.departments', $this->sharedData('departments') + [
             'departments' => Department::with('college')
-                ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId))
+                ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
                 ->withCount('instructorProfiles')
                 ->orderBy('dept_name')
                 ->get(),
             'colleges' => $scopedCollege
                 ? collect([$scopedCollege->loadCount('departments')])
-                : College::withCount('departments')->orderBy('college_name')->get(),
+                : collect(),
             'scopedCollege' => $scopedCollege,
-            'totalDepartments' => Department::when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId))->count(),
-            'totalColleges' => $scopedCollege ? 1 : College::count(),
+            'totalDepartments' => Department::query()
+                ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
+                ->count(),
+            'totalColleges' => $scopedCollege ? 1 : 0,
         ]);
     }
 
@@ -117,18 +129,20 @@ class DashboardController extends Controller
         $scopedCollege = $this->scopedCollege($user);
         $scopedCollegeId = $scopedCollege?->college_id;
 
+        abort_unless($scopedCollege, 403, 'Admin/Dean account needs an assigned college before creating departments.');
+
         $validated = $request->validate([
-            'college_id' => [$scopedCollegeId ? 'nullable' : 'required', 'exists:colleges,college_id'],
+            'college_id' => ['nullable', 'integer', Rule::in([$scopedCollegeId])],
             'dept_name' => [
                 'required',
                 'string',
                 'max:255',
                 Rule::unique('departments', 'dept_name')
-                    ->where('college_id', $scopedCollegeId ?? $request->input('college_id')),
+                    ->where('college_id', $scopedCollegeId),
             ],
         ]);
 
-        $validated['college_id'] = $scopedCollegeId ?? (int) $validated['college_id'];
+        $validated['college_id'] = $scopedCollegeId;
 
         $department = Department::create($validated);
 
@@ -152,16 +166,18 @@ class DashboardController extends Controller
 
         return view('admin-dean.programs', $this->sharedData('programs') + [
             'programs' => Program::with('college')
-                ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId))
+                ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
                 ->withCount('studentProfiles')
                 ->orderBy('program_name')
                 ->get(),
             'colleges' => $scopedCollege
                 ? collect([$scopedCollege->loadCount('programs')])
-                : College::withCount('programs')->orderBy('college_name')->get(),
+                : collect(),
             'scopedCollege' => $scopedCollege,
-            'totalPrograms' => Program::when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId))->count(),
-            'totalColleges' => $scopedCollege ? 1 : College::count(),
+            'totalPrograms' => Program::query()
+                ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
+                ->count(),
+            'totalColleges' => $scopedCollege ? 1 : 0,
         ]);
     }
 
@@ -171,19 +187,21 @@ class DashboardController extends Controller
         $scopedCollege = $this->scopedCollege($user);
         $scopedCollegeId = $scopedCollege?->college_id;
 
+        abort_unless($scopedCollege, 403, 'Admin/Dean account needs an assigned college before creating programs.');
+
         $validated = $request->validate([
-            'college_id' => [$scopedCollegeId ? 'nullable' : 'required', 'exists:colleges,college_id'],
+            'college_id' => ['nullable', 'integer', Rule::in([$scopedCollegeId])],
             'program_name' => [
                 'required',
                 'string',
                 'max:255',
                 Rule::unique('programs', 'program_name')
-                    ->where('college_id', $scopedCollegeId ?? $request->input('college_id')),
+                    ->where('college_id', $scopedCollegeId),
             ],
             'is_active' => ['required', 'boolean'],
         ]);
 
-        $validated['college_id'] = $scopedCollegeId ?? (int) $validated['college_id'];
+        $validated['college_id'] = $scopedCollegeId;
 
         $program = Program::create($validated);
 
@@ -210,7 +228,7 @@ class DashboardController extends Controller
             ->whereHas('roles', fn ($query) => $query->where('role_name', 'instructor'))
             ->whereHas(
                 'instructorProfile.department',
-                fn ($query) => $query->when($scopedCollegeId, fn ($inner) => $inner->where('college_id', $scopedCollegeId))
+                fn ($query) => $query->when($scopedCollegeId, fn ($inner) => $inner->where('college_id', $scopedCollegeId), fn ($inner) => $inner->whereRaw('1 = 0'))
             )
             ->orderBy('last_name')
             ->orderBy('first_name')
@@ -223,6 +241,10 @@ class DashboardController extends Controller
         return view('admin-dean.teachers', $this->sharedData('teachers') + [
             'teachers' => $teachers,
             'scopedCollege' => $scopedCollege,
+            'departments' => Department::query()
+                ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
+                ->orderBy('dept_name')
+                ->get(),
             'totalTeachers' => $teachers->count(),
             'totalAdminDeans' => $adminDeans->count(),
             'totalDepartmentChairs' => $departmentChairs->count(),
@@ -231,16 +253,126 @@ class DashboardController extends Controller
 
     public function students(): View
     {
-        return view('admin-dean.students', $this->placeholderPageData(
-            'students',
-            'Students',
-            'Student records grouped by program will appear here.',
-            [
-                'Student list by program',
-                'Program filters and counts',
-                'College-level monitoring view',
+        $user = $this->currentUser();
+        $scopedCollege = $this->scopedCollege($user);
+        $scopedCollegeId = $scopedCollege?->college_id;
+        $programs = Program::query()
+            ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
+            ->orderBy('program_name')
+            ->get();
+
+        $students = StudentProfile::query()
+            ->with(['user.roles', 'program.college'])
+            ->whereHas('program', fn ($query) => $query->when($scopedCollegeId, fn ($inner) => $inner->where('college_id', $scopedCollegeId), fn ($inner) => $inner->whereRaw('1 = 0')))
+            ->get()
+            ->sortBy(fn (StudentProfile $student) => strtolower($student->user?->displayName() ?? ''))
+            ->values();
+
+        return view('admin-dean.students', $this->sharedData('students') + [
+            'students' => $students,
+            'programs' => $programs,
+            'scopedCollege' => $scopedCollege,
+            'totalStudents' => $students->count(),
+            'activeStudents' => $students->filter(fn (StudentProfile $student) => $student->user?->status === 'active')->count(),
+            'programCount' => $programs->count(),
+        ]);
+    }
+
+    public function storeUser(Request $request): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $scopedCollege = $this->scopedCollege($user);
+
+        abort_unless($scopedCollege, 403, 'Admin/Dean account needs an assigned college before creating users.');
+
+        $departmentIds = Department::query()
+            ->where('college_id', $scopedCollege->college_id)
+            ->pluck('department_id')
+            ->all();
+        $programIds = Program::query()
+            ->where('college_id', $scopedCollege->college_id)
+            ->pluck('program_id')
+            ->all();
+
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'status' => ['required', Rule::in(['active', 'inactive'])],
+            'base_role' => ['required', Rule::in(['instructor', 'student'])],
+            'department_id' => [
+                Rule::requiredIf(fn () => $request->input('base_role') === 'instructor'),
+                'nullable',
+                'integer',
+                Rule::in($departmentIds),
             ],
-        ));
+            'employee_number' => [
+                Rule::requiredIf(fn () => $request->input('base_role') === 'instructor'),
+                'nullable',
+                'string',
+                'max:255',
+                'unique:instructor_profiles,employee_number',
+            ],
+            'program_id' => [
+                Rule::requiredIf(fn () => $request->input('base_role') === 'student'),
+                'nullable',
+                'integer',
+                Rule::in($programIds),
+            ],
+            'student_number' => [
+                Rule::requiredIf(fn () => $request->input('base_role') === 'student'),
+                'nullable',
+                'string',
+                'max:255',
+                'unique:student_profiles,student_number',
+            ],
+        ]);
+
+        DB::transaction(function () use ($validated, $user, $scopedCollege) {
+            $createdUser = User::create([
+                'name' => $this->buildName($validated),
+                'first_name' => $validated['first_name'],
+                'middle_name' => $validated['middle_name'] ?? null,
+                'last_name' => $validated['last_name'],
+                'email' => $validated['email'],
+                'password' => $validated['password'],
+                'status' => $validated['status'],
+            ]);
+
+            $role = Role::where('role_name', $validated['base_role'])->firstOrFail();
+            $createdUser->roles()->attach($role->role_id);
+
+            if ($validated['base_role'] === 'instructor') {
+                InstructorProfile::create([
+                    'user_id' => $createdUser->id,
+                    'department_id' => $validated['department_id'],
+                    'employee_number' => $validated['employee_number'],
+                ]);
+            }
+
+            if ($validated['base_role'] === 'student') {
+                StudentProfile::create([
+                    'user_id' => $createdUser->id,
+                    'program_id' => $validated['program_id'],
+                    'student_number' => $validated['student_number'],
+                ]);
+            }
+
+            Log::info('User account created by admin/dean.', [
+                'actor_id' => $user->id,
+                'user_id' => $createdUser->id,
+                'base_role' => $validated['base_role'],
+                'college_id' => $scopedCollege->college_id,
+                'department_id' => $validated['department_id'] ?? null,
+                'program_id' => $validated['program_id'] ?? null,
+            ]);
+        });
+
+        return redirect()
+            ->back()
+            ->with('status', 'User account created successfully.');
     }
 
     private function placeholderPageData(
@@ -336,5 +468,14 @@ class DashboardController extends Controller
         $user->loadMissing('instructorProfile.department.college');
 
         return $user->instructorProfile?->department?->college;
+    }
+
+    private function buildName(array $validated): string
+    {
+        return collect([
+            $validated['first_name'],
+            $validated['middle_name'] ?? null,
+            $validated['last_name'],
+        ])->filter()->implode(' ');
     }
 }

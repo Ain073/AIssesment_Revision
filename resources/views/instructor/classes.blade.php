@@ -55,7 +55,12 @@
         }
 
         .classes-table {
-            min-width: 860px;
+            min-width: 980px;
+        }
+
+        .join-code-pill {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            letter-spacing: 0.1em;
         }
     </style>
 @endpush
@@ -69,122 +74,13 @@
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-6">
-            <div class="stat-card p-4">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Total Classes</p>
-                <div class="d-flex align-items-baseline gap-2">
-                    <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalClasses }}</span>
-                    <span class="small text-secondary">Classes under your instructor account</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="stat-card p-4">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Latest School Year</p>
-                <div class="d-flex align-items-baseline gap-2">
-                    <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $latestSchoolYear ?? 'N/A' }}</span>
-                    <span class="small text-secondary">Based on your saved class records</span>
-                </div>
-            </div>
-        </div>
+    <div data-poll-url="{{ route('instructor.classes.live') }}" data-poll-interval="5000">
+        @include('instructor.partials.classes-live')
     </div>
-
-    <div class="alert {{ ! $instructorProfile ? 'alert-warning' : ($subjects->isEmpty() ? 'alert-warning' : 'alert-primary') }} border-0 shadow-sm mb-4">
-        @if (! $instructorProfile)
-            This account does not have an instructor profile yet, so class creation is temporarily unavailable.
-        @elseif ($subjects->isEmpty())
-            No active subjects are available yet. Add subjects first from the Super Admin portal before creating classes.
-        @else
-            This follows the ERD class structure. New class records will automatically use your instructor profile and selected subject.
-        @endif
-    </div>
-
-    <div class="d-flex flex-wrap justify-content-lg-end gap-2 mb-4">
-        <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#classModal" data-bs-toggle="modal" type="button" @disabled(! $instructorProfile || $subjects->isEmpty())>
-            <span class="material-symbols-outlined fs-5">add</span>
-            Create Class
-        </button>
-    </div>
-
-    <section class="directory-card shadow-sm">
-        <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
-            <h3 class="h4 mb-0">Classes List</h3>
-            <span class="small text-white-50">
-                {{ $instructorProfile?->department?->dept_name ?? 'No department assigned yet' }}
-            </span>
-        </div>
-
-        <div class="table-responsive">
-            <table class="table table-hover mb-0 classes-table">
-                <thead>
-                    <tr>
-                        <th>Class</th>
-                        <th>Subject</th>
-                        <th>Students</th>
-                        <th>School Year</th>
-                        <th>Department</th>
-                        <th>College</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($classes as $class)
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center gap-3">
-                                    <span class="class-icon"><span class="material-symbols-outlined">school</span></span>
-                                    <div>
-                                        <div class="fw-bold" style="color: var(--psu-navy);">{{ $class->class_name }}</div>
-                                        <div class="small text-secondary">Class ID: {{ $class->class_id }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                @if ($class->subject)
-                                    <div class="fw-bold" style="color: var(--psu-navy);">{{ $class->subject->subject_code }}</div>
-                                    <div class="small text-secondary">{{ $class->subject->subject_name }}</div>
-                                @else
-                                    <span class="text-secondary">Not selected</span>
-                                @endif
-                            </td>
-                            <td>{{ $class->students_count }}</td>
-                            <td>{{ $class->school_year }}</td>
-                            <td>{{ $class->instructorProfile?->department?->dept_name ?? 'Not assigned' }}</td>
-                            <td>{{ $class->instructorProfile?->department?->college?->college_name ?? 'Not assigned' }}</td>
-                            <td>
-                                <a class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" href="{{ route('instructor.classes.show', ['class' => $class, 'tab' => 'students']) }}">
-                                    <span class="material-symbols-outlined fs-6">visibility</span>
-                                    View
-                                </a>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td class="text-center py-5" colspan="7">
-                                <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">school</span></div>
-                                <h4 class="h4" style="color: var(--psu-navy);">No classes yet</h4>
-                                <p class="text-secondary mb-4">Create your first class record based on the ERD fields.</p>
-                                <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#classModal" data-bs-toggle="modal" type="button" @disabled(! $instructorProfile || $subjects->isEmpty())>
-                                    <span class="material-symbols-outlined fs-5">add</span>
-                                    Create First Class
-                                </button>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #edf2ff;">
-            <span class="small text-secondary">Showing {{ $classes->count() }} {{ $classes->count() === 1 ? 'entry' : 'entries' }}</span>
-            <span class="small text-secondary">Handled by {{ $profileName }}</span>
-        </div>
-    </section>
 
     <div class="modal fade" id="classModal" tabindex="-1" aria-labelledby="classModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <form action="{{ route('instructor.classes.store') }}" class="modal-content" method="POST">
+            <form action="{{ route('instructor.classes.store') }}" class="modal-content" method="POST" data-ajax-form data-reset-on-success="true">
                 @csrf
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="classModalLabel">New Class</h3>

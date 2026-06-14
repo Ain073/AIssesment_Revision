@@ -120,7 +120,6 @@
     <section class="hero-card">
         <p class="small fw-bold text-uppercase mb-2" style="color: rgba(255,255,255,.72); letter-spacing: .04em;">College-Level View</p>
         <h2 class="brand-text h1 mb-3">{{ $user->displayName() }}</h2>
-        <p class="hero-copy">Ito ang admin/dean workspace mo. Dito natin ilalagay ang college-scoped summaries para sa departments, programs, teachers, at students sa ilalim ng assigned academic unit mo.</p>
     </section>
 
     <section class="stat-grid">

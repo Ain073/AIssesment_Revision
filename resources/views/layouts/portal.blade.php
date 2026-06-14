@@ -44,9 +44,10 @@
             inset: 0 auto 0 0;
             width: 280px;
             background:
-                radial-gradient(circle at 100% 0%, rgba(255, 218, 39, 0.28) 0%, rgba(255, 218, 39, 0) 28%),
-                linear-gradient(180deg, #00124f 0%, var(--psu-navy) 46%, var(--psu-navy-2) 82%, #2346ff 100%);
-            box-shadow: 12px 0 28px rgba(0, 26, 112, 0.16);
+                linear-gradient(118deg, rgba(5, 33, 171, 0.98) 0%, rgba(13, 49, 221, 0.96) 48%, rgba(226, 196, 48, 0.88) 100%),
+                radial-gradient(circle at 100% 0%, rgba(255, 226, 76, 0.45) 0%, rgba(255, 226, 76, 0) 34%),
+                linear-gradient(180deg, #021063 0%, #0828c9 58%, #d4b736 100%);
+            box-shadow: 12px 0 28px rgba(0, 26, 112, 0.18);
             z-index: 1040;
         }
 
@@ -65,7 +66,8 @@
         .sidebar-link:hover,
         .sidebar-link.active {
             color: #fff;
-            background: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.16);
+            backdrop-filter: blur(2px);
         }
 
         .sidebar-link.active {
@@ -396,6 +398,174 @@
                 },
             });
         }
+
+        window.portalPollSections = [];
+
+        const showPortalMessage = (message, type = 'success') => {
+            const pageContainer = document.querySelector('.page-container');
+
+            if (! pageContainer || ! message) {
+                return;
+            }
+
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} ajax-status-alert`;
+            alert.textContent = message;
+            pageContainer.prepend(alert);
+
+            window.setTimeout(() => alert.remove(), 4000);
+        };
+
+        const formErrorMessage = async (response) => {
+            try {
+                const data = await response.json();
+
+                if (data?.errors) {
+                    return Object.values(data.errors).flat().join(' ');
+                }
+
+                return data?.message || 'Please check the form and try again.';
+            } catch (error) {
+                return 'Please check the form and try again.';
+            }
+        };
+
+        document.querySelectorAll('[data-poll-url]').forEach((section) => {
+            const pollUrl = section.dataset.pollUrl;
+            const interval = Number(section.dataset.pollInterval || 5000);
+
+            if (! pollUrl || interval < 1000) {
+                return;
+            }
+
+            let isLoading = false;
+
+            const isUserTypingInside = () => {
+                const activeElement = document.activeElement;
+
+                return section.contains(activeElement)
+                    && ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeElement?.tagName);
+            };
+
+            const refreshSection = async (force = false) => {
+                if (isLoading || document.hidden || isUserTypingInside() || section.querySelector('.modal.show')) {
+                    if (! force) {
+                        return;
+                    }
+                }
+
+                if (isLoading) {
+                    return;
+                }
+
+                isLoading = true;
+
+                try {
+                    const response = await fetch(pollUrl, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        cache: 'no-store',
+                    });
+
+                    if (response.ok) {
+                        const html = await response.text();
+
+                        if (html.trim()) {
+                            section.innerHTML = html;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Partial refresh failed.', error);
+                } finally {
+                    isLoading = false;
+                }
+            };
+
+            window.portalPollSections.push(refreshSection);
+            window.setInterval(refreshSection, interval);
+        });
+
+        window.refreshPortalSections = () => {
+            window.portalPollSections.forEach((refreshSection) => refreshSection(true));
+        };
+
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'portal-refresh-sections') {
+                window.refreshPortalSections?.();
+            }
+        });
+
+        window.addEventListener('focus', () => {
+            window.refreshPortalSections?.();
+        });
+
+        document.addEventListener('submit', async (event) => {
+            const form = event.target.closest('form[data-ajax-form]');
+
+            if (! form) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const submitButtons = form.querySelectorAll('button[type="submit"]');
+            const errorBox = form.querySelector('[data-ajax-errors]') || document.createElement('div');
+
+            if (! errorBox.hasAttribute('data-ajax-errors')) {
+                errorBox.setAttribute('data-ajax-errors', 'true');
+                errorBox.className = 'alert alert-danger d-none';
+                form.querySelector('.modal-body, .p-4, form')?.prepend(errorBox);
+            }
+
+            errorBox.classList.add('d-none');
+            errorBox.textContent = '';
+            submitButtons.forEach((button) => button.disabled = true);
+
+            try {
+                const response = await fetch(form.action, {
+                    method: form.method || 'POST',
+                    body: new FormData(form),
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    cache: 'no-store',
+                });
+
+                if (! response.ok) {
+                    errorBox.textContent = await formErrorMessage(response);
+                    errorBox.classList.remove('d-none');
+                    return;
+                }
+
+                const contentType = response.headers.get('content-type') || '';
+                const data = contentType.includes('application/json') ? await response.json() : {};
+                const modalElement = form.closest('.modal');
+
+                const finishSuccess = () => {
+                    if (form.dataset.resetOnSuccess === 'true') {
+                        form.reset();
+                    }
+
+                    localStorage.setItem('portal-refresh-sections', String(Date.now()));
+                    window.refreshPortalSections?.();
+                    showPortalMessage(data.message || 'Saved successfully.');
+                };
+
+                if (modalElement?.classList.contains('show')) {
+                    modalElement.addEventListener('hidden.bs.modal', finishSuccess, { once: true });
+                    bootstrap.Modal.getOrCreateInstance(modalElement).hide();
+                } else {
+                    finishSuccess();
+                }
+            } catch (error) {
+                errorBox.textContent = 'Request failed. Please try again.';
+                errorBox.classList.remove('d-none');
+            } finally {
+                submitButtons.forEach((button) => button.disabled = false);
+            }
+        });
     </script>
     @stack('scripts')
 </body>
