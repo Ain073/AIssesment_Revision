@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\AcademicClass;
-use App\Models\AssessmentAttempt;
 use App\Models\ClassAssessment;
 use App\Models\ClassJoinRequest;
 use App\Models\StudentProfile;
+use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -340,10 +340,10 @@ class DashboardController extends Controller
 
         $classAssessment->load(['assessment.items.choices', 'class']);
 
-        $attemptsUsed = $this->submittedAttemptCount($classAssessment, $studentProfile);
+        $submissionsUsed = $this->submittedSubmissionCount($classAssessment, $studentProfile);
         $attemptLimit = max((int) $classAssessment->attempt_limit, 1);
 
-        if ($attemptsUsed >= $attemptLimit) {
+        if ($submissionsUsed >= $attemptLimit) {
             return redirect()
                 ->route('student.assessments')
                 ->withErrors(['assessment' => 'You already used the allowed attempt for this assessment.']);
@@ -351,19 +351,19 @@ class DashboardController extends Controller
 
         $validated = $request->validate([
             'answers' => ['nullable', 'array'],
-            'warnings_used' => ['nullable', 'integer', 'min:0', 'max:999'],
+            'warning_count' => ['nullable', 'integer', 'min:0', 'max:999'],
         ]);
 
         $answers = collect($validated['answers'] ?? []);
         $items = $classAssessment->assessment->items;
 
-        DB::transaction(function () use ($classAssessment, $studentProfile, $items, $answers, $validated, $attemptsUsed) {
-            $attempt = AssessmentAttempt::query()->create([
+        DB::transaction(function () use ($classAssessment, $studentProfile, $items, $answers, $validated, $submissionsUsed) {
+            $submission = Submission::query()->create([
                 'class_assessment_id' => $classAssessment->class_assessment_id,
                 'student_profile_id' => $studentProfile->student_profile_id,
-                'attempt_number' => $attemptsUsed + 1,
-                'status' => AssessmentAttempt::STATUS_SUBMITTED,
-                'warnings_used' => (int) ($validated['warnings_used'] ?? 0),
+                'attempt_number' => $submissionsUsed + 1,
+                'status' => Submission::STATUS_SUBMITTED,
+                'warning_count' => (int) ($validated['warning_count'] ?? 0),
                 'submitted_at' => now(),
             ]);
 
@@ -382,7 +382,7 @@ class DashboardController extends Controller
                     $answerText = is_scalar($rawAnswer) ? trim((string) $rawAnswer) : null;
                 }
 
-                $attempt->answers()->create([
+                $submission->answers()->create([
                     'assessment_item_id' => $item->assessment_item_id,
                     'assessment_item_choice_id' => $choiceId,
                     'answer_text' => $answerText,
@@ -577,7 +577,7 @@ class DashboardController extends Controller
 
         $studentProfile = $this->currentUser()->studentProfile;
 
-        if ($studentProfile && $this->submittedAttemptCount($classAssessment, $studentProfile) >= max((int) $classAssessment->attempt_limit, 1)) {
+        if ($studentProfile && $this->submittedSubmissionCount($classAssessment, $studentProfile) >= max((int) $classAssessment->attempt_limit, 1)) {
             return 'completed';
         }
 
@@ -588,12 +588,12 @@ class DashboardController extends Controller
         return 'available';
     }
 
-    private function submittedAttemptCount(ClassAssessment $classAssessment, StudentProfile $studentProfile): int
+    private function submittedSubmissionCount(ClassAssessment $classAssessment, StudentProfile $studentProfile): int
     {
-        return AssessmentAttempt::query()
+        return Submission::query()
             ->where('class_assessment_id', $classAssessment->class_assessment_id)
             ->where('student_profile_id', $studentProfile->student_profile_id)
-            ->where('status', AssessmentAttempt::STATUS_SUBMITTED)
+            ->where('status', Submission::STATUS_SUBMITTED)
             ->count();
     }
 }

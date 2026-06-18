@@ -16,28 +16,68 @@
             box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
         }
 
+        .publish-form {
+            max-width: 1180px;
+            margin: 0 auto;
+        }
+
         .publish-header {
             background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 100%);
             color: #fff;
         }
 
+        .publish-section {
+            border: 1px solid var(--psu-line);
+            border-radius: 0.5rem;
+            background: #fbfcff;
+            padding: 1rem;
+        }
+
+        .publish-section-title {
+            color: var(--psu-navy);
+            font-size: 0.82rem;
+            font-weight: 800;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        .form-label {
+            color: #001a70;
+            margin-bottom: 0.4rem;
+        }
+
+        .compact-select,
+        .compact-input {
+            min-height: 2.9rem;
+            font-size: 1rem;
+        }
+
+        .compact-select {
+            text-overflow: ellipsis;
+        }
+
         .setting-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 1rem;
+            gap: 0.85rem;
         }
 
         .toggle-row {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 0.75rem;
         }
 
         .toggle-box {
             border: 1px solid var(--psu-line);
             border-radius: 0.5rem;
-            padding: 0.85rem 1rem;
+            padding: 0.75rem 0.85rem;
             background: #f8faff;
+        }
+
+        .toggle-box .fw-semibold {
+            font-size: 0.95rem;
+            white-space: nowrap;
         }
 
         .security-box {
@@ -63,15 +103,21 @@
             border: 1px solid var(--psu-line);
             border-radius: 0.5rem;
             background: #f8faff;
-            padding: 1rem;
-            max-height: 260px;
+            padding: 0.75rem;
+            max-height: 235px;
             overflow-y: auto;
         }
 
         .class-dropdown-button {
-            min-height: calc(3.5rem + 2px);
+            min-height: 2.9rem;
             justify-content: space-between;
             text-align: left;
+        }
+
+        .class-dropdown-button > span:first-child {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .class-option {
@@ -81,8 +127,8 @@
             border: 1px solid var(--psu-line);
             border-radius: 0.5rem;
             background: #fff;
-            padding: 0.85rem 1rem;
-            margin-bottom: 0.75rem;
+            padding: 0.7rem 0.8rem;
+            margin-bottom: 0.55rem;
         }
 
         .class-option:last-child {
@@ -97,8 +143,19 @@
             color: var(--psu-muted);
         }
 
+        @media (max-width: 1199.98px) {
+            .toggle-row {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
         @media (max-width: 991.98px) {
-            .setting-grid,
+            .setting-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 575.98px) {
             .toggle-row {
                 grid-template-columns: 1fr;
             }
@@ -137,41 +194,44 @@
                     <h2 class="h4 mb-0">Publishing Setup</h2>
                 </div>
 
-                <form action="{{ route('instructor.assessments.publish.selected') }}" method="POST" class="p-4" id="publishAssessmentForm">
+                <form action="{{ route('instructor.assessments.publish.selected') }}" method="POST" class="publish-form p-3 p-lg-4" id="publishAssessmentForm">
                     @csrf
 
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-uppercase small" for="subject_id">Subject</label>
-                            <select class="form-select form-select-lg" id="subject_id" name="subject_id" required>
-                                <option value="">Select subject</option>
-                                @foreach ($handledSubjects as $subject)
-                                    <option value="{{ $subject->subject_id }}" @selected((string) $selectedSubjectId === (string) $subject->subject_id)>
-                                        {{ $subject->subject_code }} - {{ $subject->subject_name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                    <div class="publish-section">
+                        <div class="publish-section-title mb-3">Assessment Details</div>
+                        <div class="row g-3">
+                            <div class="col-lg-6">
+                                <label class="form-label fw-bold text-uppercase small" for="subject_id">Subject</label>
+                                <select class="form-select compact-select" id="subject_id" name="subject_id" required>
+                                    <option value="">Select subject</option>
+                                    @foreach ($handledSubjects as $subject)
+                                        <option value="{{ $subject->subject_id }}" @selected((string) $selectedSubjectId === (string) $subject->subject_id)>
+                                            {{ $subject->subject_code }} - {{ \Illuminate\Support\Str::limit($subject->subject_name, 45) }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-lg-6">
+                                <label class="form-label fw-bold text-uppercase small" for="assessment_id">Assessment</label>
+                                <select class="form-select compact-select" id="assessment_id" name="assessment_id" required>
+                                    <option value="">Select assessment</option>
+                                    @foreach ($assessments as $assessment)
+                                        <option
+                                            value="{{ $assessment->assessment_id }}"
+                                            data-subject-id="{{ $assessment->subject_id }}"
+                                            data-items-count="{{ $assessment->items_count }}"
+                                            @selected((string) $selectedAssessmentId === (string) $assessment->assessment_id)
+                                            @disabled($assessment->items_count === 0)
+                                        >
+                                            {{ \Illuminate\Support\Str::limit($assessment->title, 50) }}{{ $assessment->items_count === 0 ? ' (needs items)' : '' }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-uppercase small" for="assessment_id">Assessment</label>
-                            <select class="form-select form-select-lg" id="assessment_id" name="assessment_id" required>
-                                <option value="">Select assessment</option>
-                                @foreach ($assessments as $assessment)
-                                    <option
-                                        value="{{ $assessment->assessment_id }}"
-                                        data-subject-id="{{ $assessment->subject_id }}"
-                                        data-items-count="{{ $assessment->items_count }}"
-                                        @selected((string) $selectedAssessmentId === (string) $assessment->assessment_id)
-                                        @disabled($assessment->items_count === 0)
-                                    >
-                                        {{ $assessment->title }}{{ $assessment->items_count === 0 ? ' (needs items)' : '' }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="col-12">
+                        <div class="mt-3">
                             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                                 <label class="form-label fw-bold text-uppercase small mb-0">Classes Under Selected Subject</label>
                                 <span class="small text-secondary" id="selectedClassCount">0 selected</span>
@@ -219,61 +279,70 @@
                         </div>
                     </div>
 
-                    <div class="setting-grid mt-4">
+                    <div class="publish-section mt-3">
+                        <div class="publish-section-title mb-3">Schedule And Limits</div>
+                        <div class="setting-grid">
                         <div>
                             <label class="form-label fw-bold text-uppercase small" for="available_at">Available At</label>
-                            <input class="form-control" id="available_at" name="available_at" type="datetime-local" value="{{ old('available_at') }}">
+                            <input class="form-control compact-input" id="available_at" name="available_at" type="datetime-local" value="{{ old('available_at') }}">
                         </div>
                         <div>
                             <label class="form-label fw-bold text-uppercase small" for="due_at">Due At</label>
-                            <input class="form-control" id="due_at" name="due_at" type="datetime-local" value="{{ old('due_at') }}">
+                            <input class="form-control compact-input" id="due_at" name="due_at" type="datetime-local" value="{{ old('due_at') }}">
                         </div>
                         <div>
                             <label class="form-label fw-bold text-uppercase small" for="attempt_limit">Attempt Limit</label>
-                            <input class="form-control" id="attempt_limit" max="10" min="1" name="attempt_limit" required type="number" value="{{ old('attempt_limit', 1) }}">
+                            <input class="form-control compact-input" id="attempt_limit" max="10" min="1" name="attempt_limit" required type="number" value="{{ old('attempt_limit', 1) }}">
                         </div>
                         <div>
                             <label class="form-label fw-bold text-uppercase small" for="warning_limit">Warning Limit</label>
-                            <input class="form-control" id="warning_limit" max="20" min="0" name="warning_limit" type="number" value="{{ old('warning_limit') }}">
+                            <input class="form-control compact-input" id="warning_limit" max="20" min="0" name="warning_limit" type="number" value="{{ old('warning_limit', 3) }}">
+                        </div>
                         </div>
                     </div>
 
-                    <div class="toggle-box mt-4">
-                        <label class="form-label fw-bold text-uppercase small" for="display_mode">Question Display</label>
-                        <select class="form-select form-select-lg" id="display_mode" name="display_mode" required>
-                            <option value="all_questions" @selected(old('display_mode', 'all_questions') === 'all_questions')>Show all questions</option>
-                            <option value="one_question" @selected(old('display_mode') === 'one_question')>One question at a time</option>
-                        </select>
-                        <div class="form-text">Show all means no question pagination. One at a time uses Next Question.</div>
+                    <div class="publish-section mt-3">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-lg-5">
+                                <label class="form-label fw-bold text-uppercase small" for="display_mode">Question Display</label>
+                                <select class="form-select compact-select" id="display_mode" name="display_mode" required>
+                                    <option value="all_questions" @selected(old('display_mode', 'all_questions') === 'all_questions')>Show all questions</option>
+                                    <option value="one_question" @selected(old('display_mode') === 'one_question')>One question at a time</option>
+                                </select>
+                                <div class="form-text">Choose how questions appear to students.</div>
+                            </div>
+
+                            <div class="col-lg-7">
+                                <div class="toggle-row">
+                                    <label class="toggle-box d-flex align-items-center gap-2 mb-0">
+                                        <input class="form-check-input mt-0" name="score_visibility" type="checkbox" value="1" @checked(old('score_visibility'))>
+                                        <span class="fw-semibold" style="color: var(--psu-navy);">Show Scores</span>
+                                    </label>
+                                    <label class="toggle-box d-flex align-items-center gap-2 mb-0">
+                                        <input class="form-check-input mt-0" name="answer_visibility" type="checkbox" value="1" @checked(old('answer_visibility'))>
+                                        <span class="fw-semibold" style="color: var(--psu-navy);">Show Answers</span>
+                                    </label>
+                                    <label class="toggle-box d-flex align-items-center gap-2 mb-0">
+                                        <input class="form-check-input mt-0" name="shuffle_items" type="checkbox" value="1" @checked(old('shuffle_items'))>
+                                        <span class="fw-semibold" style="color: var(--psu-navy);">Shuffle Items</span>
+                                    </label>
+                                    <label class="toggle-box d-flex align-items-center gap-2 mb-0">
+                                        <input class="form-check-input mt-0" name="shuffle_choices" type="checkbox" value="1" @checked(old('shuffle_choices'))>
+                                        <span class="fw-semibold" style="color: var(--psu-navy);">Shuffle Choices</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="toggle-row mt-4">
-                        <label class="toggle-box d-flex align-items-center gap-2 mb-0">
-                            <input class="form-check-input mt-0" name="score_visibility" type="checkbox" value="1" @checked(old('score_visibility'))>
-                            <span class="fw-semibold" style="color: var(--psu-navy);">Show Scores</span>
-                        </label>
-                        <label class="toggle-box d-flex align-items-center gap-2 mb-0">
-                            <input class="form-check-input mt-0" name="answer_visibility" type="checkbox" value="1" @checked(old('answer_visibility'))>
-                            <span class="fw-semibold" style="color: var(--psu-navy);">Show Answers</span>
-                        </label>
-                        <label class="toggle-box d-flex align-items-center gap-2 mb-0">
-                            <input class="form-check-input mt-0" name="shuffle_items" type="checkbox" value="1" @checked(old('shuffle_items'))>
-                            <span class="fw-semibold" style="color: var(--psu-navy);">Shuffle Items</span>
-                        </label>
-                        <label class="toggle-box d-flex align-items-center gap-2 mb-0">
-                            <input class="form-check-input mt-0" name="shuffle_choices" type="checkbox" value="1" @checked(old('shuffle_choices'))>
-                            <span class="fw-semibold" style="color: var(--psu-navy);">Shuffle Choices</span>
-                        </label>
-                    </div>
-
-                    <div class="toggle-box d-flex flex-wrap align-items-center justify-content-between gap-3 mt-4">
+                    <div class="publish-section d-flex flex-wrap align-items-center justify-content-between gap-3 mt-3">
                         <div>
                             <p class="fw-bold mb-1" style="color: var(--psu-navy);">Security Settings</p>
-                            <p class="small text-secondary mb-0">Open the floating panel to choose student restrictions.</p>
+                            <p class="small text-secondary mb-0">Choose student restrictions in a floating panel.</p>
                         </div>
                         <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" data-bs-target="#securitySettingsModal" data-bs-toggle="modal" type="button">
                             <span class="material-symbols-outlined fs-5">shield_lock</span>
-                            Show Security Settings
+                            Show Security
                         </button>
                     </div>
 
@@ -309,7 +378,7 @@
                                             <input class="form-check-input mt-1" name="screenshot_protection" type="checkbox" value="1" @checked(old('screenshot_protection'))>
                                             <span>
                                                 <span class="fw-bold d-block" style="color: var(--psu-navy);">Screenshot Protection</span>
-                                                <span class="small text-secondary">Shows watermark and blocks print/screenshot shortcuts when possible.</span>
+                                                <span class="small text-secondary">Blocks print/screenshot shortcuts when possible and records a warning.</span>
                                             </span>
                                         </label>
                                     </div>

@@ -1212,7 +1212,7 @@ class DashboardController extends Controller
                         'attempt_limit' => (int) $validated['attempt_limit'],
                         'shuffle_items' => $request->boolean('shuffle_items'),
                         'shuffle_choices' => $request->boolean('shuffle_choices'),
-                        'warning_limit' => $validated['warning_limit'] ?? null,
+                        'warning_limit' => $validated['warning_limit'] ?? 3,
                         'display_mode' => $validated['display_mode'],
                     ],
                 );

@@ -160,20 +160,111 @@
             border-left: 4px solid var(--psu-navy);
         }
 
-        .screenshot-watermark {
-            pointer-events: none;
+        .security-warning-backdrop {
             position: fixed;
             inset: 0;
-            z-index: 1020;
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 3rem;
-            padding: 5rem 2rem;
-            opacity: 0.075;
+            z-index: 2040;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: rgba(0, 26, 112, 0.2);
+            backdrop-filter: blur(3px);
+        }
+
+        .security-warning-backdrop.show {
+            display: flex;
+            animation: warningFadeIn 0.18s ease-out;
+        }
+
+        .security-warning-modal {
+            width: min(100%, 440px);
+            overflow: hidden;
+            border: 1px solid rgba(255, 210, 0, 0.7);
+            border-radius: 0.75rem;
+            background: #fff;
+            box-shadow: 0 24px 60px rgba(0, 26, 112, 0.26);
+            animation: warningPop 0.2s ease-out, warningShake 0.32s ease-in-out 0.2s;
+        }
+
+        .security-warning-bar {
+            height: 0.35rem;
+            background: #eef3ff;
+        }
+
+        .security-warning-bar span {
+            display: block;
+            width: 0%;
+            height: 100%;
+            background: var(--psu-gold);
+            transition: width 0.2s ease;
+        }
+
+        .security-warning-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 3.35rem;
+            height: 3.35rem;
+            border-radius: 50%;
+            background: #fff4ba;
             color: var(--psu-navy);
-            font-weight: 800;
-            text-transform: uppercase;
-            transform: rotate(-18deg);
+            box-shadow: 0 0 0 0 rgba(255, 210, 0, 0.7);
+            animation: warningPulse 1.2s infinite;
+        }
+
+        @keyframes warningFadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes warningPop {
+            from {
+                opacity: 0;
+                transform: scale(0.92) translateY(0.5rem);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @keyframes warningShake {
+            0%, 100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-0.35rem);
+            }
+
+            50% {
+                transform: translateX(0.35rem);
+            }
+
+            75% {
+                transform: translateX(-0.18rem);
+            }
+        }
+
+        @keyframes warningPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 210, 0, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 0.75rem rgba(255, 210, 0, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 210, 0, 0);
+            }
         }
 
         .no-select {
@@ -213,13 +304,32 @@
         ])->where('enabled');
     @endphp
 
-    @if ($classAssessment->screenshot_protection)
-        <div class="screenshot-watermark" aria-hidden="true">
-            @for ($i = 0; $i < 18; $i++)
-                <span>{{ $studentProfile->student_number ?? $user->email }} - {{ now()->format('Y-m-d H:i') }}</span>
-            @endfor
+    <div class="security-warning-backdrop" id="securityWarningBackdrop" aria-hidden="true">
+        <div class="security-warning-modal">
+            <div class="security-warning-bar">
+                <span id="securityWarningProgress"></span>
+            </div>
+            <div class="p-4">
+                <div class="d-flex justify-content-end">
+                    <button class="btn btn-sm btn-light border d-inline-flex align-items-center justify-content-center" id="closeSecurityWarning" type="button" aria-label="Close warning">
+                        <span class="material-symbols-outlined fs-6">close</span>
+                    </button>
+                </div>
+                <div class="text-center px-sm-3 pb-2">
+                    <div class="security-warning-icon mx-auto mb-3">
+                        <span class="material-symbols-outlined fs-1">warning</span>
+                    </div>
+                    <div class="brand-text h3 mb-2" id="securityWarningTitle" style="color: var(--psu-navy);">Security Warning</div>
+                    <p class="text-secondary mb-3" id="securityWarningMessage">Restricted action detected. Stay on this assessment page.</p>
+                    <span class="badge rounded-pill text-bg-warning px-3 py-2 mb-4" id="securityWarningCount">Warning 0 of {{ $warningLimit }}</span>
+                    <button class="btn btn-psu w-100 d-inline-flex align-items-center justify-content-center gap-2" id="acknowledgeSecurityWarning" type="button">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        I Understand
+                    </button>
+                </div>
+            </div>
         </div>
-    @endif
+    </div>
 
     <div class="status-card p-3 p-md-4 mb-4">
         <div class="row g-4 align-items-center">
@@ -293,7 +403,7 @@
 
     <form id="assessmentAttemptForm" action="{{ route('student.assessments.submit', $classAssessment) }}" method="POST">
         @csrf
-        <input id="warningsUsedInput" name="warnings_used" type="hidden" value="0">
+        <input id="warningCountInput" name="warning_count" type="hidden" value="0">
 
         <div class="d-grid gap-4 {{ $classAssessment->prevent_copy_paste ? 'no-select' : '' }} {{ $isOneQuestionMode ? 'one-question-mode' : '' }}">
             @foreach ($items as $item)
@@ -374,6 +484,48 @@
         const countdownTarget = dueAt ? new Date(dueAt).getTime() : Date.now() + (60 * 60 * 1000);
         let currentIndex = 0;
         let warnings = 0;
+        let isAutoSubmitting = false;
+
+        const closeSecurityWarning = () => {
+            if (isAutoSubmitting) {
+                return;
+            }
+
+            document.getElementById('securityWarningBackdrop')?.classList.remove('show');
+        };
+
+        const showSecurityWarning = (
+            title = 'Security Warning',
+            message = 'Restricted action detected. Stay on this assessment page.',
+            locked = false
+        ) => {
+            const backdrop = document.getElementById('securityWarningBackdrop');
+            const warningTitle = document.getElementById('securityWarningTitle');
+            const warningMessage = document.getElementById('securityWarningMessage');
+            const warningCount = document.getElementById('securityWarningCount');
+            const warningProgress = document.getElementById('securityWarningProgress');
+            const acknowledgeButton = document.getElementById('acknowledgeSecurityWarning');
+            const closeButton = document.getElementById('closeSecurityWarning');
+
+            if (! backdrop) {
+                return;
+            }
+
+            warningTitle.textContent = title;
+            warningMessage.textContent = message;
+            warningCount.textContent = `Warning ${warnings} of ${warningLimit}`;
+            warningProgress.style.width = warningLimit > 0 ? `${Math.min((warnings / warningLimit) * 100, 100)}%` : '0%';
+            acknowledgeButton.disabled = locked;
+            closeButton.disabled = locked;
+            acknowledgeButton.innerHTML = locked
+                ? '<span class="spinner-border spinner-border-sm"></span> Submitting...'
+                : '<span class="material-symbols-outlined">check_circle</span> I Understand';
+
+            backdrop.classList.remove('show');
+            window.setTimeout(() => {
+                backdrop.classList.add('show');
+            }, 10);
+        };
 
         const setCurrentQuestion = (index) => {
             if (! oneQuestionMode || cards.length === 0) {
@@ -419,6 +571,23 @@
             });
         };
 
+        const autoSubmitAssessment = () => {
+            if (isAutoSubmitting) {
+                return;
+            }
+
+            isAutoSubmitting = true;
+            showSecurityWarning(
+                'Warning Limit Reached',
+                'The warning limit was reached. Your assessment will be submitted automatically.',
+                true
+            );
+
+            window.setTimeout(() => {
+                document.getElementById('assessmentAttemptForm')?.requestSubmit();
+            }, 1200);
+        };
+
         const recordWarning = () => {
             if (warningLimit === 0 || warnings >= warningLimit) {
                 return;
@@ -426,7 +595,13 @@
 
             warnings += 1;
             document.getElementById('warningCount').textContent = String(warnings);
-            document.getElementById('warningsUsedInput').value = String(warnings);
+            document.getElementById('warningCountInput').value = String(warnings);
+
+            if (warnings >= warningLimit) {
+                autoSubmitAssessment();
+            } else {
+                showSecurityWarning();
+            }
         };
 
         const updateCountdown = () => {
@@ -455,6 +630,9 @@
             field.addEventListener('input', updateProgress);
         });
 
+        document.getElementById('acknowledgeSecurityWarning')?.addEventListener('click', closeSecurityWarning);
+        document.getElementById('closeSecurityWarning')?.addEventListener('click', closeSecurityWarning);
+
         if (oneQuestionMode) {
             jumps.forEach((jump) => {
                 jump.addEventListener('click', () => setCurrentQuestion(Number(jump.dataset.questionJump)));
@@ -476,9 +654,12 @@
         document.addEventListener('keydown', (event) => {
             const key = event.key.toLowerCase();
             const copyPasteCombo = preventCopyPaste && (event.ctrlKey || event.metaKey) && ['c', 'x', 'v'].includes(key);
+            const printShortcut = (event.ctrlKey || event.metaKey) && key === 'p';
+            const snippingShortcut = event.shiftKey && (event.ctrlKey || event.metaKey) && key === 's';
             const screenshotCombo = screenshotProtection && (
                 event.key === 'PrintScreen'
-                || ((event.ctrlKey || event.metaKey) && key === 'p')
+                || printShortcut
+                || snippingShortcut
             );
 
             if (copyPasteCombo || screenshotCombo) {
@@ -501,6 +682,10 @@
         }
 
         document.getElementById('assessmentAttemptForm').addEventListener('submit', (event) => {
+            if (isAutoSubmitting) {
+                return;
+            }
+
             updateProgress();
 
             const answered = answeredQuestions().length;
