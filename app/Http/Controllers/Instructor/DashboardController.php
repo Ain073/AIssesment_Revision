@@ -8,6 +8,8 @@ use App\Models\Assessment;
 use App\Models\ClassJoinRequest;
 use App\Models\ClassAssessment;
 use App\Models\InstructorProfile;
+use App\Models\Report;
+use App\Models\Submission;
 use App\Models\StudentProfile;
 use App\Models\Subject;
 use App\Models\User;
@@ -787,6 +789,202 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function reports(): View
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $completedAssessments = $this->completedReportableAssessments($instructorProfile);
+        $formativeAssessments = $completedAssessments->where('assessment.report_category', Report::TYPE_FORMATIVE)->values();
+        $summativeAssessments = $completedAssessments->where('assessment.report_category', Report::TYPE_SUMMATIVE)->values();
+        $draftReportsCount = $instructorProfile
+            ? Report::query()
+                ->where('report_status', Report::STATUS_DRAFT)
+                ->whereHas('classAssessment.assessment', fn ($query) => $query->where('instructor_id', $instructorProfile->instructor_profile_id))
+                ->count()
+            : 0;
+
+        return view('instructor.reports', $this->sharedData($user, 'reports') + [
+            'instructorProfile' => $instructorProfile,
+            'completedAssessments' => $completedAssessments,
+            'formativeAssessments' => $formativeAssessments,
+            'summativeAssessments' => $summativeAssessments,
+            'draftReportsCount' => $draftReportsCount,
+            'reportCategories' => $this->reportCategories(),
+        ]);
+    }
+
+    public function prepareReports(Request $request): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+
+        abort_unless($instructorProfile, 403, 'Instructor profile is required before preparing reports.');
+
+        $validated = $request->validate([
+            'report_type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
+            'class_assessment_ids' => ['required', 'array', 'min:1'],
+            'class_assessment_ids.*' => ['integer'],
+        ]);
+
+        $classAssessmentIds = collect($validated['class_assessment_ids'])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+        $ownedCompletedAssessments = $this->completedReportableAssessments($instructorProfile)
+            ->whereIn('class_assessment_id', $classAssessmentIds)
+            ->where('assessment.report_category', $validated['report_type'])
+            ->values();
+
+        if ($ownedCompletedAssessments->count() !== $classAssessmentIds->count()) {
+            throw ValidationException::withMessages([
+                'class_assessment_ids' => 'Select completed assessments under your account with the same report type.',
+            ]);
+        }
+
+        DB::transaction(function () use ($ownedCompletedAssessments, $validated): void {
+            foreach ($ownedCompletedAssessments as $classAssessment) {
+                Report::query()->firstOrCreate(
+                    [
+                        'class_assessment_id' => $classAssessment->class_assessment_id,
+                        'report_type' => $validated['report_type'],
+                    ],
+                    [
+                        'report_status' => Report::STATUS_DRAFT,
+                    ],
+                );
+            }
+        });
+
+        Log::info('Instructor prepared report drafts.', [
+            'actor_id' => $user->id,
+            'instructor_profile_id' => $instructorProfile->instructor_profile_id,
+            'report_type' => $validated['report_type'],
+            'class_assessment_ids' => $classAssessmentIds->all(),
+        ]);
+
+        return redirect()
+            ->route('instructor.reports.build', [
+                'type' => $validated['report_type'],
+                'class_assessment_ids' => $classAssessmentIds->all(),
+            ])
+            ->with('status', 'Selected completed assessments are ready for report review.');
+    }
+
+    public function showReportSheet(Request $request): View
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+
+        abort_unless($instructorProfile, 403, 'Instructor profile is required before viewing reports.');
+
+        $validated = $request->validate([
+            'type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
+            'class_assessment_ids' => ['required', 'array', 'min:1'],
+            'class_assessment_ids.*' => ['integer'],
+        ]);
+
+        $classAssessmentIds = collect($validated['class_assessment_ids'])
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values();
+        $classAssessments = $this->completedReportableAssessments($instructorProfile)
+            ->whereIn('class_assessment_id', $classAssessmentIds)
+            ->where('assessment.report_category', $validated['type'])
+            ->values();
+
+        if ($classAssessments->count() !== $classAssessmentIds->count()) {
+            throw ValidationException::withMessages([
+                'class_assessment_ids' => 'Select completed assessments under your account with the same report type.',
+            ]);
+        }
+
+        $rows = $this->reportSheetRows($classAssessments, $validated['type']);
+
+        return view('instructor.report-sheet', $this->sharedData($user, 'reports') + [
+            'reportType' => $validated['type'],
+            'reportTypeLabel' => $this->reportCategories()[$validated['type']],
+            'classAssessmentIds' => $classAssessmentIds,
+            'rows' => $rows,
+            'reportMeta' => $this->reportSheetMeta($classAssessments, $rows),
+        ]);
+    }
+
+    public function saveReportSheet(Request $request): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+
+        abort_unless($instructorProfile, 403, 'Instructor profile is required before saving reports.');
+
+        $validated = $request->validate([
+            'report_type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
+            'class_assessment_ids' => ['required', 'array', 'min:1'],
+            'class_assessment_ids.*' => ['integer'],
+            'reports' => ['required', 'array'],
+            'reports.*.concept_most_learned_skills' => ['nullable', 'string'],
+            'reports.*.concept_least_learned_skills' => ['nullable', 'string'],
+            'reports.*.issues_concern' => ['nullable', 'string'],
+            'reports.*.interventions_done' => ['nullable', 'string'],
+            'reports.*.future_plans_curriculum' => ['nullable', 'string'],
+        ]);
+
+        $classAssessmentIds = collect($validated['class_assessment_ids'])
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values();
+        $ownedCompletedAssessments = $this->completedReportableAssessments($instructorProfile)
+            ->whereIn('class_assessment_id', $classAssessmentIds)
+            ->where('assessment.report_category', $validated['report_type'])
+            ->values();
+
+        if ($ownedCompletedAssessments->count() !== $classAssessmentIds->count()) {
+            throw ValidationException::withMessages([
+                'class_assessment_ids' => 'Select completed assessments under your account with the same report type.',
+            ]);
+        }
+
+        DB::transaction(function () use ($ownedCompletedAssessments, $validated): void {
+            foreach ($ownedCompletedAssessments as $classAssessment) {
+                $row = $validated['reports'][$classAssessment->class_assessment_id] ?? [];
+
+                Report::query()->updateOrCreate(
+                    [
+                        'class_assessment_id' => $classAssessment->class_assessment_id,
+                        'report_type' => $validated['report_type'],
+                    ],
+                    [
+                        'concept_most_learned_skills' => $row['concept_most_learned_skills'] ?? null,
+                        'concept_least_learned_skills' => $row['concept_least_learned_skills'] ?? null,
+                        'issues_concern' => $row['issues_concern'] ?? null,
+                        'interventions_done' => $validated['report_type'] === Report::TYPE_FORMATIVE
+                            ? ($row['interventions_done'] ?? null)
+                            : null,
+                        'future_plans_curriculum' => $validated['report_type'] === Report::TYPE_SUMMATIVE
+                            ? ($row['future_plans_curriculum'] ?? null)
+                            : null,
+                        'report_status' => Report::STATUS_DRAFT,
+                    ],
+                );
+            }
+        });
+
+        Log::info('Instructor saved report details.', [
+            'actor_id' => $user->id,
+            'instructor_profile_id' => $instructorProfile->instructor_profile_id,
+            'report_type' => $validated['report_type'],
+            'class_assessment_ids' => $classAssessmentIds->all(),
+        ]);
+
+        return redirect()
+            ->route('instructor.reports.build', [
+                'type' => $validated['report_type'],
+                'class_assessment_ids' => $classAssessmentIds->all(),
+            ])
+            ->with('status', 'Report details saved.');
+    }
+
     public function createAssessment(): View
     {
         $user = $this->currentUser();
@@ -1309,6 +1507,7 @@ class DashboardController extends Controller
             ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('instructor.dashboard')],
             ['key' => 'classes', 'label' => 'Classes', 'icon' => 'school', 'href' => route('instructor.classes')],
             ['key' => 'assessments', 'label' => 'Assessments', 'icon' => 'assignment', 'href' => route('instructor.assessments')],
+            ['key' => 'reports', 'label' => 'Reports', 'icon' => 'summarize', 'href' => route('instructor.reports')],
         ];
 
         return array_map(
@@ -1385,6 +1584,267 @@ class DashboardController extends Controller
             'midterm' => 'Midterm',
             'final' => 'Final',
         ];
+    }
+
+    /**
+     * @param  Collection<int, ClassAssessment>  $classAssessments
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function reportSheetRows(Collection $classAssessments, string $reportType): Collection
+    {
+        return $classAssessments
+            ->map(function (ClassAssessment $classAssessment) use ($reportType): array {
+                $classAssessment->loadMissing([
+                    'assessment.items.choices',
+                    'assessment.subject',
+                    'class.students',
+                    'class.subject',
+                    'report',
+                    'submissions.answers.choice',
+                    'submissions.answers.item.choices',
+                ]);
+
+                $analytics = $this->classAssessmentReportAnalytics($classAssessment);
+                $drafts = $this->buildConceptDrafts($classAssessment, $analytics);
+                $report = Report::query()->firstOrCreate(
+                    [
+                        'class_assessment_id' => $classAssessment->class_assessment_id,
+                        'report_type' => $reportType,
+                    ],
+                    [
+                        'report_status' => Report::STATUS_DRAFT,
+                    ],
+                );
+
+                $changed = false;
+
+                if (blank($report->ai_most_learned_draft)) {
+                    $report->ai_most_learned_draft = $drafts['most'];
+                    $changed = true;
+                }
+
+                if (blank($report->ai_least_learned_draft)) {
+                    $report->ai_least_learned_draft = $drafts['least'];
+                    $changed = true;
+                }
+
+                if ($changed) {
+                    $report->save();
+                }
+
+                return [
+                    'classAssessment' => $classAssessment,
+                    'assessment' => $classAssessment->assessment,
+                    'class' => $classAssessment->class,
+                    'analytics' => $analytics,
+                    'report' => $report->fresh(),
+                ];
+            })
+            ->values();
+    }
+
+    /**
+     * @param  Collection<int, ClassAssessment>  $classAssessments
+     * @param  Collection<int, array<string, mixed>>  $rows
+     * @return array<string, mixed>
+     */
+    private function reportSheetMeta(Collection $classAssessments, Collection $rows): array
+    {
+        $first = $classAssessments->first();
+        $assessment = $first?->assessment;
+        $class = $first?->class;
+        $subject = $assessment?->subject ?: $class?->subject;
+        $instructorProfile = $class?->instructorProfile ?: $assessment?->instructorProfile;
+        $department = $instructorProfile?->department;
+        $college = $department?->college;
+        $reportingTerm = (string) ($assessment?->reporting_term ?: 'General');
+        $schoolYears = $classAssessments
+            ->pluck('class.school_year')
+            ->filter()
+            ->unique()
+            ->values();
+        $studentCount = (int) ($rows->first()['analytics']['students_count'] ?? 0);
+
+        return [
+            'campus' => 'SAN CARLOS',
+            'college' => $college?->college_name ?? 'Not set',
+            'department' => $department?->dept_name ?? 'Not set',
+            'semester' => 'Second Semester',
+            'school_year' => $schoolYears->count() === 1 ? $schoolYears->first() : 'Multiple school years',
+            'reporting_term' => ucfirst($reportingTerm),
+            'course_code_title' => trim(($subject?->subject_code ?? 'No code').' / '.($subject?->subject_name ?? 'No subject'), ' /'),
+            'students_count' => $studentCount,
+            'note' => ($assessment?->report_category === Report::TYPE_SUMMATIVE)
+                ? 'Note: Summative Assessments include the unit/chapter tests, midterm and final examination.'
+                : 'Note: Graded Formative Assessments include the short quizzes, pre-class open-ended questions, end-in-class poll, concept map, homework completion, self-assessment, mind mapping, discussion, identifying misconceptions, exit slips, comprehension questions, doodle notes, quiz poll, think-pair-share, word journal.',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function classAssessmentReportAnalytics(ClassAssessment $classAssessment): array
+    {
+        $items = $classAssessment->assessment?->items ?? collect();
+        $submissions = $classAssessment->submissions
+            ->where('status', Submission::STATUS_SUBMITTED)
+            ->values();
+        $maxScore = (float) $items->sum(fn ($item) => (float) $item->points);
+        $studentScores = $submissions
+            ->groupBy('student_profile_id')
+            ->map(function (Collection $studentSubmissions) use ($items): float {
+                return (float) $studentSubmissions
+                    ->map(fn (Submission $submission): float => $this->submissionScore($submission, $items))
+                    ->max();
+            })
+            ->values();
+        $passingScore = $maxScore > 0 ? $maxScore * 0.75 : 0;
+        $itemPerformance = $items
+            ->map(fn ($item): array => $this->assessmentItemPerformance($item, $submissions))
+            ->values();
+
+        return [
+            'students_count' => $classAssessment->class?->students?->count() ?? 0,
+            'takers_count' => $studentScores->count(),
+            'item_count' => $items->count(),
+            'highest_score' => $studentScores->isNotEmpty() ? $this->formatReportNumber((float) $studentScores->max()) : '0',
+            'lowest_score' => $studentScores->isNotEmpty() ? $this->formatReportNumber((float) $studentScores->min()) : '0',
+            'mean_score' => $studentScores->isNotEmpty() ? $this->formatReportNumber((float) $studentScores->avg()) : '0',
+            'mean_percentage' => $studentScores->isNotEmpty() && $maxScore > 0
+                ? round(((float) $studentScores->avg() / $maxScore) * 100, 2)
+                : 0,
+            'passing_rate' => $studentScores->isNotEmpty() && $maxScore > 0
+                ? round(($studentScores->filter(fn (float $score): bool => $score >= $passingScore)->count() / $studentScores->count()) * 100, 2)
+                : 0,
+            'max_score' => $this->formatReportNumber($maxScore),
+            'item_performance' => $itemPerformance,
+        ];
+    }
+
+    private function submissionScore(Submission $submission, Collection $items): float
+    {
+        $answers = $submission->answers->keyBy('assessment_item_id');
+
+        return (float) $items->sum(function ($item) use ($answers): float {
+            $answer = $answers->get($item->assessment_item_id);
+
+            return $answer && $this->isSubmissionAnswerCorrect($item, $answer)
+                ? (float) $item->points
+                : 0.0;
+        });
+    }
+
+    private function assessmentItemPerformance($item, Collection $submissions): array
+    {
+        $attempts = 0;
+        $correct = 0;
+
+        foreach ($submissions as $submission) {
+            $answer = $submission->answers->firstWhere('assessment_item_id', $item->assessment_item_id);
+
+            if (! $answer || (blank($answer->answer_text) && blank($answer->assessment_item_choice_id))) {
+                continue;
+            }
+
+            $attempts++;
+
+            if ($this->isSubmissionAnswerCorrect($item, $answer)) {
+                $correct++;
+            }
+        }
+
+        return [
+            'question' => Str::limit(strip_tags((string) $item->question_text), 90),
+            'rate' => $attempts > 0 ? round(($correct / $attempts) * 100, 2) : 0,
+            'attempts' => $attempts,
+            'correct' => $correct,
+        ];
+    }
+
+    private function isSubmissionAnswerCorrect($item, $answer): bool
+    {
+        if ($answer->choice) {
+            return (bool) $answer->choice->is_correct;
+        }
+
+        $correctAnswers = $item->choices
+            ->where('is_correct', true)
+            ->pluck('choice_text')
+            ->map(fn ($choice): string => Str::lower(trim((string) $choice)))
+            ->filter();
+        $studentAnswer = Str::lower(trim((string) $answer->answer_text));
+
+        return $studentAnswer !== '' && $correctAnswers->contains($studentAnswer);
+    }
+
+    /**
+     * @param  array<string, mixed>  $analytics
+     * @return array{most: string, least: string}
+     */
+    private function buildConceptDrafts(ClassAssessment $classAssessment, array $analytics): array
+    {
+        $performances = collect($analytics['item_performance'] ?? [])
+            ->filter(fn (array $item): bool => ($item['attempts'] ?? 0) > 0);
+        $strongItems = $performances
+            ->sortByDesc('rate')
+            ->take(3)
+            ->pluck('question')
+            ->filter()
+            ->values();
+        $weakItems = $performances
+            ->sortBy('rate')
+            ->take(3)
+            ->pluck('question')
+            ->filter()
+            ->values();
+        $subjectName = $classAssessment->assessment?->subject?->subject_name
+            ?: $classAssessment->class?->subject?->subject_name
+            ?: 'the assessment topic';
+
+        $most = $strongItems->isNotEmpty()
+            ? 'Students showed stronger understanding in items about '.$strongItems->implode('; ').'. These results suggest that the class can recall and apply the basic concepts in '.$subjectName.'.'
+            : 'Students showed stronger understanding of the basic concepts covered in '.$subjectName.'.';
+        $least = $weakItems->isNotEmpty()
+            ? 'Students need more support in items about '.$weakItems->implode('; ').'. These results suggest that the class needs more guided practice and review in these parts of '.$subjectName.'.'
+            : 'Students need more guided practice in the lower-performing parts of '.$subjectName.'.';
+
+        return [
+            'most' => $most,
+            'least' => $least,
+        ];
+    }
+
+    private function formatReportNumber(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
+    }
+
+    /**
+     * @return Collection<int, ClassAssessment>
+     */
+    private function completedReportableAssessments(?InstructorProfile $instructorProfile): Collection
+    {
+        if (! $instructorProfile) {
+            return collect();
+        }
+
+        return ClassAssessment::query()
+            ->with(['assessment.subject', 'class.subject', 'report'])
+            ->withCount('submissions')
+            ->whereHas('assessment', function ($query) use ($instructorProfile): void {
+                $query->where('instructor_id', $instructorProfile->instructor_profile_id)
+                    ->whereIn('report_category', array_keys($this->reportCategories()));
+            })
+            ->where(function ($query): void {
+                $query->where('publish_status', ClassAssessment::STATUS_CLOSED)
+                    ->orWhere(function ($dueQuery): void {
+                        $dueQuery->whereNotNull('due_at')
+                            ->where('due_at', '<=', now());
+                    });
+            })
+            ->latest('due_at')
+            ->latest('class_assessment_id')
+            ->get();
     }
 
     /**

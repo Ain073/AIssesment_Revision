@@ -354,7 +354,7 @@
         }
     </style>
 </head>
-<body>
+<body class="@yield('body_class')">
     <aside class="sidebar d-flex flex-column">
         <div class="p-4">
             <div class="d-flex align-items-center gap-3">
@@ -638,6 +638,31 @@
             });
         };
 
+        const syncReportSelection = (type) => {
+            const checkboxes = Array.from(document.querySelectorAll(`[data-report-checkbox="${type}"]`));
+            const checked = checkboxes.filter((checkbox) => checkbox.checked);
+            const countTarget = document.querySelector(`[data-report-selected-count="${type}"]`);
+            const submitButton = document.querySelector(`[data-report-submit="${type}"]`);
+            const selectAll = document.querySelector(`[data-report-select-all="${type}"]`);
+
+            if (countTarget) {
+                countTarget.textContent = `${checked.length} selected`;
+            }
+
+            if (submitButton) {
+                submitButton.disabled = checked.length === 0;
+            }
+
+            if (selectAll) {
+                selectAll.checked = checkboxes.length > 0 && checked.length === checkboxes.length;
+                selectAll.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
+            }
+        };
+
+        window.initializeReportsPage = () => {
+            ['formative', 'summative'].forEach(syncReportSelection);
+        };
+
         const loadPortalPage = async (url, pushHistory = true) => {
             try {
                 document.body.classList.add('portal-loading');
@@ -669,6 +694,7 @@
                 }
 
                 syncPageStyles(nextDocument);
+                document.body.className = nextDocument.body.className || '';
                 currentContainer.innerHTML = nextContainer.innerHTML;
 
                 if (nextSidebar && currentSidebar) {
@@ -682,6 +708,7 @@
                 document.title = nextDocument.title || document.title;
                 window.portalPollSections = [];
                 initPortalPollSections();
+                window.initializeReportsPage?.();
                 window.scrollTo(0, 0);
 
                 if (pushHistory) {
@@ -703,6 +730,64 @@
 
             event.preventDefault();
             loadPortalPage(link.href);
+        });
+
+        document.addEventListener('click', (event) => {
+            const tab = event.target.closest('[data-report-tab]');
+
+            if (! tab) {
+                return;
+            }
+
+            const type = tab.dataset.reportTab;
+
+            document.querySelectorAll('[data-report-tab]').forEach((button) => {
+                const isActive = button.dataset.reportTab === type;
+                button.classList.toggle('btn-psu', isActive);
+                button.classList.toggle('btn-outline-primary', ! isActive);
+            });
+
+            document.querySelectorAll('[data-report-panel]').forEach((panel) => {
+                panel.hidden = panel.dataset.reportPanel !== type;
+            });
+
+            syncReportSelection(type);
+        });
+
+        document.addEventListener('change', (event) => {
+            const selectAll = event.target.closest('[data-report-select-all]');
+            const checkbox = event.target.closest('[data-report-checkbox]');
+
+            if (selectAll) {
+                const type = selectAll.dataset.reportSelectAll;
+
+                document.querySelectorAll(`[data-report-checkbox="${type}"]`).forEach((target) => {
+                    target.checked = selectAll.checked;
+                });
+
+                syncReportSelection(type);
+                return;
+            }
+
+            if (checkbox) {
+                syncReportSelection(checkbox.dataset.reportCheckbox);
+            }
+        });
+
+        document.addEventListener('submit', (event) => {
+            const form = event.target.closest('[data-report-select-form]');
+
+            if (! form) {
+                return;
+            }
+
+            const type = form.dataset.reportSelectForm;
+            const checked = form.querySelectorAll(`[data-report-checkbox="${type}"]:checked`);
+
+            if (checked.length === 0) {
+                event.preventDefault();
+                syncReportSelection(type);
+            }
         });
 
         window.addEventListener('popstate', () => {
