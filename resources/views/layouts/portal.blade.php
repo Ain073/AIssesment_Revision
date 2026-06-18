@@ -298,6 +298,61 @@
     </style>
 
     @stack('styles')
+
+    <style>
+        .directory-header,
+        .publish-header,
+        .assessment-header,
+        .modal-content > .modal-header {
+            position: relative;
+            overflow: hidden;
+            color: #fff !important;
+            background:
+                linear-gradient(118deg, rgba(5, 33, 171, 0.98) 0%, rgba(13, 49, 221, 0.96) 54%, rgba(226, 196, 48, 0.9) 145%),
+                radial-gradient(circle at 100% 0%, rgba(255, 226, 76, 0.46) 0%, rgba(255, 226, 76, 0) 36%),
+                linear-gradient(180deg, #021063 0%, #0828c9 58%, #d4b736 100%) !important;
+            border-bottom: 1px solid rgba(255, 218, 39, 0.32) !important;
+            box-shadow: inset 0 -1px 0 rgba(255, 218, 39, 0.18);
+        }
+
+        .directory-header::after,
+        .publish-header::after,
+        .assessment-header::after,
+        .modal-content > .modal-header::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0)),
+                radial-gradient(circle at 92% 18%, rgba(255, 218, 39, 0.2), rgba(255, 218, 39, 0) 28%);
+            pointer-events: none;
+        }
+
+        .directory-header > *,
+        .publish-header > *,
+        .assessment-header > *,
+        .modal-content > .modal-header > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .directory-header h1,
+        .directory-header h2,
+        .directory-header h3,
+        .publish-header h1,
+        .publish-header h2,
+        .publish-header h3,
+        .assessment-header h1,
+        .assessment-header h2,
+        .assessment-header h3,
+        .modal-content > .modal-header h1,
+        .modal-content > .modal-header h2,
+        .modal-content > .modal-header h3 {
+            color: #fff;
+            letter-spacing: 0.01em;
+            text-shadow: 0 2px 8px rgba(0, 18, 79, 0.24);
+        }
+    </style>
 </head>
 <body>
     <aside class="sidebar d-flex flex-column">
@@ -430,65 +485,78 @@
             }
         };
 
-        document.querySelectorAll('[data-poll-url]').forEach((section) => {
-            const pollUrl = section.dataset.pollUrl;
-            const interval = Number(section.dataset.pollInterval || 5000);
-
-            if (! pollUrl || interval < 1000) {
-                return;
-            }
-
-            let isLoading = false;
-
-            const isUserTypingInside = () => {
-                const activeElement = document.activeElement;
-
-                return section.contains(activeElement)
-                    && ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeElement?.tagName);
-            };
-
-            const refreshSection = async (force = false) => {
-                if (isLoading || document.hidden || isUserTypingInside() || section.querySelector('.modal.show')) {
-                    if (! force) {
-                        return;
-                    }
-                }
-
-                if (isLoading) {
+        const initPortalPollSections = (root = document) => {
+            root.querySelectorAll('[data-poll-url]').forEach((section) => {
+                if (section.dataset.pollReady === 'true') {
                     return;
                 }
 
-                isLoading = true;
+                section.dataset.pollReady = 'true';
+                const pollUrl = section.dataset.pollUrl;
+                const interval = Number(section.dataset.pollInterval || 5000);
 
-                try {
-                    const response = await fetch(pollUrl, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                        },
-                        cache: 'no-store',
-                    });
+                if (! pollUrl || interval < 1000) {
+                    return;
+                }
 
-                    if (response.ok) {
-                        const html = await response.text();
+                let isLoading = false;
 
-                        if (html.trim()) {
-                            section.innerHTML = html;
+                const isUserTypingInside = () => {
+                    const activeElement = document.activeElement;
+
+                    return section.contains(activeElement)
+                        && ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeElement?.tagName);
+                };
+
+                const refreshSection = async (force = false) => {
+                    if (! section.isConnected) {
+                        return;
+                    }
+
+                    if (isLoading || document.hidden || isUserTypingInside() || section.querySelector('.modal.show')) {
+                        if (! force) {
+                            return;
                         }
                     }
-                } catch (error) {
-                    console.warn('Partial refresh failed.', error);
-                } finally {
-                    isLoading = false;
-                }
-            };
 
-            window.portalPollSections.push(refreshSection);
-            window.setInterval(refreshSection, interval);
-        });
+                    if (isLoading) {
+                        return;
+                    }
+
+                    isLoading = true;
+
+                    try {
+                        const response = await fetch(pollUrl, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            cache: 'no-store',
+                        });
+
+                        if (response.ok) {
+                            const html = await response.text();
+
+                            if (html.trim()) {
+                                section.innerHTML = html;
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('Partial refresh failed.', error);
+                    } finally {
+                        isLoading = false;
+                    }
+                };
+
+                window.portalPollSections.push(refreshSection);
+                window.setInterval(refreshSection, interval);
+            });
+        };
 
         window.refreshPortalSections = () => {
             window.portalPollSections.forEach((refreshSection) => refreshSection(true));
         };
+
+        initPortalPollSections();
 
         window.addEventListener('storage', (event) => {
             if (event.key === 'portal-refresh-sections') {
@@ -498,6 +566,147 @@
 
         window.addEventListener('focus', () => {
             window.refreshPortalSections?.();
+        });
+
+        document.addEventListener('click', function (event) {
+            const copyButton = event.target.closest('[data-copy-target]');
+
+            if (! copyButton || ! navigator.clipboard) {
+                return;
+            }
+
+            const input = document.getElementById(copyButton.dataset.copyTarget);
+
+            if (! input) {
+                return;
+            }
+
+            navigator.clipboard.writeText(input.value).then(() => {
+                const label = copyButton.querySelector('.copy-label');
+
+                if (label) {
+                    label.textContent = 'Copied';
+                }
+            });
+        });
+
+        const shouldUseAjaxPage = (event, link) => {
+            if (
+                event.defaultPrevented
+                || event.button !== 0
+                || event.metaKey
+                || event.ctrlKey
+                || event.shiftKey
+                || event.altKey
+                || link.target
+                || link.hasAttribute('download')
+                || link.dataset.noAjax === 'true'
+                || link.dataset.bsToggle
+                || link.classList.contains('disabled')
+                || link.getAttribute('aria-disabled') === 'true'
+                || link.closest('.modal')
+            ) {
+                return false;
+            }
+
+            const ajaxPageSelectors = [
+                '.sidebar-link',
+                '.mode-switch-link',
+                '.quick-action-card',
+                '.status-pill',
+                '.class-tablink',
+                '.class-list-tab',
+                '.assessment-tab-button',
+            ].join(', ');
+
+            const url = new URL(link.href, window.location.href);
+
+            return url.origin === window.location.origin
+                && url.href !== window.location.href
+                && ! url.hash
+                && link.matches(ajaxPageSelectors);
+        };
+
+        const syncPageStyles = (nextDocument) => {
+            document.querySelectorAll('style[data-ajax-page-style]').forEach((style) => style.remove());
+
+            nextDocument.head.querySelectorAll('style').forEach((style) => {
+                const nextStyle = document.createElement('style');
+                nextStyle.dataset.ajaxPageStyle = 'true';
+                nextStyle.textContent = style.textContent;
+                document.head.appendChild(nextStyle);
+            });
+        };
+
+        const loadPortalPage = async (url, pushHistory = true) => {
+            try {
+                document.body.classList.add('portal-loading');
+
+                const response = await fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    cache: 'no-store',
+                });
+
+                if (! response.ok) {
+                    window.location.href = url;
+                    return;
+                }
+
+                const html = await response.text();
+                const nextDocument = new DOMParser().parseFromString(html, 'text/html');
+                const nextContainer = nextDocument.querySelector('.page-container');
+                const nextSidebar = nextDocument.querySelector('.sidebar');
+                const nextTopbar = nextDocument.querySelector('.topbar');
+                const currentContainer = document.querySelector('.page-container');
+                const currentSidebar = document.querySelector('.sidebar');
+                const currentTopbar = document.querySelector('.topbar');
+
+                if (! nextContainer || ! currentContainer) {
+                    window.location.href = url;
+                    return;
+                }
+
+                syncPageStyles(nextDocument);
+                currentContainer.innerHTML = nextContainer.innerHTML;
+
+                if (nextSidebar && currentSidebar) {
+                    currentSidebar.innerHTML = nextSidebar.innerHTML;
+                }
+
+                if (nextTopbar && currentTopbar) {
+                    currentTopbar.innerHTML = nextTopbar.innerHTML;
+                }
+
+                document.title = nextDocument.title || document.title;
+                window.portalPollSections = [];
+                initPortalPollSections();
+                window.scrollTo(0, 0);
+
+                if (pushHistory) {
+                    window.history.pushState({ ajaxPage: true }, '', url);
+                }
+            } catch (error) {
+                window.location.href = url;
+            } finally {
+                document.body.classList.remove('portal-loading');
+            }
+        };
+
+        document.addEventListener('click', (event) => {
+            const link = event.target.closest('a[href]');
+
+            if (! link || ! shouldUseAjaxPage(event, link)) {
+                return;
+            }
+
+            event.preventDefault();
+            loadPortalPage(link.href);
+        });
+
+        window.addEventListener('popstate', () => {
+            loadPortalPage(window.location.href, false);
         });
 
         document.addEventListener('submit', async (event) => {
@@ -548,9 +757,31 @@
                         form.reset();
                     }
 
+                    if (form.dataset.removeTarget) {
+                        document.querySelector(form.dataset.removeTarget)?.remove();
+                    }
+
+                    if (form.dataset.decrementTarget) {
+                        const target = document.querySelector(form.dataset.decrementTarget);
+                        const value = Number(target?.textContent || 0);
+
+                        if (target && Number.isFinite(value)) {
+                            target.textContent = String(Math.max(value - 1, 0));
+                        }
+                    }
+
                     localStorage.setItem('portal-refresh-sections', String(Date.now()));
                     window.refreshPortalSections?.();
                     showPortalMessage(data.message || 'Saved successfully.');
+
+                    if (form.dataset.reloadPageOnSuccess === 'true') {
+                        loadPortalPage(window.location.href, false);
+                        return;
+                    }
+
+                    if (form.dataset.redirectOnSuccess) {
+                        loadPortalPage(form.dataset.redirectOnSuccess);
+                    }
                 };
 
                 if (modalElement?.classList.contains('show')) {

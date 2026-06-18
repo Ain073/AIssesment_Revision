@@ -14,14 +14,24 @@
 
         .placeholder-hero {
             padding: 1.75rem;
-            background: linear-gradient(135deg, rgba(0, 17, 58, 0.98), rgba(0, 35, 102, 0.94));
+            background:
+                linear-gradient(118deg, rgba(5, 33, 171, 0.98) 0%, rgba(13, 49, 221, 0.96) 58%, rgba(226, 196, 48, 0.9) 150%),
+                radial-gradient(circle at 100% 0%, rgba(255, 226, 76, 0.44) 0%, rgba(255, 226, 76, 0) 34%),
+                linear-gradient(180deg, #021063 0%, #0828c9 58%, #d4b736 100%);
             color: #fff;
+            border-color: rgba(255, 218, 39, 0.28);
+            box-shadow: 0 16px 34px rgba(9, 39, 216, 0.14);
         }
 
         .placeholder-hero p {
             color: rgba(255, 255, 255, 0.82);
             max-width: 64ch;
             margin-bottom: 0;
+        }
+
+        .placeholder-hero .hero-eyebrow {
+            color: rgba(255, 245, 191, 0.92);
+            letter-spacing: 0.04em;
         }
 
         .placeholder-grid {
@@ -76,7 +86,7 @@
 
 @section('content')
     <section class="placeholder-hero">
-        <p class="small fw-bold text-uppercase mb-2" style="color: rgba(255,255,255,.72); letter-spacing: .04em;">Student Module</p>
+        <p class="small fw-bold text-uppercase mb-2 hero-eyebrow">Student Module</p>
         <h2 class="brand-text h1 mb-3">{{ $pageHeading }}</h2>
         <p>{{ $pageDescription }}</p>
     </section>

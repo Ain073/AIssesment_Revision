@@ -59,6 +59,8 @@ Route::middleware(['instructor', 'no_cache'])
         Route::post('/classes', [InstructorDashboardController::class, 'storeClass'])->name('classes.store');
         Route::get('/classes/live', [InstructorDashboardController::class, 'classesLive'])->name('classes.live');
         Route::put('/classes/{class}', [InstructorDashboardController::class, 'updateClass'])->name('classes.update');
+        Route::post('/classes/{class}/archive', [InstructorDashboardController::class, 'archiveClass'])->name('classes.archive');
+        Route::post('/classes/{class}/restore', [InstructorDashboardController::class, 'restoreClass'])->name('classes.restore');
         Route::delete('/classes/{class}', [InstructorDashboardController::class, 'destroyClass'])->name('classes.destroy');
         Route::get('/classes/{class}', [InstructorDashboardController::class, 'showClass'])->name('classes.show');
         Route::post('/classes/{class}/students', [InstructorDashboardController::class, 'storeClassStudent'])->name('classes.students.store');
@@ -75,6 +77,7 @@ Route::middleware(['instructor', 'no_cache'])
         Route::post('/assessments', [InstructorDashboardController::class, 'storeAssessment'])->name('assessments.store');
         Route::get('/assessments/{assessment}', [InstructorDashboardController::class, 'showAssessment'])->name('assessments.show');
         Route::put('/assessments/{assessment}', [InstructorDashboardController::class, 'updateAssessment'])->name('assessments.update');
+        Route::delete('/assessments/{assessment}', [InstructorDashboardController::class, 'destroyAssessment'])->name('assessments.destroy');
         Route::post('/assessments/{assessment}/items', [InstructorDashboardController::class, 'storeAssessmentItem'])->name('assessments.items.store');
         Route::post('/assessments/{assessment}/publish', [InstructorDashboardController::class, 'publishAssessment'])->name('assessments.publish');
         Route::get('/students', [InstructorDashboardController::class, 'students'])->name('students');
@@ -118,6 +121,8 @@ Route::middleware(['student', 'no_cache'])
         Route::post('/classes/join/{token}', [StudentDashboardController::class, 'requestClassJoin'])->name('classes.join.request');
         Route::get('/assessments', [StudentDashboardController::class, 'assessments'])->name('assessments');
         Route::get('/assessments/live', [StudentDashboardController::class, 'assessmentsLive'])->name('assessments.live');
+        Route::get('/assessments/{classAssessment}/start', [StudentDashboardController::class, 'startAssessment'])->name('assessments.start');
+        Route::post('/assessments/{classAssessment}/submit', [StudentDashboardController::class, 'submitAssessment'])->name('assessments.submit');
         Route::get('/assessments/{classAssessment}/take', [StudentDashboardController::class, 'takeAssessment'])->name('assessments.take');
         Route::get('/results', [StudentDashboardController::class, 'results'])->name('results');
     });

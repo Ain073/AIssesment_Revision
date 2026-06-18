@@ -175,10 +175,13 @@
             <h1 class="brand-text mt-2 mb-1" style="color: var(--psu-navy);">{{ $class->class_name }}</h1>
             <p class="text-secondary mb-0">
                 {{ $class->subject?->subject_code ?? 'No subject' }}{{ $class->subject ? ' - ' . $class->subject->subject_name : '' }}
+                @if ($class->archived_at)
+                    <span class="badge text-bg-secondary rounded-1 ms-2">Archived</span>
+                @endif
             </p>
         </div>
 
-        @if ($activeTab === 'students')
+        @if ($activeTab === 'students' && ! $class->archived_at)
             <div class="d-flex flex-wrap gap-2">
                 <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" data-bs-target="#joinLinkModal" data-bs-toggle="modal" type="button">
                     <span class="material-symbols-outlined fs-5">link</span>
@@ -191,6 +194,12 @@
             </div>
         @endif
     </div>
+
+    @if ($class->archived_at)
+        <div class="alert alert-primary border-0 shadow-sm mb-4">
+            This class is archived as a record. Restore it from the Archived Classes list before making changes.
+        </div>
+    @endif
 
     <section class="mb-4">
         <div class="row g-3">
@@ -266,7 +275,7 @@
             <p class="text-secondary mb-0">We kept this tab ready, but the roster flow comes first so assessment access stays organized and secure.</p>
         </section>
     @else
-        @if ($pendingJoinRequests->isNotEmpty())
+        @if (! $class->archived_at && $pendingJoinRequests->isNotEmpty())
             <section class="directory-card shadow-sm mb-4">
                 <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
                     <h3 class="h4 mb-0">Pending Join Requests</h3>
@@ -309,14 +318,14 @@
                                     <td>{{ $joinRequest->requested_at?->format('M d, Y g:i A') ?? 'Recently' }}</td>
                                     <td class="text-end">
                                         <div class="d-flex justify-content-end gap-2">
-                                            <form action="{{ route('instructor.classes.join-requests.approve', ['class' => $class, 'joinRequest' => $joinRequest]) }}" method="POST">
+                                            <form action="{{ route('instructor.classes.join-requests.approve', ['class' => $class, 'joinRequest' => $joinRequest]) }}" method="POST" data-ajax-form data-reload-page-on-success="true">
                                                 @csrf
                                                 <button class="btn btn-success btn-sm d-inline-flex align-items-center gap-1" type="submit">
                                                     <span class="material-symbols-outlined fs-6">check</span>
                                                     Approve
                                                 </button>
                                             </form>
-                                            <form action="{{ route('instructor.classes.join-requests.reject', ['class' => $class, 'joinRequest' => $joinRequest]) }}" method="POST" onsubmit="return confirm('Reject this join request?');">
+                                            <form action="{{ route('instructor.classes.join-requests.reject', ['class' => $class, 'joinRequest' => $joinRequest]) }}" method="POST" onsubmit="return confirm('Reject this join request?');" data-ajax-form data-reload-page-on-success="true">
                                                 @csrf
                                                 <button class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1" type="submit">
                                                     <span class="material-symbols-outlined fs-6">close</span>
@@ -379,14 +388,18 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <form action="{{ route('instructor.classes.students.destroy', ['class' => $class, 'studentProfile' => $student]) }}" method="POST" onsubmit="return confirm('Remove this student from the class?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1" type="submit">
-                                            <span class="material-symbols-outlined fs-6">delete</span>
-                                            Remove
-                                        </button>
-                                    </form>
+                                    @if (! $class->archived_at)
+                                        <form action="{{ route('instructor.classes.students.destroy', ['class' => $class, 'studentProfile' => $student]) }}" method="POST" onsubmit="return confirm('Remove this student from the class?');" data-ajax-form data-reload-page-on-success="true">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1" type="submit">
+                                                <span class="material-symbols-outlined fs-6">delete</span>
+                                                Remove
+                                            </button>
+                                        </form>
+                                    @else
+                                        <span class="text-secondary small">Record only</span>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -395,10 +408,12 @@
                                     <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">groups</span></div>
                                     <h4 class="h4" style="color: var(--psu-navy);">No students enrolled yet</h4>
                                     <p class="text-secondary mb-4">Use a valid student number from an existing student account to add the first student to this class.</p>
-                                    <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#addStudentModal" data-bs-toggle="modal" type="button">
-                                        <span class="material-symbols-outlined fs-5">person_add</span>
-                                        Add First Student
-                                    </button>
+                                    @if (! $class->archived_at)
+                                        <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#addStudentModal" data-bs-toggle="modal" type="button">
+                                            <span class="material-symbols-outlined fs-5">person_add</span>
+                                            Add First Student
+                                        </button>
+                                    @endif
                                 </td>
                             </tr>
                         @endforelse
@@ -412,6 +427,7 @@
             </div>
         </section>
 
+        @if (! $class->archived_at)
         <div class="modal fade" id="joinLinkModal" tabindex="-1" aria-labelledby="joinLinkModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
@@ -459,7 +475,7 @@
                         <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form action="{{ route('instructor.classes.students.store', $class) }}" method="POST">
+                        <form action="{{ route('instructor.classes.students.store', $class) }}" method="POST" data-ajax-form data-reset-on-success="true" data-reload-page-on-success="true">
                             @csrf
                             <div class="mb-3">
                                 <label class="form-label fw-bold text-uppercase small" for="student_number">Student Number</label>
@@ -511,8 +527,9 @@
                 </div>
             </div>
         </div>
+        @endif
 
-        @if ($importPreview)
+        @if (! $class->archived_at && $importPreview)
             <div class="modal fade" id="importPreviewModal" tabindex="-1" aria-labelledby="importPreviewModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                     <div class="modal-content">

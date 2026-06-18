@@ -40,6 +40,24 @@
             background: #f8faff;
         }
 
+        .security-box {
+            display: flex;
+            gap: 0.85rem;
+            align-items: flex-start;
+            border: 1px solid var(--psu-line);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            background: #fff;
+            cursor: pointer;
+            transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .security-box:has(.form-check-input:checked) {
+            border-color: var(--psu-navy-2);
+            background: #edf3ff;
+            box-shadow: 0 10px 24px rgba(9, 39, 216, 0.08);
+        }
+
         .class-dropdown-menu {
             width: 100%;
             border: 1px solid var(--psu-line);
@@ -220,6 +238,15 @@
                         </div>
                     </div>
 
+                    <div class="toggle-box mt-4">
+                        <label class="form-label fw-bold text-uppercase small" for="display_mode">Question Display</label>
+                        <select class="form-select form-select-lg" id="display_mode" name="display_mode" required>
+                            <option value="all_questions" @selected(old('display_mode', 'all_questions') === 'all_questions')>Show all questions</option>
+                            <option value="one_question" @selected(old('display_mode') === 'one_question')>One question at a time</option>
+                        </select>
+                        <div class="form-text">Show all means no question pagination. One at a time uses Next Question.</div>
+                    </div>
+
                     <div class="toggle-row mt-4">
                         <label class="toggle-box d-flex align-items-center gap-2 mb-0">
                             <input class="form-check-input mt-0" name="score_visibility" type="checkbox" value="1" @checked(old('score_visibility'))>
@@ -237,6 +264,61 @@
                             <input class="form-check-input mt-0" name="shuffle_choices" type="checkbox" value="1" @checked(old('shuffle_choices'))>
                             <span class="fw-semibold" style="color: var(--psu-navy);">Shuffle Choices</span>
                         </label>
+                    </div>
+
+                    <div class="toggle-box d-flex flex-wrap align-items-center justify-content-between gap-3 mt-4">
+                        <div>
+                            <p class="fw-bold mb-1" style="color: var(--psu-navy);">Security Settings</p>
+                            <p class="small text-secondary mb-0">Open the floating panel to choose student restrictions.</p>
+                        </div>
+                        <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" data-bs-target="#securitySettingsModal" data-bs-toggle="modal" type="button">
+                            <span class="material-symbols-outlined fs-5">shield_lock</span>
+                            Show Security Settings
+                        </button>
+                    </div>
+
+                    <div class="modal fade" id="securitySettingsModal" tabindex="-1" aria-labelledby="securitySettingsModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header publish-header">
+                                    <div>
+                                        <h3 class="modal-title h4" id="securitySettingsModalLabel">Security Settings</h3>
+                                        <p class="small text-white-50 mb-0">Choose what will be enabled when students start.</p>
+                                    </div>
+                                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="d-grid gap-3">
+                                        <label class="security-box mb-0">
+                                            <input class="form-check-input mt-1" name="prevent_copy_paste" type="checkbox" value="1" @checked(old('prevent_copy_paste'))>
+                                            <span>
+                                                <span class="fw-bold d-block" style="color: var(--psu-navy);">No Copy / Paste</span>
+                                                <span class="small text-secondary">Blocks copy, paste, cut, and right click.</span>
+                                            </span>
+                                        </label>
+
+                                        <label class="security-box mb-0">
+                                            <input class="form-check-input mt-1" name="detect_tab_switch" type="checkbox" value="1" @checked(old('detect_tab_switch'))>
+                                            <span>
+                                                <span class="fw-bold d-block" style="color: var(--psu-navy);">Detect Tab Switch</span>
+                                                <span class="small text-secondary">Adds warning when student leaves the assessment tab.</span>
+                                            </span>
+                                        </label>
+
+                                        <label class="security-box mb-0">
+                                            <input class="form-check-input mt-1" name="screenshot_protection" type="checkbox" value="1" @checked(old('screenshot_protection'))>
+                                            <span>
+                                                <span class="fw-bold d-block" style="color: var(--psu-navy);">Screenshot Protection</span>
+                                                <span class="small text-secondary">Shows watermark and blocks print/screenshot shortcuts when possible.</span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button class="btn btn-psu px-4" data-bs-dismiss="modal" type="button">Done</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">

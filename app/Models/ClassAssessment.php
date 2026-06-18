@@ -16,6 +16,10 @@ class ClassAssessment extends Model
 
     public const STATUS_CLOSED = 'closed';
 
+    public const DISPLAY_ALL_QUESTIONS = 'all_questions';
+
+    public const DISPLAY_ONE_QUESTION = 'one_question';
+
     protected $table = 'class_assessment';
 
     protected $primaryKey = 'class_assessment_id';
@@ -28,10 +32,14 @@ class ClassAssessment extends Model
         'publish_status',
         'score_visibility',
         'answer_visibility',
+        'prevent_copy_paste',
+        'detect_tab_switch',
+        'screenshot_protection',
         'attempt_limit',
         'shuffle_items',
         'shuffle_choices',
         'warning_limit',
+        'display_mode',
     ];
 
     protected function casts(): array
@@ -41,6 +49,9 @@ class ClassAssessment extends Model
             'due_at' => 'datetime',
             'score_visibility' => 'boolean',
             'answer_visibility' => 'boolean',
+            'prevent_copy_paste' => 'boolean',
+            'detect_tab_switch' => 'boolean',
+            'screenshot_protection' => 'boolean',
             'shuffle_items' => 'boolean',
             'shuffle_choices' => 'boolean',
         ];

@@ -91,7 +91,7 @@
                             </div>
                         @endif
 
-                        <form action="{{ route('student.classes.join.request', $class->join_token) }}" method="POST">
+                        <form action="{{ route('student.classes.join.request', $class->join_token) }}" method="POST" data-ajax-form data-redirect-on-success="{{ route('student.classes') }}">
                             @csrf
                             <div class="d-flex flex-wrap gap-2 justify-content-end">
                                 <a class="btn btn-outline-secondary px-4" href="{{ route('student.classes') }}">Cancel</a>

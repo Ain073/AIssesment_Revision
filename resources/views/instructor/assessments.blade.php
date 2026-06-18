@@ -55,7 +55,7 @@
         <div class="col-md-4">
             <div class="stat-card p-4 h-100">
                 <p class="small fw-bold text-secondary text-uppercase mb-2">Assessments</p>
-                <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $assessments->count() }}</div>
+                <div class="display-6 fw-bold" id="assessmentTotalCount" style="color: var(--psu-navy);">{{ $assessments->count() }}</div>
             </div>
         </div>
         <div class="col-md-4">
@@ -72,19 +72,7 @@
         </div>
     </div>
 
-    <div class="alert {{ $handledSubjects->isEmpty() ? 'alert-warning' : 'alert-primary' }} border-0 shadow-sm mb-4">
-        @if ($handledSubjects->isEmpty())
-            Create or open classes with assigned subjects first. Assessments can only be created for subjects you handle.
-        @else
-            Assessments are reusable by subject. Open an assessment to add items and publish it to your classes.
-        @endif
-    </div>
-
     <div class="d-flex flex-wrap justify-content-end gap-2 mb-4">
-        <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2 {{ (! $instructorProfile || $handledSubjects->isEmpty() || $assessments->isEmpty()) ? 'disabled' : '' }}" href="{{ route('instructor.assessments.publish.form') }}" aria-disabled="{{ (! $instructorProfile || $handledSubjects->isEmpty() || $assessments->isEmpty()) ? 'true' : 'false' }}">
-            <span class="material-symbols-outlined fs-5">publish</span>
-            Publish Assessment
-        </a>
         <a class="btn btn-psu d-inline-flex align-items-center gap-2 {{ (! $instructorProfile || $handledSubjects->isEmpty()) ? 'disabled' : '' }}" href="{{ route('instructor.assessments.create') }}" aria-disabled="{{ (! $instructorProfile || $handledSubjects->isEmpty()) ? 'true' : 'false' }}">
             <span class="material-symbols-outlined fs-5">add</span>
             New Assessment
@@ -107,7 +95,7 @@
         <div class="row g-4">
             @foreach ($assessments as $assessment)
                 <div class="col-xl-6">
-                    <section class="assessment-card h-100">
+                    <section class="assessment-card h-100" id="assessmentCard{{ $assessment->assessment_id }}">
                         <div class="directory-header px-4 py-3 d-flex justify-content-between gap-3">
                             <div>
                                 <h2 class="h4 mb-1">{{ $assessment->title }}</h2>
@@ -138,6 +126,12 @@
                                     <span class="material-symbols-outlined fs-5">publish</span>
                                     Publish
                                 </a>
+                                @if ($assessment->status === \App\Models\Assessment::STATUS_DRAFT)
+                                    <button class="btn btn-outline-danger d-inline-flex align-items-center gap-2" data-bs-target="#deleteAssessmentModal{{ $assessment->assessment_id }}" data-bs-toggle="modal" type="button">
+                                        <span class="material-symbols-outlined fs-5">delete</span>
+                                        Delete
+                                    </button>
+                                @endif
                             </div>
                         </div>
                     </section>
@@ -214,4 +208,27 @@
             </section>
         @endif
     @endif
+
+    @foreach ($assessments->where('status', \App\Models\Assessment::STATUS_DRAFT) as $assessment)
+        <div class="modal fade" id="deleteAssessmentModal{{ $assessment->assessment_id }}" tabindex="-1" aria-labelledby="deleteAssessmentModalLabel{{ $assessment->assessment_id }}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <form action="{{ route('instructor.assessments.destroy', $assessment) }}" class="modal-content" method="POST" data-ajax-form data-remove-target="#assessmentCard{{ $assessment->assessment_id }}" data-decrement-target="#assessmentTotalCount">
+                    @csrf
+                    @method('DELETE')
+                    <div class="modal-header">
+                        <h3 class="modal-title h4" id="deleteAssessmentModalLabel{{ $assessment->assessment_id }}">Delete Draft Assessment</h3>
+                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="fw-bold mb-2" style="color: var(--psu-navy);">{{ $assessment->title }}</p>
+                        <p class="text-secondary mb-0">This will remove the draft assessment and its saved questions.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>
+                        <button class="btn btn-danger px-4" type="submit">Delete Draft</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endforeach
 @endsection

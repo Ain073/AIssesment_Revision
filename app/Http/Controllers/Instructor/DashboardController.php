@@ -33,7 +33,11 @@ class DashboardController extends Controller
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $classes = $instructorProfile
-            ? $instructorProfile->classes()->withCount('students')->latest('class_id')->get()
+            ? $instructorProfile->classes()
+                ->whereNull('archived_at')
+                ->withCount('students')
+                ->latest('class_id')
+                ->get()
             : collect();
         $classIds = $classes->pluck('class_id');
         $classesCount = $classes->count();
@@ -109,7 +113,7 @@ class DashboardController extends Controller
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
-        $classesCount = $instructorProfile?->classes()->count() ?? 0;
+        $classesCount = $instructorProfile?->classes()->whereNull('archived_at')->count() ?? 0;
         $draftAssessmentsCount = $instructorProfile
             ? $instructorProfile->assessments()->where('status', Assessment::STATUS_DRAFT)->count()
             : 0;
@@ -119,28 +123,42 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function classes(): View
+    public function classes(Request $request): View
     {
         $user = $this->currentUser();
 
-        return view('instructor.classes', $this->sharedData($user, 'classes') + $this->instructorClassesData($user));
+        return view('instructor.classes', $this->sharedData($user, 'classes') + $this->instructorClassesData($user, $this->classListTab($request)));
     }
 
-    public function classesLive(): View
+    public function classesLive(Request $request): View
     {
-        return view('instructor.partials.classes-live', $this->instructorClassesData($this->currentUser()));
+        return view('instructor.partials.classes-live', $this->instructorClassesData($this->currentUser(), $this->classListTab($request)));
     }
 
-    private function instructorClassesData(User $user): array
+    private function instructorClassesData(User $user, string $activeClassTab = 'active'): array
     {
         $instructorProfile = $this->instructorProfile($user);
-        $classes = $instructorProfile
+        $baseClassesQuery = $instructorProfile
             ? $instructorProfile->classes()
                 ->with('subject')
                 ->withCount('students')
-                ->latest('class_id')
+            : null;
+        $classes = $baseClassesQuery
+            ? (clone $baseClassesQuery)
+                ->when(
+                    $activeClassTab === 'archived',
+                    fn ($query) => $query->whereNotNull('archived_at'),
+                    fn ($query) => $query->whereNull('archived_at')
+                )
+                ->latest($activeClassTab === 'archived' ? 'archived_at' : 'class_id')
                 ->get()
             : collect();
+        $activeClassesCount = $baseClassesQuery
+            ? (clone $baseClassesQuery)->whereNull('archived_at')->count()
+            : 0;
+        $archivedClassesCount = $baseClassesQuery
+            ? (clone $baseClassesQuery)->whereNotNull('archived_at')->count()
+            : 0;
         $subjects = Subject::query()
             ->where('is_active', true)
             ->orderBy('subject_code')
@@ -151,10 +169,16 @@ class DashboardController extends Controller
             'instructorProfile' => $instructorProfile,
             'classes' => $classes,
             'subjects' => $subjects,
-            'totalClasses' => $classes->count(),
-            'latestSchoolYear' => $classes->pluck('school_year')->filter()->unique()->first(),
+            'activeClassTab' => $activeClassTab,
+            'activeClassesCount' => $activeClassesCount,
+            'archivedClassesCount' => $archivedClassesCount,
             'profileName' => $user->displayName(),
         ];
+    }
+
+    private function classListTab(Request $request): string
+    {
+        return $request->query('tab') === 'archived' ? 'archived' : 'active';
     }
 
     public function storeClass(Request $request): RedirectResponse|JsonResponse
@@ -198,6 +222,7 @@ class DashboardController extends Controller
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedClass = $this->ownedClass($class, $instructorProfile);
+        $this->ensureActiveClass($ownedClass);
 
         $validated = $request->validate([
             'subject_id' => ['required', 'integer', 'exists:subjects,subject_id'],
@@ -230,6 +255,7 @@ class DashboardController extends Controller
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedClass = $this->ownedClass($class, $instructorProfile);
+        $this->ensureActiveClass($ownedClass);
         $classId = $ownedClass->class_id;
         $className = $ownedClass->class_name;
 
@@ -256,11 +282,62 @@ class DashboardController extends Controller
             ->with('status', 'Class deleted successfully.');
     }
 
+    public function archiveClass(Request $request, AcademicClass $class): RedirectResponse|JsonResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedClass = $this->ownedClass($class, $instructorProfile);
+        $this->ensureActiveClass($ownedClass);
+
+        $ownedClass->update(['archived_at' => now()]);
+
+        Log::info('Class archived by instructor.', [
+            'actor_id' => $user->id,
+            'class_id' => $ownedClass->class_id,
+            'class_name' => $ownedClass->class_name,
+            'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Class archived successfully.']);
+        }
+
+        return redirect()
+            ->route('instructor.classes')
+            ->with('status', 'Class archived successfully.');
+    }
+
+    public function restoreClass(Request $request, AcademicClass $class): RedirectResponse|JsonResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedClass = $this->ownedClass($class, $instructorProfile);
+        $this->ensureActiveClass($ownedClass);
+
+        $ownedClass->update(['archived_at' => null]);
+
+        Log::info('Class restored by instructor.', [
+            'actor_id' => $user->id,
+            'class_id' => $ownedClass->class_id,
+            'class_name' => $ownedClass->class_name,
+            'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Class restored successfully.']);
+        }
+
+        return redirect()
+            ->route('instructor.classes', ['tab' => 'archived'])
+            ->with('status', 'Class restored successfully.');
+    }
+
     public function showClass(Request $request, AcademicClass $class): View
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedClass = $this->ownedClass($class, $instructorProfile);
+        $this->ensureActiveClass($ownedClass);
         $activeTab = in_array($request->query('tab'), ['overview', 'students', 'assessments'], true)
             ? $request->query('tab')
             : 'students';
@@ -294,11 +371,12 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function storeClassStudent(Request $request, AcademicClass $class): RedirectResponse
+    public function storeClassStudent(Request $request, AcademicClass $class): RedirectResponse|JsonResponse
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedClass = $this->ownedClass($class, $instructorProfile);
+        $this->ensureActiveClass($ownedClass);
 
         $validated = $request->validate([
             'student_number' => ['required', 'string', 'max:255'],
@@ -312,6 +390,15 @@ class DashboardController extends Controller
             ->first();
 
         if (! $studentProfile || ! $studentProfile->user || ! $studentProfile->user->hasRole('student')) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'No student account was found for that student number.',
+                    'errors' => [
+                        'student_number' => ['No student account was found for that student number.'],
+                    ],
+                ], 422);
+            }
+
             return redirect()
                 ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
                 ->withErrors(['student_number' => 'No student account was found for that student number.'])
@@ -319,6 +406,15 @@ class DashboardController extends Controller
         }
 
         if ($studentProfile->user->status !== 'active') {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'This student account is inactive and cannot be added to a class yet.',
+                    'errors' => [
+                        'student_number' => ['This student account is inactive and cannot be added to a class yet.'],
+                    ],
+                ], 422);
+            }
+
             return redirect()
                 ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
                 ->withErrors(['student_number' => 'This student account is inactive and cannot be added to a class yet.'])
@@ -326,6 +422,15 @@ class DashboardController extends Controller
         }
 
         if ($ownedClass->students()->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)->exists()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'This student is already enrolled in the selected class.',
+                    'errors' => [
+                        'student_number' => ['This student is already enrolled in the selected class.'],
+                    ],
+                ], 422);
+            }
+
             return redirect()
                 ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
                 ->withErrors(['student_number' => 'This student is already enrolled in the selected class.'])
@@ -342,18 +447,32 @@ class DashboardController extends Controller
             'student_number' => $studentProfile->student_number,
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Student added to class successfully.']);
+        }
+
         return redirect()
             ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
             ->with('status', 'Student added to class successfully.');
     }
 
-    public function destroyClassStudent(AcademicClass $class, StudentProfile $studentProfile): RedirectResponse
+    public function destroyClassStudent(Request $request, AcademicClass $class, StudentProfile $studentProfile): RedirectResponse|JsonResponse
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedClass = $this->ownedClass($class, $instructorProfile);
+        $this->ensureActiveClass($ownedClass);
 
         if (! $ownedClass->students()->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)->exists()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'That student is not currently enrolled in this class.',
+                    'errors' => [
+                        'student_file' => ['That student is not currently enrolled in this class.'],
+                    ],
+                ], 422);
+            }
+
             return redirect()
                 ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
                 ->withErrors(['student_file' => 'That student is not currently enrolled in this class.']);
@@ -368,6 +487,10 @@ class DashboardController extends Controller
             'student_number' => $studentProfile->student_number,
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Student removed from class successfully.']);
+        }
+
         return redirect()
             ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
             ->with('status', 'Student removed from class successfully.');
@@ -378,6 +501,7 @@ class DashboardController extends Controller
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedClass = $this->ownedClass($class, $instructorProfile);
+        $this->ensureActiveClass($ownedClass);
 
         $validated = $request->validate([
             'student_file' => [
@@ -430,6 +554,7 @@ class DashboardController extends Controller
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedClass = $this->ownedClass($class, $instructorProfile);
+        $this->ensureActiveClass($ownedClass);
 
         $validated = $request->validate([
             'import_token' => ['required', 'string'],
@@ -490,6 +615,7 @@ class DashboardController extends Controller
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedClass = $this->ownedClass($class, $instructorProfile);
+        $this->ensureActiveClass($ownedClass);
 
         $fileName = Str::slug($ownedClass->class_name ?: 'class') . '-student-import-sample.csv';
         $content = implode("\n", [
@@ -505,11 +631,12 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function approveClassJoinRequest(AcademicClass $class, ClassJoinRequest $joinRequest): RedirectResponse
+    public function approveClassJoinRequest(Request $request, AcademicClass $class, ClassJoinRequest $joinRequest): RedirectResponse|JsonResponse
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedClass = $this->ownedClass($class, $instructorProfile);
+        $this->ensureActiveClass($ownedClass);
 
         abort_unless($joinRequest->class_id === $ownedClass->class_id, 404);
 
@@ -517,12 +644,30 @@ class DashboardController extends Controller
         $studentProfile = $joinRequest->studentProfile;
 
         if (! $studentProfile || ! $studentProfile->user || ! $studentProfile->user->hasRole('student')) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'The requesting student account no longer exists.',
+                    'errors' => [
+                        'join_request' => ['The requesting student account no longer exists.'],
+                    ],
+                ], 422);
+            }
+
             return redirect()
                 ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
                 ->withErrors(['join_request' => 'The requesting student account no longer exists.']);
         }
 
         if ($studentProfile->user->status !== 'active') {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'This student account is inactive and cannot be approved yet.',
+                    'errors' => [
+                        'join_request' => ['This student account is inactive and cannot be approved yet.'],
+                    ],
+                ], 422);
+            }
+
             return redirect()
                 ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
                 ->withErrors(['join_request' => 'This student account is inactive and cannot be approved yet.']);
@@ -541,20 +686,34 @@ class DashboardController extends Controller
             'student_profile_id' => $studentProfile->student_profile_id,
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Student join request approved.']);
+        }
+
         return redirect()
             ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
             ->with('status', 'Student join request approved.');
     }
 
-    public function rejectClassJoinRequest(AcademicClass $class, ClassJoinRequest $joinRequest): RedirectResponse
+    public function rejectClassJoinRequest(Request $request, AcademicClass $class, ClassJoinRequest $joinRequest): RedirectResponse|JsonResponse
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedClass = $this->ownedClass($class, $instructorProfile);
+        $this->ensureActiveClass($ownedClass);
 
         abort_unless($joinRequest->class_id === $ownedClass->class_id, 404);
 
         if ($joinRequest->status !== ClassJoinRequest::STATUS_PENDING) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Only pending join requests can be rejected.',
+                    'errors' => [
+                        'join_request' => ['Only pending join requests can be rejected.'],
+                    ],
+                ], 422);
+            }
+
             return redirect()
                 ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
                 ->withErrors(['join_request' => 'Only pending join requests can be rejected.']);
@@ -571,6 +730,10 @@ class DashboardController extends Controller
             'class_id' => $ownedClass->class_id,
             'class_join_request_id' => $joinRequest->class_join_request_id,
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Student join request rejected.']);
+        }
 
         return redirect()
             ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
@@ -593,6 +756,7 @@ class DashboardController extends Controller
         $classesBySubject = $instructorProfile
             ? $instructorProfile->classes()
                 ->with('subject')
+                ->whereNull('archived_at')
                 ->orderBy('class_name')
                 ->get()
                 ->groupBy('subject_id')
@@ -652,6 +816,7 @@ class DashboardController extends Controller
         $classes = $instructorProfile
             ? $instructorProfile->classes()
                 ->with('subject')
+                ->whereNull('archived_at')
                 ->orderBy('class_name')
                 ->get()
             : collect();
@@ -688,6 +853,7 @@ class DashboardController extends Controller
             ? $instructorProfile->classes()
                 ->with('subject')
                 ->where('subject_id', $ownedAssessment->subject_id)
+                ->whereNull('archived_at')
                 ->orderBy('class_name')
                 ->get()
             : collect();
@@ -761,6 +927,43 @@ class DashboardController extends Controller
         return redirect()
             ->route('instructor.assessments.show', $ownedAssessment)
             ->with('status', 'Assessment details updated.');
+    }
+
+    public function destroyAssessment(Request $request, Assessment $assessment): RedirectResponse|JsonResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
+
+        if ($ownedAssessment->status !== Assessment::STATUS_DRAFT) {
+            throw ValidationException::withMessages([
+                'assessment' => 'Only draft assessments can be deleted.',
+            ]);
+        }
+
+        $assessmentId = $ownedAssessment->assessment_id;
+        $assessmentTitle = $ownedAssessment->title;
+
+        DB::transaction(function () use ($ownedAssessment) {
+            $ownedAssessment->classAssessments()->delete();
+            $ownedAssessment->items()->delete();
+            $ownedAssessment->delete();
+        });
+
+        Log::warning('Draft assessment deleted by instructor.', [
+            'actor_id' => $user->id,
+            'assessment_id' => $assessmentId,
+            'assessment_title' => $assessmentTitle,
+            'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Draft assessment deleted successfully.']);
+        }
+
+        return redirect()
+            ->route('instructor.assessments', ['tab' => 'draft'])
+            ->with('status', 'Draft assessment deleted successfully.');
     }
 
     public function storeAssessmentItem(Request $request, Assessment $assessment): RedirectResponse
@@ -893,8 +1096,15 @@ class DashboardController extends Controller
             'due_at' => ['nullable', 'date', 'after:available_at'],
             'attempt_limit' => ['required', 'integer', 'min:1', 'max:10'],
             'warning_limit' => ['nullable', 'integer', 'min:0', 'max:20'],
+            'display_mode' => ['required', 'string', Rule::in([
+                ClassAssessment::DISPLAY_ALL_QUESTIONS,
+                ClassAssessment::DISPLAY_ONE_QUESTION,
+            ])],
             'score_visibility' => ['nullable', 'boolean'],
             'answer_visibility' => ['nullable', 'boolean'],
+            'prevent_copy_paste' => ['nullable', 'boolean'],
+            'detect_tab_switch' => ['nullable', 'boolean'],
+            'screenshot_protection' => ['nullable', 'boolean'],
             'shuffle_items' => ['nullable', 'boolean'],
             'shuffle_choices' => ['nullable', 'boolean'],
         ]);
@@ -924,8 +1134,15 @@ class DashboardController extends Controller
             'due_at' => ['nullable', 'date', 'after:available_at'],
             'attempt_limit' => ['required', 'integer', 'min:1', 'max:10'],
             'warning_limit' => ['nullable', 'integer', 'min:0', 'max:20'],
+            'display_mode' => ['required', 'string', Rule::in([
+                ClassAssessment::DISPLAY_ALL_QUESTIONS,
+                ClassAssessment::DISPLAY_ONE_QUESTION,
+            ])],
             'score_visibility' => ['nullable', 'boolean'],
             'answer_visibility' => ['nullable', 'boolean'],
+            'prevent_copy_paste' => ['nullable', 'boolean'],
+            'detect_tab_switch' => ['nullable', 'boolean'],
+            'screenshot_protection' => ['nullable', 'boolean'],
             'shuffle_items' => ['nullable', 'boolean'],
             'shuffle_choices' => ['nullable', 'boolean'],
         ]);
@@ -965,13 +1182,14 @@ class DashboardController extends Controller
         $ownedClasses = $instructorProfile
             ? $instructorProfile->classes()
                 ->where('subject_id', $ownedAssessment->subject_id)
+                ->whereNull('archived_at')
                 ->whereIn('class_id', $classIds)
                 ->get()
             : collect();
 
         if ($ownedClasses->count() !== $classIds->count()) {
             throw ValidationException::withMessages([
-                'class_ids' => 'You can only publish to your own classes under the same subject.',
+                'class_ids' => 'You can only publish to your active classes under the same subject.',
             ]);
         }
 
@@ -988,10 +1206,14 @@ class DashboardController extends Controller
                         'publish_status' => ClassAssessment::STATUS_PUBLISHED,
                         'score_visibility' => $request->boolean('score_visibility'),
                         'answer_visibility' => $request->boolean('answer_visibility'),
+                        'prevent_copy_paste' => $request->boolean('prevent_copy_paste'),
+                        'detect_tab_switch' => $request->boolean('detect_tab_switch'),
+                        'screenshot_protection' => $request->boolean('screenshot_protection'),
                         'attempt_limit' => (int) $validated['attempt_limit'],
                         'shuffle_items' => $request->boolean('shuffle_items'),
                         'shuffle_choices' => $request->boolean('shuffle_choices'),
                         'warning_limit' => $validated['warning_limit'] ?? null,
+                        'display_mode' => $validated['display_mode'],
                     ],
                 );
             }
@@ -1177,6 +1399,7 @@ class DashboardController extends Controller
         return Subject::query()
             ->whereIn('subject_id', $instructorProfile->classes()
                 ->whereNotNull('subject_id')
+                ->whereNull('archived_at')
                 ->select('subject_id'))
             ->where('is_active', true)
             ->orderBy('subject_code')
@@ -1241,6 +1464,17 @@ class DashboardController extends Controller
         );
 
         return $class;
+    }
+
+    private function ensureActiveClass(AcademicClass $class): void
+    {
+        if (! $class->archived_at) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'class' => 'Archived classes are records only. Restore the class before making changes.',
+        ]);
     }
 
     private function ensureClassJoinAccess(AcademicClass $class): void

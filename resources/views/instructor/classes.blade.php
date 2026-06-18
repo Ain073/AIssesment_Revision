@@ -62,6 +62,29 @@
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
             letter-spacing: 0.1em;
         }
+
+        .btn-outline-psu {
+            border-color: var(--psu-navy-2);
+            color: var(--psu-navy-2);
+        }
+
+        .btn-outline-psu:hover,
+        .btn-outline-psu:focus {
+            background: var(--psu-navy-2);
+            border-color: var(--psu-navy-2);
+            color: #fff;
+        }
+
+        .action-icon-btn {
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            border-radius: 0.25rem;
+        }
+
+        .class-list-tab {
+            border-radius: 0.5rem;
+        }
     </style>
 @endpush
 
@@ -74,7 +97,7 @@
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
-    <div data-poll-url="{{ route('instructor.classes.live') }}" data-poll-interval="5000">
+    <div data-poll-url="{{ route('instructor.classes.live', ['tab' => $activeClassTab]) }}" data-poll-interval="5000">
         @include('instructor.partials.classes-live')
     </div>
 

@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\AcademicClass;
+use App\Models\AssessmentAttempt;
 use App\Models\ClassAssessment;
 use App\Models\ClassJoinRequest;
 use App\Models\StudentProfile;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -108,6 +111,7 @@ class DashboardController extends Controller
         $class = AcademicClass::query()
             ->with(['subject', 'instructorProfile.user', 'instructorProfile.department.college'])
             ->where('join_token', $token)
+            ->whereNull('archived_at')
             ->firstOrFail();
 
         $existingRequest = ClassJoinRequest::query()
@@ -126,7 +130,7 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function requestClassJoin(Request $request, string $token): RedirectResponse
+    public function requestClassJoin(Request $request, string $token): RedirectResponse|JsonResponse
     {
         $user = $this->currentUser();
         $studentProfile = $this->studentProfileOrRedirect($user);
@@ -137,12 +141,13 @@ class DashboardController extends Controller
 
         $class = AcademicClass::query()
             ->where('join_token', $token)
+            ->whereNull('archived_at')
             ->firstOrFail();
 
-        return $this->submitClassJoinRequest($class, $studentProfile, $user, 'link');
+        return $this->submitClassJoinRequest($request, $class, $studentProfile, $user, 'link');
     }
 
-    public function requestClassJoinByCode(Request $request): RedirectResponse
+    public function requestClassJoinByCode(Request $request): RedirectResponse|JsonResponse
     {
         $user = $this->currentUser();
         $studentProfile = $this->studentProfileOrRedirect($user);
@@ -159,21 +164,35 @@ class DashboardController extends Controller
 
         $class = AcademicClass::query()
             ->where('join_code', $joinCode)
+            ->whereNull('archived_at')
             ->first();
 
         if (! $class) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'No class was found for that join code.',
+                    'errors' => [
+                        'join_code' => ['No class was found for that join code.'],
+                    ],
+                ], 422);
+            }
+
             return redirect()
                 ->route('student.classes')
                 ->withErrors(['join_code' => 'No class was found for that join code.'])
                 ->withInput();
         }
 
-        return $this->submitClassJoinRequest($class, $studentProfile, $user, 'code');
+        return $this->submitClassJoinRequest($request, $class, $studentProfile, $user, 'code');
     }
 
-    private function submitClassJoinRequest(AcademicClass $class, StudentProfile $studentProfile, User $user, string $source): RedirectResponse
+    private function submitClassJoinRequest(Request $request, AcademicClass $class, StudentProfile $studentProfile, User $user, string $source): RedirectResponse|JsonResponse
     {
         if ($class->students()->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)->exists()) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'You are already enrolled in that class.']);
+            }
+
             return redirect()
                 ->route('student.classes')
                 ->with('status', 'You are already enrolled in that class.');
@@ -199,6 +218,10 @@ class DashboardController extends Controller
             'class_join_request_id' => $joinRequest->class_join_request_id,
             'student_profile_id' => $studentProfile->student_profile_id,
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Join request sent. Please wait for your teacher to approve it.']);
+        }
 
         return redirect()
             ->route('student.classes')
@@ -226,24 +249,10 @@ class DashboardController extends Controller
             return $studentProfile;
         }
 
-        $classAssessment->load(['assessment.subject', 'assessment.items.choices', 'class.instructorProfile.user']);
+        $unavailable = $this->prepareAccessibleAssessment($classAssessment, $studentProfile);
 
-        abort_unless(
-            $classAssessment->publish_status === ClassAssessment::STATUS_PUBLISHED
-            && $classAssessment->class
-            && $classAssessment->class->students()
-                ->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)
-                ->exists(),
-            403,
-            'You are not allowed to open this assessment.'
-        );
-
-        $studentStatus = $this->studentAssessmentStatus($classAssessment);
-
-        if ($studentStatus !== 'available') {
-            return redirect()
-                ->route('student.assessments')
-                ->withErrors(['assessment' => 'This assessment is not available to take right now.']);
+        if ($unavailable instanceof RedirectResponse) {
+            return $unavailable;
         }
 
         Log::info('Student opened published assessment.', [
@@ -258,7 +267,139 @@ class DashboardController extends Controller
             'classAssessment' => $classAssessment,
             'assessment' => $classAssessment->assessment,
             'class' => $classAssessment->class,
+            'warningLimit' => $this->warningLimit($classAssessment),
         ]);
+    }
+
+    public function startAssessment(ClassAssessment $classAssessment): View|RedirectResponse
+    {
+        $user = $this->currentUser();
+        $studentProfile = $this->studentProfileOrRedirect($user);
+
+        if ($studentProfile instanceof RedirectResponse) {
+            return $studentProfile;
+        }
+
+        $unavailable = $this->prepareAccessibleAssessment($classAssessment, $studentProfile);
+
+        if ($unavailable instanceof RedirectResponse) {
+            return $unavailable;
+        }
+
+        if ($classAssessment->assessment->items->isEmpty()) {
+            return redirect()
+                ->route('student.assessments.take', $classAssessment)
+                ->withErrors(['assessment' => 'This assessment has no questions yet.']);
+        }
+
+        $items = $classAssessment->assessment->items;
+
+        if ($classAssessment->shuffle_items) {
+            $items = $items->shuffle()->values();
+        }
+
+        if ($classAssessment->shuffle_choices) {
+            $items->each(function ($item) {
+                $item->setRelation('choices', $item->choices->shuffle()->values());
+            });
+        }
+
+        Log::info('Student started assessment attempt view.', [
+            'actor_id' => $user->id,
+            'student_profile_id' => $studentProfile->student_profile_id,
+            'class_assessment_id' => $classAssessment->class_assessment_id,
+            'assessment_id' => $classAssessment->assessment_id,
+            'class_id' => $classAssessment->class_id,
+        ]);
+
+        return view('student.assessment-attempt', [
+            'user' => $user,
+            'studentProfile' => $studentProfile,
+            'classAssessment' => $classAssessment,
+            'assessment' => $classAssessment->assessment,
+            'class' => $classAssessment->class,
+            'items' => $items,
+            'warningLimit' => $this->warningLimit($classAssessment),
+        ]);
+    }
+
+    public function submitAssessment(Request $request, ClassAssessment $classAssessment): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $studentProfile = $this->studentProfileOrRedirect($user);
+
+        if ($studentProfile instanceof RedirectResponse) {
+            return $studentProfile;
+        }
+
+        $unavailable = $this->prepareAccessibleAssessment($classAssessment, $studentProfile);
+
+        if ($unavailable instanceof RedirectResponse) {
+            return $unavailable;
+        }
+
+        $classAssessment->load(['assessment.items.choices', 'class']);
+
+        $attemptsUsed = $this->submittedAttemptCount($classAssessment, $studentProfile);
+        $attemptLimit = max((int) $classAssessment->attempt_limit, 1);
+
+        if ($attemptsUsed >= $attemptLimit) {
+            return redirect()
+                ->route('student.assessments')
+                ->withErrors(['assessment' => 'You already used the allowed attempt for this assessment.']);
+        }
+
+        $validated = $request->validate([
+            'answers' => ['nullable', 'array'],
+            'warnings_used' => ['nullable', 'integer', 'min:0', 'max:999'],
+        ]);
+
+        $answers = collect($validated['answers'] ?? []);
+        $items = $classAssessment->assessment->items;
+
+        DB::transaction(function () use ($classAssessment, $studentProfile, $items, $answers, $validated, $attemptsUsed) {
+            $attempt = AssessmentAttempt::query()->create([
+                'class_assessment_id' => $classAssessment->class_assessment_id,
+                'student_profile_id' => $studentProfile->student_profile_id,
+                'attempt_number' => $attemptsUsed + 1,
+                'status' => AssessmentAttempt::STATUS_SUBMITTED,
+                'warnings_used' => (int) ($validated['warnings_used'] ?? 0),
+                'submitted_at' => now(),
+            ]);
+
+            foreach ($items as $item) {
+                $rawAnswer = $answers->get((string) $item->assessment_item_id);
+                $choiceId = null;
+                $answerText = null;
+
+                if ($item->choices->isNotEmpty() && in_array($item->item_type, ['multiple_choice', 'true_false'], true)) {
+                    $choiceId = $item->choices
+                        ->pluck('assessment_item_choice_id')
+                        ->contains((int) $rawAnswer)
+                            ? (int) $rawAnswer
+                            : null;
+                } else {
+                    $answerText = is_scalar($rawAnswer) ? trim((string) $rawAnswer) : null;
+                }
+
+                $attempt->answers()->create([
+                    'assessment_item_id' => $item->assessment_item_id,
+                    'assessment_item_choice_id' => $choiceId,
+                    'answer_text' => $answerText,
+                ]);
+            }
+        });
+
+        Log::info('Student submitted assessment.', [
+            'actor_id' => $user->id,
+            'student_profile_id' => $studentProfile->student_profile_id,
+            'class_assessment_id' => $classAssessment->class_assessment_id,
+            'assessment_id' => $classAssessment->assessment_id,
+        ]);
+
+        return redirect()
+            ->route('student.assessments')
+            ->with('status', 'Assessment submitted successfully.');
     }
 
     public function results(): View
@@ -345,7 +486,15 @@ class DashboardController extends Controller
         $enrolledClasses = $studentProfile
             ? $studentProfile->classes()
                 ->with(['subject', 'instructorProfile.user'])
+                ->whereNull('classes.archived_at')
                 ->latest('classes.class_id')
+                ->get()
+            : collect();
+        $archivedClasses = $studentProfile
+            ? $studentProfile->classes()
+                ->with(['subject', 'instructorProfile.user'])
+                ->whereNotNull('classes.archived_at')
+                ->latest('classes.archived_at')
                 ->get()
             : collect();
         $joinRequests = $studentProfile
@@ -358,6 +507,7 @@ class DashboardController extends Controller
         return [
             'studentProfile' => $studentProfile,
             'enrolledClasses' => $enrolledClasses,
+            'archivedClasses' => $archivedClasses,
             'joinRequests' => $joinRequests,
         ];
     }
@@ -366,7 +516,9 @@ class DashboardController extends Controller
     {
         $studentProfile = $user->studentProfile;
         $classIds = $studentProfile
-            ? $studentProfile->classes()->pluck('classes.class_id')
+            ? $studentProfile->classes()
+                ->whereNull('classes.archived_at')
+                ->pluck('classes.class_id')
             : collect();
         $classAssessments = $classIds->isNotEmpty()
             ? ClassAssessment::query()
@@ -387,16 +539,61 @@ class DashboardController extends Controller
         ];
     }
 
+    private function prepareAccessibleAssessment(ClassAssessment $classAssessment, StudentProfile $studentProfile): ?RedirectResponse
+    {
+        $classAssessment->load(['assessment.subject', 'assessment.items.choices', 'class.instructorProfile.user']);
+
+        abort_unless(
+            $classAssessment->publish_status === ClassAssessment::STATUS_PUBLISHED
+            && $classAssessment->class
+            && $classAssessment->class->students()
+                ->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)
+                ->exists(),
+            403,
+            'You are not allowed to open this assessment.'
+        );
+
+        if ($this->studentAssessmentStatus($classAssessment) !== 'available') {
+            return redirect()
+                ->route('student.assessments')
+                ->withErrors(['assessment' => 'This assessment is not available to take right now.']);
+        }
+
+        return null;
+    }
+
+    private function warningLimit(ClassAssessment $classAssessment): int
+    {
+        return max((int) ($classAssessment->warning_limit ?? 3), 0);
+    }
+
     private function studentAssessmentStatus(ClassAssessment $classAssessment): string
     {
-        if ($classAssessment->due_at && $classAssessment->due_at->isPast()) {
+        $now = now();
+
+        if ($classAssessment->due_at && $classAssessment->due_at->copy()->endOfMinute()->lt($now)) {
             return 'completed';
         }
 
-        if ($classAssessment->available_at && $classAssessment->available_at->isFuture()) {
+        $studentProfile = $this->currentUser()->studentProfile;
+
+        if ($studentProfile && $this->submittedAttemptCount($classAssessment, $studentProfile) >= max((int) $classAssessment->attempt_limit, 1)) {
+            return 'completed';
+        }
+
+        if ($classAssessment->available_at && $classAssessment->available_at->copy()->startOfMinute()->gt($now)) {
             return 'pending';
         }
 
         return 'available';
+    }
+
+    private function submittedAttemptCount(ClassAssessment $classAssessment, StudentProfile $studentProfile): int
+    {
+        return AssessmentAttempt::query()
+            ->where('class_assessment_id', $classAssessment->class_assessment_id)
+            ->where('student_profile_id', $studentProfile->student_profile_id)
+            ->where('status', AssessmentAttempt::STATUS_SUBMITTED)
+            ->count();
     }
 }

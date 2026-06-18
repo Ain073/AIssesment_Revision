@@ -67,7 +67,7 @@
 
     <div class="modal fade" id="joinClassModal" tabindex="-1" aria-labelledby="joinClassModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <form action="{{ route('student.classes.join-code.request') }}" method="POST" class="modal-content">
+            <form action="{{ route('student.classes.join-code.request') }}" method="POST" class="modal-content" data-ajax-form data-reset-on-success="true">
                 @csrf
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="joinClassModalLabel">Join Class</h3>

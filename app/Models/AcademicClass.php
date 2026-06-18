@@ -24,6 +24,11 @@ class AcademicClass extends Model
         'school_year',
         'join_token',
         'join_code',
+        'archived_at',
+    ];
+
+    protected $casts = [
+        'archived_at' => 'datetime',
     ];
 
     public function instructorProfile(): BelongsTo
