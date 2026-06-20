@@ -19,9 +19,15 @@ These are the baseline security rules currently applied in the project and shoul
 - Allow students to see and open only published assessments for classes where they are enrolled.
 - Regenerate the session after successful login.
 - Invalidate the session and regenerate the CSRF token on logout.
+- Use Laravel's password reset broker for forgot-password links.
+- Return a generic forgot-password response so email addresses cannot be enumerated.
+- Send reset links only for active accounts; inactive accounts must contact an administrator.
+- Keep password reset tokens short-lived according to `config/auth.php`.
 - Log sensitive actions such as:
   - login success and failure
   - logout
+  - password reset link request
+  - password reset success or blocked reset
   - college creation
   - department creation
   - user create, update, delete

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Login | PSU Assessment Portal</title>
+    <title>Forgot Password | PSU Assessment Portal</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
@@ -37,13 +37,13 @@
         }
 
         .brand-title,
-        .login-title,
-        .btn-login,
+        .auth-title,
+        .btn-auth,
         .footer-brand {
             font-family: "Oswald", sans-serif;
         }
 
-        .login-shell {
+        .auth-shell {
             min-height: calc(100vh - 56px);
             padding: 80px 16px 72px;
             position: relative;
@@ -53,7 +53,7 @@
             overflow: hidden;
         }
 
-        .login-bg {
+        .auth-bg {
             position: absolute;
             inset: 0;
             width: 100%;
@@ -62,15 +62,15 @@
             object-position: center;
         }
 
-        .login-overlay {
+        .auth-overlay {
             position: absolute;
             inset: 0;
             background: rgba(0, 0, 0, 0.35);
         }
 
-        .login-card {
+        .auth-card {
             position: relative;
-            width: min(100%, 390px);
+            width: min(100%, 430px);
             background: rgba(255, 255, 255, 0.95);
             border-top: 4px solid var(--psu-navy);
             border-radius: 0.5rem;
@@ -78,9 +78,9 @@
             backdrop-filter: blur(10px);
         }
 
-        .login-logo {
-            width: 96px;
-            height: 96px;
+        .auth-logo {
+            width: 88px;
+            height: 88px;
             object-fit: contain;
         }
 
@@ -96,33 +96,21 @@
             padding-left: 2.65rem;
         }
 
-        .password-toggle {
-            position: absolute;
-            right: 0.75rem;
-            top: 50%;
-            transform: translateY(-50%);
-            border: 0;
-            background: transparent;
-            color: #777681;
-            padding: 0;
-        }
-
-        .form-control:focus,
-        .form-check-input:focus {
+        .form-control:focus {
             border-color: var(--psu-blue);
             box-shadow: 0 0 0 0.2rem rgba(46, 163, 242, 0.18);
         }
 
-        .btn-login {
+        .btn-auth {
             background: var(--psu-navy);
             color: var(--psu-gold);
             border: 0;
-            font-size: 1.5rem;
+            font-size: 1.35rem;
             line-height: 1.2;
         }
 
-        .btn-login:hover,
-        .btn-login:focus {
+        .btn-auth:hover,
+        .btn-auth:focus {
             background: #0d0f58;
             color: var(--psu-gold);
         }
@@ -151,19 +139,20 @@
         <a class="fw-bold text-white text-decoration-none" href="#">Help Desk</a>
     </header>
 
-    <main class="login-shell">
-        <img class="login-bg" src="{{ asset('images/psu-campus-background.jpg') }}" alt="PSU Building">
-        <div class="login-overlay"></div>
+    <main class="auth-shell">
+        <img class="auth-bg" src="{{ asset('images/psu-campus-background.jpg') }}" alt="PSU Building">
+        <div class="auth-overlay"></div>
 
-        <section class="login-card p-4">
+        <section class="auth-card p-4">
             <div class="text-center mb-4">
-                <img class="login-logo mb-3" src="{{ asset('images/psu-logo-transparent.png') }}" alt="PSU Seal">
-                <h1 class="login-title h3 mb-0 fw-bold text-uppercase" style="color: var(--psu-navy);">
-                    Pangasinan State University
+                <img class="auth-logo mb-3" src="{{ asset('images/psu-logo-transparent.png') }}" alt="PSU Seal">
+                <h1 class="auth-title h3 mb-2 fw-bold text-uppercase" style="color: var(--psu-navy);">
+                    Reset Password
                 </h1>
+                <p class="text-secondary mb-0">Enter your account email to receive a password reset link.</p>
             </div>
 
-            <form action="{{ route('login.submit') }}" id="loginForm" method="POST">
+            <form action="{{ route('password.email') }}" id="forgotPasswordForm" method="POST">
                 @csrf
 
                 @if ($errors->any())
@@ -178,43 +167,23 @@
                     </div>
                 @endif
 
-                <div class="mb-3">
+                <div class="mb-4">
                     <label class="form-label fw-bold" for="email">Email Address</label>
                     <div class="position-relative">
-                        <span class="material-symbols-outlined form-icon">person</span>
-                        <input autocomplete="username" class="form-control form-control-lg with-icon" id="email" name="email" placeholder="Enter your email address" required type="email" value="{{ old('email') }}">
+                        <span class="material-symbols-outlined form-icon">mail</span>
+                        <input autocomplete="email" autofocus class="form-control form-control-lg with-icon" id="email" name="email" placeholder="Enter your email address" required type="email" value="{{ old('email') }}">
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label fw-bold" for="password">Password</label>
-                    <div class="position-relative">
-                        <span class="material-symbols-outlined form-icon">lock</span>
-                        <input autocomplete="current-password" class="form-control form-control-lg with-icon pe-5" id="password" name="password" placeholder="Password" required type="password">
-                        <button aria-label="Show password" class="password-toggle" id="togglePassword" type="button">
-                            <span class="material-symbols-outlined">visibility</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="d-flex align-items-center justify-content-between mb-4">
-                    <div class="form-check">
-                        <input class="form-check-input" id="remember" name="remember" type="checkbox">
-                        <label class="form-check-label" for="remember">Remember Me</label>
-                    </div>
-                    <a class="auth-link fw-semibold text-decoration-none" href="{{ route('password.request') }}">Forgot Password?</a>
-                </div>
-
-                <button class="btn btn-login btn-lg w-100 d-flex align-items-center justify-content-center gap-2 py-3" type="submit">
-                    Log In
-                    <span class="material-symbols-outlined">login</span>
+                <button class="btn btn-auth btn-lg w-100 d-flex align-items-center justify-content-center gap-2 py-3" type="submit">
+                    Send Reset Link
+                    <span class="material-symbols-outlined">outgoing_mail</span>
                 </button>
-            </form>
 
-            <p class="small text-center text-white-50 position-absolute start-50 translate-middle-x mt-3" style="width: 100%;">
-                <span class="material-symbols-outlined align-middle small">verified_user</span>
-                Secured by PSU Information &amp; Communication Technology Office
-            </p>
+                <div class="text-center mt-3">
+                    <a class="auth-link fw-semibold text-decoration-none" href="{{ route('login') }}">Back to login</a>
+                </div>
+            </form>
         </section>
     </main>
 
@@ -233,29 +202,10 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        window.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-
-        if (window.jQuery && window.csrfToken) {
-            window.jQuery.ajaxSetup({
-                headers: {
-                    'X-CSRF-TOKEN': window.csrfToken,
-                },
-            });
-        }
-
-        document.getElementById("loginForm").addEventListener("submit", function (event) {
+        document.getElementById("forgotPasswordForm").addEventListener("submit", function (event) {
             const button = event.target.querySelector('button[type="submit"]');
-            button.innerHTML = '<span class="material-symbols-outlined spinner-icon">progress_activity</span> Authenticating...';
+            button.innerHTML = '<span class="material-symbols-outlined spinner-icon">progress_activity</span> Sending...';
             button.disabled = true;
-        });
-
-        document.getElementById("togglePassword").addEventListener("click", function () {
-            const password = document.getElementById("password");
-            const icon = this.querySelector(".material-symbols-outlined");
-            const isPassword = password.type === "password";
-
-            password.type = isPassword ? "text" : "password";
-            icon.textContent = isPassword ? "visibility_off" : "visibility";
         });
     </script>
 </body>

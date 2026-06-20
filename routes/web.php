@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\AdminDean\DashboardController as AdminDeanDashboardController;
 use App\Http\Controllers\DepartmentChair\DashboardController as DepartmentChairDashboardController;
 use App\Http\Controllers\Instructor\DashboardController as InstructorDashboardController;
@@ -20,6 +21,10 @@ Route::middleware(['no_cache'])->group(function () {
 
 Route::middleware(['guest', 'no_cache'])->group(function () {
     Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
+    Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'email'])->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'reset'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'update'])->name('password.update');
 });
 
 Route::middleware(['auth', 'no_cache'])->group(function () {

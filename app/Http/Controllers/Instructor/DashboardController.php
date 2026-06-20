@@ -919,6 +919,8 @@ class DashboardController extends Controller
 
         $validated = $request->validate([
             'report_type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
+            'paper_size' => ['nullable', 'string', Rule::in(['a4', 'short', 'long'])],
+            'course_code_title' => ['nullable', 'string', 'max:255'],
             'class_assessment_ids' => ['required', 'array', 'min:1'],
             'class_assessment_ids.*' => ['integer'],
             'reports' => ['required', 'array'],
@@ -955,6 +957,7 @@ class DashboardController extends Controller
                         'report_type' => $validated['report_type'],
                     ],
                     [
+                        'course_code_title' => $validated['course_code_title'] ?? null,
                         'concept_most_learned_skills' => $row['concept_most_learned_skills'] ?? null,
                         'concept_least_learned_skills' => $row['concept_least_learned_skills'] ?? null,
                         'issues_concern' => $row['issues_concern'] ?? null,
@@ -980,6 +983,7 @@ class DashboardController extends Controller
         return redirect()
             ->route('instructor.reports.build', [
                 'type' => $validated['report_type'],
+                'paper' => $validated['paper_size'] ?? 'long',
                 'class_assessment_ids' => $classAssessmentIds->all(),
             ])
             ->with('status', 'Report details saved.');
@@ -1664,6 +1668,11 @@ class DashboardController extends Controller
             ->unique()
             ->values();
         $studentCount = (int) ($rows->first()['analytics']['students_count'] ?? 0);
+        $defaultCourseCodeTitle = trim(($subject?->subject_code ?? 'No code').' / '.($subject?->subject_name ?? 'No subject'), ' /');
+        $savedCourseCodeTitle = $rows
+            ->pluck('report.course_code_title')
+            ->filter()
+            ->first();
 
         return [
             'campus' => 'SAN CARLOS',
@@ -1672,7 +1681,7 @@ class DashboardController extends Controller
             'semester' => 'Second Semester',
             'school_year' => $schoolYears->count() === 1 ? $schoolYears->first() : 'Multiple school years',
             'reporting_term' => ucfirst($reportingTerm),
-            'course_code_title' => trim(($subject?->subject_code ?? 'No code').' / '.($subject?->subject_name ?? 'No subject'), ' /'),
+            'course_code_title' => $savedCourseCodeTitle ?: $defaultCourseCodeTitle,
             'students_count' => $studentCount,
             'note' => ($assessment?->report_category === Report::TYPE_SUMMATIVE)
                 ? 'Note: Summative Assessments include the unit/chapter tests, midterm and final examination.'

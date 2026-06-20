@@ -23,6 +23,7 @@ class Report extends Model
     protected $fillable = [
         'class_assessment_id',
         'report_type',
+        'course_code_title',
         'ai_most_learned_draft',
         'ai_least_learned_draft',
         'concept_most_learned_skills',

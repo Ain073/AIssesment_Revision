@@ -4,12 +4,44 @@
 @section('header', $reportTypeLabel.' Report')
 @section('body_class', 'report-focus-mode')
 
+@php
+    $paperOptions = [
+        'a4' => [
+            'label' => 'A4',
+            'description' => '11.69 x 8.27 in',
+            'width' => '11.69in',
+            'height' => '8.27in',
+            'margin' => '0.18in',
+            'preview_ratio' => '0.9',
+        ],
+        'short' => [
+            'label' => 'Short / Letter',
+            'description' => '11 x 8.5 in',
+            'width' => '11in',
+            'height' => '8.5in',
+            'margin' => '0.18in',
+            'preview_ratio' => '0.846',
+        ],
+        'long' => [
+            'label' => 'Long / Legal',
+            'description' => '13 x 8.5 in',
+            'width' => '13in',
+            'height' => '8.5in',
+            'margin' => '0.2in',
+            'preview_ratio' => '1',
+        ],
+    ];
+    $selectedPaper = array_key_exists(request('paper'), $paperOptions) ? request('paper') : 'long';
+    $paper = $paperOptions[$selectedPaper];
+@endphp
+
 @push('styles')
     <style>
         :root {
-            --report-paper-width: 13in;
-            --report-paper-height: 8.5in;
+            --report-paper-width: {{ $paper['width'] }};
+            --report-paper-height: {{ $paper['height'] }};
             --report-paper-padding: 0.18in;
+            --report-preview-ratio: {{ $paper['preview_ratio'] }};
         }
 
         body.report-focus-mode {
@@ -42,6 +74,51 @@
             margin-bottom: 1rem;
         }
 
+        .report-toolbar-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .report-paper-control {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            min-height: 40px;
+            padding: 0.35rem 0.6rem;
+            border: 1px solid var(--psu-line);
+            border-radius: 0.5rem;
+            background: #fff;
+        }
+
+        .report-paper-control label {
+            font-size: 0.74rem;
+            font-weight: 800;
+            color: #4b5563;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .report-paper-control select {
+            width: auto;
+            min-width: 140px;
+            border: 0;
+            padding: 0;
+            color: var(--psu-navy);
+            font-weight: 700;
+            background-color: transparent;
+            box-shadow: none;
+        }
+
+        .report-paper-caption {
+            min-width: 86px;
+            font-size: 0.72rem;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+
         .report-sheet-wrap {
             background: #fff;
             border: 1px solid var(--psu-line);
@@ -52,14 +129,18 @@
         }
 
         .report-sheet {
-            width: max(var(--report-paper-width), calc(100vw - 2.2rem));
+            width: clamp(
+                var(--report-paper-width),
+                calc((100vw - 2.2rem) * var(--report-preview-ratio)),
+                calc(100vw - 2.2rem)
+            );
             min-width: var(--report-paper-width);
             min-height: var(--report-paper-height);
             margin: 0 auto;
             padding: var(--report-paper-padding);
             color: #1f2937;
             background: #fff;
-            border: 1px solid #1f2937;
+            border: 2px solid #111827;
             box-sizing: border-box;
         }
 
@@ -74,16 +155,48 @@
         .report-header td,
         .report-matrix th,
         .report-matrix td {
-            border: 1px solid #374151;
+            border: 1px solid #111827;
             padding: 0.28rem 0.36rem;
             vertical-align: top;
             font-size: 0.7rem;
             line-height: 1.28;
         }
 
+        .report-header tr:first-child th,
+        .report-header tr:first-child td {
+            border-top-width: 2px;
+            border-bottom-width: 2px;
+        }
+
+        .report-header tr:nth-child(2) th,
+        .report-header tr:nth-child(2) td {
+            border-bottom-width: 2px;
+        }
+
+        .report-header tr:nth-child(5) th,
+        .report-header tr:nth-child(5) td {
+            border-bottom-width: 2px;
+        }
+
         .report-header td {
             overflow-wrap: anywhere;
             word-break: normal;
+        }
+
+        .report-header-input {
+            width: 100%;
+            border: 0;
+            padding: 0;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            line-height: inherit;
+        }
+
+        .report-header-input:focus {
+            outline: 2px solid rgba(9, 39, 216, 0.28);
+            outline-offset: 2px;
+            background: #f8fbff;
         }
 
         .report-header th {
@@ -131,10 +244,23 @@
         .report-note {
             font-style: italic;
             text-align: center;
+            border-top: 2px solid #111827 !important;
+            border-bottom: 3px double #111827 !important;
         }
 
         .report-matrix {
-            margin-top: -1px;
+            margin-top: -3px;
+            border-top: 0;
+            border-bottom: 2px solid #111827;
+        }
+
+        .report-matrix thead th {
+            border-top: 0;
+            border-bottom: 2px solid #111827;
+        }
+
+        .report-matrix tbody tr:last-child td {
+            border-bottom-width: 2px;
         }
 
         .report-col-takers { width: 12%; }
@@ -206,8 +332,8 @@
 
         @media print {
             @page {
-                size: 13in 8.5in;
-                margin: 0.2in;
+                size: {{ $paper['width'] }} {{ $paper['height'] }};
+                margin: {{ $paper['margin'] }};
             }
 
             body {
@@ -254,6 +380,10 @@
             .report-print-text {
                 display: block !important;
             }
+
+            .report-header-input {
+                outline: 0 !important;
+            }
         }
     </style>
 @endpush
@@ -268,7 +398,16 @@
             <h1 class="brand-text mb-1" style="color: var(--psu-navy);">{{ $reportTypeLabel }} Report</h1>
             <p class="text-secondary mb-0">Calculated details are from completed submissions. AI draft is only for most and least learned concepts.</p>
         </div>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="report-toolbar-actions">
+            <div class="report-paper-control">
+                <label for="paperSize">Paper</label>
+                <select class="form-select form-select-sm" id="paperSize">
+                    @foreach ($paperOptions as $key => $option)
+                        <option value="{{ $key }}" @selected($selectedPaper === $key)>{{ $option['label'] }}</option>
+                    @endforeach
+                </select>
+                <span class="report-paper-caption" id="paperSizeCaption">{{ $paper['description'] }}</span>
+            </div>
             <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.reports', ['type' => $reportType]) }}">
                 <span class="material-symbols-outlined fs-5">arrow_back</span>
                 Reports
@@ -287,6 +426,7 @@
     <form action="{{ route('instructor.reports.save') }}" id="reportSheetForm" method="POST">
         @csrf
         <input name="report_type" type="hidden" value="{{ $reportType }}">
+        <input id="paperSizeInput" name="paper_size" type="hidden" value="{{ $selectedPaper }}">
         @foreach ($classAssessmentIds as $classAssessmentId)
             <input name="class_assessment_ids[]" type="hidden" value="{{ $classAssessmentId }}">
         @endforeach
@@ -321,7 +461,9 @@
                     <th>College</th>
                     <td colspan="2">{{ strtoupper($reportMeta['college']) }}</td>
                     <th>Course Code/Title</th>
-                    <td>{{ $reportMeta['course_code_title'] }}</td>
+                    <td>
+                        <input class="report-header-input" name="course_code_title" type="text" value="{{ old('course_code_title', $reportMeta['course_code_title']) }}">
+                    </td>
                 </tr>
                 <tr>
                     <th>Department</th>
@@ -368,8 +510,8 @@
                             $classAssessment = $row['classAssessment'];
                             $rowName = 'reports['.$classAssessment->class_assessment_id.']';
                             $reference = strtoupper(($assessment->reporting_term ?: 'Assessment').' '.$assessment->title);
-                            $mostLearned = $report->concept_most_learned_skills ?: $report->ai_most_learned_draft;
-                            $leastLearned = $report->concept_least_learned_skills ?: $report->ai_least_learned_draft;
+                            $mostLearned = $report->concept_most_learned_skills;
+                            $leastLearned = $report->concept_least_learned_skills;
                             $lastColumn = $reportType === 'formative'
                                 ? $report->interventions_done
                                 : $report->future_plans_curriculum;
@@ -425,6 +567,19 @@
 @push('scripts')
     <script>
         (() => {
+            const paperOptions = @json(collect($paperOptions)->map(fn ($option) => $option['description']));
+            const paperSize = document.getElementById('paperSize');
+            const paperSizeInput = document.getElementById('paperSizeInput');
+            const paperSizeCaption = document.getElementById('paperSizeCaption');
+
+            paperSize?.addEventListener('change', () => {
+                const url = new URL(window.location.href);
+                url.searchParams.set('paper', paperSize.value);
+                paperSizeInput.value = paperSize.value;
+                paperSizeCaption.textContent = paperOptions[paperSize.value] ?? '';
+                window.location.href = url.toString();
+            });
+
             const syncPrintText = (textarea) => {
                 const printText = textarea.nextElementSibling;
 
