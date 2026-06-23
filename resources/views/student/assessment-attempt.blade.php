@@ -321,7 +321,7 @@
                     </div>
                     <div class="brand-text h3 mb-2" id="securityWarningTitle" style="color: var(--psu-navy);">Security Warning</div>
                     <p class="text-secondary mb-3" id="securityWarningMessage">Restricted action detected. Stay on this assessment page.</p>
-                    <span class="badge rounded-pill text-bg-warning px-3 py-2 mb-4" id="securityWarningCount">Warning 0 of {{ $warningLimit }}</span>
+                    <span class="badge rounded-pill text-bg-warning px-3 py-2 mb-4" id="securityWarningCount">Warning {{ $submission->warning_count }} of {{ $warningLimit }}</span>
                     <button class="btn btn-psu w-100 d-inline-flex align-items-center justify-content-center gap-2" id="acknowledgeSecurityWarning" type="button">
                         <span class="material-symbols-outlined">check_circle</span>
                         I Understand
@@ -360,7 +360,7 @@
             <div class="col-6 col-md-3 col-lg-2">
                 <div class="stat-label mb-1">Warnings Used</div>
                 <div class="d-flex align-items-baseline gap-2">
-                    <span class="stat-value" id="warningCount">0</span>
+                    <span class="stat-value" id="warningCount">{{ $submission->warning_count }}</span>
                     <span class="stat-sub">/ {{ $warningLimit }}</span>
                 </div>
             </div>
@@ -403,7 +403,6 @@
 
     <form id="assessmentAttemptForm" action="{{ route('student.assessments.submit', $classAssessment) }}" method="POST">
         @csrf
-        <input id="warningCountInput" name="warning_count" type="hidden" value="0">
 
         <div class="d-grid gap-4 {{ $classAssessment->prevent_copy_paste ? 'no-select' : '' }} {{ $isOneQuestionMode ? 'one-question-mode' : '' }}">
             @foreach ($items as $item)
@@ -480,11 +479,14 @@
         const detectTabSwitch = Boolean(@json($classAssessment->detect_tab_switch));
         const screenshotProtection = Boolean(@json($classAssessment->screenshot_protection));
         const oneQuestionMode = Boolean(@json($isOneQuestionMode));
+        const securityEventUrl = @json(route('student.assessments.security-events.store', $classAssessment));
         const dueAt = @json($dueIso);
         const countdownTarget = dueAt ? new Date(dueAt).getTime() : Date.now() + (60 * 60 * 1000);
         let currentIndex = 0;
-        let warnings = 0;
+        let warnings = Number(@json($submission->warning_count));
         let isAutoSubmitting = false;
+        let isRecordingWarning = false;
+        let lastSecurityIncidentAt = 0;
 
         const closeSecurityWarning = () => {
             if (isAutoSubmitting) {
@@ -588,19 +590,76 @@
             }, 1200);
         };
 
-        const recordWarning = () => {
-            if (warningLimit === 0 || warnings >= warningLimit) {
+        const securityMessages = {
+            copy_attempt: 'Copying assessment content is restricted.',
+            cut_attempt: 'Cutting assessment content is restricted.',
+            paste_attempt: 'Pasting content into this assessment is restricted.',
+            context_menu_attempt: 'The context menu is restricted during this assessment.',
+            tab_hidden: 'Leaving or hiding the assessment tab was detected.',
+            window_blur: 'The assessment window lost focus.',
+            print_shortcut: 'Printing assessment content is restricted.',
+            screenshot_shortcut: 'A screenshot shortcut was detected.',
+        };
+
+        const eventIdentifier = () => {
+            if (window.crypto?.randomUUID) {
+                return window.crypto.randomUUID();
+            }
+
+            return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        };
+
+        const recordWarning = async (eventType) => {
+            const now = Date.now();
+
+            if (isAutoSubmitting || isRecordingWarning || now - lastSecurityIncidentAt < 1200) {
                 return;
             }
 
-            warnings += 1;
-            document.getElementById('warningCount').textContent = String(warnings);
-            document.getElementById('warningCountInput').value = String(warnings);
+            isRecordingWarning = true;
+            lastSecurityIncidentAt = now;
 
-            if (warnings >= warningLimit) {
-                autoSubmitAssessment();
-            } else {
-                showSecurityWarning();
+            try {
+                const response = await fetch(securityEventUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('#assessmentAttemptForm input[name="_token"]')?.value || '',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({
+                        event_uuid: eventIdentifier(),
+                        event_type: eventType,
+                    }),
+                    credentials: 'same-origin',
+                    keepalive: true,
+                });
+
+                if (! response.ok) {
+                    throw new Error('Security event could not be recorded.');
+                }
+
+                const result = await response.json();
+                warnings = Number(result.warning_count || 0);
+                document.getElementById('warningCount').textContent = String(warnings);
+
+                if (result.should_auto_submit) {
+                    autoSubmitAssessment();
+                } else if (warningLimit > 0) {
+                    showSecurityWarning(
+                        'Security Warning',
+                        securityMessages[eventType] || 'Restricted action detected. Stay on this assessment page.'
+                    );
+                }
+            } catch (error) {
+                console.warn('Security event recording failed.', error);
+                showSecurityWarning(
+                    'Restricted Action Detected',
+                    'The action was blocked. Keep this assessment page active.'
+                );
+            } finally {
+                isRecordingWarning = false;
             }
         };
 
@@ -643,17 +702,23 @@
         }
 
         if (preventCopyPaste) {
-            ['copy', 'cut', 'paste', 'contextmenu'].forEach((eventName) => {
+            const restrictedEvents = {
+                copy: 'copy_attempt',
+                cut: 'cut_attempt',
+                paste: 'paste_attempt',
+                contextmenu: 'context_menu_attempt',
+            };
+
+            Object.entries(restrictedEvents).forEach(([eventName, eventType]) => {
                 document.addEventListener(eventName, (event) => {
                     event.preventDefault();
-                    recordWarning();
+                    recordWarning(eventType);
                 });
             });
         }
 
         document.addEventListener('keydown', (event) => {
             const key = event.key.toLowerCase();
-            const copyPasteCombo = preventCopyPaste && (event.ctrlKey || event.metaKey) && ['c', 'x', 'v'].includes(key);
             const printShortcut = (event.ctrlKey || event.metaKey) && key === 'p';
             const snippingShortcut = event.shiftKey && (event.ctrlKey || event.metaKey) && key === 's';
             const screenshotCombo = screenshotProtection && (
@@ -662,17 +727,17 @@
                 || snippingShortcut
             );
 
-            if (copyPasteCombo || screenshotCombo) {
+            if (screenshotCombo) {
                 event.preventDefault();
-                recordWarning();
+                recordWarning(printShortcut ? 'print_shortcut' : 'screenshot_shortcut');
             }
         });
 
         if (detectTabSwitch) {
-            window.addEventListener('blur', recordWarning);
+            window.addEventListener('blur', () => recordWarning('window_blur'));
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden) {
-                    recordWarning();
+                    recordWarning('tab_hidden');
                 }
             });
         }

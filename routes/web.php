@@ -1,8 +1,8 @@
 <?php
 
+use App\Http\Controllers\AdminDean\DashboardController as AdminDeanDashboardController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
-use App\Http\Controllers\AdminDean\DashboardController as AdminDeanDashboardController;
 use App\Http\Controllers\DepartmentChair\DashboardController as DepartmentChairDashboardController;
 use App\Http\Controllers\Instructor\DashboardController as InstructorDashboardController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
@@ -49,6 +49,9 @@ Route::middleware(['super_admin', 'no_cache'])
         Route::post('/authorization/grant', [RoleController::class, 'grant'])->name('roles.grant');
         Route::delete('/authorization/revoke', [RoleController::class, 'revoke'])->name('roles.revoke');
         Route::get('/users', [UserController::class, 'index'])->name('users');
+        Route::get('/users/student-import-sample', [UserController::class, 'downloadStudentImportSample'])->name('users.students.import.sample');
+        Route::post('/users/student-import-preview', [UserController::class, 'previewStudentImport'])->middleware('throttle:10,1')->name('users.students.import.preview');
+        Route::post('/users/student-import-confirm', [UserController::class, 'confirmStudentImport'])->middleware('throttle:10,1')->name('users.students.import.confirm');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
@@ -59,7 +62,6 @@ Route::middleware(['instructor', 'no_cache'])
     ->name('instructor.')
     ->group(function () {
         Route::get('/dashboard', [InstructorDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/dashboard/pending-work', [InstructorDashboardController::class, 'pendingWorkPartial'])->name('dashboard.pending-work');
         Route::get('/classes', [InstructorDashboardController::class, 'classes'])->name('classes');
         Route::post('/classes', [InstructorDashboardController::class, 'storeClass'])->name('classes.store');
         Route::get('/classes/live', [InstructorDashboardController::class, 'classesLive'])->name('classes.live');
@@ -80,6 +82,7 @@ Route::middleware(['instructor', 'no_cache'])
         Route::get('/assessments/publish', [InstructorDashboardController::class, 'publishAssessmentForm'])->name('assessments.publish.form');
         Route::post('/assessments/publish', [InstructorDashboardController::class, 'publishSelectedAssessment'])->name('assessments.publish.selected');
         Route::post('/assessments', [InstructorDashboardController::class, 'storeAssessment'])->name('assessments.store');
+        Route::get('/class-assessments/{classAssessment}/results', [InstructorDashboardController::class, 'assessmentResults'])->name('assessments.results');
         Route::get('/assessments/{assessment}', [InstructorDashboardController::class, 'showAssessment'])->name('assessments.show');
         Route::put('/assessments/{assessment}', [InstructorDashboardController::class, 'updateAssessment'])->name('assessments.update');
         Route::delete('/assessments/{assessment}', [InstructorDashboardController::class, 'destroyAssessment'])->name('assessments.destroy');
@@ -89,7 +92,6 @@ Route::middleware(['instructor', 'no_cache'])
         Route::post('/reports/prepare', [InstructorDashboardController::class, 'prepareReports'])->name('reports.prepare');
         Route::get('/reports/build', [InstructorDashboardController::class, 'showReportSheet'])->name('reports.build');
         Route::post('/reports/build', [InstructorDashboardController::class, 'saveReportSheet'])->name('reports.save');
-        Route::get('/students', [InstructorDashboardController::class, 'students'])->name('students');
     });
 
 Route::middleware(['admin_dean', 'no_cache'])
@@ -103,6 +105,9 @@ Route::middleware(['admin_dean', 'no_cache'])
         Route::post('/programs', [AdminDeanDashboardController::class, 'storeProgram'])->name('programs.store');
         Route::get('/teachers', [AdminDeanDashboardController::class, 'teachers'])->name('teachers');
         Route::get('/students', [AdminDeanDashboardController::class, 'students'])->name('students');
+        Route::get('/students/import-sample', [AdminDeanDashboardController::class, 'downloadStudentImportSample'])->name('students.import.sample');
+        Route::post('/students/import-preview', [AdminDeanDashboardController::class, 'previewStudentImport'])->middleware('throttle:10,1')->name('students.import.preview');
+        Route::post('/students/import-confirm', [AdminDeanDashboardController::class, 'confirmStudentImport'])->middleware('throttle:10,1')->name('students.import.confirm');
         Route::post('/users', [AdminDeanDashboardController::class, 'storeUser'])->name('users.store');
     });
 
@@ -113,6 +118,9 @@ Route::middleware(['department_chair', 'no_cache'])
         Route::get('/dashboard', [DepartmentChairDashboardController::class, 'index'])->name('dashboard');
         Route::get('/teachers', [DepartmentChairDashboardController::class, 'teachers'])->name('teachers');
         Route::get('/students', [DepartmentChairDashboardController::class, 'students'])->name('students');
+        Route::get('/students/import-sample', [DepartmentChairDashboardController::class, 'downloadStudentImportSample'])->name('students.import.sample');
+        Route::post('/students/import-preview', [DepartmentChairDashboardController::class, 'previewStudentImport'])->middleware('throttle:10,1')->name('students.import.preview');
+        Route::post('/students/import-confirm', [DepartmentChairDashboardController::class, 'confirmStudentImport'])->middleware('throttle:10,1')->name('students.import.confirm');
         Route::post('/users', [DepartmentChairDashboardController::class, 'storeUser'])->name('users.store');
         Route::get('/reports', [DepartmentChairDashboardController::class, 'reports'])->name('reports');
     });
@@ -131,6 +139,9 @@ Route::middleware(['student', 'no_cache'])
         Route::get('/assessments', [StudentDashboardController::class, 'assessments'])->name('assessments');
         Route::get('/assessments/live', [StudentDashboardController::class, 'assessmentsLive'])->name('assessments.live');
         Route::get('/assessments/{classAssessment}/start', [StudentDashboardController::class, 'startAssessment'])->name('assessments.start');
+        Route::post('/assessments/{classAssessment}/security-events', [StudentDashboardController::class, 'recordSecurityEvent'])
+            ->middleware('throttle:30,1')
+            ->name('assessments.security-events.store');
         Route::post('/assessments/{classAssessment}/submit', [StudentDashboardController::class, 'submitAssessment'])->name('assessments.submit');
         Route::get('/assessments/{classAssessment}/take', [StudentDashboardController::class, 'takeAssessment'])->name('assessments.take');
         Route::get('/results', [StudentDashboardController::class, 'results'])->name('results');

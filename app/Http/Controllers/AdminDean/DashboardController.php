@@ -10,6 +10,7 @@ use App\Models\Program;
 use App\Models\Role;
 use App\Models\StudentProfile;
 use App\Models\User;
+use App\Services\StudentAccountImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
@@ -85,16 +87,6 @@ class DashboardController extends Controller
                     'description' => 'Check the teacher accounts in your area.',
                     'href' => route('admin-dean.teachers'),
                     'icon' => 'badge',
-                ],
-            ],
-            'focusItems' => [
-                [
-                    'title' => 'Scoped college assignment still pending',
-                    'description' => 'This dashboard is ready, but the college-specific data will start making sense once we attach a real college scope to the dean role.',
-                ],
-                [
-                    'title' => 'Program structure comes next',
-                    'description' => 'Students should belong to programs, so this module is one of the next core foundations.',
                 ],
             ],
         ]);
@@ -251,7 +243,7 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function students(): View
+    public function students(Request $request, StudentAccountImportService $importer): View
     {
         $user = $this->currentUser();
         $scopedCollege = $this->scopedCollege($user);
@@ -275,7 +267,49 @@ class DashboardController extends Controller
             'totalStudents' => $students->count(),
             'activeStudents' => $students->filter(fn (StudentProfile $student) => $student->user?->status === 'active')->count(),
             'programCount' => $programs->count(),
+            'studentImportPreview' => $importer->previewForRequest($request, $this->studentImportScope($scopedCollege)),
         ]);
+    }
+
+    public function downloadStudentImportSample(StudentAccountImportService $importer): StreamedResponse
+    {
+        $college = $this->scopedCollege($this->currentUser());
+        $program = Program::query()->where('college_id', $college?->college_id)->orderBy('program_name')->first();
+
+        abort_unless($program, 404, 'No program is available for student account import.');
+
+        return $importer->sampleCsv($program);
+    }
+
+    public function previewStudentImport(Request $request, StudentAccountImportService $importer): RedirectResponse
+    {
+        $college = $this->scopedCollege($this->currentUser());
+        $programs = Program::query()->where('college_id', $college?->college_id)->orderBy('program_name')->get();
+
+        abort_unless($college && $programs->isNotEmpty(), 403, 'A college and related program are required before importing students.');
+
+        $token = $importer->previewUpload($request, $programs, $this->studentImportScope($college));
+
+        return redirect()->route('admin-dean.students', ['import_token' => $token]);
+    }
+
+    public function confirmStudentImport(Request $request, StudentAccountImportService $importer): RedirectResponse
+    {
+        $college = $this->scopedCollege($this->currentUser());
+        $programs = Program::query()->where('college_id', $college?->college_id)->orderBy('program_name')->get();
+
+        abort_unless($college && $programs->isNotEmpty(), 403);
+
+        $result = $importer->confirm($request, $programs, $this->studentImportScope($college));
+        $redirect = redirect()
+            ->route('admin-dean.students')
+            ->with('status', $result['created_count'].' student accounts created successfully.');
+
+        if ($result['setup_links_sent'] < $result['created_count']) {
+            $redirect->with('mail_warning', 'Some password setup emails were not delivered. Those students can request a new link through Forgot Password.');
+        }
+
+        return $redirect;
     }
 
     public function storeUser(Request $request): RedirectResponse
@@ -375,19 +409,6 @@ class DashboardController extends Controller
             ->with('status', 'User account created successfully.');
     }
 
-    private function placeholderPageData(
-        string $activeNav,
-        string $pageHeading,
-        string $pageDescription,
-        array $checklist
-    ): array {
-        return $this->sharedData($activeNav) + [
-            'pageHeading' => $pageHeading,
-            'pageDescription' => $pageDescription,
-            'pageChecklist' => $checklist,
-        ];
-    }
-
     private function sharedData(string $activeNav): array
     {
         $user = $this->currentUser();
@@ -468,6 +489,11 @@ class DashboardController extends Controller
         $user->loadMissing('instructorProfile.department.college');
 
         return $user->instructorProfile?->department?->college;
+    }
+
+    private function studentImportScope(?College $college): string
+    {
+        return 'college:'.(int) $college?->college_id;
     }
 
     private function buildName(array $validated): string

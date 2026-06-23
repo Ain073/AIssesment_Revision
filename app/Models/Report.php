@@ -24,8 +24,6 @@ class Report extends Model
         'class_assessment_id',
         'report_type',
         'course_code_title',
-        'ai_most_learned_draft',
-        'ai_least_learned_draft',
         'concept_most_learned_skills',
         'concept_least_learned_skills',
         'issues_concern',

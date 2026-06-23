@@ -84,6 +84,53 @@
             min-width: 980px;
         }
 
+        .student-performance {
+            min-width: 190px;
+        }
+
+        .student-performance-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .student-performance-track {
+            flex: 1;
+            min-width: 0;
+            height: 8px;
+            overflow: hidden;
+            border-radius: 3px;
+        }
+
+        .student-performance-track.passed {
+            background: #d1e7dd;
+        }
+
+        .student-performance-track.failed {
+            background: #f8d7da;
+        }
+
+        .student-performance-fill {
+            display: block;
+            height: 100%;
+            min-width: 4px;
+        }
+
+        .student-performance-fill.passed {
+            background: #198754;
+        }
+
+        .student-performance-fill.failed {
+            background: #dc3545;
+        }
+
+        .student-performance-percent {
+            flex: 0 0 44px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-align: right;
+        }
+
         .join-link-field,
         .join-code-field {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
@@ -95,6 +142,33 @@
             font-weight: 800;
             letter-spacing: 0.12em;
             text-align: center;
+        }
+
+        .student-import-divider {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 1.5rem 0 1rem;
+            color: var(--psu-muted);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .student-import-divider::before,
+        .student-import-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--psu-line);
+        }
+
+        .student-import-panel {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8faff;
+            border: 1px solid var(--psu-line);
+            border-radius: 0.5rem;
         }
     </style>
 @endpush
@@ -217,8 +291,8 @@
             </div>
             <div class="col-md-4">
                 <div class="stat-card p-4 h-100">
-                    <p class="small fw-bold text-secondary text-uppercase mb-2">Assessments Taken</p>
-                    <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $assessmentsTakenCount }}</div>
+                    <p class="small fw-bold text-secondary text-uppercase mb-2">Published Assessments</p>
+                    <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $class->class_assessments_count }}</div>
                 </div>
             </div>
         </div>
@@ -262,18 +336,57 @@
                         </div>
                         <div>
                             <p class="fw-bold mb-1" style="color: var(--psu-navy);">Assessment Setup</p>
-                            <p class="text-secondary mb-0">Assessment creation will be attached here after we finish the roster flow.</p>
+                            <p class="text-secondary mb-0">{{ $class->class_assessments_count }} assessment{{ $class->class_assessments_count === 1 ? '' : 's' }} published to this class.</p>
                         </div>
                     </div>
                 </section>
             </div>
         </div>
     @elseif ($activeTab === 'assessments')
-        <section class="detail-card p-5 text-center">
-            <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">assignment</span></div>
-            <h3 class="brand-text h2 mb-2" style="color: var(--psu-navy);">Assessments Come Next</h3>
-            <p class="text-secondary mb-0">We kept this tab ready, but the roster flow comes first so assessment access stays organized and secure.</p>
-        </section>
+        @if ($classAssessments->isNotEmpty())
+            <div class="d-grid gap-3">
+                @foreach ($classAssessments as $classAssessment)
+                    <section class="detail-card p-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                            <div>
+                                <h3 class="h5 fw-bold mb-1" style="color: var(--psu-navy);">{{ $classAssessment->assessment?->title ?? 'Untitled Assessment' }}</h3>
+                                <p class="small text-secondary mb-0">
+                                    {{ ucfirst($classAssessment->assessment?->type ?? 'assessment') }}
+                                    @if ($classAssessment->due_at)
+                                        | Due {{ $classAssessment->due_at->format('M d, Y h:i A') }}
+                                    @endif
+                                </p>
+                            </div>
+                            <span class="badge {{ $classAssessment->display_status === 'completed' ? 'text-bg-success' : 'text-bg-warning' }} rounded-1">
+                                {{ ucfirst($classAssessment->display_status) }}
+                            </span>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $classAssessment->assessment) }}">
+                                <span class="material-symbols-outlined fs-5">visibility</span>
+                                View Assessment
+                            </a>
+                            @if ($classAssessment->display_status === 'completed')
+                                <a class="btn btn-psu d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.results', $classAssessment) }}">
+                                    <span class="material-symbols-outlined fs-5">analytics</span>
+                                    View Results
+                                </a>
+                            @endif
+                        </div>
+                    </section>
+                @endforeach
+            </div>
+        @else
+            <section class="detail-card p-5 text-center">
+                <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">assignment</span></div>
+                <h3 class="h5 mb-2" style="color: var(--psu-navy);">No assessments published</h3>
+                <a class="btn btn-psu d-inline-flex align-items-center gap-2 mt-2" href="{{ route('instructor.assessments.publish.form') }}">
+                    <span class="material-symbols-outlined fs-5">publish</span>
+                    Publish Assessment
+                </a>
+            </section>
+        @endif
     @else
         @if (! $class->archived_at && $pendingJoinRequests->isNotEmpty())
             <section class="directory-card shadow-sm mb-4">
@@ -302,7 +415,6 @@
                                             <span class="avatar">{{ strtoupper(substr($student?->user?->displayName() ?? 'S', 0, 1)) }}</span>
                                             <div>
                                                 <div class="fw-bold" style="color: var(--psu-navy);">{{ $student?->user?->displayName() ?? 'Unknown student' }}</div>
-                                                <div class="small text-secondary">{{ $student?->user?->email ?? 'No email' }}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -353,26 +465,24 @@
                     <thead>
                         <tr>
                             <th>Student</th>
-                            <th>Student Number</th>
                             <th>Program</th>
-                            <th>Email</th>
-                            <th>Status</th>
+                            <th>Performance</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($enrolledStudents as $student)
+                            @php($performance = $studentPerformance->get($student->student_profile_id))
                             <tr>
                                 <td>
                                     <div class="d-flex align-items-center gap-3">
                                         <span class="avatar">{{ strtoupper(substr($student->user?->displayName() ?? 'S', 0, 1)) }}</span>
                                         <div>
                                             <div class="fw-bold" style="color: var(--psu-navy);">{{ $student->user?->displayName() ?? 'Unnamed student' }}</div>
-                                            <div class="small text-secondary">{{ $student->user?->name }}</div>
+                                            <div class="small text-secondary">{{ $student->student_number ?? 'No student number' }}</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td>{{ $student->student_number }}</td>
                                 <td>
                                     @if ($student->program)
                                         <div class="fw-semibold">{{ $student->program->program_name }}</div>
@@ -381,11 +491,28 @@
                                         <span class="text-secondary">Not assigned</span>
                                     @endif
                                 </td>
-                                <td>{{ $student->user?->email ?? 'No email' }}</td>
                                 <td>
-                                    <span class="badge {{ ($student->user?->status === 'active') ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
-                                        {{ ucfirst($student->user?->status ?? 'inactive') }}
-                                    </span>
+                                    @if ($performance['has_results'])
+                                        <div class="student-performance">
+                                            <div class="student-performance-row">
+                                                <div
+                                                    class="student-performance-track {{ $performance['passed'] ? 'passed' : 'failed' }}"
+                                                    role="img"
+                                                    aria-label="{{ $performance['percentage'] }} percent performance"
+                                                >
+                                                    <span
+                                                        class="student-performance-fill {{ $performance['passed'] ? 'passed' : 'failed' }}"
+                                                        style="width: {{ $performance['percentage'] }}%;"
+                                                    ></span>
+                                                </div>
+                                                <span class="student-performance-percent {{ $performance['passed'] ? 'text-success' : 'text-danger' }}">
+                                                    {{ $performance['percentage'] }}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <span class="text-secondary small">No results</span>
+                                    @endif
                                 </td>
                                 <td>
                                     @if (! $class->archived_at)
@@ -404,7 +531,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td class="text-center py-5" colspan="6">
+                                <td class="text-center py-5" colspan="4">
                                     <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">groups</span></div>
                                     <h4 class="h4" style="color: var(--psu-navy);">No students enrolled yet</h4>
                                     <p class="text-secondary mb-4">Use a valid student number from an existing student account to add the first student to this class.</p>
@@ -480,46 +607,55 @@
                             <div class="mb-3">
                                 <label class="form-label fw-bold text-uppercase small" for="student_number">Student Number</label>
                                 <input class="form-control form-control-lg" id="student_number" name="student_number" placeholder="e.g. 2024-00001" required type="text" value="{{ old('student_number') }}">
-                                <div class="form-text">This only accepts existing student accounts already created by the Super Admin.</div>
                             </div>
                             <div class="d-flex justify-content-end">
                                 <button class="btn btn-psu px-4" type="submit">Add Student</button>
                             </div>
                         </form>
 
-                        <hr class="my-4">
+                        <div class="student-import-divider">or</div>
 
-                        <div class="mb-3">
-                            <p class="small fw-bold text-secondary text-uppercase mb-2">Or Import a File</p>
-                            <div class="alert alert-primary border-0 mb-3">
-                                Use one student number per line, or upload a file with a `student_number` column. The system will preview the records first before any student is added.
-                            </div>
-                            <div class="d-flex flex-wrap align-items-center gap-2 small">
-                                <span class="text-secondary">Accepted formats:</span>
-                                <span class="badge text-bg-light border">.txt</span>
-                                <span class="badge text-bg-light border">.csv</span>
-                                <span class="badge text-bg-light border">.xlsx</span>
-                                <a class="fw-semibold text-decoration-none ms-sm-2" href="{{ route('instructor.classes.students.import.sample', $class) }}" style="color: var(--psu-navy-2);">
-                                    Download Sample CSV
-                                </a>
+                        <button
+                            class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#studentImportPanel"
+                            type="button"
+                            aria-expanded="{{ $errors->has('student_file') ? 'true' : 'false' }}"
+                            aria-controls="studentImportPanel"
+                        >
+                            <span class="material-symbols-outlined">upload_file</span>
+                            Import Students
+                        </button>
+
+                        <div class="collapse {{ $errors->has('student_file') ? 'show' : '' }}" id="studentImportPanel">
+                            <div class="student-import-panel">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                                    <div class="d-flex align-items-center gap-2 small">
+                                        <span class="badge text-bg-light border">.txt</span>
+                                        <span class="badge text-bg-light border">.csv</span>
+                                        <span class="badge text-bg-light border">.xlsx</span>
+                                    </div>
+                                    <a class="small fw-semibold text-decoration-none" href="{{ route('instructor.classes.students.import.sample', $class) }}" style="color: var(--psu-navy-2);">
+                                        Download Sample CSV
+                                    </a>
+                                </div>
+
+                                <form action="{{ route('instructor.classes.students.import.preview', $class) }}" method="POST" enctype="multipart/form-data">
+                                    @csrf
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-uppercase small" for="student_file">Roster File</label>
+                                        <input class="form-control" id="student_file" name="student_file" type="file" accept=".csv,.txt,.xlsx" required>
+                                        <div class="form-text">Maximum file size: 2 MB.</div>
+                                    </div>
+                                    <div class="d-flex justify-content-end">
+                                        <button class="btn btn-psu d-inline-flex align-items-center gap-2 px-4" type="submit">
+                                            <span class="material-symbols-outlined fs-6">preview</span>
+                                            Preview Import
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
-                        <form action="{{ route('instructor.classes.students.import.preview', $class) }}" method="POST" enctype="multipart/form-data">
-                            @csrf
-                            <div class="mb-3">
-                                <label class="form-label fw-bold text-uppercase small" for="student_file">Roster File</label>
-                                <input class="form-control form-control-lg" id="student_file" name="student_file" type="file" accept=".csv,.txt,.xlsx" required>
-                                <div class="form-text">Accepted formats: `.csv`, `.txt`, or `.xlsx`, up to 2 MB.</div>
-                            </div>
-                            <div class="mb-3">
-                                <div class="small text-secondary">
-                                    For Excel files, keep the student numbers in the first sheet. Best practice is one `student_number` column only.
-                                </div>
-                            </div>
-                            <div class="d-flex justify-content-end">
-                                <button class="btn btn-outline-primary px-4" type="submit">Read File</button>
-                            </div>
-                        </form>
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Discard</button>

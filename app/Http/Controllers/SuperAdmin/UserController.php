@@ -9,6 +9,7 @@ use App\Models\Program;
 use App\Models\Role;
 use App\Models\StudentProfile;
 use App\Models\User;
+use App\Services\StudentAccountImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\MessageBag;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UserController extends Controller
 {
@@ -30,7 +32,7 @@ class UserController extends Controller
         'department_chair',
     ];
 
-    public function index(): View
+    public function index(Request $request, StudentAccountImportService $importer): View
     {
         $users = User::with(['roles', 'instructorProfile.department.college', 'studentProfile.program.college'])
             ->orderBy('last_name')
@@ -67,7 +69,46 @@ class UserController extends Controller
             'totalActiveUsers' => $users->where('status', 'active')->count(),
             'departments' => $departments,
             'programs' => $programs,
+            'studentImportPreview' => $importer->previewForRequest($request, 'super-admin'),
         ]);
+    }
+
+    public function downloadStudentImportSample(StudentAccountImportService $importer): StreamedResponse
+    {
+        $program = Program::query()->orderBy('program_name')->first();
+
+        abort_unless($program, 404, 'No program is available for student account import.');
+
+        return $importer->sampleCsv($program);
+    }
+
+    public function previewStudentImport(Request $request, StudentAccountImportService $importer): RedirectResponse
+    {
+        $programs = Program::query()->orderBy('program_name')->get();
+
+        abort_if($programs->isEmpty(), 403, 'A program is required before importing students.');
+
+        $token = $importer->previewUpload($request, $programs, 'super-admin');
+
+        return redirect()->route('super-admin.users', ['import_token' => $token]);
+    }
+
+    public function confirmStudentImport(Request $request, StudentAccountImportService $importer): RedirectResponse
+    {
+        $programs = Program::query()->orderBy('program_name')->get();
+
+        abort_if($programs->isEmpty(), 403);
+
+        $result = $importer->confirm($request, $programs, 'super-admin');
+        $redirect = redirect()
+            ->route('super-admin.users')
+            ->with('status', $result['created_count'].' student accounts created successfully.');
+
+        if ($result['setup_links_sent'] < $result['created_count']) {
+            $redirect->with('mail_warning', 'Some password setup emails were not delivered. Those students can request a new link through Forgot Password.');
+        }
+
+        return $redirect;
     }
 
     public function store(Request $request): RedirectResponse

@@ -34,6 +34,17 @@ These are the baseline security rules currently applied in the project and shoul
   - authorization grant and revoke
   - assessment publishing
   - student opening a published assessment
+- Create an in-progress submission record when a student starts an assessment, then update that same record on submit.
+- Store assessment security events in `submission_security_events` with a server timestamp and an immutable event identifier.
+- Treat `submissions.warning_count` as server-owned data. Never trust a warning count submitted by the browser.
+- Validate that each recorded security event is enabled for the assessment and belongs to the authenticated student's active submission.
+- Throttle security-event requests and suppress duplicate browser events before sending them.
+- Store a keyed request fingerprint instead of a plain IP address in assessment security history.
+- Limit student-account imports to Super Admin, Admin/Dean, and Department Chair users. Enforce college or program scope for non-super-admin imports.
+- Validate imported files by type and size, limit each batch to 200 records, and cap extracted XLSX XML data.
+- Keep import previews in the authenticated session with a short-lived token, then recheck duplicates and scope before confirmation.
+- Create imported users, roles, and student profiles in one database transaction.
+- Never accept or store plaintext passwords in import files. Generate a random internal password and send a password-setup link through Laravel's password broker.
 
 ## Rules for future features
 

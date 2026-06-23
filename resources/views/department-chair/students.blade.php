@@ -61,9 +61,28 @@
     </style>
 @endpush
 
+@push('scripts')
+    @if ($errors->any() && old('base_role') === 'student')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const modal = document.getElementById('createStudentModal');
+
+                if (modal) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        </script>
+    @endif
+
+@endpush
+
 @section('content')
     @if (session('status'))
         <div class="alert alert-success">{{ session('status') }}</div>
+    @endif
+
+    @if (session('mail_warning'))
+        <div class="alert alert-warning">{{ session('mail_warning') }}</div>
     @endif
 
     @if ($errors->any())
@@ -109,7 +128,7 @@
         </div>
     @endif
 
-    <div class="d-flex justify-content-end mb-4">
+    <div class="d-flex flex-wrap justify-content-end gap-2 mb-4">
         <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createStudentModal" data-bs-toggle="modal" type="button" @disabled($scopedPrograms->isEmpty())>
             <span class="material-symbols-outlined fs-5">person_add</span>
             Create Student
@@ -186,12 +205,23 @@
                 @csrf
                 <input name="base_role" type="hidden" value="student">
 
-                <div class="modal-header">
+                <div class="modal-header student-import-modal-header">
                     <h3 class="modal-title h4" id="createStudentModalLabel">Create Student Account</h3>
-                    <button class="btn-close" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
+                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
 
                 <div class="modal-body">
+                    <div class="student-create-mode" role="group" aria-label="Student account creation method">
+                        <button class="btn active" type="button" aria-current="true">
+                            <span class="material-symbols-outlined fs-5">person</span>
+                            Manual Entry
+                        </button>
+                        <button class="btn" data-bs-target="#importStudentsModal" data-bs-toggle="modal" type="button">
+                            <span class="material-symbols-outlined fs-5">upload_file</span>
+                            Import File
+                        </button>
+                    </div>
+
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label fw-bold text-uppercase small" for="student_first_name">First Name</label>
@@ -249,4 +279,10 @@
             </form>
         </div>
     </div>
+
+    @include('partials.student-account-import', [
+        'studentImportSampleRoute' => route('department-chair.students.import.sample'),
+        'studentImportPreviewRoute' => route('department-chair.students.import.preview'),
+        'studentImportConfirmRoute' => route('department-chair.students.import.confirm'),
+    ])
 @endsection

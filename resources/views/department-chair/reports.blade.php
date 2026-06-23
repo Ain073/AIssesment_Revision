@@ -57,17 +57,17 @@
     <section class="reports-hero">
         <p class="small fw-bold text-uppercase mb-2 hero-eyebrow">Department Chair Module</p>
         <h2 class="brand-text h1 mb-3">Reports</h2>
-        <p>Finalized instructor reports submitted for department monitoring will be organized here.</p>
+        <p>Instructor report records for department monitoring.</p>
     </section>
 
     <section class="reports-grid">
         <article class="reports-card">
             <h3 class="brand-text h4 mb-2" style="color: var(--psu-navy);">Formative Reports</h3>
-            <p class="text-secondary mb-0">Review finalized formative reports once report generation is connected.</p>
+            <p class="text-secondary mb-0">Finalized formative reports will appear here.</p>
         </article>
         <article class="reports-card">
             <h3 class="brand-text h4 mb-2" style="color: var(--psu-navy);">Summative Reports</h3>
-            <p class="text-secondary mb-0">Review finalized summative reports once assessment submissions are available.</p>
+            <p class="text-secondary mb-0">Finalized summative reports will appear here.</p>
         </article>
         <article class="reports-card">
             <h3 class="brand-text h4 mb-2" style="color: var(--psu-navy);">Monitoring</h3>

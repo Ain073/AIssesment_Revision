@@ -63,7 +63,7 @@
 
         .workspace-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 1rem;
             margin-top: 1rem;
         }
@@ -86,8 +86,7 @@
             margin-bottom: 1rem;
         }
 
-        .action-grid,
-        .focus-list {
+        .action-grid {
             display: grid;
             gap: 1rem;
         }
@@ -106,19 +105,8 @@
             box-shadow: 0 14px 28px rgba(0, 17, 58, 0.08);
         }
 
-        .focus-item {
-            padding: 1rem 0 0;
-            border-top: 1px solid #e4e8f0;
-        }
-
-        .focus-item:first-child {
-            padding-top: 0;
-            border-top: 0;
-        }
-
         @media (max-width: 991.98px) {
-            .stat-grid,
-            .workspace-grid {
+            .stat-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -163,17 +151,5 @@
             </div>
         </article>
 
-        <article class="info-card">
-            <p class="eyebrow">Current Focus</p>
-            <h3 class="brand-text h4 section-title">What Still Needs Wiring</h3>
-            <div class="focus-list">
-                @foreach ($focusItems as $item)
-                    <div class="focus-item">
-                        <p class="fw-bold mb-1" style="color: var(--psu-navy);">{{ $item['title'] }}</p>
-                        <p class="text-secondary mb-0">{{ $item['description'] }}</p>
-                    </div>
-                @endforeach
-            </div>
-        </article>
     </section>
 @endsection

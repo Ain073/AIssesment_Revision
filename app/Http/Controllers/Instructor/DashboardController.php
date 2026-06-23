@@ -5,14 +5,15 @@ namespace App\Http\Controllers\Instructor;
 use App\Http\Controllers\Controller;
 use App\Models\AcademicClass;
 use App\Models\Assessment;
-use App\Models\ClassJoinRequest;
 use App\Models\ClassAssessment;
+use App\Models\ClassJoinRequest;
 use App\Models\InstructorProfile;
 use App\Models\Report;
-use App\Models\Submission;
 use App\Models\StudentProfile;
 use App\Models\Subject;
+use App\Models\Submission;
 use App\Models\User;
+use App\Services\TabularFileReader;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,12 +22,10 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
-use SimpleXMLElement;
-use ZipArchive;
 
 class DashboardController extends Controller
 {
@@ -37,6 +36,24 @@ class DashboardController extends Controller
         $classes = $instructorProfile
             ? $instructorProfile->classes()
                 ->whereNull('archived_at')
+                ->with([
+                    'subject',
+                    'students',
+                    'classAssessments' => fn ($query) => $query
+                        ->where(function ($statusQuery): void {
+                            $statusQuery->where('publish_status', ClassAssessment::STATUS_CLOSED)
+                                ->orWhere(function ($dueQuery): void {
+                                    $dueQuery->whereNotNull('due_at')
+                                        ->where('due_at', '<=', now());
+                                });
+                        })
+                        ->with([
+                            'assessment.items.choices',
+                            'submissions' => fn ($submissionQuery) => $submissionQuery
+                                ->where('status', Submission::STATUS_SUBMITTED)
+                                ->with('answers.choice'),
+                        ]),
+                ])
                 ->withCount('students')
                 ->latest('class_id')
                 ->get()
@@ -50,15 +67,6 @@ class DashboardController extends Controller
                 ->count('student_profile_id')
             : 0;
         $assessmentsCount = $instructorProfile?->assessments()->count() ?? 0;
-        $draftAssessmentsCount = $instructorProfile
-            ? $instructorProfile->assessments()->where('status', Assessment::STATUS_DRAFT)->count()
-            : 0;
-        $publishedUsesCount = $instructorProfile
-            ? ClassAssessment::query()
-                ->whereIn('assessment_id', $instructorProfile->assessments()->select('assessment_id'))
-                ->where('publish_status', ClassAssessment::STATUS_PUBLISHED)
-                ->count()
-            : 0;
 
         return view('instructor.dashboard', $this->sharedData($user, 'dashboard') + [
             'stats' => [
@@ -80,48 +88,9 @@ class DashboardController extends Controller
                     'caption' => 'Reusable assessments you created',
                     'icon' => 'assignment',
                 ],
-                [
-                    'label' => 'Published Uses',
-                    'value' => $publishedUsesCount,
-                    'caption' => 'Assessment publications to classes',
-                    'icon' => 'publish',
-                ],
             ],
-            'quickActions' => [
-                [
-                    'label' => 'View Classes',
-                    'description' => 'Open your subject and section list.',
-                    'href' => route('instructor.classes'),
-                    'icon' => 'school',
-                ],
-                [
-                    'label' => 'Open Assessments',
-                    'description' => 'Manage quizzes, exams, and activities.',
-                    'href' => route('instructor.assessments'),
-                    'icon' => 'assignment',
-                ],
-                [
-                    'label' => 'Build Assessments',
-                    'description' => 'Create reusable assessments and publish them to classes.',
-                    'href' => route('instructor.assessments'),
-                    'icon' => 'assignment_add',
-                ],
-            ],
-            'pendingWork' => $this->pendingWorkItems($classesCount, $draftAssessmentsCount),
-        ]);
-    }
-
-    public function pendingWorkPartial(): View
-    {
-        $user = $this->currentUser();
-        $instructorProfile = $this->instructorProfile($user);
-        $classesCount = $instructorProfile?->classes()->whereNull('archived_at')->count() ?? 0;
-        $draftAssessmentsCount = $instructorProfile
-            ? $instructorProfile->assessments()->where('status', Assessment::STATUS_DRAFT)->count()
-            : 0;
-
-        return view('instructor.partials.pending-work', [
-            'pendingWork' => $this->pendingWorkItems($classesCount, $draftAssessmentsCount),
+            'activeClassPerformance' => $classes
+                ->map(fn (AcademicClass $class): array => $this->classPerformanceSummary($class)),
         ]);
     }
 
@@ -349,11 +318,27 @@ class DashboardController extends Controller
             'instructorProfile.department.college',
             'students.user.roles',
             'students.program.college',
+            'classAssessments' => fn ($query) => $query
+                ->with([
+                    'assessment.subject',
+                    'assessment.items.choices',
+                    'submissions' => fn ($submissionQuery) => $submissionQuery
+                        ->where('status', Submission::STATUS_SUBMITTED)
+                        ->with('answers.choice'),
+                ])
+                ->latest('class_assessment_id'),
             'joinRequests' => fn ($query) => $query
                 ->where('status', ClassJoinRequest::STATUS_PENDING)
                 ->with(['studentProfile.user.roles', 'studentProfile.program.college'])
                 ->latest('requested_at'),
-        ])->loadCount('students');
+        ])->loadCount('students', 'classAssessments');
+
+        $ownedClass->classAssessments->each(function (ClassAssessment $classAssessment): void {
+            $classAssessment->display_status = $classAssessment->publish_status === ClassAssessment::STATUS_CLOSED
+                || ($classAssessment->due_at && $classAssessment->due_at->isPast())
+                    ? 'completed'
+                    : 'pending';
+        });
 
         $this->ensureClassJoinAccess($ownedClass);
 
@@ -368,7 +353,8 @@ class DashboardController extends Controller
             'enrolledStudents' => $ownedClass->students
                 ->sortBy(fn (StudentProfile $student) => strtolower($student->user?->displayName() ?? ''))
                 ->values(),
-            'assessmentsTakenCount' => 0,
+            'classAssessments' => $ownedClass->classAssessments,
+            'studentPerformance' => $this->studentPerformanceByStudent($ownedClass),
             'importPreview' => $this->pullImportPreview($request, $ownedClass),
         ]);
     }
@@ -498,7 +484,7 @@ class DashboardController extends Controller
             ->with('status', 'Student removed from class successfully.');
     }
 
-    public function previewClassStudentsImport(Request $request, AcademicClass $class): RedirectResponse
+    public function previewClassStudentsImport(Request $request, AcademicClass $class, TabularFileReader $fileReader): RedirectResponse
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
@@ -515,10 +501,10 @@ class DashboardController extends Controller
             ],
         ]);
 
-        $numbers = $this->extractStudentNumbersFromImport(
+        $numbers = $this->extractStudentNumbersFromRows($fileReader->read(
             $validated['student_file']->getRealPath(),
             Str::lower((string) $validated['student_file']->getClientOriginalExtension())
-        );
+        ));
 
         if (empty($numbers)) {
             throw ValidationException::withMessages([
@@ -609,7 +595,7 @@ class DashboardController extends Controller
 
         return redirect()
             ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
-            ->with('status', $attachIds->count() . ' student' . ($attachIds->count() === 1 ? '' : 's') . ' imported successfully.');
+            ->with('status', $attachIds->count().' student'.($attachIds->count() === 1 ? '' : 's').' imported successfully.');
     }
 
     public function downloadClassStudentsImportSample(AcademicClass $class): Response
@@ -619,17 +605,17 @@ class DashboardController extends Controller
         $ownedClass = $this->ownedClass($class, $instructorProfile);
         $this->ensureActiveClass($ownedClass);
 
-        $fileName = Str::slug($ownedClass->class_name ?: 'class') . '-student-import-sample.csv';
+        $fileName = Str::slug($ownedClass->class_name ?: 'class').'-student-import-sample.csv';
         $content = implode("\n", [
             'student_number',
             '2024-00001',
             '2024-00002',
             '2024-00003',
-        ]) . "\n";
+        ])."\n";
 
         return response($content, 200, [
             'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
         ]);
     }
 
@@ -766,6 +752,7 @@ class DashboardController extends Controller
         $publishedAssessments = $instructorProfile
             ? ClassAssessment::query()
                 ->with(['assessment.subject', 'class.subject'])
+                ->withCount(['submissions as submitted_count' => fn ($query) => $query->where('status', Submission::STATUS_SUBMITTED)])
                 ->whereHas('assessment', fn ($query) => $query->where('instructor_id', $instructorProfile->instructor_profile_id))
                 ->latest('class_assessment_id')
                 ->get()
@@ -786,6 +773,101 @@ class DashboardController extends Controller
             'classesBySubject' => $classesBySubject,
             'assessmentTypes' => $this->assessmentTypes(),
             'itemTypes' => $this->itemTypes(),
+        ]);
+    }
+
+    public function assessmentResults(ClassAssessment $classAssessment): View
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedClassAssessment = $this->ownedClassAssessment($classAssessment, $instructorProfile);
+        $isCompleted = $ownedClassAssessment->publish_status === ClassAssessment::STATUS_CLOSED
+            || ($ownedClassAssessment->due_at && $ownedClassAssessment->due_at->isPast());
+
+        abort_unless($isCompleted, 404, 'Results are available after the assessment is completed.');
+
+        $ownedClassAssessment->load([
+            'assessment.subject',
+            'assessment.items.choices',
+            'class.subject',
+            'class.students.user',
+            'submissions' => fn ($query) => $query
+                ->with(['studentProfile.user', 'answers.choice', 'securityEvents'])
+                ->orderBy('attempt_number'),
+        ]);
+
+        $items = $ownedClassAssessment->assessment?->items ?? collect();
+        $maxScore = (float) $items->sum(fn ($item) => (float) $item->points);
+        $passingScore = $maxScore * 0.75;
+        $submissions = $ownedClassAssessment->submissions;
+        $students = $ownedClassAssessment->class?->students ?? collect();
+        $submissionStudents = $submissions
+            ->pluck('studentProfile')
+            ->filter();
+
+        $studentResults = $students
+            ->concat($submissionStudents)
+            ->unique('student_profile_id')
+            ->sortBy(fn (StudentProfile $student): string => Str::lower($student->user?->displayName() ?? $student->student_number ?? ''))
+            ->map(function (StudentProfile $student) use ($submissions, $items, $maxScore, $passingScore): array {
+                $attempts = $submissions
+                    ->where('student_profile_id', $student->student_profile_id)
+                    ->map(function (Submission $submission) use ($items, $maxScore, $passingScore): array {
+                        $isSubmitted = $submission->status === Submission::STATUS_SUBMITTED;
+                        $score = $isSubmitted ? $this->submissionScore($submission, $items) : null;
+
+                        return [
+                            'status' => $submission->status,
+                            'score' => $score !== null ? $this->formatReportNumber($score) : null,
+                            'score_value' => $score,
+                            'passed' => $score !== null && $maxScore > 0 && $score >= $passingScore,
+                            'submitted_at' => $submission->submitted_at,
+                            'warning_count' => $submission->warning_count,
+                            'completion_reason' => $submission->completion_reason,
+                            'security_events' => $submission->securityEvents
+                                ->map(fn ($event): array => [
+                                    'label' => $event->displayLabel(),
+                                    'occurred_at' => $event->occurred_at,
+                                ])
+                                ->values(),
+                        ];
+                    })
+                    ->values();
+                $bestAttempt = $attempts
+                    ->where('status', Submission::STATUS_SUBMITTED)
+                    ->sortByDesc('score_value')
+                    ->first();
+                $submittedAttemptsCount = $attempts
+                    ->where('status', Submission::STATUS_SUBMITTED)
+                    ->count();
+
+                return [
+                    'student' => $student,
+                    'attempts' => $attempts,
+                    'best_attempt' => $bestAttempt,
+                    'submitted_attempts_count' => $submittedAttemptsCount,
+                ];
+            })
+            ->values();
+        $analytics = $this->classAssessmentReportAnalytics($ownedClassAssessment);
+        $autoSubmittedCount = $submissions
+            ->where('status', Submission::STATUS_SUBMITTED)
+            ->where('completion_reason', Submission::COMPLETION_WARNING_LIMIT)
+            ->count();
+
+        Log::info('Instructor viewed completed assessment results.', [
+            'actor_id' => $user->id,
+            'class_assessment_id' => $ownedClassAssessment->class_assessment_id,
+            'assessment_id' => $ownedClassAssessment->assessment_id,
+            'class_id' => $ownedClassAssessment->class_id,
+        ]);
+
+        return view('instructor.assessment-results', $this->sharedData($user, 'assessments') + [
+            'assessment' => $ownedClassAssessment->assessment,
+            'class' => $ownedClassAssessment->class,
+            'studentResults' => $studentResults,
+            'analytics' => $analytics,
+            'autoSubmittedCount' => $autoSubmittedCount,
         ]);
     }
 
@@ -1430,66 +1512,6 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function students(): View
-    {
-        return view('instructor.students', $this->placeholderPageData(
-            'students',
-            'Students',
-            'Student lists per class or section will live here once we connect enrollment data.',
-            [
-                'Roster per subject or section',
-                'Student status and participation view',
-                'Shortcuts to submissions and results',
-            ],
-        ));
-    }
-
-    private function placeholderPageData(
-        string $activeNav,
-        string $pageHeading,
-        string $pageDescription,
-        array $checklist
-    ): array {
-        $user = $this->currentUser();
-
-        return $this->sharedData($user, $activeNav) + [
-            'pageHeading' => $pageHeading,
-            'pageDescription' => $pageDescription,
-            'pageChecklist' => $checklist,
-        ];
-    }
-
-    private function pendingWorkItems(int $classesCount, int $draftAssessmentsCount): array
-    {
-        return [
-            [
-                'title' => $classesCount > 0
-                    ? $classesCount.' class'.($classesCount === 1 ? '' : 'es').' linked'
-                    : 'No classes linked yet',
-                'description' => $classesCount > 0
-                    ? 'Open your class records to manage students and assessment access.'
-                    : 'Once classes are assigned to this instructor, the next teaching tasks will appear here.',
-                'state' => $classesCount > 0 ? 'Open' : 'Waiting for setup',
-                'href' => route('instructor.classes'),
-            ],
-            [
-                'title' => $draftAssessmentsCount > 0
-                    ? $draftAssessmentsCount.' assessment'.($draftAssessmentsCount === 1 ? '' : 's').' in draft'
-                    : 'No assessments in draft',
-                'description' => $draftAssessmentsCount > 0
-                    ? 'Continue building draft assessments before publishing them to classes.'
-                    : 'Draft assessments will be listed here for quick continuation.',
-                'state' => $draftAssessmentsCount > 0 ? 'Continue' : 'Clear',
-                'href' => route('instructor.assessments'),
-            ],
-            [
-                'title' => 'No submissions to check',
-                'description' => 'Review tasks will surface here once the student submission flow is connected.',
-                'state' => 'Clear',
-            ],
-        ];
-    }
-
     private function sharedData(User $user, string $activeNav): array
     {
         return [
@@ -1605,11 +1627,9 @@ class DashboardController extends Controller
                     'class.subject',
                     'report',
                     'submissions.answers.choice',
-                    'submissions.answers.item.choices',
                 ]);
 
                 $analytics = $this->classAssessmentReportAnalytics($classAssessment);
-                $drafts = $this->buildConceptDrafts($classAssessment, $analytics);
                 $report = Report::query()->firstOrCreate(
                     [
                         'class_assessment_id' => $classAssessment->class_assessment_id,
@@ -1620,28 +1640,12 @@ class DashboardController extends Controller
                     ],
                 );
 
-                $changed = false;
-
-                if (blank($report->ai_most_learned_draft)) {
-                    $report->ai_most_learned_draft = $drafts['most'];
-                    $changed = true;
-                }
-
-                if (blank($report->ai_least_learned_draft)) {
-                    $report->ai_least_learned_draft = $drafts['least'];
-                    $changed = true;
-                }
-
-                if ($changed) {
-                    $report->save();
-                }
-
                 return [
                     'classAssessment' => $classAssessment,
                     'assessment' => $classAssessment->assessment,
                     'class' => $classAssessment->class,
                     'analytics' => $analytics,
-                    'report' => $report->fresh(),
+                    'report' => $report,
                 ];
             })
             ->values();
@@ -1708,9 +1712,6 @@ class DashboardController extends Controller
             })
             ->values();
         $passingScore = $maxScore > 0 ? $maxScore * 0.75 : 0;
-        $itemPerformance = $items
-            ->map(fn ($item): array => $this->assessmentItemPerformance($item, $submissions))
-            ->values();
 
         return [
             'students_count' => $classAssessment->class?->students?->count() ?? 0,
@@ -1726,8 +1727,71 @@ class DashboardController extends Controller
                 ? round(($studentScores->filter(fn (float $score): bool => $score >= $passingScore)->count() / $studentScores->count()) * 100, 2)
                 : 0,
             'max_score' => $this->formatReportNumber($maxScore),
-            'item_performance' => $itemPerformance,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function classPerformanceSummary(AcademicClass $class): array
+    {
+        $studentPerformance = $this->studentPerformanceByStudent($class)
+            ->where('has_results', true);
+        $studentCount = $studentPerformance->count();
+        $passedCount = $studentPerformance->where('passed', true)->count();
+        $failedCount = $studentCount - $passedCount;
+        $hasResults = $studentCount > 0;
+
+        return [
+            'class' => $class,
+            'has_results' => $hasResults,
+            'passed_percentage' => $hasResults ? round(($passedCount / $studentCount) * 100, 1) : 0,
+            'failed_percentage' => $hasResults ? round(($failedCount / $studentCount) * 100, 1) : 0,
+        ];
+    }
+
+    /**
+     * @return Collection<int, array{has_results: bool, percentage: float|null, passed: bool|null}>
+     */
+    private function studentPerformanceByStudent(AcademicClass $class): Collection
+    {
+        $scoreableAssessments = $class->classAssessments
+            ->filter(function (ClassAssessment $classAssessment): bool {
+                $isCompleted = $classAssessment->publish_status === ClassAssessment::STATUS_CLOSED
+                    || ($classAssessment->due_at && $classAssessment->due_at->isPast());
+                $maxScore = (float) ($classAssessment->assessment?->items?->sum('points') ?? 0);
+
+                return $isCompleted && $maxScore > 0;
+            })
+            ->values();
+
+        return $class->students->mapWithKeys(function (StudentProfile $student) use ($scoreableAssessments): array {
+            if ($scoreableAssessments->isEmpty()) {
+                return [$student->student_profile_id => [
+                    'has_results' => false,
+                    'percentage' => null,
+                    'passed' => null,
+                ]];
+            }
+
+            $totalPercentage = $scoreableAssessments->sum(function (ClassAssessment $classAssessment) use ($student): float {
+                $items = $classAssessment->assessment->items;
+                $maxScore = (float) $items->sum('points');
+                $bestScore = $classAssessment->submissions
+                    ->where('student_profile_id', $student->student_profile_id)
+                    ->map(fn (Submission $submission): float => $this->submissionScore($submission, $items))
+                    ->max() ?? 0;
+
+                return ($bestScore / $maxScore) * 100;
+            });
+            $percentage = round($totalPercentage / $scoreableAssessments->count(), 1);
+
+            return [$student->student_profile_id => [
+                'has_results' => true,
+                'percentage' => $percentage,
+                'passed' => $percentage >= 75,
+            ]];
+        });
     }
 
     private function submissionScore(Submission $submission, Collection $items): float
@@ -1741,33 +1805,6 @@ class DashboardController extends Controller
                 ? (float) $item->points
                 : 0.0;
         });
-    }
-
-    private function assessmentItemPerformance($item, Collection $submissions): array
-    {
-        $attempts = 0;
-        $correct = 0;
-
-        foreach ($submissions as $submission) {
-            $answer = $submission->answers->firstWhere('assessment_item_id', $item->assessment_item_id);
-
-            if (! $answer || (blank($answer->answer_text) && blank($answer->assessment_item_choice_id))) {
-                continue;
-            }
-
-            $attempts++;
-
-            if ($this->isSubmissionAnswerCorrect($item, $answer)) {
-                $correct++;
-            }
-        }
-
-        return [
-            'question' => Str::limit(strip_tags((string) $item->question_text), 90),
-            'rate' => $attempts > 0 ? round(($correct / $attempts) * 100, 2) : 0,
-            'attempts' => $attempts,
-            'correct' => $correct,
-        ];
     }
 
     private function isSubmissionAnswerCorrect($item, $answer): bool
@@ -1784,43 +1821,6 @@ class DashboardController extends Controller
         $studentAnswer = Str::lower(trim((string) $answer->answer_text));
 
         return $studentAnswer !== '' && $correctAnswers->contains($studentAnswer);
-    }
-
-    /**
-     * @param  array<string, mixed>  $analytics
-     * @return array{most: string, least: string}
-     */
-    private function buildConceptDrafts(ClassAssessment $classAssessment, array $analytics): array
-    {
-        $performances = collect($analytics['item_performance'] ?? [])
-            ->filter(fn (array $item): bool => ($item['attempts'] ?? 0) > 0);
-        $strongItems = $performances
-            ->sortByDesc('rate')
-            ->take(3)
-            ->pluck('question')
-            ->filter()
-            ->values();
-        $weakItems = $performances
-            ->sortBy('rate')
-            ->take(3)
-            ->pluck('question')
-            ->filter()
-            ->values();
-        $subjectName = $classAssessment->assessment?->subject?->subject_name
-            ?: $classAssessment->class?->subject?->subject_name
-            ?: 'the assessment topic';
-
-        $most = $strongItems->isNotEmpty()
-            ? 'Students showed stronger understanding in items about '.$strongItems->implode('; ').'. These results suggest that the class can recall and apply the basic concepts in '.$subjectName.'.'
-            : 'Students showed stronger understanding of the basic concepts covered in '.$subjectName.'.';
-        $least = $weakItems->isNotEmpty()
-            ? 'Students need more support in items about '.$weakItems->implode('; ').'. These results suggest that the class needs more guided practice and review in these parts of '.$subjectName.'.'
-            : 'Students need more guided practice in the lower-performing parts of '.$subjectName.'.';
-
-        return [
-            'most' => $most,
-            'least' => $least,
-        ];
     }
 
     private function formatReportNumber(float $value): string
@@ -1885,6 +1885,21 @@ class DashboardController extends Controller
         );
 
         return $assessment;
+    }
+
+    private function ownedClassAssessment(ClassAssessment $classAssessment, ?InstructorProfile $instructorProfile): ClassAssessment
+    {
+        $classAssessment->loadMissing('assessment');
+
+        abort_unless(
+            $instructorProfile
+                && $classAssessment->assessment
+                && $classAssessment->assessment->instructor_id === $instructorProfile->instructor_profile_id,
+            403,
+            'You are not allowed to access these assessment results.'
+        );
+
+        return $classAssessment;
     }
 
     private function classTabs(AcademicClass $class, string $activeTab): array
@@ -1993,90 +2008,6 @@ class DashboardController extends Controller
     }
 
     /**
-     * @return list<string>
-     */
-    private function extractStudentNumbersFromImport(string $path, string $extension): array
-    {
-        if ($extension === 'xlsx') {
-            return $this->extractStudentNumbersFromRows($this->readRowsFromXlsxFile($path));
-        }
-
-        return $this->extractStudentNumbersFromRows($this->readRowsFromDelimitedFile($path));
-    }
-
-    /**
-     * @return array<int, array<int, string>>
-     */
-    private function readRowsFromDelimitedFile(string $path): array
-    {
-        $handle = fopen($path, 'r');
-
-        if ($handle === false) {
-            return [];
-        }
-
-        $rows = [];
-
-        while (($row = fgetcsv($handle)) !== false) {
-            $rows[] = array_map(
-                fn ($value) => is_string($value) ? trim($value) : '',
-                $row
-            );
-        }
-
-        fclose($handle);
-
-        return $rows;
-    }
-
-    /**
-     * @return array<int, array<int, string>>
-     */
-    private function readRowsFromXlsxFile(string $path): array
-    {
-        $zip = new ZipArchive();
-
-        if ($zip->open($path) !== true) {
-            return [];
-        }
-
-        $sharedStrings = $this->readXlsxSharedStrings($zip);
-        $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
-        $zip->close();
-
-        if (! is_string($sheetXml) || $sheetXml === '') {
-            return [];
-        }
-
-        $sheet = simplexml_load_string($sheetXml);
-
-        if (! $sheet instanceof SimpleXMLElement) {
-            return [];
-        }
-
-        $rows = [];
-
-        foreach ($sheet->sheetData->row ?? [] as $row) {
-            $currentRow = [];
-
-            foreach ($row->c as $cell) {
-                $reference = (string) $cell['r'];
-                $index = $this->xlsxColumnIndexFromReference($reference);
-
-                while (count($currentRow) < $index) {
-                    $currentRow[] = '';
-                }
-
-                $currentRow[] = $this->xlsxCellValue($cell, $sharedStrings);
-            }
-
-            $rows[] = $currentRow;
-        }
-
-        return $rows;
-    }
-
-    /**
      * @param  array<int, array<int, string>>  $rows
      * @return list<string>
      */
@@ -2109,77 +2040,6 @@ class DashboardController extends Controller
             ->all();
 
         return $studentNumbers;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function readXlsxSharedStrings(ZipArchive $zip): array
-    {
-        $sharedStringsXml = $zip->getFromName('xl/sharedStrings.xml');
-
-        if (! is_string($sharedStringsXml) || $sharedStringsXml === '') {
-            return [];
-        }
-
-        $sharedStrings = simplexml_load_string($sharedStringsXml);
-
-        if (! $sharedStrings instanceof SimpleXMLElement) {
-            return [];
-        }
-
-        $strings = [];
-
-        foreach ($sharedStrings->si as $item) {
-            if (isset($item->t)) {
-                $strings[] = trim((string) $item->t);
-
-                continue;
-            }
-
-            $text = '';
-
-            foreach ($item->r as $run) {
-                $text .= (string) ($run->t ?? '');
-            }
-
-            $strings[] = trim($text);
-        }
-
-        return $strings;
-    }
-
-    private function xlsxColumnIndexFromReference(string $reference): int
-    {
-        preg_match('/^[A-Z]+/i', $reference, $matches);
-        $letters = strtoupper($matches[0] ?? 'A');
-        $index = 0;
-
-        foreach (str_split($letters) as $letter) {
-            $index = ($index * 26) + (ord($letter) - 64);
-        }
-
-        return max($index - 1, 0);
-    }
-
-    /**
-     * @param  list<string>  $sharedStrings
-     */
-    private function xlsxCellValue(SimpleXMLElement $cell, array $sharedStrings): string
-    {
-        $type = (string) $cell['t'];
-
-        if ($type === 'inlineStr') {
-            return trim((string) ($cell->is->t ?? ''));
-        }
-
-        $value = trim((string) ($cell->v ?? ''));
-
-        if ($type === 's') {
-            return trim((string) ($sharedStrings[(int) $value] ?? ''));
-        }
-
-        return $value;
     }
 
     /**

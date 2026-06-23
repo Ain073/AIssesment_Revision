@@ -147,7 +147,6 @@
                 <div class="text-center py-4">
                     <div class="icon-tile mx-auto mb-3"><span class="material-symbols-outlined">history</span></div>
                     <p class="fw-semibold mb-1">No recent activity yet</p>
-                    <p class="small text-secondary mb-0">System actions will appear here once activity tracking is added.</p>
                 </div>
             </section>
         </div>

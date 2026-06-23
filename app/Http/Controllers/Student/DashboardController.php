@@ -8,6 +8,7 @@ use App\Models\ClassAssessment;
 use App\Models\ClassJoinRequest;
 use App\Models\StudentProfile;
 use App\Models\Submission;
+use App\Models\SubmissionSecurityEvent;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -23,24 +26,44 @@ class DashboardController extends Controller
     public function index(): View
     {
         $user = $this->currentUser();
+        $studentProfile = $user->studentProfile;
+        $classIds = $studentProfile
+            ? $studentProfile->classes()
+                ->whereNull('classes.archived_at')
+                ->pluck('classes.class_id')
+            : collect();
+        $assignedAssessmentsCount = $classIds->isNotEmpty()
+            ? ClassAssessment::query()
+                ->whereIn('class_id', $classIds)
+                ->where('publish_status', ClassAssessment::STATUS_PUBLISHED)
+                ->count()
+            : 0;
+        $releasedResultsCount = $studentProfile
+            ? Submission::query()
+                ->where('student_profile_id', $studentProfile->student_profile_id)
+                ->where('status', Submission::STATUS_SUBMITTED)
+                ->whereHas('classAssessment', fn ($query) => $query->where('score_visibility', true))
+                ->distinct()
+                ->count('class_assessment_id')
+            : 0;
 
         return view('student.dashboard', $this->sharedData($user, 'dashboard') + [
             'stats' => [
                 [
                     'label' => 'Enrolled Classes',
-                    'value' => 0,
+                    'value' => $classIds->count(),
                     'caption' => 'Classes linked to your account',
                     'icon' => 'school',
                 ],
                 [
                     'label' => 'Assigned Assessments',
-                    'value' => 0,
+                    'value' => $assignedAssessmentsCount,
                     'caption' => 'Assessments currently available',
                     'icon' => 'assignment',
                 ],
                 [
                     'label' => 'Released Results',
-                    'value' => 0,
+                    'value' => $releasedResultsCount,
                     'caption' => 'Scores and published outcomes',
                     'icon' => 'monitoring',
                 ],
@@ -63,20 +86,6 @@ class DashboardController extends Controller
                     'description' => 'Check released scores and assessment outcomes.',
                     'href' => route('student.results'),
                     'icon' => 'grading',
-                ],
-            ],
-            'studentNotes' => [
-                [
-                    'title' => 'Classes and assessments',
-                    'description' => 'Your enrolled classes and assigned assessments will appear here once class roster and publishing flow are connected.',
-                ],
-                [
-                    'title' => 'Released results only',
-                    'description' => 'Results should only appear when the instructor allows score release based on the manuscript workflow.',
-                ],
-                [
-                    'title' => 'Answer review depends on instructor settings',
-                    'description' => 'If allowed after closing, this portal can also show your submitted answers and correct answers for review.',
                 ],
             ],
         ]);
@@ -292,6 +301,12 @@ class DashboardController extends Controller
                 ->withErrors(['assessment' => 'This assessment has no questions yet.']);
         }
 
+        $submission = $this->startOrResumeSubmission($classAssessment, $studentProfile);
+
+        if ($submission instanceof RedirectResponse) {
+            return $submission;
+        }
+
         $items = $classAssessment->assessment->items;
 
         if ($classAssessment->shuffle_items) {
@@ -319,7 +334,90 @@ class DashboardController extends Controller
             'assessment' => $classAssessment->assessment,
             'class' => $classAssessment->class,
             'items' => $items,
+            'submission' => $submission,
             'warningLimit' => $this->warningLimit($classAssessment),
+        ]);
+    }
+
+    public function recordSecurityEvent(Request $request, ClassAssessment $classAssessment): JsonResponse
+    {
+        $user = $this->currentUser();
+        $studentProfile = $this->studentProfileOrRedirect($user);
+
+        abort_if($studentProfile instanceof RedirectResponse, 403, 'A student profile is required.');
+
+        $this->ensurePublishedAssessmentEnrollment($classAssessment, $studentProfile);
+
+        $validated = $request->validate([
+            'event_uuid' => ['required', 'string', 'max:64'],
+            'event_type' => ['required', 'string', Rule::in(array_keys(SubmissionSecurityEvent::labels()))],
+        ]);
+
+        if (! $this->securityEventEnabled($classAssessment, $validated['event_type'])) {
+            throw ValidationException::withMessages([
+                'event_type' => 'This security event is not enabled for the assessment.',
+            ]);
+        }
+
+        $result = DB::transaction(function () use ($request, $classAssessment, $studentProfile, $validated): array {
+            $submission = Submission::query()
+                ->where('class_assessment_id', $classAssessment->class_assessment_id)
+                ->where('student_profile_id', $studentProfile->student_profile_id)
+                ->where('status', Submission::STATUS_IN_PROGRESS)
+                ->lockForUpdate()
+                ->latest('attempt_number')
+                ->first();
+
+            abort_unless($submission, 409, 'There is no active assessment attempt.');
+
+            $event = SubmissionSecurityEvent::query()->firstOrCreate(
+                ['event_uuid' => $validated['event_uuid']],
+                [
+                    'submission_id' => $submission->submission_id,
+                    'event_type' => $validated['event_type'],
+                    'occurred_at' => now(),
+                    'request_fingerprint' => hash_hmac(
+                        'sha256',
+                        (string) $request->ip().'|'.(string) $request->userAgent(),
+                        (string) config('app.key'),
+                    ),
+                    'user_agent' => Str::limit((string) $request->userAgent(), 512, ''),
+                ],
+            );
+
+            abort_unless($event->submission_id === $submission->submission_id, 409, 'Security event identifier conflict.');
+
+            $warningLimit = $this->warningLimit($classAssessment);
+
+            if ($event->wasRecentlyCreated && $warningLimit > 0 && $submission->warning_count < $warningLimit) {
+                $submission->warning_count++;
+            }
+
+            $submission->last_activity_at = now();
+            $submission->save();
+
+            return [
+                'submission' => $submission,
+                'recorded' => $event->wasRecentlyCreated,
+                'warning_limit' => $warningLimit,
+                'should_auto_submit' => $warningLimit > 0 && $submission->warning_count >= $warningLimit,
+            ];
+        });
+
+        if ($result['recorded'] && $result['should_auto_submit']) {
+            Log::warning('Assessment warning limit reached.', [
+                'actor_id' => $user->id,
+                'student_profile_id' => $studentProfile->student_profile_id,
+                'class_assessment_id' => $classAssessment->class_assessment_id,
+                'submission_id' => $result['submission']->submission_id,
+            ]);
+        }
+
+        return response()->json([
+            'recorded' => $result['recorded'],
+            'warning_count' => $result['submission']->warning_count,
+            'warning_limit' => $result['warning_limit'],
+            'should_auto_submit' => $result['should_auto_submit'],
         ]);
     }
 
@@ -340,32 +438,37 @@ class DashboardController extends Controller
 
         $classAssessment->load(['assessment.items.choices', 'class']);
 
-        $submissionsUsed = $this->submittedSubmissionCount($classAssessment, $studentProfile);
-        $attemptLimit = max((int) $classAssessment->attempt_limit, 1);
-
-        if ($submissionsUsed >= $attemptLimit) {
-            return redirect()
-                ->route('student.assessments')
-                ->withErrors(['assessment' => 'You already used the allowed attempt for this assessment.']);
-        }
-
         $validated = $request->validate([
             'answers' => ['nullable', 'array'],
-            'warning_count' => ['nullable', 'integer', 'min:0', 'max:999'],
         ]);
 
         $answers = collect($validated['answers'] ?? []);
         $items = $classAssessment->assessment->items;
 
-        DB::transaction(function () use ($classAssessment, $studentProfile, $items, $answers, $validated, $submissionsUsed) {
-            $submission = Submission::query()->create([
-                'class_assessment_id' => $classAssessment->class_assessment_id,
-                'student_profile_id' => $studentProfile->student_profile_id,
-                'attempt_number' => $submissionsUsed + 1,
-                'status' => Submission::STATUS_SUBMITTED,
-                'warning_count' => (int) ($validated['warning_count'] ?? 0),
-                'submitted_at' => now(),
-            ]);
+        $submission = Submission::query()
+            ->where('class_assessment_id', $classAssessment->class_assessment_id)
+            ->where('student_profile_id', $studentProfile->student_profile_id)
+            ->where('status', Submission::STATUS_IN_PROGRESS)
+            ->latest('attempt_number')
+            ->first();
+
+        if (! $submission) {
+            return redirect()
+                ->route('student.assessments')
+                ->withErrors(['assessment' => 'No active attempt was found. Start the assessment before submitting.']);
+        }
+
+        DB::transaction(function () use ($classAssessment, $items, $answers, $submission) {
+            $lockedSubmission = Submission::query()
+                ->whereKey($submission->submission_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($lockedSubmission->status !== Submission::STATUS_IN_PROGRESS) {
+                throw ValidationException::withMessages([
+                    'assessment' => 'This assessment attempt was already submitted.',
+                ]);
+            }
 
             foreach ($items as $item) {
                 $rawAnswer = $answers->get((string) $item->assessment_item_id);
@@ -382,12 +485,22 @@ class DashboardController extends Controller
                     $answerText = is_scalar($rawAnswer) ? trim((string) $rawAnswer) : null;
                 }
 
-                $submission->answers()->create([
+                $lockedSubmission->answers()->create([
                     'assessment_item_id' => $item->assessment_item_id,
                     'assessment_item_choice_id' => $choiceId,
                     'answer_text' => $answerText,
                 ]);
             }
+
+            $warningLimit = $this->warningLimit($classAssessment);
+            $lockedSubmission->update([
+                'status' => Submission::STATUS_SUBMITTED,
+                'completion_reason' => $warningLimit > 0 && $lockedSubmission->warning_count >= $warningLimit
+                    ? Submission::COMPLETION_WARNING_LIMIT
+                    : Submission::COMPLETION_MANUAL,
+                'last_activity_at' => now(),
+                'submitted_at' => now(),
+            ]);
         });
 
         Log::info('Student submitted assessment.', [
@@ -395,6 +508,8 @@ class DashboardController extends Controller
             'student_profile_id' => $studentProfile->student_profile_id,
             'class_assessment_id' => $classAssessment->class_assessment_id,
             'assessment_id' => $classAssessment->assessment_id,
+            'submission_id' => $submission->submission_id,
+            'warning_count' => $submission->fresh()->warning_count,
         ]);
 
         return redirect()
@@ -541,17 +656,7 @@ class DashboardController extends Controller
 
     private function prepareAccessibleAssessment(ClassAssessment $classAssessment, StudentProfile $studentProfile): ?RedirectResponse
     {
-        $classAssessment->load(['assessment.subject', 'assessment.items.choices', 'class.instructorProfile.user']);
-
-        abort_unless(
-            $classAssessment->publish_status === ClassAssessment::STATUS_PUBLISHED
-            && $classAssessment->class
-            && $classAssessment->class->students()
-                ->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)
-                ->exists(),
-            403,
-            'You are not allowed to open this assessment.'
-        );
+        $this->ensurePublishedAssessmentEnrollment($classAssessment, $studentProfile);
 
         if ($this->studentAssessmentStatus($classAssessment) !== 'available') {
             return redirect()
@@ -560,6 +665,87 @@ class DashboardController extends Controller
         }
 
         return null;
+    }
+
+    private function ensurePublishedAssessmentEnrollment(
+        ClassAssessment $classAssessment,
+        StudentProfile $studentProfile
+    ): void {
+        $classAssessment->load(['assessment.subject', 'assessment.items.choices', 'class.instructorProfile.user']);
+
+        abort_unless(
+            $classAssessment->publish_status === ClassAssessment::STATUS_PUBLISHED
+                && $classAssessment->class
+                && $classAssessment->class->students()
+                    ->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)
+                    ->exists(),
+            403,
+            'You are not allowed to open this assessment.'
+        );
+    }
+
+    private function startOrResumeSubmission(
+        ClassAssessment $classAssessment,
+        StudentProfile $studentProfile
+    ): Submission|RedirectResponse {
+        return DB::transaction(function () use ($classAssessment, $studentProfile): Submission|RedirectResponse {
+            ClassAssessment::query()
+                ->whereKey($classAssessment->class_assessment_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $activeSubmission = Submission::query()
+                ->where('class_assessment_id', $classAssessment->class_assessment_id)
+                ->where('student_profile_id', $studentProfile->student_profile_id)
+                ->where('status', Submission::STATUS_IN_PROGRESS)
+                ->latest('attempt_number')
+                ->first();
+
+            if ($activeSubmission) {
+                $activeSubmission->update(['last_activity_at' => now()]);
+
+                return $activeSubmission;
+            }
+
+            $attemptLimit = max((int) $classAssessment->attempt_limit, 1);
+            $attemptsUsed = $this->submittedSubmissionCount($classAssessment, $studentProfile);
+
+            if ($attemptsUsed >= $attemptLimit) {
+                return redirect()
+                    ->route('student.assessments')
+                    ->withErrors(['assessment' => 'You already used all allowed attempts for this assessment.']);
+            }
+
+            $attemptNumber = ((int) Submission::query()
+                ->where('class_assessment_id', $classAssessment->class_assessment_id)
+                ->where('student_profile_id', $studentProfile->student_profile_id)
+                ->max('attempt_number')) + 1;
+
+            return Submission::query()->create([
+                'class_assessment_id' => $classAssessment->class_assessment_id,
+                'student_profile_id' => $studentProfile->student_profile_id,
+                'attempt_number' => $attemptNumber,
+                'status' => Submission::STATUS_IN_PROGRESS,
+                'warning_count' => 0,
+                'started_at' => now(),
+                'last_activity_at' => now(),
+            ]);
+        });
+    }
+
+    private function securityEventEnabled(ClassAssessment $classAssessment, string $eventType): bool
+    {
+        return match ($eventType) {
+            SubmissionSecurityEvent::TYPE_COPY,
+            SubmissionSecurityEvent::TYPE_CUT,
+            SubmissionSecurityEvent::TYPE_PASTE,
+            SubmissionSecurityEvent::TYPE_CONTEXT_MENU => (bool) $classAssessment->prevent_copy_paste,
+            SubmissionSecurityEvent::TYPE_TAB_HIDDEN,
+            SubmissionSecurityEvent::TYPE_WINDOW_BLUR => (bool) $classAssessment->detect_tab_switch,
+            SubmissionSecurityEvent::TYPE_PRINT_SHORTCUT,
+            SubmissionSecurityEvent::TYPE_SCREENSHOT_SHORTCUT => (bool) $classAssessment->screenshot_protection,
+            default => false,
+        };
     }
 
     private function warningLimit(ClassAssessment $classAssessment): int

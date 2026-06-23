@@ -52,22 +52,16 @@
     @endif
 
     <div class="row g-4 mb-4">
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div class="stat-card p-4 h-100">
                 <p class="small fw-bold text-secondary text-uppercase mb-2">Assessments</p>
                 <div class="display-6 fw-bold" id="assessmentTotalCount" style="color: var(--psu-navy);">{{ $assessments->count() }}</div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div class="stat-card p-4 h-100">
                 <p class="small fw-bold text-secondary text-uppercase mb-2">Handled Subjects</p>
                 <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $handledSubjects->count() }}</div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stat-card p-4 h-100">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Published Uses</p>
-                <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $assessments->sum('class_assessments_count') }}</div>
             </div>
         </div>
     </div>
@@ -169,6 +163,7 @@
                                 <div class="assessment-meta mb-3">
                                     <span class="badge text-bg-primary rounded-1">{{ ucfirst($classAssessment->publish_status) }}</span>
                                     <span class="badge text-bg-light border rounded-1">{{ $classAssessment->attempt_limit }} attempt{{ $classAssessment->attempt_limit === 1 ? '' : 's' }}</span>
+                                    <span class="badge text-bg-light border rounded-1">{{ $classAssessment->submitted_count }} submission{{ $classAssessment->submitted_count === 1 ? '' : 's' }}</span>
                                     @if ($classAssessment->due_at)
                                         <span class="badge text-bg-light border rounded-1">Due {{ $classAssessment->due_at->format('M d, Y h:i A') }}</span>
                                     @endif
@@ -182,10 +177,17 @@
                                 </p>
 
                                 <div class="d-flex flex-wrap gap-2">
-                                    <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $classAssessment->assessment) }}">
-                                        <span class="material-symbols-outlined fs-5">visibility</span>
-                                        View Assessment
-                                    </a>
+                                    @if ($classAssessment->display_status === 'completed')
+                                        <a class="btn btn-psu d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.results', $classAssessment) }}">
+                                            <span class="material-symbols-outlined fs-5">analytics</span>
+                                            View Results
+                                        </a>
+                                    @else
+                                        <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $classAssessment->assessment) }}">
+                                            <span class="material-symbols-outlined fs-5">visibility</span>
+                                            View Assessment
+                                        </a>
+                                    @endif
                                     <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('instructor.classes.show', $classAssessment->class) }}">
                                         <span class="material-symbols-outlined fs-5">school</span>
                                         View Class

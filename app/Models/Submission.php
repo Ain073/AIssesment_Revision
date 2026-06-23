@@ -11,7 +11,13 @@ class Submission extends Model
 {
     use HasFactory;
 
+    public const STATUS_IN_PROGRESS = 'in_progress';
+
     public const STATUS_SUBMITTED = 'submitted';
+
+    public const COMPLETION_MANUAL = 'manual_submit';
+
+    public const COMPLETION_WARNING_LIMIT = 'warning_limit';
 
     protected $primaryKey = 'submission_id';
 
@@ -20,13 +26,18 @@ class Submission extends Model
         'student_profile_id',
         'attempt_number',
         'status',
+        'completion_reason',
         'warning_count',
+        'started_at',
+        'last_activity_at',
         'submitted_at',
     ];
 
     protected function casts(): array
     {
         return [
+            'started_at' => 'datetime',
+            'last_activity_at' => 'datetime',
             'submitted_at' => 'datetime',
         ];
     }
@@ -44,5 +55,11 @@ class Submission extends Model
     public function answers(): HasMany
     {
         return $this->hasMany(SubmissionAnswer::class, 'submission_id', 'submission_id');
+    }
+
+    public function securityEvents(): HasMany
+    {
+        return $this->hasMany(SubmissionSecurityEvent::class, 'submission_id', 'submission_id')
+            ->orderBy('occurred_at');
     }
 }

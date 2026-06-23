@@ -9,15 +9,17 @@ use App\Models\Program;
 use App\Models\Role;
 use App\Models\StudentProfile;
 use App\Models\User;
-use Illuminate\Support\Collection;
+use App\Services\StudentAccountImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
@@ -79,16 +81,6 @@ class DashboardController extends Controller
                     'icon' => 'summarize',
                 ],
             ],
-            'focusItems' => [
-                [
-                    'title' => 'Department-scoped academic setup',
-                    'description' => 'This portal is for teacher rosters, student monitoring, and report review under the assigned chair scope.',
-                ],
-                [
-                    'title' => 'Instructor functions stay available',
-                    'description' => 'If the account also acts as an instructor, classes, assessments, and report writing still stay in the Instructor mode.',
-                ],
-            ],
         ]);
     }
 
@@ -121,7 +113,7 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function students(): View
+    public function students(Request $request, StudentAccountImportService $importer): View
     {
         $user = $this->currentUser();
         $scopedDepartment = $this->scopedDepartment($user);
@@ -143,7 +135,52 @@ class DashboardController extends Controller
             'totalStudents' => $students->count(),
             'activeStudents' => $students->filter(fn (StudentProfile $student) => $student->user?->status === 'active')->count(),
             'programCount' => $scopedPrograms->count(),
+            'studentImportPreview' => $importer->previewForRequest($request, $this->studentImportScope($scopedDepartment)),
         ]);
+    }
+
+    public function downloadStudentImportSample(StudentAccountImportService $importer): StreamedResponse
+    {
+        $user = $this->currentUser();
+        $program = $this->scopedPrograms($this->scopedDepartment($user))->first();
+
+        abort_unless($program, 404, 'No program is available for student account import.');
+
+        return $importer->sampleCsv($program);
+    }
+
+    public function previewStudentImport(Request $request, StudentAccountImportService $importer): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $department = $this->scopedDepartment($user);
+        $programs = $this->scopedPrograms($department);
+
+        abort_unless($department && $programs->isNotEmpty(), 403, 'A department and related program are required before importing students.');
+
+        $token = $importer->previewUpload($request, $programs, $this->studentImportScope($department));
+
+        return redirect()->route('department-chair.students', ['import_token' => $token]);
+    }
+
+    public function confirmStudentImport(Request $request, StudentAccountImportService $importer): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $department = $this->scopedDepartment($user);
+        $programs = $this->scopedPrograms($department);
+
+        abort_unless($department && $programs->isNotEmpty(), 403);
+
+        $result = $importer->confirm($request, $programs, $this->studentImportScope($department));
+
+        $redirect = redirect()
+            ->route('department-chair.students')
+            ->with('status', $result['created_count'].' student accounts created successfully.');
+
+        if ($result['setup_links_sent'] < $result['created_count']) {
+            $redirect->with('mail_warning', 'Some password setup emails were not delivered. Those students can request a new link through Forgot Password.');
+        }
+
+        return $redirect;
     }
 
     public function storeUser(Request $request): RedirectResponse
@@ -328,6 +365,11 @@ class DashboardController extends Controller
             ->withCount('studentProfiles')
             ->orderBy('program_name')
             ->get();
+    }
+
+    private function studentImportScope(?Department $department): string
+    {
+        return 'department:'.(int) $department?->department_id;
     }
 
     private function buildName(array $validated): string
