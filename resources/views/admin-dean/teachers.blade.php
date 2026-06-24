@@ -24,7 +24,9 @@
             font-size: 0.78rem;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            padding: 1rem 1.25rem;
+            text-align: center;
+            padding: 1rem 0.75rem;
+            white-space: nowrap;
         }
 
         .table tbody td {
@@ -46,17 +48,25 @@
         }
 
         .teachers-table {
+            width: 100%;
             min-width: 1040px;
+            table-layout: fixed;
+        }
+
+        .teachers-table th,
+        .teachers-table td {
+            overflow-wrap: anywhere;
         }
 
         .teacher-name {
             margin-bottom: 0;
             color: var(--psu-navy);
-            white-space: nowrap;
+            line-height: 1.35;
+            white-space: normal;
         }
 
         .teacher-subtext {
-            white-space: nowrap;
+            white-space: normal;
         }
 
         .empty-icon {
@@ -132,11 +142,17 @@
 
         <div class="table-responsive">
             <table class="table table-hover mb-0 teachers-table">
+                <colgroup>
+                    <col style="width: 25%;">
+                    <col style="width: 22%;">
+                    <col style="width: 25%;">
+                    <col style="width: 18%;">
+                    <col style="width: 10%;">
+                </colgroup>
                 <thead>
                     <tr>
                         <th>User</th>
                         <th>Email</th>
-                        <th>Employee No.</th>
                         <th>Department</th>
                         <th>Authorization</th>
                         <th>Status</th>
@@ -150,6 +166,7 @@
                                     <span class="avatar">{{ strtoupper(substr($teacher->displayName(), 0, 1)) }}</span>
                                     <div>
                                         <p class="fw-bold teacher-name">{{ $teacher->displayName() }}</p>
+                                        <p class="small text-secondary mb-0">{{ $teacher->instructorProfile?->employee_number ?? 'Not assigned' }}</p>
                                         @if ($teacher->name !== $teacher->displayName())
                                             <p class="small text-secondary mb-0 teacher-subtext">{{ $teacher->name }}</p>
                                         @endif
@@ -157,7 +174,6 @@
                                 </div>
                             </td>
                             <td>{{ $teacher->email }}</td>
-                            <td>{{ $teacher->instructorProfile?->employee_number ?? 'Not assigned' }}</td>
                             <td>
                                 @if ($teacher->instructorProfile?->department)
                                     <div>
@@ -189,7 +205,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="text-center py-5" colspan="6">
+                            <td class="text-center py-5" colspan="5">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">badge</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No teachers found</h4>
                                 <p class="text-secondary mb-0">No instructor accounts are currently mapped to this college scope.</p>

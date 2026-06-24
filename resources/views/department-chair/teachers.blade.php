@@ -24,7 +24,9 @@
             font-size: 0.78rem;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            padding: 1rem 1.25rem;
+            text-align: center;
+            padding: 1rem 0.75rem;
+            white-space: nowrap;
         }
 
         .table tbody td {
@@ -46,17 +48,44 @@
         }
 
         .teachers-table {
+            width: 100%;
             min-width: 1040px;
+            table-layout: fixed;
+        }
+
+        .teachers-table th,
+        .teachers-table td {
+            overflow-wrap: anywhere;
         }
 
         .teacher-name {
             margin-bottom: 0;
             color: var(--psu-navy);
-            white-space: nowrap;
+            line-height: 1.35;
+            white-space: normal;
         }
 
         .teacher-subtext {
-            white-space: nowrap;
+            white-space: normal;
+        }
+
+        .account-tabs {
+            display: flex;
+            gap: 2rem;
+            border-bottom: 1px solid var(--psu-line);
+        }
+
+        .account-tab {
+            padding: 0.85rem 0.25rem;
+            color: var(--psu-muted);
+            font-weight: 700;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+        }
+
+        .account-tab.active {
+            color: var(--psu-navy);
+            border-bottom-color: var(--psu-gold);
         }
 
         .empty-icon {
@@ -127,19 +156,30 @@
         </button>
     </div>
 
+    <nav class="account-tabs mb-4" aria-label="Department account views">
+        <a class="account-tab active" href="{{ route('department-chair.teachers') }}" aria-current="page">Teachers</a>
+        <a class="account-tab" href="{{ route('department-chair.students') }}">Students</a>
+    </nav>
+
     <section class="directory-card shadow-sm">
         <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
-            <h3 class="h4 mb-0">Teachers List</h3>
+            <h3 class="h4 mb-0">Teachers</h3>
             <span class="small text-white-50">Only instructor accounts within your scoped department are shown here</span>
         </div>
 
         <div class="table-responsive">
             <table class="table table-hover mb-0 teachers-table">
+                <colgroup>
+                    <col style="width: 25%;">
+                    <col style="width: 22%;">
+                    <col style="width: 25%;">
+                    <col style="width: 18%;">
+                    <col style="width: 10%;">
+                </colgroup>
                 <thead>
                     <tr>
                         <th>User</th>
                         <th>Email</th>
-                        <th>Employee No.</th>
                         <th>Department</th>
                         <th>Authorization</th>
                         <th>Status</th>
@@ -153,6 +193,7 @@
                                     <span class="avatar">{{ strtoupper(substr($teacher->displayName(), 0, 1)) }}</span>
                                     <div>
                                         <p class="fw-bold teacher-name">{{ $teacher->displayName() }}</p>
+                                        <p class="small text-secondary mb-0">{{ $teacher->instructorProfile?->employee_number ?? 'Not assigned' }}</p>
                                         @if ($teacher->name !== $teacher->displayName())
                                             <p class="small text-secondary mb-0 teacher-subtext">{{ $teacher->name }}</p>
                                         @endif
@@ -160,7 +201,6 @@
                                 </div>
                             </td>
                             <td>{{ $teacher->email }}</td>
-                            <td>{{ $teacher->instructorProfile?->employee_number ?? 'Not assigned' }}</td>
                             <td>
                                 @if ($teacher->instructorProfile?->department)
                                     <div>
@@ -192,7 +232,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="text-center py-5" colspan="6">
+                            <td class="text-center py-5" colspan="5">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">badge</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No teachers found</h4>
                                 <p class="text-secondary mb-0">No instructor accounts are currently mapped to this department scope.</p>

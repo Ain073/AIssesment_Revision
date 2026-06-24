@@ -41,7 +41,9 @@
             font-size: 0.78rem;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            padding: 1rem 1.25rem;
+            text-align: center;
+            padding: 1rem 0.75rem;
+            white-space: nowrap;
         }
 
         .table tbody td {
@@ -108,27 +110,45 @@
         .action-buttons {
             display: flex;
             flex-wrap: nowrap;
-            justify-content: flex-end;
-            gap: 0.5rem;
+            justify-content: center;
+            gap: 0.35rem;
             white-space: nowrap;
         }
 
+        .action-buttons .btn {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            flex: 0 0 36px;
+            align-items: center;
+            justify-content: center;
+        }
+
         .users-table {
+            width: 100%;
             min-width: 1180px;
+            table-layout: fixed;
+        }
+
+        .users-table th,
+        .users-table td {
+            overflow-wrap: anywhere;
         }
 
         .user-summary {
+            flex: 1;
             min-width: 0;
         }
 
         .user-name {
             margin-bottom: 0;
             color: var(--psu-navy);
-            white-space: nowrap;
+            line-height: 1.35;
+            white-space: normal;
         }
 
         .user-subtext {
-            white-space: nowrap;
+            white-space: normal;
         }
 
         .empty-icon {
@@ -227,16 +247,23 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0 users-table">
+                        <table class="table table-hover mb-0 users-table teachers-table">
+                            <colgroup>
+                                <col style="width: 25%;">
+                                <col style="width: 19%;">
+                                <col style="width: 23%;">
+                                <col style="width: 14%;">
+                                <col style="width: 8%;">
+                                <col style="width: 11%;">
+                            </colgroup>
                             <thead>
                                 <tr>
                                     <th>User</th>
                                     <th>Email</th>
-                                    <th>Employee No.</th>
                                     <th>Department</th>
-                                    <th>Elevated Access</th>
-                                    <th>Status</th>
-                                    <th class="text-end">Actions</th>
+                                    <th class="text-center">Elevated Access</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -247,6 +274,7 @@
                                                 <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
                                                 <div class="user-summary">
                                                     <p class="fw-bold user-name">{{ $user->displayName() }}</p>
+                                                    <p class="small text-secondary mb-0">{{ $user->instructorProfile?->employee_number ?? 'Not assigned' }}</p>
                                                     @if ($user->name !== $user->displayName())
                                                         <p class="small text-secondary mb-0 user-subtext">{{ $user->name }}</p>
                                                     @endif
@@ -254,7 +282,6 @@
                                             </div>
                                         </td>
                                         <td>{{ $user->email }}</td>
-                                        <td>{{ $user->instructorProfile?->employee_number ?? 'Not assigned' }}</td>
                                         <td>
                                             @if ($user->instructorProfile?->department)
                                                 <div>
@@ -265,8 +292,8 @@
                                                 <span class="text-secondary fst-italic">Not assigned</span>
                                             @endif
                                         </td>
-                                        <td>
-                                            <div class="d-flex flex-wrap gap-2">
+                                        <td class="text-center">
+                                            <div class="d-flex flex-wrap justify-content-center gap-2">
                                                 @if ($user->hasRole('admin_dean'))
                                                     <span class="badge text-bg-primary rounded-1">Admin/Dean</span>
                                                 @endif
@@ -278,31 +305,28 @@
                                                 @endif
                                             </div>
                                         </td>
-                                        <td>
+                                        <td class="text-center">
                                             <span class="badge {{ $user->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
                                                 {{ ucfirst($user->status) }}
                                             </span>
                                         </td>
-                                        <td class="text-end">
+                                        <td class="text-center">
                                             <div class="action-buttons">
-                                                <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button">
+                                                <button class="btn btn-sm btn-outline-secondary d-inline-flex" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" title="View user" aria-label="View {{ $user->displayName() }}">
                                                     <span class="material-symbols-outlined fs-6">visibility</span>
-                                                    View
                                                 </button>
-                                                <button class="btn btn-sm btn-outline-psu d-inline-flex align-items-center gap-1" data-bs-target="#editUserModal{{ $user->id }}" data-bs-toggle="modal" type="button">
+                                                <button class="btn btn-sm btn-outline-psu d-inline-flex" data-bs-target="#editUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" title="Edit user" aria-label="Edit {{ $user->displayName() }}">
                                                     <span class="material-symbols-outlined fs-6">edit</span>
-                                                    Edit
                                                 </button>
-                                                <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" data-bs-target="#deleteUserModal{{ $user->id }}" data-bs-toggle="modal" type="button">
+                                                <button class="btn btn-sm btn-outline-danger d-inline-flex" data-bs-target="#deleteUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" title="Delete user" aria-label="Delete {{ $user->displayName() }}">
                                                     <span class="material-symbols-outlined fs-6">delete</span>
-                                                    Delete
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="text-center py-5" colspan="7">
+                                        <td class="text-center py-5" colspan="6">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">school</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No teacher accounts yet</h4>
                                             <p class="text-secondary mb-4">Create the first instructor account to start assigning academic roles.</p>
@@ -330,25 +354,32 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0 users-table">
+                        <table class="table table-hover mb-0 users-table students-table">
+                            <colgroup>
+                                <col style="width: 31%;">
+                                <col style="width: 22%;">
+                                <col style="width: 28%;">
+                                <col style="width: 8%;">
+                                <col style="width: 11%;">
+                            </colgroup>
                             <thead>
                                 <tr>
                                     <th>User</th>
                                     <th>Email</th>
-                                    <th>Student No.</th>
                                     <th>Program</th>
-                                    <th>Status</th>
-                                    <th class="text-end">Actions</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse ($students as $user)
                                     <tr>
-                                        <td>
+                                        <td class="text-center">
                                             <div class="d-flex align-items-center gap-3">
                                                 <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
                                                 <div class="user-summary">
                                                     <p class="fw-bold user-name">{{ $user->displayName() }}</p>
+                                                    <p class="small text-secondary mb-0">{{ $user->studentProfile?->student_number ?? 'Not assigned' }}</p>
                                                     @if ($user->name !== $user->displayName())
                                                         <p class="small text-secondary mb-0 user-subtext">{{ $user->name }}</p>
                                                     @endif
@@ -356,7 +387,6 @@
                                             </div>
                                         </td>
                                         <td>{{ $user->email }}</td>
-                                        <td>{{ $user->studentProfile?->student_number ?? 'Not assigned' }}</td>
                                         <td>
                                             @if ($user->studentProfile?->program)
                                                 <div>
@@ -372,26 +402,23 @@
                                                 {{ ucfirst($user->status) }}
                                             </span>
                                         </td>
-                                        <td class="text-end">
+                                        <td class="text-center">
                                             <div class="action-buttons">
-                                                <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button">
+                                                <button class="btn btn-sm btn-outline-secondary d-inline-flex" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" title="View user" aria-label="View {{ $user->displayName() }}">
                                                     <span class="material-symbols-outlined fs-6">visibility</span>
-                                                    View
                                                 </button>
-                                                <button class="btn btn-sm btn-outline-psu d-inline-flex align-items-center gap-1" data-bs-target="#editUserModal{{ $user->id }}" data-bs-toggle="modal" type="button">
+                                                <button class="btn btn-sm btn-outline-psu d-inline-flex" data-bs-target="#editUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" title="Edit user" aria-label="Edit {{ $user->displayName() }}">
                                                     <span class="material-symbols-outlined fs-6">edit</span>
-                                                    Edit
                                                 </button>
-                                                <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" data-bs-target="#deleteUserModal{{ $user->id }}" data-bs-toggle="modal" type="button">
+                                                <button class="btn btn-sm btn-outline-danger d-inline-flex" data-bs-target="#deleteUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" title="Delete user" aria-label="Delete {{ $user->displayName() }}">
                                                     <span class="material-symbols-outlined fs-6">delete</span>
-                                                    Delete
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="text-center py-5" colspan="6">
+                                        <td class="text-center py-5" colspan="5">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No student accounts yet</h4>
                                             <p class="text-secondary mb-4">Create the first student account to populate the student list.</p>
@@ -833,6 +860,7 @@
     </div>
 
     @include('partials.student-account-import', [
+        'studentImportPrograms' => $programs,
         'studentImportSampleRoute' => route('super-admin.users.students.import.sample'),
         'studentImportPreviewRoute' => route('super-admin.users.students.import.preview'),
         'studentImportConfirmRoute' => route('super-admin.users.students.import.confirm'),

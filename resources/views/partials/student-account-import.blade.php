@@ -107,6 +107,18 @@
                     <div class="alert alert-danger">{{ $errors->studentImport->first() }}</div>
                 @endif
 
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-uppercase small" for="student_import_program">Program</label>
+                    <select class="form-select form-select-lg" id="student_import_program" name="import_program_id" required>
+                        <option value="">Select program</option>
+                        @foreach ($studentImportPrograms as $program)
+                            <option value="{{ $program->program_id }}" @selected((string) old('import_program_id') === (string) $program->program_id)>
+                                {{ $program->program_name }}@if ($program->college) - {{ $program->college->college_name }}@endif
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                     <div class="d-flex align-items-center gap-2">
                         <span class="badge text-bg-light border">.txt</span>
@@ -173,7 +185,6 @@
                                     <th>Student</th>
                                     <th>Email</th>
                                     <th>Program</th>
-                                    <th>Account</th>
                                     <th>Validation</th>
                                 </tr>
                             </thead>
@@ -187,7 +198,6 @@
                                         </td>
                                         <td>{{ $row['email'] ?: 'No email' }}</td>
                                         <td>{{ $row['program_name'] ?: 'No program' }}</td>
-                                        <td>{{ $row['status'] }}</td>
                                         <td style="min-width: 190px;">
                                             <span class="badge {{ $row['result_class'] }} rounded-1">{{ $row['result'] }}</span>
                                             @if ($row['message'])

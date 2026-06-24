@@ -26,36 +26,10 @@
             border-radius: 0.5rem;
         }
 
-        .check-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            background: var(--psu-line);
-        }
-
-        .check-dot.done {
-            background: #198754;
-        }
     </style>
 @endpush
 
 @section('content')
-    <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-end gap-3 mb-4">
-                    <a class="btn btn-psu d-inline-flex align-items-center gap-2" href="{{ route('super-admin.colleges') }}">
-                        <span class="material-symbols-outlined fs-5">account_balance</span>
-                        Manage Colleges &amp; Departments
-                    </a>
-        <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('super-admin.programs') }}">
-            <span class="material-symbols-outlined fs-5">school</span>
-            Manage Programs
-        </a>
-        <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('super-admin.subjects') }}">
-            <span class="material-symbols-outlined fs-5">menu_book</span>
-            Manage Subjects
-        </a>
-    </div>
-
     <div class="row g-4 mb-4">
         <div class="col-md-6 col-xl-3">
             <div class="dashboard-card p-4 h-100">
@@ -104,31 +78,7 @@
     </div>
 
     <div class="row g-4">
-        <div class="col-lg-5">
-            <section class="dashboard-card p-4 h-100">
-                <h3 class="h4 mb-3" style="color: var(--psu-navy);">Setup Checklist</h3>
-                <div class="d-grid gap-3">
-                    <div class="d-flex align-items-center gap-3">
-                        <span class="check-dot {{ $totalColleges > 0 ? 'done' : '' }}"></span>
-                        <span>Create colleges</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-3">
-                        <span class="check-dot {{ $totalDepartments > 0 ? 'done' : '' }}"></span>
-                        <span>Add departments</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-3">
-                        <span class="check-dot {{ $totalAdminDeans > 0 ? 'done' : '' }}"></span>
-                        <span>Authorize Admin/Dean access</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-3">
-                        <span class="check-dot {{ $totalDepartmentChairs > 0 ? 'done' : '' }}"></span>
-                        <span>Authorize Department Chair access</span>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="col-lg-3">
+        <div class="col-lg-4">
             <section class="dashboard-card p-4 h-100">
                 <h3 class="h4 mb-3" style="color: var(--psu-navy);">Quick Actions</h3>
                 <div class="d-grid gap-2">
@@ -137,16 +87,6 @@
                     <a class="btn btn-outline-secondary" href="{{ route('super-admin.programs') }}">Add Program</a>
                     <a class="btn btn-outline-secondary" href="{{ route('super-admin.subjects') }}">Add Subject</a>
                     <a class="btn btn-outline-secondary" href="{{ route('super-admin.users') }}">Manage Users</a>
-                </div>
-            </section>
-        </div>
-
-        <div class="col-lg-4">
-            <section class="dashboard-card p-4 h-100">
-                <h3 class="h4 mb-3" style="color: var(--psu-navy);">Recent Activity</h3>
-                <div class="text-center py-4">
-                    <div class="icon-tile mx-auto mb-3"><span class="material-symbols-outlined">history</span></div>
-                    <p class="fw-semibold mb-1">No recent activity yet</p>
                 </div>
             </section>
         </div>

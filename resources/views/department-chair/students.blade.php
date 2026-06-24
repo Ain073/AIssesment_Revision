@@ -24,7 +24,9 @@
             font-size: 0.78rem;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            padding: 1rem 1.25rem;
+            text-align: center;
+            padding: 1rem 0.75rem;
+            white-space: nowrap;
         }
 
         .table tbody td {
@@ -56,7 +58,33 @@
         }
 
         .students-table {
+            width: 100%;
             min-width: 1080px;
+            table-layout: fixed;
+        }
+
+        .students-table th,
+        .students-table td {
+            overflow-wrap: anywhere;
+        }
+
+        .account-tabs {
+            display: flex;
+            gap: 2rem;
+            border-bottom: 1px solid var(--psu-line);
+        }
+
+        .account-tab {
+            padding: 0.85rem 0.25rem;
+            color: var(--psu-muted);
+            font-weight: 700;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+        }
+
+        .account-tab.active {
+            color: var(--psu-navy);
+            border-bottom-color: var(--psu-gold);
         }
     </style>
 @endpush
@@ -135,18 +163,28 @@
         </button>
     </div>
 
+    <nav class="account-tabs mb-4" aria-label="Department account views">
+        <a class="account-tab" href="{{ route('department-chair.teachers') }}">Teachers</a>
+        <a class="account-tab active" href="{{ route('department-chair.students') }}" aria-current="page">Students</a>
+    </nav>
+
     <section class="directory-card shadow-sm">
         <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
-            <h3 class="h4 mb-0">Students List</h3>
+            <h3 class="h4 mb-0">Students</h3>
             <span class="small text-white-50">Scoped through programs under the current chair assignment</span>
         </div>
 
         <div class="table-responsive">
             <table class="table table-hover mb-0 students-table">
+                <colgroup>
+                    <col style="width: 30%;">
+                    <col style="width: 35%;">
+                    <col style="width: 25%;">
+                    <col style="width: 10%;">
+                </colgroup>
                 <thead>
                     <tr>
                         <th>Student</th>
-                        <th>Student Number</th>
                         <th>Program</th>
                         <th>Email</th>
                         <th>Status</th>
@@ -158,13 +196,12 @@
                             <td>
                                 <div class="d-flex align-items-center gap-3">
                                     <span class="avatar">{{ strtoupper(substr($student->user?->displayName() ?? 'S', 0, 1)) }}</span>
-                                    <div>
+                                    <div style="min-width: 0;">
                                         <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $student->user?->displayName() ?? 'Unnamed student' }}</p>
-                                        <p class="small text-secondary mb-0">{{ $student->user?->name }}</p>
+                                        <p class="small text-secondary mb-0">{{ $student->student_number ?? 'Not assigned' }}</p>
                                     </div>
                                 </div>
                             </td>
-                            <td>{{ $student->student_number ?? 'Not assigned' }}</td>
                             <td>
                                 @if ($student->program)
                                     <p class="fw-semibold mb-0">{{ $student->program->program_name }}</p>
@@ -182,7 +219,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="text-center py-5" colspan="5">
+                            <td class="text-center py-5" colspan="4">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No students found</h4>
                                 <p class="text-secondary mb-0">No student accounts are currently mapped to programs under this chair scope.</p>
@@ -281,6 +318,7 @@
     </div>
 
     @include('partials.student-account-import', [
+        'studentImportPrograms' => $scopedPrograms,
         'studentImportSampleRoute' => route('department-chair.students.import.sample'),
         'studentImportPreviewRoute' => route('department-chair.students.import.preview'),
         'studentImportConfirmRoute' => route('department-chair.students.import.confirm'),

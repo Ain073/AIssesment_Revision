@@ -45,6 +45,9 @@ Route::middleware(['super_admin', 'no_cache'])
         Route::delete('/departments/{department}', [CollegeController::class, 'destroyDepartment'])->name('departments.destroy');
         Route::post('/programs', [CollegeController::class, 'storeProgram'])->name('programs.store');
         Route::post('/subjects', [CollegeController::class, 'storeSubject'])->name('subjects.store');
+        Route::post('/subjects/active-semester', [CollegeController::class, 'activateSemester'])->name('subjects.semester.activate');
+        Route::put('/subjects/{subjectProgram}', [CollegeController::class, 'updateSubject'])->name('subjects.update');
+        Route::delete('/subjects/{subjectProgram}', [CollegeController::class, 'destroySubject'])->name('subjects.destroy');
         Route::get('/roles', [RoleController::class, 'index'])->name('roles');
         Route::post('/authorization/grant', [RoleController::class, 'grant'])->name('roles.grant');
         Route::delete('/authorization/revoke', [RoleController::class, 'revoke'])->name('roles.revoke');

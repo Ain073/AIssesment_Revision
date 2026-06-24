@@ -24,7 +24,9 @@
             font-size: 0.78rem;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            padding: 1rem 1.25rem;
+            text-align: center;
+            padding: 1rem 0.75rem;
+            white-space: nowrap;
         }
 
         .table tbody td {
@@ -56,7 +58,14 @@
         }
 
         .students-table {
+            width: 100%;
             min-width: 1080px;
+            table-layout: fixed;
+        }
+
+        .students-table th,
+        .students-table td {
+            overflow-wrap: anywhere;
         }
     </style>
 @endpush
@@ -130,10 +139,15 @@
 
         <div class="table-responsive">
             <table class="table table-hover mb-0 students-table">
+                <colgroup>
+                    <col style="width: 30%;">
+                    <col style="width: 35%;">
+                    <col style="width: 25%;">
+                    <col style="width: 10%;">
+                </colgroup>
                 <thead>
                     <tr>
                         <th>Student</th>
-                        <th>Student Number</th>
                         <th>Program</th>
                         <th>Email</th>
                         <th>Status</th>
@@ -145,13 +159,12 @@
                             <td>
                                 <div class="d-flex align-items-center gap-3">
                                     <span class="avatar">{{ strtoupper(substr($student->user?->displayName() ?? 'S', 0, 1)) }}</span>
-                                    <div>
+                                    <div style="min-width: 0;">
                                         <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $student->user?->displayName() ?? 'Unnamed student' }}</p>
-                                        <p class="small text-secondary mb-0">{{ $student->user?->name }}</p>
+                                        <p class="small text-secondary mb-0">{{ $student->student_number ?? 'Not assigned' }}</p>
                                     </div>
                                 </div>
                             </td>
-                            <td>{{ $student->student_number ?? 'Not assigned' }}</td>
                             <td>
                                 @if ($student->program)
                                     <p class="fw-semibold mb-0">{{ $student->program->program_name }}</p>
@@ -169,7 +182,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="text-center py-5" colspan="5">
+                            <td class="text-center py-5" colspan="4">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No students found</h4>
                                 <p class="text-secondary mb-0">No student accounts are currently mapped to this college scope.</p>
@@ -268,6 +281,7 @@
     </div>
 
     @include('partials.student-account-import', [
+        'studentImportPrograms' => $programs,
         'studentImportSampleRoute' => route('admin-dean.students.import.sample'),
         'studentImportPreviewRoute' => route('admin-dean.students.import.preview'),
         'studentImportConfirmRoute' => route('admin-dean.students.import.confirm'),

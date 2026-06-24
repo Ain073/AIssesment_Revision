@@ -249,6 +249,7 @@ class DashboardController extends Controller
         $scopedCollege = $this->scopedCollege($user);
         $scopedCollegeId = $scopedCollege?->college_id;
         $programs = Program::query()
+            ->with('college')
             ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
             ->orderBy('program_name')
             ->get();
@@ -278,7 +279,7 @@ class DashboardController extends Controller
 
         abort_unless($program, 404, 'No program is available for student account import.');
 
-        return $importer->sampleCsv($program);
+        return $importer->sampleCsv();
     }
 
     public function previewStudentImport(Request $request, StudentAccountImportService $importer): RedirectResponse

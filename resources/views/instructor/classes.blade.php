@@ -114,7 +114,7 @@
                         <label class="form-label fw-bold text-uppercase small" for="subject_id">Subject</label>
                         <select class="form-select form-select-lg" id="subject_id" name="subject_id" required>
                             <option value="">Select subject</option>
-                            @foreach ($subjects as $subject)
+                            @foreach ($activeSubjects as $subject)
                                 <option value="{{ $subject->subject_id }}" @selected(old('subject_id') == $subject->subject_id)>
                                     {{ $subject->subject_code }} - {{ $subject->subject_name }}
                                 </option>

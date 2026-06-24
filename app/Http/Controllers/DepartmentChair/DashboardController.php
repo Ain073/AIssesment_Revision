@@ -146,7 +146,7 @@ class DashboardController extends Controller
 
         abort_unless($program, 404, 'No program is available for student account import.');
 
-        return $importer->sampleCsv($program);
+        return $importer->sampleCsv();
     }
 
     public function previewStudentImport(Request $request, StudentAccountImportService $importer): RedirectResponse

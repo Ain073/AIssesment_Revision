@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Instructor;
 
 use App\Http\Controllers\Controller;
 use App\Models\AcademicClass;
+use App\Models\AcademicSetting;
 use App\Models\Assessment;
 use App\Models\ClassAssessment;
 use App\Models\ClassJoinRequest;
@@ -11,6 +12,7 @@ use App\Models\InstructorProfile;
 use App\Models\Report;
 use App\Models\StudentProfile;
 use App\Models\Subject;
+use App\Models\SubjectProgram;
 use App\Models\Submission;
 use App\Models\User;
 use App\Services\TabularFileReader;
@@ -130,8 +132,15 @@ class DashboardController extends Controller
         $archivedClassesCount = $baseClassesQuery
             ? (clone $baseClassesQuery)->whereNotNull('archived_at')->count()
             : 0;
+        $activeSubjectIds = $this->activeSubjectIds();
+        $existingSubjectIds = $classes->pluck('subject_id')->filter();
+        $activeSubjects = Subject::query()
+            ->whereIn('subject_id', $activeSubjectIds)
+            ->orderBy('subject_code')
+            ->orderBy('subject_name')
+            ->get();
         $subjects = Subject::query()
-            ->where('is_active', true)
+            ->whereIn('subject_id', $activeSubjectIds->merge($existingSubjectIds)->unique())
             ->orderBy('subject_code')
             ->orderBy('subject_name')
             ->get();
@@ -140,6 +149,7 @@ class DashboardController extends Controller
             'instructorProfile' => $instructorProfile,
             'classes' => $classes,
             'subjects' => $subjects,
+            'activeSubjects' => $activeSubjects,
             'activeClassTab' => $activeClassTab,
             'activeClassesCount' => $activeClassesCount,
             'archivedClassesCount' => $archivedClassesCount,
@@ -160,7 +170,7 @@ class DashboardController extends Controller
         abort_unless($instructorProfile, 403, 'Instructor profile is required before creating classes.');
 
         $validated = $request->validate([
-            'subject_id' => ['required', 'integer', 'exists:subjects,subject_id'],
+            'subject_id' => ['required', 'integer', Rule::in($this->activeSubjectIds()->all())],
             'class_name' => ['required', 'string', 'max:255'],
             'school_year' => ['required', 'string', 'max:255'],
         ]);
@@ -195,8 +205,14 @@ class DashboardController extends Controller
         $ownedClass = $this->ownedClass($class, $instructorProfile);
         $this->ensureActiveClass($ownedClass);
 
+        $allowedSubjectIds = $this->activeSubjectIds()
+            ->push($ownedClass->subject_id)
+            ->filter()
+            ->unique()
+            ->all();
+
         $validated = $request->validate([
-            'subject_id' => ['required', 'integer', 'exists:subjects,subject_id'],
+            'subject_id' => ['required', 'integer', Rule::in($allowedSubjectIds)],
             'class_name' => ['required', 'string', 'max:255'],
             'school_year' => ['required', 'string', 'max:255'],
         ]);
@@ -1874,6 +1890,24 @@ class DashboardController extends Controller
             ->orderBy('subject_code')
             ->orderBy('subject_name')
             ->get();
+    }
+
+    /**
+     * @return Collection<int, int>
+     */
+    private function activeSubjectIds(): Collection
+    {
+        $activeSemester = AcademicSetting::query()->value('active_semester');
+
+        if (! $activeSemester) {
+            return collect();
+        }
+
+        return SubjectProgram::query()
+            ->where('semester', $activeSemester)
+            ->whereHas('subject', fn ($query) => $query->where('is_active', true))
+            ->distinct()
+            ->pluck('subject_id');
     }
 
     private function ownedAssessment(Assessment $assessment, ?InstructorProfile $instructorProfile): Assessment

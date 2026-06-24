@@ -26,6 +26,15 @@ class StudentAccountImportService
     public function previewUpload(Request $request, Collection $programs, string $scope): string
     {
         $validated = $request->validateWithBag('studentImport', [
+            'import_program_id' => [
+                'required',
+                'integer',
+                function (string $attribute, mixed $value, \Closure $fail) use ($programs): void {
+                    if (! $programs->contains('program_id', (int) $value)) {
+                        $fail('The selected program is invalid or outside your assigned scope.');
+                    }
+                },
+            ],
             'student_file' => [
                 'required',
                 'file',
@@ -39,7 +48,8 @@ class StudentAccountImportService
             $validated['student_file']->getRealPath(),
             Str::lower((string) $validated['student_file']->getClientOriginalExtension())
         );
-        $preview = $this->buildPreview($rows, $programs);
+        $program = $programs->firstWhere('program_id', (int) $validated['import_program_id']);
+        $preview = $this->buildPreview($rows, $program);
         $token = (string) Str::uuid();
 
         $request->session()->put($this->sessionKey($token), [
@@ -171,17 +181,17 @@ class StudentAccountImportService
         ];
     }
 
-    public function sampleCsv(Program $program): StreamedResponse
+    public function sampleCsv(): StreamedResponse
     {
-        return response()->streamDownload(function () use ($program): void {
+        return response()->streamDownload(function (): void {
             $output = fopen('php://output', 'w');
 
             if ($output === false) {
                 return;
             }
 
-            fputcsv($output, ['student_number', 'first_name', 'middle_name', 'last_name', 'email', 'program_id', 'program', 'status']);
-            fputcsv($output, ['2024-00001', 'Juan', '', 'Dela Cruz', 'juan.delacruz@example.com', $program->program_id, $program->program_name, 'active']);
+            fputcsv($output, ['student_number', 'first_name', 'middle_name', 'last_name', 'email']);
+            fputcsv($output, ['2024-00001', 'Juan', '', 'Dela Cruz', 'juan.delacruz@example.com']);
             fclose($output);
         }, 'student-account-import-sample.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -190,10 +200,9 @@ class StudentAccountImportService
 
     /**
      * @param  array<int, array<int, string>>  $rows
-     * @param  Collection<int, Program>  $programs
      * @return array{rows: array<int, array<string, mixed>>, ready_rows: array<int, array<string, mixed>>, summary: array<string, int>}
      */
-    private function buildPreview(array $rows, Collection $programs): array
+    private function buildPreview(array $rows, Program $program): array
     {
         if (empty($rows)) {
             $this->throwValidationError('The uploaded file does not contain any records.');
@@ -211,10 +220,6 @@ class StudentAccountImportService
 
         $requiredHeaders = ['student_number', 'first_name', 'last_name', 'email'];
         $missingHeaders = array_values(array_diff($requiredHeaders, array_keys($headerMap)));
-
-        if (! array_key_exists('program', $headerMap) && ! array_key_exists('program_id', $headerMap)) {
-            $missingHeaders[] = 'program or program_id';
-        }
 
         if (! empty($missingHeaders)) {
             $this->throwValidationError('Missing required columns: '.implode(', ', $missingHeaders).'.');
@@ -240,9 +245,6 @@ class StudentAccountImportService
             'middle_name' => $valueAt($row, 'middle_name'),
             'last_name' => $valueAt($row, 'last_name'),
             'email' => Str::lower($valueAt($row, 'email')),
-            'program_id' => $valueAt($row, 'program_id'),
-            'program' => $valueAt($row, 'program'),
-            'status' => Str::lower($valueAt($row, 'status') ?: 'active'),
         ]);
 
         $emailCounts = $parsedRows->pluck('email')->map(fn ($value) => Str::lower($value))->countBy();
@@ -253,8 +255,6 @@ class StudentAccountImportService
         $existingNumbers = StudentProfile::query()
             ->whereIn('student_number', $parsedRows->pluck('student_number')->filter()->unique())
             ->pluck('student_number')->map(fn ($value) => Str::lower($value))->flip();
-        $programsById = $programs->keyBy(fn (Program $program) => (int) $program->program_id);
-        $programsByName = $programs->groupBy(fn (Program $program) => Str::lower(trim($program->program_name)));
         $previewRows = [];
         $readyRows = [];
         $summary = ['total' => $parsedRows->count(), 'ready' => 0, 'duplicate' => 0, 'invalid' => 0];
@@ -264,36 +264,10 @@ class StudentAccountImportService
             $isDuplicate = false;
             $normalizedEmail = Str::lower($row['email']);
             $normalizedNumber = Str::lower($row['student_number']);
-            $program = null;
-
-            if ($row['program_id'] !== '') {
-                $program = ctype_digit($row['program_id'])
-                    ? $programsById->get((int) $row['program_id'])
-                    : null;
-
-                if (! $program) {
-                    $errors[] = 'Program ID is invalid or outside your assigned scope.';
-                }
-            } elseif ($row['program'] !== '') {
-                $matchingPrograms = $programsByName->get(Str::lower($row['program']), collect());
-
-                if ($matchingPrograms->count() === 1) {
-                    $program = $matchingPrograms->first();
-                } elseif ($matchingPrograms->count() > 1) {
-                    $errors[] = 'Program name matches multiple records. Add the program_id column.';
-                } else {
-                    $errors[] = 'Program is outside your assigned scope or does not match an existing program.';
-                }
-            }
-
             foreach (['student_number', 'first_name', 'last_name', 'email'] as $field) {
                 if ($row[$field] === '') {
                     $errors[] = str_replace('_', ' ', ucfirst($field)).' is required.';
                 }
-            }
-
-            if ($row['program_id'] === '' && $row['program'] === '') {
-                $errors[] = 'Program or program ID is required.';
             }
 
             foreach (['student_number', 'first_name', 'middle_name', 'last_name', 'email'] as $field) {
@@ -304,10 +278,6 @@ class StudentAccountImportService
 
             if ($row['email'] !== '' && filter_var($row['email'], FILTER_VALIDATE_EMAIL) === false) {
                 $errors[] = 'Email format is invalid.';
-            }
-
-            if (! in_array($row['status'], ['active', 'inactive'], true)) {
-                $errors[] = 'Status must be active or inactive.';
             }
 
             if ($normalizedEmail !== '' && ($emailCounts->get($normalizedEmail, 0) > 1 || $existingEmails->has($normalizedEmail))) {
@@ -329,7 +299,7 @@ class StudentAccountImportService
                     'last_name' => $row['last_name'],
                     'email' => $row['email'],
                     'program_id' => $program->program_id,
-                    'status' => $row['status'],
+                    'status' => 'active',
                 ];
                 [$result, $resultClass] = ['Ready', 'text-bg-success'];
             } elseif ($isDuplicate) {
@@ -345,8 +315,7 @@ class StudentAccountImportService
                 'student_number' => $row['student_number'],
                 'student_name' => collect([$row['first_name'], $row['middle_name'], $row['last_name']])->filter()->implode(' '),
                 'email' => $row['email'],
-                'program_name' => $program?->program_name ?? ($row['program'] ?: $row['program_id']),
-                'status' => ucfirst($row['status']),
+                'program_name' => $program->program_name,
                 'result' => $result,
                 'result_class' => $resultClass,
                 'message' => implode(' ', $errors),
