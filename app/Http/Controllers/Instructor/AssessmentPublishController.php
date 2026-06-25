@@ -1,0 +1,144 @@
+<?php
+
+namespace App\Http\Controllers\Instructor;
+
+use App\Models\Assessment;
+use App\Models\ClassAssessment;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+
+class AssessmentPublishController extends BaseController
+{
+    public function publishAssessmentForm(Request $request): View
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $handledSubjects = $this->handledSubjects($instructorProfile);
+        $assessments = $instructorProfile
+            ? $instructorProfile->assessments()
+                ->with('subject')
+                ->withCount('items')
+                ->orderBy('title')
+                ->get()
+            : collect();
+        $classes = $instructorProfile
+            ? $instructorProfile->classes()
+                ->with('subject')
+                ->whereNull('archived_at')
+                ->orderBy('class_name')
+                ->get()
+            : collect();
+
+        $selectedAssessment = $assessments->firstWhere('assessment_id', (int) $request->query('assessment_id'));
+        $selectedSubjectId = (int) old(
+            'subject_id',
+            $selectedAssessment?->subject_id ?? $request->query('subject_id')
+        );
+
+        return view('instructor.assessment-publish', $this->sharedData($user, 'assessments') + [
+            'instructorProfile' => $instructorProfile,
+            'handledSubjects' => $handledSubjects,
+            'assessments' => $assessments,
+            'classes' => $classes,
+            'selectedSubjectId' => $selectedSubjectId,
+            'selectedAssessmentId' => (int) old('assessment_id', $selectedAssessment?->assessment_id),
+        ]);
+    }
+
+    public function publishAssessment(Request $request, Assessment $assessment): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
+
+        if (! $ownedAssessment->items()->exists()) {
+            return redirect()
+                ->route('instructor.assessments.show', $ownedAssessment)
+                ->withErrors(['publish' => 'Add at least one item before publishing this assessment.']);
+        }
+
+        $validated = $request->validate([
+            'class_ids' => ['required', 'array', 'min:1'],
+            'class_ids.*' => ['integer'],
+            'available_at' => ['nullable', 'date'],
+            'due_at' => ['nullable', 'date', 'after:available_at'],
+            'attempt_limit' => ['required', 'integer', 'min:1', 'max:10'],
+            'warning_limit' => ['nullable', 'integer', 'min:0', 'max:20'],
+            'display_mode' => ['required', 'string', Rule::in([
+                ClassAssessment::DISPLAY_ALL_QUESTIONS,
+                ClassAssessment::DISPLAY_ONE_QUESTION,
+            ])],
+            'score_visibility' => ['nullable', 'boolean'],
+            'answer_visibility' => ['nullable', 'boolean'],
+            'prevent_copy_paste' => ['nullable', 'boolean'],
+            'detect_tab_switch' => ['nullable', 'boolean'],
+            'screenshot_protection' => ['nullable', 'boolean'],
+            'shuffle_items' => ['nullable', 'boolean'],
+            'shuffle_choices' => ['nullable', 'boolean'],
+        ]);
+
+        $this->publishAssessmentToClasses($request, $user, $instructorProfile, $ownedAssessment, $validated);
+
+        return redirect()
+            ->route('instructor.assessments.show', $ownedAssessment)
+            ->with('status', 'Assessment published to selected classes.');
+    }
+
+    public function publishSelectedAssessment(Request $request): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+
+        abort_unless($instructorProfile, 403, 'Instructor profile is required before publishing assessments.');
+
+        $handledSubjectIds = $this->handledSubjects($instructorProfile)->pluck('subject_id')->all();
+
+        $validated = $request->validate([
+            'subject_id' => ['required', 'integer', Rule::in($handledSubjectIds)],
+            'assessment_id' => ['required', 'integer'],
+            'class_ids' => ['required', 'array', 'min:1'],
+            'class_ids.*' => ['integer'],
+            'available_at' => ['nullable', 'date'],
+            'due_at' => ['nullable', 'date', 'after:available_at'],
+            'attempt_limit' => ['required', 'integer', 'min:1', 'max:10'],
+            'warning_limit' => ['nullable', 'integer', 'min:0', 'max:20'],
+            'display_mode' => ['required', 'string', Rule::in([
+                ClassAssessment::DISPLAY_ALL_QUESTIONS,
+                ClassAssessment::DISPLAY_ONE_QUESTION,
+            ])],
+            'score_visibility' => ['nullable', 'boolean'],
+            'answer_visibility' => ['nullable', 'boolean'],
+            'prevent_copy_paste' => ['nullable', 'boolean'],
+            'detect_tab_switch' => ['nullable', 'boolean'],
+            'screenshot_protection' => ['nullable', 'boolean'],
+            'shuffle_items' => ['nullable', 'boolean'],
+            'shuffle_choices' => ['nullable', 'boolean'],
+        ]);
+
+        $ownedAssessment = $instructorProfile->assessments()
+            ->where('subject_id', $validated['subject_id'])
+            ->where('assessment_id', $validated['assessment_id'])
+            ->first();
+
+        if (! $ownedAssessment) {
+            throw ValidationException::withMessages([
+                'assessment_id' => 'Select one of your assessments under the chosen subject.',
+            ]);
+        }
+
+        if (! $ownedAssessment->items()->exists()) {
+            throw ValidationException::withMessages([
+                'assessment_id' => 'Add at least one item before publishing this assessment.',
+            ]);
+        }
+
+        $this->publishAssessmentToClasses($request, $user, $instructorProfile, $ownedAssessment, $validated);
+
+        return redirect()
+            ->route('instructor.assessments')
+            ->with('status', 'Assessment published to selected classes.');
+    }
+}

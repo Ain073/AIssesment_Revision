@@ -255,9 +255,8 @@
     </div>
 
     <section class="directory-card shadow-sm">
-        <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
+        <div class="directory-header px-4 py-3">
             <h3 class="h4 mb-0">Subjects by Program</h3>
-            <span class="small text-white-50">Central catalog managed separately from programs</span>
         </div>
 
         <div class="table-responsive subjects-table-wrap">
@@ -336,9 +335,8 @@
             </table>
         </div>
 
-        <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #eff4ff;">
+        <div class="px-4 py-3 border-top" style="background: #eff4ff;">
             <span class="small text-secondary">Showing {{ $subjectMappings->count() }} {{ $subjectMappings->count() === 1 ? 'entry' : 'entries' }}</span>
-            <span class="small text-secondary">Subjects are now managed on their own page</span>
         </div>
     </section>
 
