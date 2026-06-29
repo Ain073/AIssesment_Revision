@@ -5,7 +5,6 @@
 
 @push('styles')
     <style>
-        .stat-card,
         .assessment-card,
         .directory-card {
             background: #fff;

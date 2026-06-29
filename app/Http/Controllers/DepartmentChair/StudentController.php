@@ -30,9 +30,6 @@ class StudentController extends BaseController
             'students' => $students,
             'scopedDepartment' => $scopedDepartment,
             'scopedPrograms' => $scopedPrograms,
-            'totalStudents' => $students->count(),
-            'activeStudents' => $students->filter(fn (StudentProfile $student) => $student->user?->status === 'active')->count(),
-            'programCount' => $scopedPrograms->count(),
             'studentImportPreview' => $importer->previewForRequest($request, $this->studentImportScope($scopedDepartment)),
         ]);
     }

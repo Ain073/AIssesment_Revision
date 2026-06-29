@@ -5,7 +5,6 @@
 
 @push('styles')
     <style>
-        .stat-card,
         .assessment-card,
         .directory-card {
             background: #fff;
@@ -50,21 +49,6 @@
     @if ($errors->any())
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
-
-    <div class="row g-4 mb-4">
-        <div class="col-md-6">
-            <div class="stat-card p-4 h-100">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Assessments</p>
-                <div class="display-6 fw-bold" id="assessmentTotalCount" style="color: var(--psu-navy);">{{ $assessments->count() }}</div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="stat-card p-4 h-100">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Handled Subjects</p>
-                <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $handledSubjects->count() }}</div>
-            </div>
-        </div>
-    </div>
 
     <div class="d-flex flex-wrap justify-content-end gap-2 mb-4">
         <a class="btn btn-psu d-inline-flex align-items-center gap-2 {{ (! $instructorProfile || $handledSubjects->isEmpty()) ? 'disabled' : '' }}" href="{{ route('instructor.assessments.create') }}" aria-disabled="{{ (! $instructorProfile || $handledSubjects->isEmpty()) ? 'true' : 'false' }}">
@@ -214,7 +198,7 @@
     @foreach ($assessments->where('status', \App\Models\Assessment::STATUS_DRAFT) as $assessment)
         <div class="modal fade" id="deleteAssessmentModal{{ $assessment->assessment_id }}" tabindex="-1" aria-labelledby="deleteAssessmentModalLabel{{ $assessment->assessment_id }}" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
-                <form action="{{ route('instructor.assessments.destroy', $assessment) }}" class="modal-content" method="POST" data-ajax-form data-remove-target="#assessmentCard{{ $assessment->assessment_id }}" data-decrement-target="#assessmentTotalCount">
+                <form action="{{ route('instructor.assessments.destroy', $assessment) }}" class="modal-content" method="POST" data-ajax-form data-remove-target="#assessmentCard{{ $assessment->assessment_id }}">
                     @csrf
                     @method('DELETE')
                     <div class="modal-header">

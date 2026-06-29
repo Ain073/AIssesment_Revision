@@ -28,8 +28,6 @@ class ProgramController extends Controller
                 ->get(),
             'programs' => $this->programsList($selectedCollegeId),
             'selectedCollegeId' => $selectedCollegeId,
-            'totalPrograms' => Program::count(),
-            'activePrograms' => Program::query()->where('is_active', true)->count(),
         ]);
     }
 

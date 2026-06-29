@@ -5,7 +5,6 @@
 
 @push('styles')
     <style>
-        .stat-card,
         .directory-card {
             background: #fff;
             border: 1px solid var(--psu-line);
@@ -90,36 +89,6 @@
     @if ($errors->any())
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
-
-    <div class="row g-4 mb-4">
-        <div class="col-md-4">
-            <div class="stat-card p-4">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Total Teachers</p>
-                <div class="d-flex align-items-baseline gap-2">
-                    <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalTeachers }}</span>
-                    <span class="small text-secondary">Within your college scope</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stat-card p-4">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Admin/Dean Authorized</p>
-                <div class="d-flex align-items-baseline gap-2">
-                    <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalAdminDeans }}</span>
-                    <span class="small text-secondary">Teacher accounts with dean access</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stat-card p-4">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Department Chairs</p>
-                <div class="d-flex align-items-baseline gap-2">
-                    <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalDepartmentChairs }}</span>
-                    <span class="small text-secondary">Chair-level assignments in scope</span>
-                </div>
-            </div>
-        </div>
-    </div>
 
     @if ($scopedCollege)
         <div class="alert alert-primary border-0 shadow-sm mb-4">

@@ -22,7 +22,6 @@
 
 @push('styles')
     <style>
-        .stat-card,
         .directory-card {
             background: #fff;
             border: 1px solid var(--psu-line);
@@ -118,27 +117,6 @@
                     {{ $errors->first() }}
                 </div>
             @endif
-
-            <div class="row g-4 mb-4">
-                <div class="col-md-4">
-                    <div class="stat-card p-4">
-                        <p class="small fw-bold text-secondary text-uppercase mb-2">Teacher Accounts</p>
-                        <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalTeachers }}</span>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stat-card p-4">
-                        <p class="small fw-bold text-secondary text-uppercase mb-2">Admin/Dean Authorized</p>
-                        <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalAdminDeans }}</span>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stat-card p-4">
-                        <p class="small fw-bold text-secondary text-uppercase mb-2">Department Chair Authorized</p>
-                        <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalDepartmentChairs }}</span>
-                    </div>
-                </div>
-            </div>
 
             <ul class="nav nav-tabs mb-3" id="authorizationTabs" role="tablist">
                 <li class="nav-item" role="presentation">

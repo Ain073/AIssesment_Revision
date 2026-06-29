@@ -274,6 +274,55 @@
             color: #9f1d2a;
         }
 
+        .notification-button {
+            position: relative;
+        }
+
+        .notification-count {
+            position: absolute;
+            top: -0.35rem;
+            right: -0.45rem;
+            min-width: 1.1rem;
+            height: 1.1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0.25rem;
+            border-radius: 999px;
+            background: #dc3545;
+            color: #fff;
+            font-size: 0.68rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .notification-menu {
+            width: min(360px, calc(100vw - 2rem));
+            max-height: 430px;
+            overflow-y: auto;
+            border: 1px solid var(--psu-line);
+            box-shadow: 0 18px 36px rgba(0, 26, 112, 0.14);
+        }
+
+        .notification-item {
+            width: 100%;
+            display: block;
+            border: 0;
+            border-bottom: 1px solid #eef2ff;
+            background: #fff;
+            padding: 0.85rem 1rem;
+            text-align: left;
+        }
+
+        .notification-item:hover,
+        .notification-item:focus {
+            background: #f7f9ff;
+        }
+
+        .notification-item.unread {
+            background: #f0f5ff;
+        }
+
         @media (max-width: 991.98px) {
             .sidebar {
                 width: 86px;
@@ -427,11 +476,47 @@
             @yield('topbar-actions')
             @if (! empty($showTopbarSearch))
                 <div class="input-group d-none d-lg-flex" style="width: 320px;">
-                    <input class="form-control" placeholder="{{ $topbarSearchPlaceholder ?? 'Search records...' }}" type="text">
+                    <input class="form-control" data-page-search placeholder="{{ $topbarSearchPlaceholder ?? 'Search records...' }}" type="search" aria-label="Search page records">
                     <span class="input-group-text bg-white"><span class="material-symbols-outlined fs-6">search</span></span>
                 </div>
             @endif
-            <button class="btn btn-link text-secondary p-1" type="button"><span class="material-symbols-outlined">notifications</span></button>
+            <div class="dropdown">
+                <button class="btn btn-link text-secondary p-1 notification-button" data-bs-toggle="dropdown" type="button" aria-expanded="false" aria-label="Notifications">
+                    <span class="material-symbols-outlined">notifications</span>
+                    @if (($portalUnreadNotifications ?? 0) > 0)
+                        <span class="notification-count">{{ $portalUnreadNotifications > 9 ? '9+' : $portalUnreadNotifications }}</span>
+                    @endif
+                </button>
+                <div class="dropdown-menu dropdown-menu-end p-0 notification-menu">
+                    <div class="d-flex align-items-center justify-content-between gap-2 px-3 py-2 border-bottom">
+                        <span class="fw-bold" style="color: var(--psu-navy);">Notifications</span>
+                        @if (($portalUnreadNotifications ?? 0) > 0)
+                            <form action="{{ route('notifications.read-all') }}" method="POST">
+                                @csrf
+                                <button class="btn btn-link btn-sm p-0 text-decoration-none" type="submit">Mark all read</button>
+                            </form>
+                        @endif
+                    </div>
+
+                    @forelse (($portalNotifications ?? collect()) as $notification)
+                        <form action="{{ route('notifications.read', $notification) }}" method="POST">
+                            @csrf
+                            <button class="notification-item {{ $notification->isUnread() ? 'unread' : '' }}" type="submit">
+                                <div class="d-flex justify-content-between gap-2">
+                                    <span class="fw-bold" style="color: var(--psu-navy);">{{ $notification->title }}</span>
+                                    <span class="small text-secondary text-nowrap">{{ $notification->created_at->diffForHumans(null, true) }}</span>
+                                </div>
+                                <p class="small text-secondary mb-0 mt-1">{{ $notification->message }}</p>
+                            </button>
+                        </form>
+                    @empty
+                        <div class="p-4 text-center text-secondary">
+                            <span class="material-symbols-outlined d-block mb-2">notifications</span>
+                            No notifications yet.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
             <button class="btn btn-link text-secondary p-1" type="button"><span class="material-symbols-outlined">help_outline</span></button>
         </div>
     </header>
@@ -470,6 +555,79 @@
 
             window.setTimeout(() => alert.remove(), 4000);
         };
+
+        const searchableItems = () => {
+            return Array.from(document.querySelectorAll('.page-container tbody tr, .page-container .assessment-card, .page-container .class-card'))
+                .filter((item) => ! item.closest('.modal') && ! item.closest('[data-search-ignore]'));
+        };
+
+        const pageSearchText = (item) => {
+            return (item.dataset.searchText || item.textContent || '')
+                .toLowerCase()
+                .replace(/\s+/g, ' ')
+                .trim();
+        };
+
+        const isInsideVisibleTab = (item) => {
+            const tabPane = item.closest('.tab-pane');
+
+            return ! tabPane || tabPane.classList.contains('active');
+        };
+
+        const setPageSearchEmpty = (show) => {
+            const pageContainer = document.querySelector('.page-container');
+
+            if (! pageContainer) {
+                return;
+            }
+
+            let emptyMessage = pageContainer.querySelector('[data-page-search-empty]');
+
+            if (! emptyMessage) {
+                emptyMessage = document.createElement('div');
+                emptyMessage.dataset.pageSearchEmpty = 'true';
+                emptyMessage.className = 'alert alert-info d-none';
+                emptyMessage.textContent = 'No matching records found.';
+                pageContainer.prepend(emptyMessage);
+            }
+
+            emptyMessage.classList.toggle('d-none', ! show);
+        };
+
+        const applyPageSearch = () => {
+            const searchInput = document.querySelector('[data-page-search]');
+            const query = (searchInput?.value || '').toLowerCase().trim();
+            const items = searchableItems();
+
+            if (! searchInput || items.length === 0) {
+                setPageSearchEmpty(false);
+                return;
+            }
+
+            let visibleCount = 0;
+
+            items.forEach((item) => {
+                const isVisible = query === '' || pageSearchText(item).includes(query);
+
+                item.hidden = ! isVisible;
+
+                if (isVisible) {
+                    visibleCount += isInsideVisibleTab(item) ? 1 : 0;
+                }
+            });
+
+            setPageSearchEmpty(query !== '' && visibleCount === 0);
+        };
+
+        document.addEventListener('input', (event) => {
+            if (event.target.matches('[data-page-search]')) {
+                applyPageSearch();
+            }
+        });
+
+        document.addEventListener('shown.bs.tab', () => {
+            applyPageSearch();
+        });
 
         const formErrorMessage = async (response) => {
             try {
@@ -538,6 +696,7 @@
 
                             if (html.trim()) {
                                 section.innerHTML = html;
+                                applyPageSearch();
                             }
                         }
                     } catch (error) {
@@ -759,6 +918,7 @@
                 initPortalPollSections();
                 window.initializeReportsPage?.();
                 window.initializeDashboardPage?.();
+                applyPageSearch();
                 window.scrollTo(0, 0);
 
                 if (pushHistory) {

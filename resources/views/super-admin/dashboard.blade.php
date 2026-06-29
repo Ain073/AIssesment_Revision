@@ -48,24 +48,66 @@
             gap: 1rem;
         }
 
-        .status-track,
         .program-track {
             overflow: hidden;
             background: #e7ecf7;
             border-radius: 0.25rem;
         }
 
-        .status-track {
+        .status-chart-wrap {
+            display: grid;
+            grid-template-columns: 180px minmax(0, 1fr);
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .status-pie {
+            width: 180px;
+            aspect-ratio: 1;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: conic-gradient(
+                #198754 0deg var(--active-angle),
+                #dc3545 var(--active-angle) 360deg
+            );
+            box-shadow: inset 0 0 0 1px rgba(0, 26, 112, 0.08);
+        }
+
+        .status-pie::before {
+            width: 58%;
+            aspect-ratio: 1;
+            content: "";
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 0 1px rgba(0, 26, 112, 0.08);
+        }
+
+        .status-pie-center {
+            position: absolute;
+            text-align: center;
+        }
+
+        .status-pie-shell {
+            position: relative;
+            display: inline-grid;
+            place-items: center;
+        }
+
+        .status-legend {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .status-legend-item {
             display: flex;
-            height: 16px;
-        }
-
-        .status-active {
-            background: #198754;
-        }
-
-        .status-inactive {
-            background: #dc3545;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.85rem 1rem;
+            background: #f8faff;
+            border: 1px solid #d9e2fb;
+            border-radius: 0.45rem;
         }
 
         .setup-grid {
@@ -117,6 +159,11 @@
                 grid-template-columns: 1fr;
             }
 
+            .status-chart-wrap {
+                grid-template-columns: 1fr;
+                justify-items: center;
+            }
+
             .setup-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
@@ -125,6 +172,10 @@
         @media (max-width: 575.98px) {
             .setup-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .status-pie {
+                width: 150px;
             }
         }
     </style>
@@ -192,25 +243,35 @@
                 <span class="badge text-bg-light border rounded-1">{{ $totalUsers }} users</span>
             </div>
 
-            <div class="status-track mb-3" role="img" aria-label="{{ $activeUserPercentage }} percent active and {{ $inactiveUserPercentage }} percent inactive">
-                <span class="status-active" style="width: {{ $activeUserPercentage }}%;"></span>
-                <span class="status-inactive" style="width: {{ $inactiveUserPercentage }}%;"></span>
-            </div>
-
-            <div class="d-flex justify-content-between gap-3">
-                <div>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="rounded-circle d-inline-block" style="width: 10px; height: 10px; background: #198754;"></span>
-                        <span class="small fw-bold text-secondary text-uppercase">Active</span>
+            <div class="status-chart-wrap">
+                <div class="status-pie-shell">
+                    <div
+                        class="status-pie"
+                        role="img"
+                        aria-label="{{ $activeUserPercentage }} percent active and {{ $inactiveUserPercentage }} percent inactive"
+                        style="--active-angle: {{ $totalUsers > 0 ? $activeUserPercentage * 3.6 : 0 }}deg;"
+                    ></div>
+                    <div class="status-pie-center">
+                        <div class="setup-value">{{ $activeUserPercentage }}%</div>
+                        <div class="small fw-bold text-secondary text-uppercase">Active</div>
                     </div>
-                    <div class="setup-value">{{ $activeUsers }}</div>
                 </div>
-                <div class="text-end">
-                    <div class="d-flex align-items-center justify-content-end gap-2">
-                        <span class="rounded-circle d-inline-block" style="width: 10px; height: 10px; background: #dc3545;"></span>
-                        <span class="small fw-bold text-secondary text-uppercase">Inactive</span>
+
+                <div class="status-legend w-100">
+                    <div class="status-legend-item">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="rounded-circle d-inline-block" style="width: 10px; height: 10px; background: #198754;"></span>
+                            <span class="small fw-bold text-secondary text-uppercase">Active</span>
+                        </div>
+                        <div class="setup-value">{{ $activeUsers }}</div>
                     </div>
-                    <div class="setup-value">{{ $inactiveUsers }}</div>
+                    <div class="status-legend-item">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="rounded-circle d-inline-block" style="width: 10px; height: 10px; background: #dc3545;"></span>
+                            <span class="small fw-bold text-secondary text-uppercase">Inactive</span>
+                        </div>
+                        <div class="setup-value">{{ $inactiveUsers }}</div>
+                    </div>
                 </div>
             </div>
         </section>

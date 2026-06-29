@@ -44,9 +44,6 @@ class RoleController extends Controller
             'departmentChairs' => $departmentChairs,
             'availableAdminDeanTeachers' => $teachers->reject(fn (User $user) => $user->hasRole('admin_dean'))->values(),
             'availableDepartmentChairTeachers' => $teachers->reject(fn (User $user) => $user->hasRole('department_chair'))->values(),
-            'totalTeachers' => $teachers->count(),
-            'totalAdminDeans' => $adminDeans->count(),
-            'totalDepartmentChairs' => $departmentChairs->count(),
         ]);
     }
 

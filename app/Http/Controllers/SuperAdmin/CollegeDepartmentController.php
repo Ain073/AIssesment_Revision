@@ -25,8 +25,6 @@ class CollegeDepartmentController extends Controller
                 ->withCount('instructorProfiles')
                 ->orderBy('dept_name')
                 ->get(),
-            'totalColleges' => College::count(),
-            'totalDepartments' => Department::count(),
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Student;
 use App\Models\ClassAssessment;
 use App\Models\Submission;
 use App\Models\SubmissionSecurityEvent;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -191,6 +192,18 @@ class AssessmentController extends BaseController
                 'class_assessment_id' => $classAssessment->class_assessment_id,
                 'submission_id' => $result['submission']->submission_id,
             ]);
+
+            $classAssessment->loadMissing('assessment', 'class.instructorProfile.user');
+
+            if ($classAssessment->class?->instructorProfile?->user) {
+                app(NotificationService::class)->send(
+                    $classAssessment->class->instructorProfile->user,
+                    'Security Limit Reached',
+                    $user->displayName().' reached the warning limit in '.$classAssessment->assessment?->title.'.',
+                    route('instructor.assessments.results', $classAssessment),
+                    'warning'
+                );
+            }
         }
 
         return response()->json([
@@ -291,6 +304,18 @@ class AssessmentController extends BaseController
             'submission_id' => $submission->submission_id,
             'warning_count' => $submission->fresh()->warning_count,
         ]);
+
+        $classAssessment->loadMissing('assessment', 'class.instructorProfile.user');
+
+        if ($classAssessment->class?->instructorProfile?->user) {
+            app(NotificationService::class)->send(
+                $classAssessment->class->instructorProfile->user,
+                'Assessment Submitted',
+                $user->displayName().' submitted '.$classAssessment->assessment?->title.'.',
+                route('instructor.assessments.results', $classAssessment),
+                'assessment'
+            );
+        }
 
         return redirect()
             ->route('student.assessments')

@@ -1,24 +1,3 @@
-<div class="row g-4 mb-4">
-    <div class="col-md-4">
-        <div class="stat-card p-4 h-100">
-            <p class="small fw-bold text-secondary text-uppercase mb-2">Available</p>
-            <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $availableCount }}</div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="stat-card p-4 h-100">
-            <p class="small fw-bold text-secondary text-uppercase mb-2">Pending</p>
-            <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $pendingCount }}</div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="stat-card p-4 h-100">
-            <p class="small fw-bold text-secondary text-uppercase mb-2">Completed</p>
-            <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $completedCount }}</div>
-        </div>
-    </div>
-</div>
-
 @if ($classAssessments->isNotEmpty())
     <div class="row g-4">
         @foreach ($classAssessments as $classAssessment)

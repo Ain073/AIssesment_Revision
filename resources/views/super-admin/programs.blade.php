@@ -5,6 +5,8 @@
     $profileInitials = 'SA';
     $profileName = 'Super Admin';
     $profileMeta = 'System Controller';
+    $showTopbarSearch = true;
+    $topbarSearchPlaceholder = 'Search programs...';
     $navItems = [
         ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('super-admin.dashboard'), 'active' => false],
         ['label' => 'Colleges & Departments', 'icon' => 'account_balance', 'href' => route('super-admin.colleges'), 'active' => false],
@@ -20,7 +22,6 @@
 
 @push('styles')
     <style>
-        .stat-card,
         .directory-card {
             background: #fff;
             border: 1px solid var(--psu-line);
@@ -103,27 +104,6 @@
     @if ($errors->any())
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
-
-    <div class="row g-4 mb-4">
-        <div class="col-md-6">
-            <div class="stat-card p-4">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Total Programs</p>
-                <div class="d-flex align-items-baseline gap-2">
-                    <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalPrograms }}</span>
-                    <span class="small text-secondary">Current degree offerings</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="stat-card p-4">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Active Programs</p>
-                <div class="d-flex align-items-baseline gap-2">
-                    <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $activePrograms }}</span>
-                    <span class="small text-secondary">Available to map with students and subjects</span>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <div class="program-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
         <form action="{{ route('super-admin.programs') }}" method="GET">

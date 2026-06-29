@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Instructor;
 
 use App\Models\Report;
+use App\Services\ReportAiService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,19 +22,11 @@ class ReportController extends BaseController
         $completedAssessments = $this->completedReportableAssessments($instructorProfile);
         $formativeAssessments = $completedAssessments->where('assessment.report_category', Report::TYPE_FORMATIVE)->values();
         $summativeAssessments = $completedAssessments->where('assessment.report_category', Report::TYPE_SUMMATIVE)->values();
-        $draftReportsCount = $instructorProfile
-            ? Report::query()
-                ->where('report_status', Report::STATUS_DRAFT)
-                ->whereHas('classAssessment.assessment', fn ($query) => $query->where('instructor_id', $instructorProfile->instructor_profile_id))
-                ->count()
-            : 0;
 
         return view('instructor.reports', $this->sharedData($user, 'reports') + [
             'instructorProfile' => $instructorProfile,
-            'completedAssessments' => $completedAssessments,
             'formativeAssessments' => $formativeAssessments,
             'summativeAssessments' => $summativeAssessments,
-            'draftReportsCount' => $draftReportsCount,
             'reportCategories' => $this->reportCategories(),
         ]);
     }
@@ -211,5 +205,54 @@ class ReportController extends BaseController
                 'class_assessment_ids' => $classAssessmentIds->all(),
             ])
             ->with('status', 'Report details saved.');
+    }
+
+    public function generateAiDrafts(Request $request, ReportAiService $aiService): JsonResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+
+        abort_unless($instructorProfile, 403, 'Instructor profile is required before generating AI drafts.');
+
+        $validated = $request->validate([
+            'report_type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
+            'class_assessment_ids' => ['required', 'array', 'min:1'],
+            'class_assessment_ids.*' => ['integer'],
+        ]);
+
+        $classAssessmentIds = collect($validated['class_assessment_ids'])
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values();
+        $ownedCompletedAssessments = $this->completedReportableAssessments($instructorProfile)
+            ->whereIn('class_assessment_id', $classAssessmentIds)
+            ->where('assessment.report_category', $validated['report_type'])
+            ->values();
+
+        if ($ownedCompletedAssessments->count() !== $classAssessmentIds->count()) {
+            throw ValidationException::withMessages([
+                'class_assessment_ids' => 'Select completed assessments under your account with the same report type.',
+            ]);
+        }
+
+        $drafts = $ownedCompletedAssessments
+            ->mapWithKeys(function ($classAssessment) use ($aiService): array {
+                return [
+                    $classAssessment->class_assessment_id => $aiService->generate($classAssessment),
+                ];
+            });
+
+        Log::info('Instructor generated AI report drafts.', [
+            'actor_id' => $user->id,
+            'instructor_profile_id' => $instructorProfile->instructor_profile_id,
+            'report_type' => $validated['report_type'],
+            'class_assessment_ids' => $classAssessmentIds->all(),
+            'source' => $drafts->pluck('source')->unique()->values()->all(),
+        ]);
+
+        return response()->json([
+            'drafts' => $drafts,
+        ]);
     }
 }

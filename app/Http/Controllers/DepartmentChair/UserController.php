@@ -6,6 +6,7 @@ use App\Models\InstructorProfile;
 use App\Models\Role;
 use App\Models\StudentProfile;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -53,7 +54,7 @@ class UserController extends BaseController
             ],
         ]);
 
-        DB::transaction(function () use ($validated, $user, $scopedDepartment) {
+        $createdUser = DB::transaction(function () use ($validated, $user, $scopedDepartment) {
             $createdUser = User::create([
                 'name' => $this->buildName($validated),
                 'first_name' => $validated['first_name'],
@@ -90,7 +91,17 @@ class UserController extends BaseController
                 'department_id' => $scopedDepartment->department_id,
                 'program_id' => $validated['program_id'] ?? null,
             ]);
+
+            return $createdUser;
         });
+
+        app(NotificationService::class)->send(
+            $createdUser,
+            'Account Created',
+            'Your AIssessment account has been created.',
+            $createdUser->portalRouteName() ? route($createdUser->portalRouteName()) : route('login'),
+            'account'
+        );
 
         return redirect()
             ->back()

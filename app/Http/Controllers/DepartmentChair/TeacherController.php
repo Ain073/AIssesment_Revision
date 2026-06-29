@@ -28,11 +28,6 @@ class TeacherController extends BaseController
         return view('department-chair.teachers', $this->sharedData($user, 'teachers') + [
             'teachers' => $teachers,
             'scopedDepartment' => $scopedDepartment,
-            'totalTeachers' => $teachers->count(),
-            'activeTeachers' => $teachers->where('status', 'active')->count(),
-            'elevatedTeachers' => $teachers
-                ->filter(fn (User $teacher) => $teacher->hasRole('admin_dean') || $teacher->hasRole('department_chair'))
-                ->count(),
         ]);
     }
 }

@@ -20,6 +20,7 @@ use App\Http\Controllers\Instructor\ClassController as InstructorClassController
 use App\Http\Controllers\Instructor\ClassStudentController as InstructorClassStudentController;
 use App\Http\Controllers\Instructor\DashboardController as InstructorDashboardController;
 use App\Http\Controllers\Instructor\ReportController as InstructorReportController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Student\AssessmentController as StudentAssessmentController;
 use App\Http\Controllers\Student\ClassController as StudentClassController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
@@ -50,6 +51,8 @@ Route::middleware(['guest', 'no_cache'])->group(function () {
 
 Route::middleware(['auth', 'no_cache'])->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
 });
 
 Route::middleware(['super_admin', 'no_cache'])
@@ -118,6 +121,7 @@ Route::middleware(['instructor', 'no_cache'])
         Route::post('/reports/prepare', [InstructorReportController::class, 'prepareReports'])->name('reports.prepare');
         Route::get('/reports/build', [InstructorReportController::class, 'showReportSheet'])->name('reports.build');
         Route::post('/reports/build', [InstructorReportController::class, 'saveReportSheet'])->name('reports.save');
+        Route::post('/reports/ai-drafts', [InstructorReportController::class, 'generateAiDrafts'])->middleware('throttle:10,1')->name('reports.ai-drafts');
     });
 
 Route::middleware(['admin_dean', 'no_cache'])

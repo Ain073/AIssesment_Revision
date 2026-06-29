@@ -5,6 +5,8 @@
     $profileInitials = 'SA';
     $profileName = 'Super Admin';
     $profileMeta = 'System Controller';
+    $showTopbarSearch = true;
+    $topbarSearchPlaceholder = 'Search subjects...';
     $navItems = [
         ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('super-admin.dashboard'), 'active' => false],
         ['label' => 'Colleges & Departments', 'icon' => 'account_balance', 'href' => route('super-admin.colleges'), 'active' => false],

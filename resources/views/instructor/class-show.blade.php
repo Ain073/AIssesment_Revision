@@ -275,29 +275,6 @@
         </div>
     @endif
 
-    <section class="mb-4">
-        <div class="row g-3">
-            <div class="col-md-4">
-                <div class="stat-card p-4 h-100">
-                    <p class="small fw-bold text-secondary text-uppercase mb-2">Students</p>
-                    <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $class->students_count }}</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card p-4 h-100">
-                    <p class="small fw-bold text-secondary text-uppercase mb-2">Join Requests</p>
-                    <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $pendingJoinRequests->count() }}</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card p-4 h-100">
-                    <p class="small fw-bold text-secondary text-uppercase mb-2">Published Assessments</p>
-                    <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $class->class_assessments_count }}</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <div class="class-tabbar mb-4">
         @foreach ($classTabs as $tab)
             <a class="class-tablink {{ $tab['active'] ? 'active' : '' }}" href="{{ $tab['href'] }}">{{ $tab['label'] }}</a>

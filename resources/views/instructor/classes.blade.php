@@ -5,7 +5,6 @@
 
 @push('styles')
     <style>
-        .stat-card,
         .directory-card {
             background: #fff;
             border: 1px solid var(--psu-line);

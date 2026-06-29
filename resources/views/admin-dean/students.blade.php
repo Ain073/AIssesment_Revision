@@ -5,7 +5,6 @@
 
 @push('styles')
     <style>
-        .stat-card,
         .directory-card {
             background: #fff;
             border: 1px solid var(--psu-line);
@@ -96,27 +95,6 @@
     @if ($errors->any())
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
-
-    <div class="row g-4 mb-4">
-        <div class="col-md-4">
-            <div class="stat-card p-4 h-100">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Total Students</p>
-                <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalStudents }}</div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stat-card p-4 h-100">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Active Students</p>
-                <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $activeStudents }}</div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stat-card p-4 h-100">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Programs</p>
-                <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $programCount }}</div>
-            </div>
-        </div>
-    </div>
 
     @if ($scopedCollege)
         <div class="alert alert-primary border-0 shadow-sm mb-4">

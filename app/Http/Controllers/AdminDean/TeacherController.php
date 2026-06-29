@@ -25,9 +25,6 @@ class TeacherController extends BaseController
             ->orderBy('name')
             ->get();
 
-        $adminDeans = $teachers->filter->hasRole('admin_dean')->values();
-        $departmentChairs = $teachers->filter->hasRole('department_chair')->values();
-
         return view('admin-dean.teachers', $this->sharedData('teachers') + [
             'teachers' => $teachers,
             'scopedCollege' => $scopedCollege,
@@ -35,9 +32,6 @@ class TeacherController extends BaseController
                 ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
                 ->orderBy('dept_name')
                 ->get(),
-            'totalTeachers' => $teachers->count(),
-            'totalAdminDeans' => $adminDeans->count(),
-            'totalDepartmentChairs' => $departmentChairs->count(),
         ]);
     }
 }

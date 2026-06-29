@@ -9,6 +9,7 @@ use App\Models\Program;
 use App\Models\Role;
 use App\Models\StudentProfile;
 use App\Models\User;
+use App\Services\NotificationService;
 use App\Services\StudentAccountImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -57,16 +58,10 @@ class UserController extends Controller
 
         return view('super-admin.users', [
             'users' => $users,
-            'totalUsers' => $users->count(),
             'teachers' => $teachers,
             'students' => $students,
             'adminDeans' => $adminDeans,
             'departmentChairs' => $departmentChairs,
-            'totalTeachers' => $teachers->count(),
-            'totalStudents' => $students->count(),
-            'totalAdminDeans' => $adminDeans->count(),
-            'totalDepartmentChairs' => $departmentChairs->count(),
-            'totalActiveUsers' => $users->where('status', 'active')->count(),
             'departments' => $departments,
             'programs' => $programs,
             'studentImportPreview' => $importer->previewForRequest($request, 'super-admin'),
@@ -150,7 +145,7 @@ class UserController extends Controller
             'form_mode' => ['nullable', 'string'],
         ]);
 
-        DB::transaction(function () use ($validated) {
+        $createdUser = DB::transaction(function () use ($validated) {
             $user = User::create([
                 'name' => $this->buildName($validated),
                 'first_name' => $validated['first_name'],
@@ -185,7 +180,17 @@ class UserController extends Controller
                 'program_id' => $validated['program_id'] ?? null,
                 'student_number' => $validated['student_number'] ?? null,
             ]);
+
+            return $user;
         });
+
+        app(NotificationService::class)->send(
+            $createdUser,
+            'Account Created',
+            'Your AIssessment account has been created.',
+            $createdUser->portalRouteName() ? route($createdUser->portalRouteName()) : route('login'),
+            'account'
+        );
 
         return redirect()
             ->route('super-admin.users')

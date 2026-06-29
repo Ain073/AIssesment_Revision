@@ -5,7 +5,6 @@
 
 @push('styles')
     <style>
-        .stat-card,
         .directory-card {
             background: #fff;
             border: 1px solid var(--psu-line);
@@ -86,27 +85,6 @@
     @if ($errors->any())
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
-
-    <div class="row g-4 mb-4">
-        <div class="col-md-6">
-            <div class="stat-card p-4">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Total Departments</p>
-                <div class="d-flex align-items-baseline gap-2">
-                    <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalDepartments }}</span>
-                    <span class="small text-secondary">Academic units listed</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="stat-card p-4">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Total Colleges</p>
-                <div class="d-flex align-items-baseline gap-2">
-                    <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalColleges }}</span>
-                    <span class="small text-secondary">Current available colleges</span>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <div class="d-flex flex-wrap justify-content-lg-end gap-2 mb-4">
         <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#departmentModal" data-bs-toggle="modal" type="button">

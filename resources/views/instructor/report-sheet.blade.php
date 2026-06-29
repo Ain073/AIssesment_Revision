@@ -330,6 +330,15 @@
             overflow-wrap: anywhere;
         }
 
+        .report-ai-status {
+            display: none;
+            margin-bottom: 1rem;
+        }
+
+        .report-ai-status.show {
+            display: block;
+        }
+
         @media print {
             @page {
                 size: {{ $paper['width'] }} {{ $paper['height'] }};
@@ -416,12 +425,18 @@
                 <span class="material-symbols-outlined fs-5">save</span>
                 Save Details
             </button>
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" id="generateAiDraftsButton" type="button" data-ai-url="{{ route('instructor.reports.ai-drafts') }}">
+                <span class="material-symbols-outlined fs-5">auto_awesome</span>
+                AI Draft
+            </button>
             <button class="btn btn-psu d-inline-flex align-items-center gap-2" onclick="window.print()" type="button">
                 <span class="material-symbols-outlined fs-5">print</span>
                 Print
             </button>
         </div>
     </div>
+
+    <div class="alert report-ai-status" id="reportAiStatus"></div>
 
     <form action="{{ route('instructor.reports.save') }}" id="reportSheetForm" method="POST">
         @csrf
@@ -536,11 +551,11 @@
                                 </div>
                             </td>
                             <td>
-                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_most_learned_skills]">{{ old('reports.'.$classAssessment->class_assessment_id.'.concept_most_learned_skills', $mostLearned) }}</textarea>
+                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_most_learned_skills]" data-assessment-id="{{ $classAssessment->class_assessment_id }}" data-ai-field="concepts_most_learned_skills">{{ old('reports.'.$classAssessment->class_assessment_id.'.concept_most_learned_skills', $mostLearned) }}</textarea>
                                 <div class="report-print-text"></div>
                             </td>
                             <td>
-                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_least_learned_skills]">{{ old('reports.'.$classAssessment->class_assessment_id.'.concept_least_learned_skills', $leastLearned) }}</textarea>
+                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_least_learned_skills]" data-assessment-id="{{ $classAssessment->class_assessment_id }}" data-ai-field="concepts_least_learned_skills">{{ old('reports.'.$classAssessment->class_assessment_id.'.concept_least_learned_skills', $leastLearned) }}</textarea>
                                 <div class="report-print-text"></div>
                             </td>
                             <td>
@@ -606,6 +621,83 @@
 
             window.addEventListener('load', () => {
                 document.querySelectorAll('.report-edit-textarea').forEach(autosize);
+            });
+
+            const aiButton = document.getElementById('generateAiDraftsButton');
+            const aiStatus = document.getElementById('reportAiStatus');
+            const reportForm = document.getElementById('reportSheetForm');
+
+            const showAiStatus = (message, type = 'info') => {
+                if (! aiStatus) {
+                    return;
+                }
+
+                aiStatus.className = `alert alert-${type} report-ai-status show`;
+                aiStatus.textContent = message;
+            };
+
+            const fillAiDrafts = (drafts) => {
+                Object.entries(drafts).forEach(([assessmentId, draft]) => {
+                    Object.entries(draft).forEach(([field, value]) => {
+                        const textarea = document.querySelector(`[data-assessment-id="${assessmentId}"][data-ai-field="${field}"]`);
+
+                        if (textarea && value && field !== 'source') {
+                            textarea.value = value;
+                            autosize(textarea);
+                        }
+                    });
+                });
+            };
+
+            aiButton?.addEventListener('click', async () => {
+                const classAssessmentIds = [...reportForm.querySelectorAll('input[name="class_assessment_ids[]"]')]
+                    .map((input) => Number(input.value))
+                    .filter((value) => value > 0);
+
+                if (classAssessmentIds.length === 0) {
+                    showAiStatus('No completed assessments were selected.', 'warning');
+                    return;
+                }
+
+                aiButton.disabled = true;
+                showAiStatus('Generating AI draft content...', 'info');
+
+                try {
+                    const response = await fetch(aiButton.dataset.aiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': window.csrfToken,
+                        },
+                        body: JSON.stringify({
+                            report_type: @json($reportType),
+                            class_assessment_ids: classAssessmentIds,
+                        }),
+                    });
+
+                    if (! response.ok) {
+                        throw new Error('AI draft request failed.');
+                    }
+
+                    const data = await response.json();
+                    fillAiDrafts(data.drafts ?? {});
+
+                    const sources = Object.values(data.drafts ?? {})
+                        .map((draft) => draft.source)
+                        .filter(Boolean);
+                    const usedMock = sources.includes('mock');
+                    showAiStatus(
+                        usedMock
+                            ? 'Mock AI draft generated. Add an API key later to use a live AI provider.'
+                            : 'AI draft generated. Review and edit before saving.',
+                        usedMock ? 'warning' : 'success'
+                    );
+                } catch (error) {
+                    showAiStatus('Unable to generate AI draft. Please try again.', 'danger');
+                } finally {
+                    aiButton.disabled = false;
+                }
             });
         })();
     </script>

@@ -22,7 +22,6 @@
 
 @push('styles')
     <style>
-        .stat-card,
         .directory-card {
             background: #fff;
             border: 1px solid var(--psu-line);
@@ -191,33 +190,6 @@
                     {{ $errors->first() }}
                 </div>
             @endif
-
-            <div class="row g-4 mb-4">
-                <div class="col-md-3">
-                    <div class="stat-card p-4">
-                        <p class="small fw-bold text-secondary text-uppercase mb-2">Total Accounts</p>
-                        <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalUsers }}</span>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card p-4">
-                        <p class="small fw-bold text-secondary text-uppercase mb-2">Teacher Accounts</p>
-                        <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalTeachers }}</span>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card p-4">
-                        <p class="small fw-bold text-secondary text-uppercase mb-2">Student Accounts</p>
-                        <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalStudents }}</span>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card p-4">
-                        <p class="small fw-bold text-secondary text-uppercase mb-2">Active Accounts</p>
-                        <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalActiveUsers }}</span>
-                    </div>
-                </div>
-            </div>
 
             <div class="d-flex flex-wrap justify-content-lg-end gap-2 mb-4">
                 <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button">

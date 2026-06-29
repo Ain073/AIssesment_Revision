@@ -5,7 +5,6 @@
 
 @push('styles')
     <style>
-        .stat-card,
         .directory-card {
             background: #fff;
             border: 1px solid var(--psu-line);
@@ -109,36 +108,6 @@
     @if ($errors->any())
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
-
-    <div class="row g-4 mb-4">
-        <div class="col-md-4">
-            <div class="stat-card p-4">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Total Teachers</p>
-                <div class="d-flex align-items-baseline gap-2">
-                    <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalTeachers }}</span>
-                    <span class="small text-secondary">Within your department scope</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stat-card p-4">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Active Teachers</p>
-                <div class="d-flex align-items-baseline gap-2">
-                    <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $activeTeachers }}</span>
-                    <span class="small text-secondary">Currently active accounts</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stat-card p-4">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Elevated Access</p>
-                <div class="d-flex align-items-baseline gap-2">
-                    <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $elevatedTeachers }}</span>
-                    <span class="small text-secondary">Admin/Dean or chair roles in scope</span>
-                </div>
-            </div>
-        </div>
-    </div>
 
     @if ($scopedDepartment)
         <div class="alert alert-primary border-0 shadow-sm mb-4">

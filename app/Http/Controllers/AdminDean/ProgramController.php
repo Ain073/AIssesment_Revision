@@ -28,10 +28,6 @@ class ProgramController extends BaseController
                 ? collect([$scopedCollege->loadCount('programs')])
                 : collect(),
             'scopedCollege' => $scopedCollege,
-            'totalPrograms' => Program::query()
-                ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
-                ->count(),
-            'totalColleges' => $scopedCollege ? 1 : 0,
         ]);
     }
 

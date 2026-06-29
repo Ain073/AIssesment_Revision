@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Instructor;
 use App\Models\AcademicClass;
 use App\Models\ClassJoinRequest;
 use App\Models\StudentProfile;
+use App\Services\NotificationService;
 use App\Services\TabularFileReader;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -91,6 +92,16 @@ class ClassStudentController extends BaseController
             'student_profile_id' => $studentProfile->student_profile_id,
             'student_number' => $studentProfile->student_number,
         ]);
+
+        if ($studentProfile->user) {
+            app(NotificationService::class)->send(
+                $studentProfile->user,
+                'Added to Class',
+                'You were added to '.$ownedClass->class_name.'.',
+                route('student.classes'),
+                'class'
+            );
+        }
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Student added to class successfully.']);
@@ -250,6 +261,23 @@ class ClassStudentController extends BaseController
             'student_profile_ids' => $attachIds->all(),
         ]);
 
+        if ($attachIds->isNotEmpty()) {
+            $students = StudentProfile::query()
+                ->with('user')
+                ->whereIn('student_profile_id', $attachIds->all())
+                ->get()
+                ->pluck('user')
+                ->filter();
+
+            app(NotificationService::class)->sendToMany(
+                $students,
+                'Added to Class',
+                'You were added to '.$ownedClass->class_name.'.',
+                route('student.classes'),
+                'class'
+            );
+        }
+
         return redirect()
             ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
             ->with('status', $attachIds->count().' student'.($attachIds->count() === 1 ? '' : 's').' imported successfully.');
@@ -331,6 +359,14 @@ class ClassStudentController extends BaseController
             'student_profile_id' => $studentProfile->student_profile_id,
         ]);
 
+        app(NotificationService::class)->send(
+            $studentProfile->user,
+            'Join Request Approved',
+            'Your request to join '.$ownedClass->class_name.' was approved.',
+            route('student.classes'),
+            'class'
+        );
+
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Student join request approved.']);
         }
@@ -370,11 +406,23 @@ class ClassStudentController extends BaseController
             'responded_by' => $user->id,
         ]);
 
+        $joinRequest->loadMissing('studentProfile.user');
+
         Log::info('Class join request rejected by instructor.', [
             'actor_id' => $user->id,
             'class_id' => $ownedClass->class_id,
             'class_join_request_id' => $joinRequest->class_join_request_id,
         ]);
+
+        if ($joinRequest->studentProfile?->user) {
+            app(NotificationService::class)->send(
+                $joinRequest->studentProfile->user,
+                'Join Request Rejected',
+                'Your request to join '.$ownedClass->class_name.' was rejected.',
+                route('student.classes'),
+                'class'
+            );
+        }
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Student join request rejected.']);

@@ -23,17 +23,12 @@
 
 @push('styles')
     <style>
-        .reports-summary-card,
         .reports-panel,
         .report-assessment-card {
             border: 1px solid var(--psu-line);
             border-radius: 0.5rem;
             background: #fff;
             box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
-        }
-
-        .reports-summary-card {
-            padding: 1.25rem;
         }
 
         .reports-tabs {
@@ -140,27 +135,6 @@
             <span class="material-symbols-outlined fs-5">assignment</span>
             Published Assessments
         </a>
-    </div>
-
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="reports-summary-card">
-                <div class="text-uppercase fw-bold small text-secondary">Completed Assessments</div>
-                <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $completedAssessments->count() }}</div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="reports-summary-card">
-                <div class="text-uppercase fw-bold small text-secondary">Formative</div>
-                <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $formativeAssessments->count() }}</div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="reports-summary-card">
-                <div class="text-uppercase fw-bold small text-secondary">Draft Reports</div>
-                <div class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $draftReportsCount }}</div>
-            </div>
-        </div>
     </div>
 
     <div class="reports-tabs mb-3">

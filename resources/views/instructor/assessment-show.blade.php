@@ -418,8 +418,8 @@
 @push('scripts')
     <script>
         (() => {
-            const typeLabels = @js($itemTypes);
-            const oldItems = Object.values(@js($oldItems) ?? {});
+            const typeLabels = {{ Illuminate\Support\Js::from($itemTypes) }};
+            const oldItems = Object.values({{ Illuminate\Support\Js::from($oldItems) }} ?? {});
             const stepButtons = document.querySelectorAll('[data-step-tab]');
             const stepTriggers = document.querySelectorAll('[data-step-target]');
             const stepPanels = document.querySelectorAll('[data-step-panel]');

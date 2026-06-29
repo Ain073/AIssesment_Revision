@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Student\Helpers\StudentLayoutHelper;
 use App\Models\AcademicClass;
 use App\Models\ClassAssessment;
 use App\Models\ClassJoinRequest;
@@ -10,16 +11,17 @@ use App\Models\StudentProfile;
 use App\Models\Submission;
 use App\Models\SubmissionSecurityEvent;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class BaseController extends Controller
 {
+    use StudentLayoutHelper;
+
     protected function submitClassJoinRequest(Request $request, AcademicClass $class, StudentProfile $studentProfile, User $user, string $source): RedirectResponse|JsonResponse
     {
         if ($class->students()->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)->exists()) {
@@ -53,6 +55,18 @@ class BaseController extends Controller
             'student_profile_id' => $studentProfile->student_profile_id,
         ]);
 
+        $class->loadMissing('instructorProfile.user');
+
+        if ($class->instructorProfile?->user) {
+            app(NotificationService::class)->send(
+                $class->instructorProfile->user,
+                'Class Join Request',
+                $user->displayName().' requested to join '.$class->class_name.'.',
+                route('instructor.classes.show', ['class' => $class, 'tab' => 'students']),
+                'class'
+            );
+        }
+
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Join request sent. Please wait for your teacher to approve it.']);
         }
@@ -60,59 +74,6 @@ class BaseController extends Controller
         return redirect()
             ->route('student.classes')
             ->with('status', 'Join request sent. Please wait for your teacher to approve it.');
-    }
-
-    protected function placeholderPageData(
-        string $activeNav,
-        string $pageHeading,
-        string $pageDescription,
-        array $checklist
-    ): array {
-        $user = $this->currentUser();
-
-        return $this->sharedData($user, $activeNav) + [
-            'pageHeading' => $pageHeading,
-            'pageDescription' => $pageDescription,
-            'pageChecklist' => $checklist,
-        ];
-    }
-
-    protected function sharedData(User $user, string $activeNav): array
-    {
-        return [
-            'user' => $user,
-            'portalSubtitle' => 'Student Portal',
-            'profileInitials' => strtoupper(Str::substr($user->first_name ?? $user->displayName(), 0, 1)),
-            'profileName' => $user->displayName(),
-            'profileMeta' => 'Student Account',
-            'navItems' => $this->navItems($activeNav),
-            'viewSwitches' => [],
-            'showTopbarSearch' => true,
-            'topbarSearchPlaceholder' => 'Search classes or assessments...',
-        ];
-    }
-
-    protected function navItems(string $activeNav): array
-    {
-        $items = [
-            ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('student.dashboard')],
-            ['key' => 'classes', 'label' => 'Classes', 'icon' => 'school', 'href' => route('student.classes')],
-            ['key' => 'assessments', 'label' => 'Assessments', 'icon' => 'assignment', 'href' => route('student.assessments')],
-            ['key' => 'results', 'label' => 'Results', 'icon' => 'grading', 'href' => route('student.results')],
-        ];
-
-        return array_map(
-            fn (array $item) => $item + ['active' => $item['key'] === $activeNav],
-            $items,
-        );
-    }
-
-    protected function currentUser(): User
-    {
-        /** @var User $user */
-        $user = Auth::user()->loadMissing('roles', 'studentProfile.program.college');
-
-        return $user;
     }
 
     protected function studentProfileOrRedirect(User $user): StudentProfile|RedirectResponse
@@ -179,9 +140,6 @@ class BaseController extends Controller
         return [
             'studentProfile' => $studentProfile,
             'classAssessments' => $classAssessments,
-            'availableCount' => $classAssessments->where('student_status', 'available')->count(),
-            'pendingCount' => $classAssessments->where('student_status', 'pending')->count(),
-            'completedCount' => $classAssessments->where('student_status', 'completed')->count(),
         ];
     }
 

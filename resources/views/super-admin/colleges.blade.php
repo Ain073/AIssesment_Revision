@@ -22,7 +22,6 @@
 
 @push('styles')
     <style>
-        .stat-card,
         .directory-card {
             background: #fff;
             border: 1px solid var(--psu-line);
@@ -117,27 +116,6 @@
                 </div>
             @endif
 
-            <div class="row g-4 mb-4">
-                <div class="col-md-6">
-                    <div class="stat-card p-4">
-                        <p class="small fw-bold text-secondary text-uppercase mb-2">Total Colleges</p>
-                        <div class="d-flex align-items-baseline gap-2">
-                            <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalColleges }}</span>
-                            <span class="small text-secondary">{{ $totalColleges === 1 ? '1 record' : 'Records' }}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="stat-card p-4">
-                        <p class="small fw-bold text-secondary text-uppercase mb-2">Total Departments</p>
-                        <div class="d-flex align-items-baseline gap-2">
-                            <span class="display-6 fw-bold" style="color: var(--psu-navy);">{{ $totalDepartments }}</span>
-                            <span class="small text-secondary">Across all units</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <div class="d-flex flex-wrap justify-content-lg-end gap-2 mb-4">
                 <button class="btn btn-outline-psu d-flex align-items-center gap-2" data-bs-target="#departmentModal" data-bs-toggle="modal" type="button">
                     <span class="material-symbols-outlined fs-5">add_business</span>
@@ -192,7 +170,13 @@
                                         <td class="text-end">
                                             <button class="btn btn-sm btn-outline-secondary" type="button"><span class="material-symbols-outlined fs-6">visibility</span></button>
                                             <button class="btn btn-sm btn-outline-secondary" type="button"><span class="material-symbols-outlined fs-6">edit</span></button>
-                                            <form action="{{ route('super-admin.colleges.destroy', $college) }}" class="d-inline" method="POST" onsubmit="return confirm(@js('Delete '.$college->college_name.'? Related departments and programs under this college will also be removed.'));">
+                                            <form
+                                                action="{{ route('super-admin.colleges.destroy', $college) }}"
+                                                class="d-inline"
+                                                method="POST"
+                                                data-confirm-message="{{ 'Delete '.$college->college_name.'? Related departments and programs under this college will also be removed.' }}"
+                                                onsubmit="return confirm(this.dataset.confirmMessage);"
+                                            >
                                                 @csrf
                                                 @method('DELETE')
                                                 <button class="btn btn-sm btn-outline-danger" type="submit">
@@ -255,7 +239,13 @@
                                         <td class="text-end">
                                             <button class="btn btn-sm btn-outline-secondary" type="button"><span class="material-symbols-outlined fs-6">visibility</span></button>
                                             <button class="btn btn-sm btn-outline-secondary" type="button"><span class="material-symbols-outlined fs-6">edit</span></button>
-                                            <form action="{{ route('super-admin.departments.destroy', $department) }}" class="d-inline" method="POST" onsubmit="return confirm(@js('Delete '.$department->dept_name.'? This may remove the department assignment from linked instructor profiles.'));">
+                                            <form
+                                                action="{{ route('super-admin.departments.destroy', $department) }}"
+                                                class="d-inline"
+                                                method="POST"
+                                                data-confirm-message="{{ 'Delete '.$department->dept_name.'? This may remove the department assignment from linked instructor profiles.' }}"
+                                                onsubmit="return confirm(this.dataset.confirmMessage);"
+                                            >
                                                 @csrf
                                                 @method('DELETE')
                                                 <button class="btn btn-sm btn-outline-danger" type="submit">
