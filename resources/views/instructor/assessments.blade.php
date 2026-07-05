@@ -100,7 +100,7 @@
                                     <span class="material-symbols-outlined fs-5">edit_square</span>
                                     Open Builder
                                 </a>
-                                <a class="btn btn-psu d-inline-flex align-items-center gap-2 {{ $assessment->items_count === 0 ? 'disabled' : '' }}" href="{{ route('instructor.assessments.publish.form', ['assessment_id' => $assessment->assessment_id]) }}" aria-disabled="{{ $assessment->items_count === 0 ? 'true' : 'false' }}">
+                                <a class="btn btn-psu d-inline-flex align-items-center gap-2 {{ $assessment->items_count === 0 ? 'disabled' : '' }}" href="{{ route('instructor.assessments.publish.form', ['assessment_key' => $assessment->public_id]) }}" aria-disabled="{{ $assessment->items_count === 0 ? 'true' : 'false' }}">
                                     <span class="material-symbols-outlined fs-5">publish</span>
                                     Publish
                                 </a>

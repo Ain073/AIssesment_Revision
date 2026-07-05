@@ -32,7 +32,7 @@ class AssessmentPublishController extends BaseController
                 ->get()
             : collect();
 
-        $selectedAssessment = $assessments->firstWhere('assessment_id', (int) $request->query('assessment_id'));
+        $selectedAssessment = $assessments->firstWhere('public_id', $request->query('assessment_key'));
         $selectedSubjectId = (int) old(
             'subject_id',
             $selectedAssessment?->subject_id ?? $request->query('subject_id')
@@ -44,7 +44,7 @@ class AssessmentPublishController extends BaseController
             'assessments' => $assessments,
             'classes' => $classes,
             'selectedSubjectId' => $selectedSubjectId,
-            'selectedAssessmentId' => (int) old('assessment_id', $selectedAssessment?->assessment_id),
+            'selectedAssessmentKey' => (string) old('assessment_key', $selectedAssessment?->public_id),
         ]);
     }
 
@@ -61,8 +61,8 @@ class AssessmentPublishController extends BaseController
         }
 
         $validated = $request->validate([
-            'class_ids' => ['required', 'array', 'min:1'],
-            'class_ids.*' => ['integer'],
+            'class_keys' => ['required', 'array', 'min:1'],
+            'class_keys.*' => ['required', 'uuid'],
             'available_at' => ['nullable', 'date'],
             'due_at' => ['nullable', 'date', 'after:available_at'],
             'attempt_limit' => ['required', 'integer', 'min:1', 'max:10'],
@@ -98,9 +98,9 @@ class AssessmentPublishController extends BaseController
 
         $validated = $request->validate([
             'subject_id' => ['required', 'integer', Rule::in($handledSubjectIds)],
-            'assessment_id' => ['required', 'integer'],
-            'class_ids' => ['required', 'array', 'min:1'],
-            'class_ids.*' => ['integer'],
+            'assessment_key' => ['required', 'uuid'],
+            'class_keys' => ['required', 'array', 'min:1'],
+            'class_keys.*' => ['required', 'uuid'],
             'available_at' => ['nullable', 'date'],
             'due_at' => ['nullable', 'date', 'after:available_at'],
             'attempt_limit' => ['required', 'integer', 'min:1', 'max:10'],
@@ -120,18 +120,18 @@ class AssessmentPublishController extends BaseController
 
         $ownedAssessment = $instructorProfile->assessments()
             ->where('subject_id', $validated['subject_id'])
-            ->where('assessment_id', $validated['assessment_id'])
+            ->where('public_id', $validated['assessment_key'])
             ->first();
 
         if (! $ownedAssessment) {
             throw ValidationException::withMessages([
-                'assessment_id' => 'Select one of your assessments under the chosen subject.',
+                'assessment_key' => 'Select one of your assessments under the chosen subject.',
             ]);
         }
 
         if (! $ownedAssessment->items()->exists()) {
             throw ValidationException::withMessages([
-                'assessment_id' => 'Add at least one item before publishing this assessment.',
+                'assessment_key' => 'Add at least one item before publishing this assessment.',
             ]);
         }
 

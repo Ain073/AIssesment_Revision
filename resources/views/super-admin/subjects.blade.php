@@ -221,7 +221,7 @@
                 <select class="form-select program-filter-select" id="program-filter" name="program" onchange="this.form.submit()">
                     <option value="">All Programs</option>
                     @foreach ($programs as $program)
-                        <option value="{{ $program->program_id }}" @selected($selectedProgramId === $program->program_id)>
+                        <option value="{{ $program->public_id }}" @selected($selectedProgramKey === $program->public_id)>
                             {{ $program->program_name }} - {{ $program->college?->college_name }}
                         </option>
                     @endforeach
@@ -452,7 +452,7 @@
 
         <div class="modal fade" id="editSubjectModal{{ $mapping->subject_program_id }}" tabindex="-1" aria-labelledby="editSubjectModalLabel{{ $mapping->subject_program_id }}" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
-                <form action="{{ route('super-admin.subjects.update', ['subjectProgram' => $mapping, 'program' => $selectedProgramId, 'year_level' => $selectedYearLevel, 'semester' => $selectedSemester]) }}" class="modal-content" method="POST">
+                <form action="{{ route('super-admin.subjects.update', ['subjectProgram' => $mapping, 'program' => $selectedProgramKey, 'year_level' => $selectedYearLevel, 'semester' => $selectedSemester]) }}" class="modal-content" method="POST">
                     @csrf
                     @method('PUT')
                     <input name="is_active" type="hidden" value="0">
@@ -510,7 +510,7 @@
 
         <div class="modal fade" id="deleteSubjectModal{{ $mapping->subject_program_id }}" tabindex="-1" aria-labelledby="deleteSubjectModalLabel{{ $mapping->subject_program_id }}" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-sm">
-                <form action="{{ route('super-admin.subjects.destroy', ['subjectProgram' => $mapping, 'program' => $selectedProgramId, 'year_level' => $selectedYearLevel, 'semester' => $selectedSemester]) }}" class="modal-content" method="POST">
+                <form action="{{ route('super-admin.subjects.destroy', ['subjectProgram' => $mapping, 'program' => $selectedProgramKey, 'year_level' => $selectedYearLevel, 'semester' => $selectedSemester]) }}" class="modal-content" method="POST">
                     @csrf
                     @method('DELETE')
                     <div class="modal-header">

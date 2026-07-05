@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\UsesPublicId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ClassJoinRequest extends Model
 {
-    use HasFactory;
+    use HasFactory, UsesPublicId;
 
     public const STATUS_PENDING = 'pending';
 

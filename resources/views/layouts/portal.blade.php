@@ -106,6 +106,135 @@
             box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
         }
 
+        .global-search {
+            position: relative;
+        }
+
+        .global-search-results {
+            position: absolute;
+            top: calc(100% + 0.45rem);
+            right: 0;
+            z-index: 1080;
+            width: 420px;
+            max-height: 360px;
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid var(--psu-line);
+            border-radius: 0.5rem;
+            box-shadow: 0 18px 36px rgba(0, 26, 112, 0.16);
+        }
+
+        .global-search-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            width: 100%;
+            padding: 0.85rem 1rem;
+            color: inherit;
+            text-decoration: none;
+            border-bottom: 1px solid #edf0f7;
+        }
+
+        .global-search-item:hover,
+        .global-search-item:focus {
+            background: #f4f7ff;
+            color: inherit;
+        }
+
+        .global-search-item:last-child {
+            border-bottom: 0;
+        }
+
+        .global-search-icon {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 34px;
+            background: var(--psu-gold-soft);
+            color: var(--psu-navy);
+            border-radius: 50%;
+        }
+
+        .global-search-empty {
+            padding: 1rem;
+            color: var(--psu-muted);
+            text-align: center;
+        }
+
+        .portal-toast-stack {
+            position: fixed;
+            top: auto;
+            left: auto;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 1090;
+            width: min(390px, calc(100vw - 2rem));
+            display: grid;
+            gap: 0.75rem;
+            justify-items: end;
+        }
+
+        .portal-toast {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.95rem 1rem;
+            background: #fff;
+            border: 1px solid var(--psu-line);
+            border-left: 5px solid var(--psu-navy-2);
+            border-radius: 0.5rem;
+            box-shadow: 0 18px 36px rgba(0, 26, 112, 0.18);
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.22s ease, transform 0.22s ease;
+        }
+
+        .portal-toast-hiding {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        .portal-toast-success {
+            border-left-color: #198754;
+        }
+
+        .portal-toast-warning {
+            border-left-color: #f0ad00;
+        }
+
+        .portal-toast-danger {
+            border-left-color: #dc3545;
+        }
+
+        .portal-toast-icon {
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 30px;
+            border-radius: 50%;
+            background: var(--psu-gold-soft);
+            color: var(--psu-navy);
+        }
+
+        .portal-toast-message {
+            flex: 1;
+            color: var(--psu-text);
+            font-weight: 600;
+            line-height: 1.45;
+        }
+
+        .portal-toast-close {
+            border: 0;
+            background: transparent;
+            color: var(--psu-muted);
+            padding: 0;
+            line-height: 1;
+        }
+
         .icon-tile {
             width: 44px;
             height: 44px;
@@ -343,6 +472,13 @@
             .mode-switcher {
                 grid-template-columns: 1fr;
             }
+
+            .portal-toast-stack {
+                top: auto;
+                left: auto;
+                bottom: 1rem;
+                right: 1rem;
+            }
         }
     </style>
 
@@ -475,9 +611,12 @@
         <div class="d-flex align-items-center gap-3">
             @yield('topbar-actions')
             @if (! empty($showTopbarSearch))
-                <div class="input-group d-none d-lg-flex" style="width: 320px;">
-                    <input class="form-control" data-page-search placeholder="{{ $topbarSearchPlaceholder ?? 'Search records...' }}" type="search" aria-label="Search page records">
-                    <span class="input-group-text bg-white"><span class="material-symbols-outlined fs-6">search</span></span>
+                <div class="global-search d-none d-lg-block">
+                    <div class="input-group" style="width: 320px;">
+                        <input class="form-control" data-page-search data-global-search-url="{{ route('portal.search') }}" placeholder="{{ $topbarSearchPlaceholder ?? 'Search records...' }}" type="search" aria-label="Search records">
+                        <span class="input-group-text bg-white"><span class="material-symbols-outlined fs-6">search</span></span>
+                    </div>
+                    <div class="global-search-results d-none" data-global-search-results></div>
                 </div>
             @endif
             <div class="dropdown">
@@ -521,6 +660,8 @@
         </div>
     </header>
 
+    <div class="portal-toast-stack" data-portal-toast-stack></div>
+
     <main class="main-content">
         <div class="page-container mx-auto">
             @yield('content')
@@ -542,22 +683,68 @@
         window.portalPollSections = [];
 
         const showPortalMessage = (message, type = 'success') => {
-            const pageContainer = document.querySelector('.page-container');
+            const toastStack = document.querySelector('[data-portal-toast-stack]');
 
-            if (! pageContainer || ! message) {
+            if (! toastStack || ! message) {
                 return;
             }
 
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type} ajax-status-alert`;
-            alert.textContent = message;
-            pageContainer.prepend(alert);
+            const icons = {
+                success: 'check_circle',
+                warning: 'error',
+                danger: 'cancel',
+            };
 
-            window.setTimeout(() => alert.remove(), 4000);
+            const toast = document.createElement('div');
+            toast.className = `portal-toast portal-toast-${type}`;
+            toast.setAttribute('role', 'status');
+
+            const icon = document.createElement('span');
+            icon.className = 'portal-toast-icon material-symbols-outlined';
+            icon.textContent = icons[type] || 'info';
+
+            const text = document.createElement('div');
+            text.className = 'portal-toast-message';
+            text.textContent = message;
+
+            const closeButton = document.createElement('button');
+            closeButton.className = 'portal-toast-close';
+            closeButton.type = 'button';
+            closeButton.setAttribute('aria-label', 'Close message');
+            closeButton.innerHTML = '<span class="material-symbols-outlined fs-5">close</span>';
+
+            let removeTimer = null;
+            const removeToast = () => {
+                window.clearTimeout(removeTimer);
+                toast.classList.add('portal-toast-hiding');
+                window.setTimeout(() => toast.remove(), 230);
+            };
+
+            closeButton.addEventListener('click', removeToast);
+
+            toast.append(icon, text, closeButton);
+            toastStack.append(toast);
+
+            removeTimer = window.setTimeout(removeToast, 4500);
+        };
+
+        const movePageFlashAlertsToToast = () => {
+            const flashAlerts = document.querySelectorAll('.page-container > .alert-success, .page-container > .alert-warning');
+
+            flashAlerts.forEach((alert) => {
+                const message = alert.textContent.trim();
+
+                if (message) {
+                    const type = alert.classList.contains('alert-warning') ? 'warning' : 'success';
+                    showPortalMessage(message, type);
+                }
+
+                alert.remove();
+            });
         };
 
         const searchableItems = () => {
-            return Array.from(document.querySelectorAll('.page-container tbody tr, .page-container .assessment-card, .page-container .class-card'))
+            return Array.from(document.querySelectorAll('.page-container tbody tr, .page-container .assessment-card, .page-container .class-card, .page-container .class-performance-card, .page-container .report-assessment-card'))
                 .filter((item) => ! item.closest('.modal') && ! item.closest('[data-search-ignore]'));
         };
 
@@ -619,9 +806,157 @@
             setPageSearchEmpty(query !== '' && visibleCount === 0);
         };
 
+        const clearPageSearch = () => {
+            searchableItems().forEach((item) => {
+                item.hidden = false;
+            });
+
+            setPageSearchEmpty(false);
+        };
+
+        const searchIconForType = (type) => {
+            const icons = {
+                Assessment: 'assignment',
+                Class: 'school',
+                Program: 'school',
+                Result: 'grading',
+                Subject: 'menu_book',
+                User: 'person',
+            };
+
+            return icons[type] || 'search';
+        };
+
+        const portalEscapeHtml = (value) => {
+            const element = document.createElement('div');
+            element.textContent = value ?? '';
+
+            return element.innerHTML;
+        };
+
+        const globalSearchBox = () => document.querySelector('[data-global-search-results]');
+
+        const hideGlobalSearchResults = () => {
+            const box = globalSearchBox();
+
+            if (box) {
+                box.classList.add('d-none');
+                box.innerHTML = '';
+            }
+        };
+
+        const renderGlobalSearchResults = (results, query) => {
+            const box = globalSearchBox();
+
+            if (! box) {
+                return;
+            }
+
+            if (query.length < 2) {
+                hideGlobalSearchResults();
+                return;
+            }
+
+            if (! results.length) {
+                box.innerHTML = '<div class="global-search-empty">No matching records found.</div>';
+                box.classList.remove('d-none');
+                return;
+            }
+
+            box.innerHTML = results.map((result) => `
+                <a class="global-search-item" href="${portalEscapeHtml(result.url)}">
+                    <span class="global-search-icon">
+                        <span class="material-symbols-outlined fs-5">${searchIconForType(result.type)}</span>
+                    </span>
+                    <span>
+                        <span class="fw-bold d-block" style="color: var(--psu-navy);">${portalEscapeHtml(result.title)}</span>
+                        <span class="small text-secondary d-block">${portalEscapeHtml(result.subtitle)}</span>
+                        <span class="badge text-bg-light border rounded-1 mt-1">${portalEscapeHtml(result.type)}</span>
+                    </span>
+                </a>
+            `).join('');
+            box.classList.remove('d-none');
+        };
+
+        const showGlobalSearchMessage = (message) => {
+            const box = globalSearchBox();
+
+            if (! box) {
+                return;
+            }
+
+            box.innerHTML = `<div class="global-search-empty">${portalEscapeHtml(message)}</div>`;
+            box.classList.remove('d-none');
+        };
+
+        let globalSearchTimer = null;
+        let globalSearchRequest = null;
+
+        const runGlobalSearch = (input) => {
+            const query = input.value.trim();
+            const url = input.dataset.globalSearchUrl;
+
+            window.clearTimeout(globalSearchTimer);
+
+            if (! url || query.length < 2) {
+                hideGlobalSearchResults();
+                return;
+            }
+
+            showGlobalSearchMessage('Searching...');
+
+            globalSearchTimer = window.setTimeout(async () => {
+                if (globalSearchRequest) {
+                    globalSearchRequest.abort();
+                }
+
+                globalSearchRequest = new AbortController();
+
+                try {
+                    const response = await fetch(`${url}?q=${encodeURIComponent(query)}`, {
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        signal: globalSearchRequest.signal,
+                    });
+
+                    if (! response.ok) {
+                        showGlobalSearchMessage('Search is temporarily unavailable.');
+                        return;
+                    }
+
+                    const data = await response.json();
+                    renderGlobalSearchResults(data.results || [], query);
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        showGlobalSearchMessage('Search is temporarily unavailable.');
+                    }
+                }
+            }, 250);
+        };
+
         document.addEventListener('input', (event) => {
             if (event.target.matches('[data-page-search]')) {
-                applyPageSearch();
+                if (event.target.dataset.globalSearchUrl) {
+                    clearPageSearch();
+                } else {
+                    applyPageSearch();
+                }
+
+                runGlobalSearch(event.target);
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            if (! event.target.closest('.global-search')) {
+                hideGlobalSearchResults();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                hideGlobalSearchResults();
             }
         });
 
@@ -716,6 +1051,7 @@
         };
 
         initPortalPollSections();
+        movePageFlashAlertsToToast();
 
         window.addEventListener('storage', (event) => {
             if (event.key === 'portal-refresh-sections') {
@@ -919,6 +1255,7 @@
                 window.initializeReportsPage?.();
                 window.initializeDashboardPage?.();
                 applyPageSearch();
+                movePageFlashAlertsToToast();
                 window.scrollTo(0, 0);
 
                 if (pushHistory) {

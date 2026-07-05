@@ -40,22 +40,20 @@ class ReportController extends BaseController
 
         $validated = $request->validate([
             'report_type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
-            'class_assessment_ids' => ['required', 'array', 'min:1'],
-            'class_assessment_ids.*' => ['integer'],
+            'class_assessment_keys' => ['required', 'array', 'min:1'],
+            'class_assessment_keys.*' => ['required', 'uuid'],
         ]);
 
-        $classAssessmentIds = collect($validated['class_assessment_ids'])
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values();
-        $ownedCompletedAssessments = $this->completedReportableAssessments($instructorProfile)
-            ->whereIn('class_assessment_id', $classAssessmentIds)
-            ->where('assessment.report_category', $validated['report_type'])
-            ->values();
+        $classAssessmentKeys = $this->selectedClassAssessmentKeys($validated['class_assessment_keys']);
+        $ownedCompletedAssessments = $this->selectedReportAssessments(
+            $instructorProfile,
+            $classAssessmentKeys,
+            $validated['report_type'],
+        );
 
-        if ($ownedCompletedAssessments->count() !== $classAssessmentIds->count()) {
+        if ($ownedCompletedAssessments->count() !== $classAssessmentKeys->count()) {
             throw ValidationException::withMessages([
-                'class_assessment_ids' => 'Select completed assessments under your account with the same report type.',
+                'class_assessment_keys' => 'Select completed assessments under your account with the same report type.',
             ]);
         }
 
@@ -77,13 +75,13 @@ class ReportController extends BaseController
             'actor_id' => $user->id,
             'instructor_profile_id' => $instructorProfile->instructor_profile_id,
             'report_type' => $validated['report_type'],
-            'class_assessment_ids' => $classAssessmentIds->all(),
+            'class_assessment_ids' => $ownedCompletedAssessments->pluck('class_assessment_id')->all(),
         ]);
 
         return redirect()
             ->route('instructor.reports.build', [
                 'type' => $validated['report_type'],
-                'class_assessment_ids' => $classAssessmentIds->all(),
+                'class_assessment_keys' => $classAssessmentKeys->all(),
             ])
             ->with('status', 'Selected completed assessments are ready for report review.');
     }
@@ -97,23 +95,20 @@ class ReportController extends BaseController
 
         $validated = $request->validate([
             'type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
-            'class_assessment_ids' => ['required', 'array', 'min:1'],
-            'class_assessment_ids.*' => ['integer'],
+            'class_assessment_keys' => ['required', 'array', 'min:1'],
+            'class_assessment_keys.*' => ['required', 'uuid'],
         ]);
 
-        $classAssessmentIds = collect($validated['class_assessment_ids'])
-            ->map(fn ($id) => (int) $id)
-            ->filter(fn (int $id) => $id > 0)
-            ->unique()
-            ->values();
-        $classAssessments = $this->completedReportableAssessments($instructorProfile)
-            ->whereIn('class_assessment_id', $classAssessmentIds)
-            ->where('assessment.report_category', $validated['type'])
-            ->values();
+        $classAssessmentKeys = $this->selectedClassAssessmentKeys($validated['class_assessment_keys']);
+        $classAssessments = $this->selectedReportAssessments(
+            $instructorProfile,
+            $classAssessmentKeys,
+            $validated['type'],
+        );
 
-        if ($classAssessments->count() !== $classAssessmentIds->count()) {
+        if ($classAssessments->count() !== $classAssessmentKeys->count()) {
             throw ValidationException::withMessages([
-                'class_assessment_ids' => 'Select completed assessments under your account with the same report type.',
+                'class_assessment_keys' => 'Select completed assessments under your account with the same report type.',
             ]);
         }
 
@@ -122,7 +117,7 @@ class ReportController extends BaseController
         return view('instructor.report-sheet', $this->sharedData($user, 'reports') + [
             'reportType' => $validated['type'],
             'reportTypeLabel' => $this->reportCategories()[$validated['type']],
-            'classAssessmentIds' => $classAssessmentIds,
+            'classAssessmentKeys' => $classAssessmentKeys,
             'rows' => $rows,
             'reportMeta' => $this->reportSheetMeta($classAssessments, $rows),
         ]);
@@ -139,8 +134,8 @@ class ReportController extends BaseController
             'report_type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
             'paper_size' => ['nullable', 'string', Rule::in(['a4', 'short', 'long'])],
             'course_code_title' => ['nullable', 'string', 'max:255'],
-            'class_assessment_ids' => ['required', 'array', 'min:1'],
-            'class_assessment_ids.*' => ['integer'],
+            'class_assessment_keys' => ['required', 'array', 'min:1'],
+            'class_assessment_keys.*' => ['required', 'uuid'],
             'reports' => ['required', 'array'],
             'reports.*.concept_most_learned_skills' => ['nullable', 'string'],
             'reports.*.concept_least_learned_skills' => ['nullable', 'string'],
@@ -149,25 +144,22 @@ class ReportController extends BaseController
             'reports.*.future_plans_curriculum' => ['nullable', 'string'],
         ]);
 
-        $classAssessmentIds = collect($validated['class_assessment_ids'])
-            ->map(fn ($id) => (int) $id)
-            ->filter(fn (int $id) => $id > 0)
-            ->unique()
-            ->values();
-        $ownedCompletedAssessments = $this->completedReportableAssessments($instructorProfile)
-            ->whereIn('class_assessment_id', $classAssessmentIds)
-            ->where('assessment.report_category', $validated['report_type'])
-            ->values();
+        $classAssessmentKeys = $this->selectedClassAssessmentKeys($validated['class_assessment_keys']);
+        $ownedCompletedAssessments = $this->selectedReportAssessments(
+            $instructorProfile,
+            $classAssessmentKeys,
+            $validated['report_type'],
+        );
 
-        if ($ownedCompletedAssessments->count() !== $classAssessmentIds->count()) {
+        if ($ownedCompletedAssessments->count() !== $classAssessmentKeys->count()) {
             throw ValidationException::withMessages([
-                'class_assessment_ids' => 'Select completed assessments under your account with the same report type.',
+                'class_assessment_keys' => 'Select completed assessments under your account with the same report type.',
             ]);
         }
 
         DB::transaction(function () use ($ownedCompletedAssessments, $validated): void {
             foreach ($ownedCompletedAssessments as $classAssessment) {
-                $row = $validated['reports'][$classAssessment->class_assessment_id] ?? [];
+                $row = $validated['reports'][$classAssessment->public_id] ?? [];
 
                 Report::query()->updateOrCreate(
                     [
@@ -195,14 +187,14 @@ class ReportController extends BaseController
             'actor_id' => $user->id,
             'instructor_profile_id' => $instructorProfile->instructor_profile_id,
             'report_type' => $validated['report_type'],
-            'class_assessment_ids' => $classAssessmentIds->all(),
+            'class_assessment_ids' => $ownedCompletedAssessments->pluck('class_assessment_id')->all(),
         ]);
 
         return redirect()
             ->route('instructor.reports.build', [
                 'type' => $validated['report_type'],
                 'paper' => $validated['paper_size'] ?? 'long',
-                'class_assessment_ids' => $classAssessmentIds->all(),
+                'class_assessment_keys' => $classAssessmentKeys->all(),
             ])
             ->with('status', 'Report details saved.');
     }
@@ -216,30 +208,27 @@ class ReportController extends BaseController
 
         $validated = $request->validate([
             'report_type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
-            'class_assessment_ids' => ['required', 'array', 'min:1'],
-            'class_assessment_ids.*' => ['integer'],
+            'class_assessment_keys' => ['required', 'array', 'min:1'],
+            'class_assessment_keys.*' => ['required', 'uuid'],
         ]);
 
-        $classAssessmentIds = collect($validated['class_assessment_ids'])
-            ->map(fn ($id) => (int) $id)
-            ->filter(fn (int $id) => $id > 0)
-            ->unique()
-            ->values();
-        $ownedCompletedAssessments = $this->completedReportableAssessments($instructorProfile)
-            ->whereIn('class_assessment_id', $classAssessmentIds)
-            ->where('assessment.report_category', $validated['report_type'])
-            ->values();
+        $classAssessmentKeys = $this->selectedClassAssessmentKeys($validated['class_assessment_keys']);
+        $ownedCompletedAssessments = $this->selectedReportAssessments(
+            $instructorProfile,
+            $classAssessmentKeys,
+            $validated['report_type'],
+        );
 
-        if ($ownedCompletedAssessments->count() !== $classAssessmentIds->count()) {
+        if ($ownedCompletedAssessments->count() !== $classAssessmentKeys->count()) {
             throw ValidationException::withMessages([
-                'class_assessment_ids' => 'Select completed assessments under your account with the same report type.',
+                'class_assessment_keys' => 'Select completed assessments under your account with the same report type.',
             ]);
         }
 
         $drafts = $ownedCompletedAssessments
             ->mapWithKeys(function ($classAssessment) use ($aiService): array {
                 return [
-                    $classAssessment->class_assessment_id => $aiService->generate($classAssessment),
+                    $classAssessment->public_id => $aiService->generate($classAssessment),
                 ];
             });
 
@@ -247,12 +236,29 @@ class ReportController extends BaseController
             'actor_id' => $user->id,
             'instructor_profile_id' => $instructorProfile->instructor_profile_id,
             'report_type' => $validated['report_type'],
-            'class_assessment_ids' => $classAssessmentIds->all(),
+            'class_assessment_ids' => $ownedCompletedAssessments->pluck('class_assessment_id')->all(),
             'source' => $drafts->pluck('source')->unique()->values()->all(),
         ]);
 
         return response()->json([
             'drafts' => $drafts,
         ]);
+    }
+
+    private function selectedClassAssessmentKeys(array $keys)
+    {
+        return collect($keys)
+            ->map(fn ($key) => trim((string) $key))
+            ->filter()
+            ->unique()
+            ->values();
+    }
+
+    private function selectedReportAssessments($instructorProfile, $classAssessmentKeys, string $reportType)
+    {
+        return $this->completedReportableAssessments($instructorProfile)
+            ->whereIn('public_id', $classAssessmentKeys)
+            ->where('assessment.report_category', $reportType)
+            ->values();
     }
 }

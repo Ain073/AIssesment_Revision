@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\UsesPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AppNotification extends Model
 {
+    use UsesPublicId;
+
     protected $primaryKey = 'notification_id';
 
     protected $fillable = [

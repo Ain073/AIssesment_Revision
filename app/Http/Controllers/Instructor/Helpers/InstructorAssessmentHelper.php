@@ -25,18 +25,22 @@ trait InstructorAssessmentHelper
         Assessment $ownedAssessment,
         array $validated
     ): void {
-        $classIds = collect($validated['class_ids'])->map(fn ($id) => (int) $id)->unique()->values();
+        $classKeys = collect($validated['class_keys'])
+            ->map(fn ($key) => trim((string) $key))
+            ->filter()
+            ->unique()
+            ->values();
         $ownedClasses = $instructorProfile
             ? $instructorProfile->classes()
                 ->where('subject_id', $ownedAssessment->subject_id)
                 ->whereNull('archived_at')
-                ->whereIn('class_id', $classIds)
+                ->whereIn('public_id', $classKeys)
                 ->get()
             : collect();
 
-        if ($ownedClasses->count() !== $classIds->count()) {
+        if ($ownedClasses->count() !== $classKeys->count()) {
             throw ValidationException::withMessages([
-                'class_ids' => 'You can only publish to your active classes under the same subject.',
+                'class_keys' => 'You can only publish to your active classes under the same subject.',
             ]);
         }
 

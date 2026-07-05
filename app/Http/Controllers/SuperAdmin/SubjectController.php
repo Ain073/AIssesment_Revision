@@ -20,13 +20,12 @@ class SubjectController extends Controller
 {
     public function index(Request $request): View
     {
-        $selectedProgramId = $request->integer('program');
+        $selectedProgram = Program::query()
+            ->where('public_id', $request->query('program'))
+            ->first();
+        $selectedProgramId = $selectedProgram?->program_id;
         $selectedYearLevel = $request->integer('year_level');
         $selectedSemester = $request->query('semester');
-
-        if ($selectedProgramId && ! Program::query()->whereKey($selectedProgramId)->exists()) {
-            $selectedProgramId = null;
-        }
 
         if (! in_array($selectedYearLevel, [1, 2, 3, 4], true)) {
             $selectedYearLevel = null;
@@ -40,6 +39,7 @@ class SubjectController extends Controller
             'programs' => $this->programsList(),
             'subjectMappings' => $this->subjectMappings($selectedProgramId, $selectedYearLevel, $selectedSemester),
             'selectedProgramId' => $selectedProgramId,
+            'selectedProgramKey' => $selectedProgram?->public_id,
             'selectedYearLevel' => $selectedYearLevel,
             'selectedSemester' => $selectedSemester,
             'hasSubjectFilters' => $selectedProgramId || $selectedYearLevel || $selectedSemester,
@@ -83,9 +83,13 @@ class SubjectController extends Controller
             'semester' => $validated['semester'],
         ]);
 
+        $programKey = Program::query()
+            ->whereKey($validated['program_id'])
+            ->value('public_id');
+
         return redirect()
             ->route('super-admin.subjects', [
-                'program' => $validated['program_id'],
+                'program' => $programKey,
                 'year_level' => $validated['year_level'],
                 'semester' => $validated['semester'],
             ])
@@ -164,9 +168,13 @@ class SubjectController extends Controller
             'program_id' => $validated['program_id'],
         ]);
 
+        $programKey = Program::query()
+            ->whereKey($validated['program_id'])
+            ->value('public_id');
+
         return redirect()
             ->route('super-admin.subjects', [
-                'program' => $validated['program_id'],
+                'program' => $programKey,
                 'year_level' => $validated['year_level'],
                 'semester' => $validated['semester'],
             ])
@@ -177,11 +185,15 @@ class SubjectController extends Controller
     {
         $subjectProgram->loadMissing(['subject', 'program']);
         $subject = $subjectProgram->subject;
+        $program = $subjectProgram->program;
         $programId = $subjectProgram->program_id;
+        $selectedProgram = Program::query()
+            ->where('public_id', $request->query('program'))
+            ->first();
         $yearLevel = $request->integer('year_level');
         $semester = $request->query('semester');
         $redirectFilters = [
-            'program' => $request->integer('program') ?: $programId,
+            'program' => $selectedProgram?->public_id ?? $program?->public_id,
             'year_level' => in_array($yearLevel, [1, 2, 3, 4], true) ? $yearLevel : null,
             'semester' => in_array($semester, AcademicSetting::SEMESTERS, true) ? $semester : null,
         ];

@@ -3,12 +3,8 @@
 namespace App\Http\Controllers\AdminDean;
 
 use App\Models\Department;
-use App\Models\InstructorProfile;
 use App\Models\Program;
-use App\Models\Role;
-use App\Models\StudentProfile;
-use App\Models\User;
-use App\Services\NotificationService;
+use App\Services\UserAccountService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +13,7 @@ use Illuminate\Validation\Rule;
 
 class UserController extends BaseController
 {
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, UserAccountService $accounts): RedirectResponse
     {
         $user = $this->currentUser();
         $scopedCollege = $this->scopedCollege($user);
@@ -40,7 +36,7 @@ class UserController extends BaseController
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
-            'base_role' => ['required', Rule::in(['instructor', 'student'])],
+            'base_role' => ['required', Rule::in(UserAccountService::BASE_ROLES)],
             'department_id' => [
                 Rule::requiredIf(fn () => $request->input('base_role') === 'instructor'),
                 'nullable',
@@ -69,35 +65,8 @@ class UserController extends BaseController
             ],
         ]);
 
-        $createdUser = DB::transaction(function () use ($validated, $user, $scopedCollege) {
-            $createdUser = User::create([
-                'name' => $this->buildName($validated),
-                'first_name' => $validated['first_name'],
-                'middle_name' => $validated['middle_name'] ?? null,
-                'last_name' => $validated['last_name'],
-                'email' => $validated['email'],
-                'password' => $validated['password'],
-                'status' => $validated['status'],
-            ]);
-
-            $role = Role::where('role_name', $validated['base_role'])->firstOrFail();
-            $createdUser->roles()->attach($role->role_id);
-
-            if ($validated['base_role'] === 'instructor') {
-                InstructorProfile::create([
-                    'user_id' => $createdUser->id,
-                    'department_id' => $validated['department_id'],
-                    'employee_number' => $validated['employee_number'],
-                ]);
-            }
-
-            if ($validated['base_role'] === 'student') {
-                StudentProfile::create([
-                    'user_id' => $createdUser->id,
-                    'program_id' => $validated['program_id'],
-                    'student_number' => $validated['student_number'],
-                ]);
-            }
+        $createdUser = DB::transaction(function () use ($validated, $user, $scopedCollege, $accounts) {
+            $createdUser = $accounts->createAccount($validated);
 
             Log::info('User account created by admin/dean.', [
                 'actor_id' => $user->id,
@@ -111,13 +80,7 @@ class UserController extends BaseController
             return $createdUser;
         });
 
-        app(NotificationService::class)->send(
-            $createdUser,
-            'Account Created',
-            'Your AIssessment account has been created.',
-            $createdUser->portalRouteName() ? route($createdUser->portalRouteName()) : route('login'),
-            'account'
-        );
+        $accounts->sendAccountCreatedNotification($createdUser);
 
         return redirect()
             ->back()

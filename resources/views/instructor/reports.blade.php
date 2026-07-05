@@ -184,9 +184,9 @@
                             <label class="report-assessment-card mb-0">
                                 <input
                                     class="form-check-input report-check mt-1"
-                                    name="class_assessment_ids[]"
+                                    name="class_assessment_keys[]"
                                     type="checkbox"
-                                    value="{{ $classAssessment->class_assessment_id }}"
+                                    value="{{ $classAssessment->public_id }}"
                                     data-report-checkbox="{{ $type }}"
                                 >
                                 <span>

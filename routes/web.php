@@ -21,6 +21,7 @@ use App\Http\Controllers\Instructor\ClassStudentController as InstructorClassStu
 use App\Http\Controllers\Instructor\DashboardController as InstructorDashboardController;
 use App\Http\Controllers\Instructor\ReportController as InstructorReportController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Student\AssessmentController as StudentAssessmentController;
 use App\Http\Controllers\Student\ClassController as StudentClassController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
@@ -51,6 +52,7 @@ Route::middleware(['guest', 'no_cache'])->group(function () {
 
 Route::middleware(['auth', 'no_cache'])->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+    Route::get('/portal-search', [SearchController::class, 'search'])->middleware('throttle:30,1')->name('portal.search');
     Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
 });

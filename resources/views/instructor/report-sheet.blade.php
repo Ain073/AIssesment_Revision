@@ -442,8 +442,8 @@
         @csrf
         <input name="report_type" type="hidden" value="{{ $reportType }}">
         <input id="paperSizeInput" name="paper_size" type="hidden" value="{{ $selectedPaper }}">
-        @foreach ($classAssessmentIds as $classAssessmentId)
-            <input name="class_assessment_ids[]" type="hidden" value="{{ $classAssessmentId }}">
+        @foreach ($classAssessmentKeys as $classAssessmentKey)
+            <input name="class_assessment_keys[]" type="hidden" value="{{ $classAssessmentKey }}">
         @endforeach
 
         <div class="report-sheet-wrap">
@@ -523,7 +523,8 @@
                             $analytics = $row['analytics'];
                             $report = $row['report'];
                             $classAssessment = $row['classAssessment'];
-                            $rowName = 'reports['.$classAssessment->class_assessment_id.']';
+                            $classAssessmentKey = $classAssessment->public_id;
+                            $rowName = 'reports['.$classAssessmentKey.']';
                             $reference = strtoupper(($assessment->reporting_term ?: 'Assessment').' '.$assessment->title);
                             $mostLearned = $report->concept_most_learned_skills;
                             $leastLearned = $report->concept_least_learned_skills;
@@ -551,22 +552,22 @@
                                 </div>
                             </td>
                             <td>
-                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_most_learned_skills]" data-assessment-id="{{ $classAssessment->class_assessment_id }}" data-ai-field="concepts_most_learned_skills">{{ old('reports.'.$classAssessment->class_assessment_id.'.concept_most_learned_skills', $mostLearned) }}</textarea>
+                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_most_learned_skills]" data-assessment-key="{{ $classAssessmentKey }}" data-ai-field="concepts_most_learned_skills">{{ old('reports.'.$classAssessmentKey.'.concept_most_learned_skills', $mostLearned) }}</textarea>
                                 <div class="report-print-text"></div>
                             </td>
                             <td>
-                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_least_learned_skills]" data-assessment-id="{{ $classAssessment->class_assessment_id }}" data-ai-field="concepts_least_learned_skills">{{ old('reports.'.$classAssessment->class_assessment_id.'.concept_least_learned_skills', $leastLearned) }}</textarea>
+                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_least_learned_skills]" data-assessment-key="{{ $classAssessmentKey }}" data-ai-field="concepts_least_learned_skills">{{ old('reports.'.$classAssessmentKey.'.concept_least_learned_skills', $leastLearned) }}</textarea>
                                 <div class="report-print-text"></div>
                             </td>
                             <td>
-                                <textarea class="report-edit-textarea" name="{{ $rowName }}[issues_concern]">{{ old('reports.'.$classAssessment->class_assessment_id.'.issues_concern', $report->issues_concern) }}</textarea>
+                                <textarea class="report-edit-textarea" name="{{ $rowName }}[issues_concern]">{{ old('reports.'.$classAssessmentKey.'.issues_concern', $report->issues_concern) }}</textarea>
                                 <div class="report-print-text"></div>
                             </td>
                             <td>
                                 @if ($reportType === 'formative')
-                                    <textarea class="report-edit-textarea" name="{{ $rowName }}[interventions_done]">{{ old('reports.'.$classAssessment->class_assessment_id.'.interventions_done', $lastColumn) }}</textarea>
+                                    <textarea class="report-edit-textarea" name="{{ $rowName }}[interventions_done]">{{ old('reports.'.$classAssessmentKey.'.interventions_done', $lastColumn) }}</textarea>
                                 @else
-                                    <textarea class="report-edit-textarea" name="{{ $rowName }}[future_plans_curriculum]">{{ old('reports.'.$classAssessment->class_assessment_id.'.future_plans_curriculum', $lastColumn) }}</textarea>
+                                    <textarea class="report-edit-textarea" name="{{ $rowName }}[future_plans_curriculum]">{{ old('reports.'.$classAssessmentKey.'.future_plans_curriculum', $lastColumn) }}</textarea>
                                 @endif
                                 <div class="report-print-text"></div>
                             </td>
@@ -637,9 +638,9 @@
             };
 
             const fillAiDrafts = (drafts) => {
-                Object.entries(drafts).forEach(([assessmentId, draft]) => {
+                Object.entries(drafts).forEach(([assessmentKey, draft]) => {
                     Object.entries(draft).forEach(([field, value]) => {
-                        const textarea = document.querySelector(`[data-assessment-id="${assessmentId}"][data-ai-field="${field}"]`);
+                        const textarea = document.querySelector(`[data-assessment-key="${assessmentKey}"][data-ai-field="${field}"]`);
 
                         if (textarea && value && field !== 'source') {
                             textarea.value = value;
@@ -650,11 +651,11 @@
             };
 
             aiButton?.addEventListener('click', async () => {
-                const classAssessmentIds = [...reportForm.querySelectorAll('input[name="class_assessment_ids[]"]')]
-                    .map((input) => Number(input.value))
-                    .filter((value) => value > 0);
+                const classAssessmentKeys = [...reportForm.querySelectorAll('input[name="class_assessment_keys[]"]')]
+                    .map((input) => input.value.trim())
+                    .filter(Boolean);
 
-                if (classAssessmentIds.length === 0) {
+                if (classAssessmentKeys.length === 0) {
                     showAiStatus('No completed assessments were selected.', 'warning');
                     return;
                 }
@@ -672,7 +673,7 @@
                         },
                         body: JSON.stringify({
                             report_type: @json($reportType),
-                            class_assessment_ids: classAssessmentIds,
+                            class_assessment_keys: classAssessmentKeys,
                         }),
                     });
 

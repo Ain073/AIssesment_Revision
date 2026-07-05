@@ -16,11 +16,10 @@ class ProgramController extends Controller
 {
     public function index(Request $request): View
     {
-        $selectedCollegeId = $request->integer('college');
-
-        if ($selectedCollegeId && ! College::query()->whereKey($selectedCollegeId)->exists()) {
-            $selectedCollegeId = null;
-        }
+        $selectedCollege = College::query()
+            ->where('public_id', $request->query('college'))
+            ->first();
+        $selectedCollegeId = $selectedCollege?->college_id;
 
         return view('super-admin.programs', [
             'colleges' => College::query()
@@ -28,6 +27,7 @@ class ProgramController extends Controller
                 ->get(),
             'programs' => $this->programsList($selectedCollegeId),
             'selectedCollegeId' => $selectedCollegeId,
+            'selectedCollegeKey' => $selectedCollege?->public_id,
         ]);
     }
 
@@ -86,18 +86,22 @@ class ProgramController extends Controller
         ]);
 
         return redirect()
-            ->route('super-admin.programs', ['college' => $program->college_id])
+            ->route('super-admin.programs', ['college' => $program->college?->public_id])
             ->with('status', 'Program updated successfully.');
     }
 
     public function destroy(Request $request, Program $program): RedirectResponse
     {
+        $program->loadMissing('college');
         $program->loadCount(['studentProfiles', 'subjectPrograms']);
-        $redirectCollegeId = $request->integer('college') ?: $program->college_id;
+        $selectedCollege = College::query()
+            ->where('public_id', $request->query('college'))
+            ->first();
+        $redirectCollegeKey = $selectedCollege?->public_id ?? $program->college?->public_id;
 
         if ($program->student_profiles_count > 0 || $program->subject_programs_count > 0) {
             return redirect()
-                ->route('super-admin.programs', ['college' => $redirectCollegeId])
+                ->route('super-admin.programs', ['college' => $redirectCollegeKey])
                 ->withErrors('This program still has linked students or subject mappings. Remove those links before deleting it.');
         }
 
@@ -113,7 +117,7 @@ class ProgramController extends Controller
         ]);
 
         return redirect()
-            ->route('super-admin.programs', ['college' => $redirectCollegeId])
+            ->route('super-admin.programs', ['college' => $redirectCollegeKey])
             ->with('status', "{$programName} deleted successfully.");
     }
 

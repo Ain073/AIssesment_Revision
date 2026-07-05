@@ -4,13 +4,10 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Department;
-use App\Models\InstructorProfile;
 use App\Models\Program;
-use App\Models\Role;
-use App\Models\StudentProfile;
 use App\Models\User;
-use App\Services\NotificationService;
 use App\Services\StudentAccountImportService;
+use App\Services\UserAccountService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,16 +20,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UserController extends Controller
 {
-    private const BASE_ROLES = [
-        'instructor',
-        'student',
-    ];
-
-    private const MANAGED_ROLES = [
-        'admin_dean',
-        'department_chair',
-    ];
-
     public function index(Request $request, StudentAccountImportService $importer): View
     {
         $users = User::with(['roles', 'instructorProfile.department.college', 'studentProfile.program.college'])
@@ -106,7 +93,7 @@ class UserController extends Controller
         return $redirect;
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, UserAccountService $accounts): RedirectResponse
     {
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
@@ -115,7 +102,7 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
-            'base_role' => ['required', Rule::in(self::BASE_ROLES)],
+            'base_role' => ['required', Rule::in(UserAccountService::BASE_ROLES)],
             'department_id' => [
                 Rule::requiredIf(fn () => $request->input('base_role') === 'instructor'),
                 'nullable',
@@ -145,30 +132,8 @@ class UserController extends Controller
             'form_mode' => ['nullable', 'string'],
         ]);
 
-        $createdUser = DB::transaction(function () use ($validated) {
-            $user = User::create([
-                'name' => $this->buildName($validated),
-                'first_name' => $validated['first_name'],
-                'middle_name' => $validated['middle_name'] ?? null,
-                'last_name' => $validated['last_name'],
-                'email' => $validated['email'],
-                'password' => $validated['password'],
-                'status' => $validated['status'],
-            ]);
-
-            $this->syncUserRoles($user, $validated['base_role']);
-            $this->syncInstructorProfile(
-                $user,
-                $validated['base_role'],
-                $validated['department_id'] ?? null,
-                $validated['employee_number'] ?? null,
-            );
-            $this->syncStudentProfile(
-                $user,
-                $validated['base_role'],
-                $validated['program_id'] ?? null,
-                $validated['student_number'] ?? null,
-            );
+        $createdUser = DB::transaction(function () use ($validated, $accounts) {
+            $user = $accounts->createAccount($validated);
 
             Log::info('User account created by super admin.', [
                 'actor_id' => Auth::id(),
@@ -184,20 +149,14 @@ class UserController extends Controller
             return $user;
         });
 
-        app(NotificationService::class)->send(
-            $createdUser,
-            'Account Created',
-            'Your AIssessment account has been created.',
-            $createdUser->portalRouteName() ? route($createdUser->portalRouteName()) : route('login'),
-            'account'
-        );
+        $accounts->sendAccountCreatedNotification($createdUser);
 
         return redirect()
             ->route('super-admin.users')
             ->with('status', 'User account created successfully.');
     }
 
-    public function update(Request $request, User $user): RedirectResponse
+    public function update(Request $request, User $user, UserAccountService $accounts): RedirectResponse
     {
         if ($user->hasRole('super_admin')) {
             return redirect()
@@ -211,7 +170,7 @@ class UserController extends Controller
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'status' => ['required', Rule::in(['active', 'inactive'])],
-            'base_role' => ['required', Rule::in(self::BASE_ROLES)],
+            'base_role' => ['required', Rule::in(UserAccountService::BASE_ROLES)],
             'department_id' => [
                 Rule::requiredIf(fn () => $request->input('base_role') === 'instructor'),
                 'nullable',
@@ -239,36 +198,13 @@ class UserController extends Controller
                 Rule::unique('student_profiles', 'student_number')->ignore($user->studentProfile?->student_profile_id, 'student_profile_id'),
             ],
             'authorizations' => ['nullable', 'array'],
-            'authorizations.*' => [Rule::in(self::MANAGED_ROLES)],
+            'authorizations.*' => [Rule::in(UserAccountService::MANAGED_ROLES)],
             'form_mode' => ['nullable', 'string'],
             'user_id' => ['nullable', 'integer'],
         ]);
 
-        DB::transaction(function () use ($user, $validated) {
-            $user->fill([
-                'name' => $this->buildName($validated),
-                'first_name' => $validated['first_name'],
-                'middle_name' => $validated['middle_name'] ?? null,
-                'last_name' => $validated['last_name'],
-                'email' => $validated['email'],
-                'status' => $validated['status'],
-            ]);
-
-            $user->save();
-
-            $this->syncUserRoles($user, $validated['base_role'], $validated['authorizations'] ?? []);
-            $this->syncInstructorProfile(
-                $user,
-                $validated['base_role'],
-                $validated['department_id'] ?? null,
-                $validated['employee_number'] ?? null,
-            );
-            $this->syncStudentProfile(
-                $user,
-                $validated['base_role'],
-                $validated['program_id'] ?? null,
-                $validated['student_number'] ?? null,
-            );
+        DB::transaction(function () use ($user, $validated, $accounts) {
+            $accounts->updateAccount($user, $validated, $validated['authorizations'] ?? []);
 
             Log::info('User account updated by super admin.', [
                 'actor_id' => Auth::id(),
@@ -310,87 +246,4 @@ class UserController extends Controller
             ->with('status', 'User account deleted successfully.');
     }
 
-    /**
-     * Build a readable fallback name for places that still rely on the legacy name column.
-     *
-     * @param  array<string, mixed>  $validated
-     */
-    private function buildName(array $validated): string
-    {
-        return collect([
-            $validated['first_name'],
-            $validated['middle_name'] ?? null,
-            $validated['last_name'],
-        ])->filter()->implode(' ');
-    }
-
-    private function syncUserRoles(User $user, string $baseRole, array $selectedManagedRoles = []): void
-    {
-        $selectedManagedRoles = collect($selectedManagedRoles)->unique()->values();
-
-        $roleIds = Role::query()
-            ->whereIn('role_name', [...self::BASE_ROLES, ...self::MANAGED_ROLES])
-            ->pluck('role_id', 'role_name');
-
-        $currentRoleIds = $user->roles()->pluck('roles.role_id');
-        $baseRoleIds = $roleIds->only(self::BASE_ROLES)->values();
-        $elevatedRoleIds = $roleIds->only(self::MANAGED_ROLES)->values();
-        $unmanagedRoleIds = $currentRoleIds->diff($baseRoleIds)->diff($elevatedRoleIds);
-        $rolesToKeep = collect([$roleIds->get($baseRole)])->filter();
-
-        if ($baseRole === 'instructor') {
-            $rolesToKeep = $rolesToKeep->merge(
-                $selectedManagedRoles
-                    ->map(fn (string $roleName) => $roleIds->get($roleName))
-                    ->filter()
-                    ->values()
-            );
-        }
-
-        $user->roles()->sync($unmanagedRoleIds->merge($rolesToKeep)->unique()->all());
-    }
-
-    private function syncInstructorProfile(
-        User $user,
-        string $baseRole,
-        ?int $departmentId,
-        ?string $employeeNumber
-    ): void
-    {
-        if ($baseRole !== 'instructor') {
-            $user->instructorProfile()?->delete();
-
-            return;
-        }
-
-        InstructorProfile::query()->updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'department_id' => $departmentId,
-                'employee_number' => $employeeNumber,
-            ],
-        );
-    }
-
-    private function syncStudentProfile(
-        User $user,
-        string $baseRole,
-        ?int $programId,
-        ?string $studentNumber
-    ): void
-    {
-        if ($baseRole !== 'student') {
-            $user->studentProfile()?->delete();
-
-            return;
-        }
-
-        StudentProfile::query()->updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'program_id' => $programId,
-                'student_number' => $studentNumber,
-            ],
-        );
-    }
 }

@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\UsesPublicId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class College extends Model
 {
-    use HasFactory;
+    use HasFactory, UsesPublicId;
 
     protected $primaryKey = 'college_id';
 

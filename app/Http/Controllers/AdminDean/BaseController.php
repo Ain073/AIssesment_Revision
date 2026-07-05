@@ -32,13 +32,4 @@ abstract class BaseController extends Controller
         return 'college:'.(int) $college?->college_id;
     }
 
-    protected function buildName(array $validated): string
-    {
-        return collect([
-            $validated['first_name'],
-            $validated['middle_name'] ?? null,
-            $validated['last_name'],
-        ])->filter()->implode(' ');
-    }
-
 }

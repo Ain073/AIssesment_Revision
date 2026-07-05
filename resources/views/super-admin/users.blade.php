@@ -840,7 +840,7 @@
 @endsection
 
 @push('scripts')
-<script>
+    <script>
         function syncAuthorizationInputs(selectId) {
             const roleSelect = document.getElementById(selectId);
 

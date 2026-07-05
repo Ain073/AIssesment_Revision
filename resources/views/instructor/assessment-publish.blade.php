@@ -4,7 +4,7 @@
 @section('header', 'Publish Assessment')
 
 @php
-    $selectedClassIds = collect(old('class_ids', []))->map(fn ($id) => (string) $id)->all();
+    $selectedClassKeys = collect(old('class_keys', []))->map(fn ($key) => (string) $key)->all();
 @endphp
 
 @push('styles')
@@ -213,15 +213,15 @@
                             </div>
 
                             <div class="col-lg-6">
-                                <label class="form-label fw-bold text-uppercase small" for="assessment_id">Assessment</label>
-                                <select class="form-select compact-select" id="assessment_id" name="assessment_id" required>
+                                <label class="form-label fw-bold text-uppercase small" for="assessment_key">Assessment</label>
+                                <select class="form-select compact-select" id="assessment_key" name="assessment_key" required>
                                     <option value="">Select assessment</option>
                                     @foreach ($assessments as $assessment)
                                         <option
-                                            value="{{ $assessment->assessment_id }}"
+                                            value="{{ $assessment->public_id }}"
                                             data-subject-id="{{ $assessment->subject_id }}"
                                             data-items-count="{{ $assessment->items_count }}"
-                                            @selected((string) $selectedAssessmentId === (string) $assessment->assessment_id)
+                                            @selected((string) $selectedAssessmentKey === (string) $assessment->public_id)
                                             @disabled($assessment->items_count === 0)
                                         >
                                             {{ \Illuminate\Support\Str::limit($assessment->title, 50) }}{{ $assessment->items_count === 0 ? ' (needs items)' : '' }}
@@ -258,11 +258,11 @@
                                         >
                                             <input
                                                 class="form-check-input mt-1 class-checkbox"
-                                                name="class_ids[]"
+                                                name="class_keys[]"
                                                 type="checkbox"
-                                                value="{{ $class->class_id }}"
+                                                value="{{ $class->public_id }}"
                                                 data-class-name="{{ $class->class_name }}"
-                                                @checked(in_array((string) $class->class_id, $selectedClassIds, true))
+                                                @checked(in_array((string) $class->public_id, $selectedClassKeys, true))
                                             >
                                             <span>
                                                 <span class="fw-bold d-block" style="color: var(--psu-navy);">{{ $class->class_name }}</span>
@@ -407,7 +407,7 @@
     <script>
         (() => {
             const subjectSelect = document.getElementById('subject_id');
-            const assessmentSelect = document.getElementById('assessment_id');
+            const assessmentSelect = document.getElementById('assessment_key');
             const classOptions = document.querySelectorAll('.class-option');
             const classCheckboxes = document.querySelectorAll('.class-checkbox');
             const classEmptyState = document.getElementById('classEmptyState');

@@ -111,7 +111,7 @@
             <select class="form-select college-filter-select" id="college-filter" name="college" onchange="this.form.submit()">
                 <option value="">All Colleges</option>
                 @foreach ($colleges as $college)
-                    <option value="{{ $college->college_id }}" @selected($selectedCollegeId === $college->college_id)>
+                    <option value="{{ $college->public_id }}" @selected($selectedCollegeKey === $college->public_id)>
                         {{ $college->college_name }}
                     </option>
                 @endforeach
@@ -272,7 +272,7 @@
 
         <div class="modal fade" id="editProgramModal{{ $program->program_id }}" tabindex="-1" aria-labelledby="editProgramModalLabel{{ $program->program_id }}" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
-                <form action="{{ route('super-admin.programs.update', ['program' => $program, 'college' => $selectedCollegeId]) }}" class="modal-content" method="POST">
+                <form action="{{ route('super-admin.programs.update', ['program' => $program, 'college' => $selectedCollegeKey]) }}" class="modal-content" method="POST">
                     @csrf
                     @method('PUT')
                     <input name="is_active" type="hidden" value="0">
@@ -308,7 +308,7 @@
 
         <div class="modal fade" id="deleteProgramModal{{ $program->program_id }}" tabindex="-1" aria-labelledby="deleteProgramModalLabel{{ $program->program_id }}" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
-                <form action="{{ route('super-admin.programs.destroy', ['program' => $program, 'college' => $selectedCollegeId]) }}" class="modal-content" method="POST">
+                <form action="{{ route('super-admin.programs.destroy', ['program' => $program, 'college' => $selectedCollegeKey]) }}" class="modal-content" method="POST">
                     @csrf
                     @method('DELETE')
                     <div class="modal-header">
