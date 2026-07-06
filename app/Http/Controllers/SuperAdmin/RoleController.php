@@ -38,7 +38,7 @@ class RoleController extends Controller
         $adminDeans = $teachers->filter->hasRole('admin_dean')->values();
         $departmentChairs = $teachers->filter->hasRole('department_chair')->values();
 
-        return view('super-admin.roles', [
+        return view('super-admin.roles.index', [
             'teachers' => $teachers,
             'adminDeans' => $adminDeans,
             'departmentChairs' => $departmentChairs,

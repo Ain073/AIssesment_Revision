@@ -10,6 +10,6 @@ class ReportController extends BaseController
     {
         $user = $this->currentUser();
 
-        return view('department-chair.reports', $this->sharedData($user, 'reports'));
+        return view('department-chair.reports.index', $this->sharedData($user, 'reports'));
     }
 }

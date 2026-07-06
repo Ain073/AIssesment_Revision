@@ -18,7 +18,7 @@ class ProgramController extends BaseController
         $scopedCollege = $this->scopedCollege($user);
         $scopedCollegeId = $scopedCollege?->college_id;
 
-        return view('admin-dean.programs', $this->sharedData('programs') + [
+        return view('admin-dean.programs.index', $this->sharedData('programs') + [
             'programs' => Program::with('college')
                 ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
                 ->withCount('studentProfiles')

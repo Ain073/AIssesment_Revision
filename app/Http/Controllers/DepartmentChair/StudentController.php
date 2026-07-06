@@ -26,7 +26,7 @@ class StudentController extends BaseController
                 ->values()
             : collect();
 
-        return view('department-chair.students', $this->sharedData($user, 'students') + [
+        return view('department-chair.students.index', $this->sharedData($user, 'students') + [
             'students' => $students,
             'scopedDepartment' => $scopedDepartment,
             'scopedPrograms' => $scopedPrograms,

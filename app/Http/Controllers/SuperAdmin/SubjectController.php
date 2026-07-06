@@ -35,7 +35,7 @@ class SubjectController extends Controller
             $selectedSemester = null;
         }
 
-        return view('super-admin.subjects', [
+        return view('super-admin.subjects.index', [
             'programs' => $this->programsList(),
             'subjectMappings' => $this->subjectMappings($selectedProgramId, $selectedYearLevel, $selectedSemester),
             'selectedProgramId' => $selectedProgramId,

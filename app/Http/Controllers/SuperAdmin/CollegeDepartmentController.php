@@ -17,7 +17,7 @@ class CollegeDepartmentController extends Controller
 {
     public function index(): View
     {
-        return view('super-admin.colleges', [
+        return view('super-admin.colleges.index', [
             'colleges' => College::withCount('departments')
                 ->orderBy('college_name')
                 ->get(),

@@ -23,7 +23,7 @@ class ReportController extends BaseController
         $formativeAssessments = $completedAssessments->where('assessment.report_category', Report::TYPE_FORMATIVE)->values();
         $summativeAssessments = $completedAssessments->where('assessment.report_category', Report::TYPE_SUMMATIVE)->values();
 
-        return view('instructor.reports', $this->sharedData($user, 'reports') + [
+        return view('instructor.reports.index', $this->sharedData($user, 'reports') + [
             'instructorProfile' => $instructorProfile,
             'formativeAssessments' => $formativeAssessments,
             'summativeAssessments' => $summativeAssessments,
@@ -114,7 +114,7 @@ class ReportController extends BaseController
 
         $rows = $this->reportSheetRows($classAssessments, $validated['type']);
 
-        return view('instructor.report-sheet', $this->sharedData($user, 'reports') + [
+        return view('instructor.reports.sheet', $this->sharedData($user, 'reports') + [
             'reportType' => $validated['type'],
             'reportTypeLabel' => $this->reportCategories()[$validated['type']],
             'classAssessmentKeys' => $classAssessmentKeys,

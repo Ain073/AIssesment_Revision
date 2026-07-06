@@ -23,7 +23,7 @@ class DashboardController extends BaseController
                 fn ($query) => $query->where('id', 0)
             );
 
-        return view('department-chair.dashboard', $this->sharedData($user, 'dashboard') + [
+        return view('department-chair.dashboard.index', $this->sharedData($user, 'dashboard') + [
             'stats' => [
                 [
                     'label' => 'Teachers',

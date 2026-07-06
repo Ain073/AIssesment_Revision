@@ -21,12 +21,12 @@ class ClassController extends BaseController
     {
         $user = $this->currentUser();
 
-        return view('instructor.classes', $this->sharedData($user, 'classes') + $this->instructorClassesData($user, $this->classListTab($request)));
+        return view('instructor.classes.index', $this->sharedData($user, 'classes') + $this->instructorClassesData($user, $this->classListTab($request)));
     }
 
     public function classesLive(Request $request): View
     {
-        return view('instructor.partials.classes-live', $this->instructorClassesData($this->currentUser(), $this->classListTab($request)));
+        return view('instructor.classes.class-list', $this->instructorClassesData($this->currentUser(), $this->classListTab($request)));
     }
 
     public function storeClass(Request $request): RedirectResponse|JsonResponse
@@ -225,7 +225,7 @@ class ClassController extends BaseController
 
         $this->ensureClassJoinAccess($ownedClass);
 
-        return view('instructor.class-show', $this->sharedData($user, 'classes') + [
+        return view('instructor.classes.show', $this->sharedData($user, 'classes') + [
             'class' => $ownedClass,
             'activeTab' => $activeTab,
             'classTabs' => $this->classTabs($ownedClass, $activeTab),

@@ -49,7 +49,7 @@ class DashboardController extends BaseController
             : 0;
         $assessmentsCount = $instructorProfile?->assessments()->count() ?? 0;
 
-        return view('instructor.dashboard', $this->sharedData($user, 'dashboard') + [
+        return view('instructor.dashboard.index', $this->sharedData($user, 'dashboard') + [
             'stats' => [
                 [
                     'label' => 'Classes Handled',

@@ -30,7 +30,7 @@ class StudentController extends BaseController
             ->sortBy(fn (StudentProfile $student) => strtolower($student->user?->displayName() ?? ''))
             ->values();
 
-        return view('admin-dean.students', $this->sharedData('students') + [
+        return view('admin-dean.students.index', $this->sharedData('students') + [
             'students' => $students,
             'programs' => $programs,
             'scopedCollege' => $scopedCollege,

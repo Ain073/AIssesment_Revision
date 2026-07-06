@@ -52,7 +52,7 @@ class AssessmentController extends BaseController
                 })
             : collect();
 
-        return view('instructor.assessments', $this->sharedData($user, 'assessments') + [
+        return view('instructor.assessments.index', $this->sharedData($user, 'assessments') + [
             'instructorProfile' => $instructorProfile,
             'handledSubjects' => $handledSubjects,
             'assessments' => $assessments,
@@ -69,7 +69,7 @@ class AssessmentController extends BaseController
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
 
-        return view('instructor.assessment-create', $this->sharedData($user, 'assessments') + [
+        return view('instructor.assessments.create', $this->sharedData($user, 'assessments') + [
             'instructorProfile' => $instructorProfile,
             'handledSubjects' => $this->handledSubjects($instructorProfile),
             'assessmentTypes' => $this->assessmentTypes(),
@@ -99,7 +99,7 @@ class AssessmentController extends BaseController
                 ->get()
             : collect();
 
-        return view('instructor.assessment-show', $this->sharedData($user, 'assessments') + [
+        return view('instructor.assessments.show', $this->sharedData($user, 'assessments') + [
             'assessment' => $ownedAssessment,
             'publishableClasses' => $publishableClasses,
             'assessmentTypes' => $this->assessmentTypes(),

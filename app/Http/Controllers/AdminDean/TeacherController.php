@@ -25,7 +25,7 @@ class TeacherController extends BaseController
             ->orderBy('name')
             ->get();
 
-        return view('admin-dean.teachers', $this->sharedData('teachers') + [
+        return view('admin-dean.teachers.index', $this->sharedData('teachers') + [
             'teachers' => $teachers,
             'scopedCollege' => $scopedCollege,
             'departments' => Department::query()

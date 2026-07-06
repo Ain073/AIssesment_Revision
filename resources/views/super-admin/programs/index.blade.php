@@ -1,0 +1,198 @@
+@extends('layouts.portal')
+
+@php
+    $portalSubtitle = 'Super Admin Panel';
+    $profileInitials = 'SA';
+    $profileName = 'Super Admin';
+    $profileMeta = 'System Controller';
+    $showTopbarSearch = true;
+    $topbarSearchPlaceholder = 'Search programs...';
+    $navItems = [
+        ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('super-admin.dashboard'), 'active' => false],
+        ['label' => 'Colleges & Departments', 'icon' => 'account_balance', 'href' => route('super-admin.colleges'), 'active' => false],
+        ['label' => 'Programs', 'icon' => 'school', 'href' => route('super-admin.programs'), 'active' => true],
+        ['label' => 'Subjects', 'icon' => 'menu_book', 'href' => route('super-admin.subjects'), 'active' => false],
+        ['label' => 'Deans & Department Chairs', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active' => false],
+        ['label' => 'Users', 'icon' => 'person_search', 'href' => route('super-admin.users'), 'active' => false],
+    ];
+@endphp
+
+@section('title', 'Programs | AIssessment Super Admin')
+@section('header', 'Programs')
+
+@push('styles')
+    <style>
+        .directory-card {
+            background: #fff;
+            border: 1px solid var(--psu-line);
+            border-radius: 0.5rem;
+            box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
+        }
+
+        .directory-header,
+        .modal-header {
+            background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 100%);
+            color: #fff;
+        }
+
+        .table thead th {
+            background: #edf2ff;
+            color: var(--psu-muted);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 1rem 1.25rem;
+        }
+
+        .table tbody td {
+            padding: 1rem 1.25rem;
+            vertical-align: middle;
+        }
+
+        .programs-table {
+            min-width: 920px;
+        }
+
+        .programs-table .count-cell {
+            text-align: center;
+        }
+
+        .action-buttons {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+        }
+
+        .action-buttons .btn {
+            width: 32px;
+            height: 32px;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .program-detail-label {
+            color: var(--psu-muted);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .program-toolbar .college-filter-select {
+            min-width: min(360px, 100%);
+        }
+
+        .empty-icon {
+            width: 56px;
+            height: 56px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: var(--psu-gold-soft);
+            color: var(--psu-navy);
+        }
+    </style>
+@endpush
+
+@section('content')
+    {{-- Page messages --}}
+    @if (session('status'))
+        <div class="alert alert-success">{{ session('status') }}</div>
+    @endif
+
+    @if ($errors->any())
+        <div class="alert alert-danger">{{ $errors->first() }}</div>
+    @endif
+
+    {{-- Filters and actions --}}
+    <div class="program-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+        <form action="{{ route('super-admin.programs') }}" method="GET">
+            <label class="form-label small fw-bold text-uppercase mb-1" for="college-filter">View College</label>
+            <select class="form-select college-filter-select" id="college-filter" name="college" onchange="this.form.submit()">
+                <option value="">All Colleges</option>
+                @foreach ($colleges as $college)
+                    <option value="{{ $college->public_id }}" @selected($selectedCollegeKey === $college->public_id)>
+                        {{ $college->college_name }}
+                    </option>
+                @endforeach
+            </select>
+            <noscript>
+                <button class="btn btn-outline-primary mt-2" type="submit">View</button>
+            </noscript>
+        </form>
+
+        <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#programModal" data-bs-toggle="modal" type="button">
+            <span class="material-symbols-outlined fs-5">add</span>
+            Add Program
+        </button>
+    </div>
+
+    {{-- Programs table --}}
+    <section class="directory-card shadow-sm">
+        <div class="directory-header px-4 py-3">
+            <h3 class="h4 mb-0">Programs List</h3>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 programs-table">
+                <thead>
+                    <tr>
+                        <th>Program</th>
+                        <th>College</th>
+                        <th class="count-cell">Students</th>
+                        <th>Status</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($programs as $program)
+                        <tr>
+                            <td class="fw-bold" style="color: var(--psu-navy);">{{ $program->program_name }}</td>
+                            <td>{{ $program->college?->college_name ?? 'Not assigned' }}</td>
+                            <td class="count-cell">{{ $program->student_profiles_count }}</td>
+                            <td>
+                                <span class="badge {{ $program->is_active ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
+                                    {{ $program->is_active ? 'Active' : 'Inactive' }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-outline-secondary d-inline-flex" data-bs-target="#viewProgramModal{{ $program->program_id }}" data-bs-toggle="modal" type="button" title="View program" aria-label="View {{ $program->program_name }}">
+                                        <span class="material-symbols-outlined fs-6">visibility</span>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary d-inline-flex" data-bs-target="#editProgramModal{{ $program->program_id }}" data-bs-toggle="modal" type="button" title="Edit program" aria-label="Edit {{ $program->program_name }}">
+                                        <span class="material-symbols-outlined fs-6">edit</span>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger d-inline-flex" data-bs-target="#deleteProgramModal{{ $program->program_id }}" data-bs-toggle="modal" type="button" title="Delete program" aria-label="Delete {{ $program->program_name }}">
+                                        <span class="material-symbols-outlined fs-6">delete</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td class="text-center py-5" colspan="5">
+                                <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">school</span></div>
+                                <h4 class="h4" style="color: var(--psu-navy);">No programs yet</h4>
+                                <p class="text-secondary mb-4">Create the first program to organize students and subject mappings.</p>
+                                <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#programModal" data-bs-toggle="modal" type="button">
+                                    <span class="material-symbols-outlined fs-5">add</span>
+                                    Add First Program
+                                </button>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #eff4ff;">
+            <span class="small text-secondary">Showing {{ $programs->count() }} {{ $programs->count() === 1 ? 'entry' : 'entries' }}</span>
+        </div>
+    </section>
+
+    @include('super-admin.programs.create-program-form')
+    @include('super-admin.programs.view-edit-delete-program-popups')
+@endsection

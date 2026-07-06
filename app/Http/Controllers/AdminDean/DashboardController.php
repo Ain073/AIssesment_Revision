@@ -16,7 +16,7 @@ class DashboardController extends BaseController
         $scopedCollege = $this->scopedCollege($user);
         $scopedCollegeId = $scopedCollege?->college_id;
 
-        return view('admin-dean.dashboard', $this->sharedData('dashboard') + [
+        return view('admin-dean.dashboard.index', $this->sharedData('dashboard') + [
             'user' => $user,
             'stats' => [
                 [

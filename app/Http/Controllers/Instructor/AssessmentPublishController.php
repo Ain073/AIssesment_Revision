@@ -38,7 +38,7 @@ class AssessmentPublishController extends BaseController
             $selectedAssessment?->subject_id ?? $request->query('subject_id')
         );
 
-        return view('instructor.assessment-publish', $this->sharedData($user, 'assessments') + [
+        return view('instructor.assessments.publish', $this->sharedData($user, 'assessments') + [
             'instructorProfile' => $instructorProfile,
             'handledSubjects' => $handledSubjects,
             'assessments' => $assessments,

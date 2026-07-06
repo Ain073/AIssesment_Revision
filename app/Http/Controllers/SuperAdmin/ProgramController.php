@@ -21,7 +21,7 @@ class ProgramController extends Controller
             ->first();
         $selectedCollegeId = $selectedCollege?->college_id;
 
-        return view('super-admin.programs', [
+        return view('super-admin.programs.index', [
             'colleges' => College::query()
                 ->orderBy('college_name')
                 ->get(),

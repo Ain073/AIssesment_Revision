@@ -18,7 +18,7 @@ class DepartmentController extends BaseController
         $scopedCollege = $this->scopedCollege($user);
         $scopedCollegeId = $scopedCollege?->college_id;
 
-        return view('admin-dean.departments', $this->sharedData('departments') + [
+        return view('admin-dean.departments.index', $this->sharedData('departments') + [
             'departments' => Department::with('college')
                 ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
                 ->withCount('instructorProfiles')

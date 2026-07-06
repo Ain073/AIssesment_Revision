@@ -182,6 +182,7 @@
 @endpush
 
 @section('content')
+    {{-- Main account statistics --}}
     <div class="row g-4 mb-4">
         <div class="col-md-6 col-xl-3">
             <div class="dashboard-card p-4 h-100">
@@ -233,6 +234,7 @@
         </div>
     </div>
 
+    {{-- Account status and academic setup --}}
     <div class="overview-grid mb-4">
         <section class="dashboard-card p-4">
             <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
@@ -314,6 +316,7 @@
         </section>
     </div>
 
+    {{-- Student distribution by program --}}
     <section class="dashboard-card p-4">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
             <div>

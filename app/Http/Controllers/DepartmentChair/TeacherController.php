@@ -25,7 +25,7 @@ class TeacherController extends BaseController
             ->orderBy('name')
             ->get();
 
-        return view('department-chair.teachers', $this->sharedData($user, 'teachers') + [
+        return view('department-chair.teachers.index', $this->sharedData($user, 'teachers') + [
             'teachers' => $teachers,
             'scopedDepartment' => $scopedDepartment,
         ]);

@@ -97,7 +97,7 @@ class AssessmentResultController extends BaseController
             'class_id' => $ownedClassAssessment->class_id,
         ]);
 
-        return view('instructor.assessment-results', $this->sharedData($user, 'assessments') + [
+        return view('instructor.assessments.results', $this->sharedData($user, 'assessments') + [
             'assessment' => $ownedClassAssessment->assessment,
             'class' => $ownedClassAssessment->class,
             'studentResults' => $studentResults,
