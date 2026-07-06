@@ -9,16 +9,16 @@
 @endif
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-    <div class="d-flex flex-wrap gap-2">
-        <a class="btn class-list-tab {{ $activeClassTab === 'active' ? 'btn-psu' : 'btn-outline-primary' }} d-inline-flex align-items-center gap-2" href="{{ route('instructor.classes', ['tab' => 'active']) }}">
+    <div class="table-switch-tabs mb-0">
+        <a class="btn btn-outline-primary class-list-tab table-switch-button {{ $activeClassTab === 'active' ? 'active' : '' }} d-inline-flex align-items-center gap-2" href="{{ route('instructor.classes', ['tab' => 'active']) }}">
             <span class="material-symbols-outlined fs-5">school</span>
             Active Classes
-            <span class="badge text-bg-light border rounded-1">{{ $activeClassesCount }}</span>
+            <span class="table-switch-count">{{ $activeClassesCount }}</span>
         </a>
-        <a class="btn class-list-tab {{ $activeClassTab === 'archived' ? 'btn-psu' : 'btn-outline-primary' }} d-inline-flex align-items-center gap-2" href="{{ route('instructor.classes', ['tab' => 'archived']) }}">
+        <a class="btn btn-outline-primary class-list-tab table-switch-button {{ $activeClassTab === 'archived' ? 'active' : '' }} d-inline-flex align-items-center gap-2" href="{{ route('instructor.classes', ['tab' => 'archived']) }}">
             <span class="material-symbols-outlined fs-5">inventory_2</span>
             Archived Classes
-            <span class="badge text-bg-light border rounded-1">{{ $archivedClassesCount }}</span>
+            <span class="table-switch-count">{{ $archivedClassesCount }}</span>
         </a>
     </div>
 

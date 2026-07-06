@@ -68,25 +68,6 @@
             white-space: normal;
         }
 
-        .account-tabs {
-            display: flex;
-            gap: 2rem;
-            border-bottom: 1px solid var(--psu-line);
-        }
-
-        .account-tab {
-            padding: 0.85rem 0.25rem;
-            color: var(--psu-muted);
-            font-weight: 700;
-            text-decoration: none;
-            border-bottom: 2px solid transparent;
-        }
-
-        .account-tab.active {
-            color: var(--psu-navy);
-            border-bottom-color: var(--psu-gold);
-        }
-
         .empty-icon {
             width: 56px;
             height: 56px;
@@ -125,9 +106,17 @@
         </button>
     </div>
 
-    <nav class="account-tabs mb-4" aria-label="Department account views">
-        <a class="account-tab active" href="{{ route('department-chair.teachers') }}" aria-current="page">Teachers</a>
-        <a class="account-tab" href="{{ route('department-chair.students') }}">Students</a>
+    <nav class="table-switch-tabs" aria-label="Department account views">
+        <a class="btn btn-outline-primary table-switch-button active d-inline-flex align-items-center gap-2" href="{{ route('department-chair.teachers') }}" aria-current="page">
+            <span class="material-symbols-outlined fs-5">badge</span>
+            Teachers
+            <span class="table-switch-count">{{ $teachers->count() }}</span>
+        </a>
+        <a class="btn btn-outline-primary table-switch-button d-inline-flex align-items-center gap-2" href="{{ route('department-chair.students') }}">
+            <span class="material-symbols-outlined fs-5">groups</span>
+            Students
+            <span class="table-switch-count">{{ $studentsCount }}</span>
+        </a>
     </nav>
 
     <section class="directory-card shadow-sm">

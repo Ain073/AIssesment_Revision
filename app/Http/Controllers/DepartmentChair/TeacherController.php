@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\DepartmentChair;
 
+use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\View\View;
 
@@ -24,9 +25,14 @@ class TeacherController extends BaseController
             ->orderBy('first_name')
             ->orderBy('name')
             ->get();
+        $scopedProgramIds = $this->scopedPrograms($scopedDepartment)->pluck('program_id');
+        $studentsCount = $scopedProgramIds->isNotEmpty()
+            ? StudentProfile::query()->whereIn('program_id', $scopedProgramIds)->count()
+            : 0;
 
         return view('department-chair.teachers.index', $this->sharedData($user, 'teachers') + [
             'teachers' => $teachers,
+            'studentsCount' => $studentsCount,
             'scopedDepartment' => $scopedDepartment,
         ]);
     }

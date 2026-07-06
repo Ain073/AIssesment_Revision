@@ -54,6 +54,6 @@
     </div>
 
     <div data-poll-url="{{ route('student.assessments.live') }}" data-poll-interval="5000">
-        @include('student.partials.assessments-live')
+        @include('student.assessments.assessment-list')
     </div>
 @endsection

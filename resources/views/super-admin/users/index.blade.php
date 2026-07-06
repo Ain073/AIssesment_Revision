@@ -74,21 +74,6 @@
             color: var(--psu-navy);
         }
 
-        .nav-tabs .nav-link {
-            color: var(--psu-muted);
-            font-weight: 700;
-            border: 0;
-            border-bottom: 2px solid transparent;
-            border-radius: 0;
-            white-space: nowrap;
-        }
-
-        .nav-tabs .nav-link.active {
-            color: var(--psu-navy);
-            background: transparent;
-            border-bottom-color: var(--psu-gold);
-        }
-
         #userTabs {
             flex-wrap: nowrap;
             gap: 1rem;
@@ -204,14 +189,18 @@
                 </button>
             </div>
 
-            <ul class="nav nav-tabs mb-3" id="userTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active px-4 py-3" data-bs-target="#teachersPane" data-bs-toggle="tab" type="button" role="tab">Teachers</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link px-4 py-3" data-bs-target="#studentsPane" data-bs-toggle="tab" type="button" role="tab">Students</button>
-                </li>
-            </ul>
+            <div class="table-switch-tabs" id="userTabs" role="tablist">
+                <button class="btn btn-outline-primary table-switch-button active d-inline-flex align-items-center gap-2" data-bs-target="#teachersPane" data-bs-toggle="tab" type="button" role="tab">
+                    <span class="material-symbols-outlined fs-5">badge</span>
+                    Teachers
+                    <span class="table-switch-count">{{ $teachers->count() }}</span>
+                </button>
+                <button class="btn btn-outline-primary table-switch-button d-inline-flex align-items-center gap-2" data-bs-target="#studentsPane" data-bs-toggle="tab" type="button" role="tab">
+                    <span class="material-symbols-outlined fs-5">groups</span>
+                    Students
+                    <span class="table-switch-count">{{ $students->count() }}</span>
+                </button>
+            </div>
 
             <div class="tab-content">
                 {{-- Teachers table --}}

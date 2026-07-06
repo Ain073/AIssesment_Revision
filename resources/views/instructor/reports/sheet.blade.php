@@ -421,15 +421,19 @@
                 <span class="material-symbols-outlined fs-5">arrow_back</span>
                 Reports
             </a>
-            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" form="reportSheetForm" type="submit">
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" form="reportSheetForm" name="save_action" value="draft" type="submit">
                 <span class="material-symbols-outlined fs-5">save</span>
-                Save Details
+                Save Draft
+            </button>
+            <button class="btn btn-psu d-inline-flex align-items-center gap-2" form="reportSheetForm" name="save_action" value="finalized" type="submit">
+                <span class="material-symbols-outlined fs-5">task_alt</span>
+                Finalize
             </button>
             <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" id="generateAiDraftsButton" type="button" data-ai-url="{{ route('instructor.reports.ai-drafts') }}">
                 <span class="material-symbols-outlined fs-5">auto_awesome</span>
                 AI Draft
             </button>
-            <button class="btn btn-psu d-inline-flex align-items-center gap-2" onclick="window.print()" type="button">
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" onclick="window.print()" type="button">
                 <span class="material-symbols-outlined fs-5">print</span>
                 Print
             </button>

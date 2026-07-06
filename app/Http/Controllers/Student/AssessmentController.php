@@ -22,12 +22,12 @@ class AssessmentController extends BaseController
     {
         $user = $this->currentUser();
 
-        return view('student.assessments', $this->sharedData($user, 'assessments') + $this->studentAssessmentsData($user));
+        return view('student.assessments.index', $this->sharedData($user, 'assessments') + $this->studentAssessmentsData($user));
     }
 
     public function assessmentsLive(): View
     {
-        return view('student.partials.assessments-live', $this->studentAssessmentsData($this->currentUser()));
+        return view('student.assessments.assessment-list', $this->studentAssessmentsData($this->currentUser()));
     }
 
     public function takeAssessment(ClassAssessment $classAssessment): View|RedirectResponse
@@ -53,7 +53,7 @@ class AssessmentController extends BaseController
             'class_id' => $classAssessment->class_id,
         ]);
 
-        return view('student.assessment-take', $this->sharedData($user, 'assessments') + [
+        return view('student.assessments.take', $this->sharedData($user, 'assessments') + [
             'classAssessment' => $classAssessment,
             'assessment' => $classAssessment->assessment,
             'class' => $classAssessment->class,
@@ -108,7 +108,7 @@ class AssessmentController extends BaseController
             'class_id' => $classAssessment->class_id,
         ]);
 
-        return view('student.assessment-attempt', [
+        return view('student.assessments.attempt', [
             'user' => $user,
             'studentProfile' => $studentProfile,
             'classAssessment' => $classAssessment,

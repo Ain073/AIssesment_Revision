@@ -23,9 +23,51 @@
             margin-bottom: 0.75rem;
         }
 
+        .hero-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+            gap: 1.5rem;
+            align-items: center;
+        }
+
         .hero-eyebrow {
             color: rgba(255, 245, 191, 0.92);
             letter-spacing: 0.04em;
+        }
+
+        .hero-actions {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .hero-action-link {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 0.8rem 0.95rem;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 0.45rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .hero-action-link:hover,
+        .hero-action-link:focus {
+            background: rgba(255, 255, 255, 0.16);
+            color: #fff;
+        }
+
+        .hero-action-icon {
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 40px;
+            border-radius: 0.35rem;
+            background: rgba(255, 245, 191, 0.2);
+            color: var(--psu-gold);
         }
 
         .stat-card,
@@ -220,6 +262,10 @@
         }
 
         @media (max-width: 991.98px) {
+            .hero-layout {
+                grid-template-columns: 1fr;
+            }
+
             .stat-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
@@ -252,8 +298,24 @@
     @endif
 
     <section class="hero-card">
-        <p class="small fw-bold text-uppercase mb-2 hero-eyebrow">Welcome Back</p>
-        <h2 class="brand-text hero-title">{{ $user->displayName() }}</h2>
+        <div class="hero-layout">
+            <div>
+                <p class="small fw-bold text-uppercase mb-2 hero-eyebrow">Welcome Back</p>
+                <h2 class="brand-text hero-title">{{ $user->displayName() }}</h2>
+            </div>
+
+            <div class="hero-actions" aria-label="Quick actions">
+                @foreach ($quickActions as $action)
+                    <a class="hero-action-link" href="{{ $action['href'] }}">
+                        <span class="hero-action-icon"><span class="material-symbols-outlined">{{ $action['icon'] }}</span></span>
+                        <span>
+                            <span class="fw-bold d-block">{{ $action['label'] }}</span>
+                            <span class="small text-white-50">{{ $action['description'] }}</span>
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+        </div>
     </section>
 
     <section class="stat-grid">

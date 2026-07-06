@@ -31,12 +31,6 @@
             box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
         }
 
-        .reports-tabs {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-
         .reports-panel {
             overflow: hidden;
         }
@@ -90,6 +84,11 @@
             color: #765500;
         }
 
+        .report-badge.finalized {
+            background: #dcfce7;
+            color: #166534;
+        }
+
         .report-badge.none {
             background: #edf3ff;
             color: var(--psu-navy);
@@ -137,16 +136,16 @@
         </a>
     </div>
 
-    <div class="reports-tabs mb-3">
+    <div class="table-switch-tabs">
         @foreach ($reportGroups as $type => $group)
             <button
-                class="btn {{ $activeReportType === $type ? 'btn-psu' : 'btn-outline-primary' }} d-inline-flex align-items-center gap-2"
+                class="btn btn-outline-primary table-switch-button {{ $activeReportType === $type ? 'active' : '' }} d-inline-flex align-items-center gap-2"
                 data-report-tab="{{ $type }}"
                 type="button"
             >
                 <span class="material-symbols-outlined fs-5">{{ $group['icon'] }}</span>
                 {{ $group['label'] }}
-                <span class="badge text-bg-light border">{{ $group['items']->count() }}</span>
+                <span class="table-switch-count">{{ $group['items']->count() }}</span>
             </button>
         @endforeach
     </div>
@@ -208,7 +207,9 @@
                                     </span>
                                 </span>
                                 @if ($report)
-                                    <span class="report-badge draft">{{ ucfirst($report->report_status) }}</span>
+                                    <span class="report-badge {{ $report->report_status === \App\Models\Report::STATUS_FINALIZED ? 'finalized' : 'draft' }}">
+                                        {{ ucfirst($report->report_status) }}
+                                    </span>
                                 @else
                                     <span class="report-badge none">Not Prepared</span>
                                 @endif

@@ -24,10 +24,6 @@
             gap: 0.5rem;
         }
 
-        .assessment-tab-button {
-            border-radius: 0.5rem;
-        }
-
         .empty-icon {
             width: 56px;
             height: 56px;
@@ -57,14 +53,16 @@
         </a>
     </div>
 
-    <div class="d-flex flex-wrap gap-2 mb-4">
-        <a class="btn assessment-tab-button {{ $activeAssessmentTab === 'draft' ? 'btn-psu' : 'btn-outline-primary' }} d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments', ['tab' => 'draft']) }}">
+    <div class="table-switch-tabs">
+        <a class="btn btn-outline-primary assessment-tab-button table-switch-button {{ $activeAssessmentTab === 'draft' ? 'active' : '' }} d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments', ['tab' => 'draft']) }}">
             <span class="material-symbols-outlined fs-5">inventory_2</span>
             Draft / Stored Assessments
+            <span class="table-switch-count">{{ $assessments->count() }}</span>
         </a>
-        <a class="btn assessment-tab-button {{ $activeAssessmentTab === 'published' ? 'btn-psu' : 'btn-outline-primary' }} d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments', ['tab' => 'published']) }}">
+        <a class="btn btn-outline-primary assessment-tab-button table-switch-button {{ $activeAssessmentTab === 'published' ? 'active' : '' }} d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments', ['tab' => 'published']) }}">
             <span class="material-symbols-outlined fs-5">task_alt</span>
             Published Assessments
+            <span class="table-switch-count">{{ $publishedAssessments->count() }}</span>
         </a>
     </div>
 

@@ -20,6 +20,86 @@
 
 @push('styles')
     <style>
+        .hero-card {
+            position: relative;
+            overflow: hidden;
+            background:
+                linear-gradient(120deg, rgba(4, 25, 132, 0.98) 0%, rgba(8, 48, 210, 0.96) 58%, rgba(142, 137, 113, 0.96) 125%),
+                linear-gradient(180deg, #03104f 0%, #0927d8 62%, #8f8a73 100%);
+            color: #fff;
+            border: 1px solid rgba(255, 218, 39, 0.34);
+            border-radius: 0.5rem;
+            box-shadow: 0 18px 34px rgba(0, 26, 112, 0.18);
+            padding: 2rem 2.25rem;
+        }
+
+        .hero-card::after {
+            position: absolute;
+            inset: 0 0 0 auto;
+            width: 38%;
+            content: '';
+            background: linear-gradient(135deg, rgba(255, 245, 191, 0.18), rgba(255, 255, 255, 0.06));
+            transform: skewX(-12deg) translateX(22%);
+        }
+
+        .hero-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .hero-eyebrow {
+            color: rgba(255, 245, 191, 0.92);
+            letter-spacing: 0.04em;
+        }
+
+        .hero-title {
+            font-size: clamp(2.4rem, 3vw, 3.25rem);
+            line-height: 1;
+            margin-bottom: 0;
+        }
+
+        .hero-actions {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .hero-action-link {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 0.8rem 0.95rem;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 0.45rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .hero-action-link:hover,
+        .hero-action-link:focus {
+            background: rgba(255, 255, 255, 0.16);
+            color: #fff;
+        }
+
+        .hero-action-icon {
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 40px;
+            border-radius: 0.35rem;
+            background: rgba(255, 245, 191, 0.2);
+            color: var(--psu-gold);
+        }
+
         .dashboard-card {
             background: #fff;
             border: 1px solid var(--psu-line);
@@ -154,6 +234,10 @@
         }
 
         @media (max-width: 991.98px) {
+            .hero-layout {
+                grid-template-columns: 1fr;
+            }
+
             .overview-grid,
             .program-row {
                 grid-template-columns: 1fr;
@@ -182,6 +266,27 @@
 @endpush
 
 @section('content')
+    <section class="hero-card mb-4">
+        <div class="hero-layout">
+            <div>
+                <p class="small fw-bold text-uppercase mb-2 hero-eyebrow">Welcome back</p>
+                <h2 class="brand-text hero-title">Super Admin</h2>
+            </div>
+
+            <div class="hero-actions" aria-label="Quick actions">
+                @foreach ($quickActions as $action)
+                    <a class="hero-action-link" href="{{ $action['href'] }}">
+                        <span class="hero-action-icon"><span class="material-symbols-outlined">{{ $action['icon'] }}</span></span>
+                        <span>
+                            <span class="fw-bold d-block">{{ $action['label'] }}</span>
+                            <span class="small text-white-50">{{ $action['description'] }}</span>
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
     {{-- Main account statistics --}}
     <div class="row g-4 mb-4">
         <div class="col-md-6 col-xl-3">

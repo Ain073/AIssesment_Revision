@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\DepartmentChair;
 
 use App\Models\StudentProfile;
+use App\Models\Report;
 use App\Models\User;
 use Illuminate\View\View;
 
@@ -22,6 +23,12 @@ class DashboardController extends BaseController
                 fn ($query) => $query->whereHas('instructorProfile', fn ($inner) => $inner->where('department_id', $scopedDepartmentId)),
                 fn ($query) => $query->where('id', 0)
             );
+        $reportsCount = $scopedDepartmentId
+            ? Report::query()
+                ->where('report_status', Report::STATUS_FINALIZED)
+                ->whereHas('classAssessment.assessment.instructorProfile', fn ($query) => $query->where('department_id', $scopedDepartmentId))
+                ->count()
+            : 0;
 
         return view('department-chair.dashboard.index', $this->sharedData($user, 'dashboard') + [
             'stats' => [
@@ -41,7 +48,7 @@ class DashboardController extends BaseController
                 ],
                 [
                     'label' => 'Reports',
-                    'value' => 0,
+                    'value' => $reportsCount,
                     'caption' => 'Finalized instructor reports to monitor',
                     'icon' => 'summarize',
                 ],

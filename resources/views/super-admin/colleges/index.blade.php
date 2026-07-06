@@ -71,20 +71,6 @@
             color: var(--psu-navy);
         }
 
-        .nav-tabs .nav-link {
-            color: var(--psu-muted);
-            font-weight: 700;
-            border: 0;
-            border-bottom: 2px solid transparent;
-            border-radius: 0;
-        }
-
-        .nav-tabs .nav-link.active {
-            color: var(--psu-navy);
-            background: transparent;
-            border-bottom-color: var(--psu-gold);
-        }
-
         .modal-header {
             background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 100%);
             color: #fff;
@@ -129,14 +115,18 @@
                 </button>
             </div>
 
-            <ul class="nav nav-tabs mb-3" id="directoryTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active px-4 py-3" data-bs-target="#collegesPane" data-bs-toggle="tab" type="button" role="tab">Colleges</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link px-4 py-3" data-bs-target="#departmentsPane" data-bs-toggle="tab" type="button" role="tab">Departments</button>
-                </li>
-            </ul>
+            <div class="table-switch-tabs" id="directoryTabs" role="tablist">
+                <button class="btn btn-outline-primary table-switch-button active d-inline-flex align-items-center gap-2" data-bs-target="#collegesPane" data-bs-toggle="tab" type="button" role="tab">
+                    <span class="material-symbols-outlined fs-5">account_balance</span>
+                    Colleges
+                    <span class="table-switch-count">{{ $colleges->count() }}</span>
+                </button>
+                <button class="btn btn-outline-primary table-switch-button d-inline-flex align-items-center gap-2" data-bs-target="#departmentsPane" data-bs-toggle="tab" type="button" role="tab">
+                    <span class="material-symbols-outlined fs-5">apartment</span>
+                    Departments
+                    <span class="table-switch-count">{{ $departments->count() }}</span>
+                </button>
+            </div>
 
             <div class="tab-content">
                 {{-- Colleges table --}}

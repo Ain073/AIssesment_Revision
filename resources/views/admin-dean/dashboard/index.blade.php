@@ -6,15 +6,78 @@
 @push('styles')
     <style>
         .hero-card {
+            position: relative;
+            overflow: hidden;
             background:
-                linear-gradient(118deg, rgba(5, 33, 171, 0.98) 0%, rgba(13, 49, 221, 0.96) 58%, rgba(226, 196, 48, 0.9) 150%),
-                radial-gradient(circle at 100% 0%, rgba(255, 226, 76, 0.44) 0%, rgba(255, 226, 76, 0) 34%),
-                linear-gradient(180deg, #021063 0%, #0828c9 58%, #d4b736 100%);
+                linear-gradient(120deg, rgba(4, 25, 132, 0.98) 0%, rgba(8, 48, 210, 0.96) 58%, rgba(142, 137, 113, 0.96) 125%),
+                linear-gradient(180deg, #03104f 0%, #0927d8 62%, #8f8a73 100%);
             color: #fff;
-            border: 1px solid rgba(255, 218, 39, 0.28);
+            border: 1px solid rgba(255, 218, 39, 0.34);
             border-radius: 0.5rem;
-            box-shadow: 0 16px 34px rgba(9, 39, 216, 0.14);
-            padding: 1.75rem;
+            box-shadow: 0 18px 34px rgba(0, 26, 112, 0.18);
+            padding: 2rem 2.25rem;
+        }
+
+        .hero-card::after {
+            position: absolute;
+            inset: 0 0 0 auto;
+            width: 38%;
+            content: '';
+            background: linear-gradient(135deg, rgba(255, 245, 191, 0.18), rgba(255, 255, 255, 0.06));
+            transform: skewX(-12deg) translateX(22%);
+        }
+
+        .hero-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-title {
+            font-size: clamp(2.4rem, 3vw, 3.25rem);
+            line-height: 1;
+            margin-bottom: 0;
+        }
+
+        .hero-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .hero-actions {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .hero-action-link {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 0.8rem 0.95rem;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 0.45rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .hero-action-link:hover,
+        .hero-action-link:focus {
+            background: rgba(255, 255, 255, 0.16);
+            color: #fff;
+        }
+
+        .hero-action-icon {
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 40px;
+            border-radius: 0.35rem;
+            background: rgba(255, 245, 191, 0.2);
+            color: var(--psu-gold);
         }
 
         .hero-copy {
@@ -35,9 +98,7 @@
             margin-top: 1.5rem;
         }
 
-        .stat-card,
-        .info-card,
-        .action-card {
+        .stat-card {
             background: #fff;
             border: 1px solid var(--psu-line);
             border-radius: 0.5rem;
@@ -61,51 +122,11 @@
             color: var(--psu-navy);
         }
 
-        .workspace-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .info-card {
-            padding: 1.5rem;
-        }
-
-        .eyebrow {
-            font-size: 0.78rem;
-            font-weight: 800;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: #6b7280;
-            margin-bottom: 0.5rem;
-        }
-
-        .section-title {
-            color: var(--psu-navy);
-            margin-bottom: 1rem;
-        }
-
-        .action-grid {
-            display: grid;
-            gap: 1rem;
-        }
-
-        .action-card {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            padding: 1.25rem;
-            text-decoration: none;
-            color: inherit;
-        }
-
-        .action-card:hover {
-            color: inherit;
-            box-shadow: 0 14px 28px rgba(0, 17, 58, 0.08);
-        }
-
         @media (max-width: 991.98px) {
+            .hero-layout {
+                grid-template-columns: 1fr;
+            }
+
             .stat-grid {
                 grid-template-columns: 1fr;
             }
@@ -115,8 +136,24 @@
 
 @section('content')
     <section class="hero-card">
-        <p class="small fw-bold text-uppercase mb-2 hero-eyebrow">College-Level View</p>
-        <h2 class="brand-text h1 mb-3">{{ $user->displayName() }}</h2>
+        <div class="hero-layout">
+            <div>
+                <p class="small fw-bold text-uppercase mb-2 hero-eyebrow">Welcome back</p>
+                <h2 class="brand-text hero-title">{{ $user->displayName() }}</h2>
+            </div>
+
+            <div class="hero-actions" aria-label="Quick actions">
+                @foreach ($quickActions as $action)
+                    <a class="hero-action-link" href="{{ $action['href'] }}">
+                        <span class="hero-action-icon"><span class="material-symbols-outlined">{{ $action['icon'] }}</span></span>
+                        <span>
+                            <span class="fw-bold d-block">{{ $action['label'] }}</span>
+                            <span class="small text-white-50">{{ $action['description'] }}</span>
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+        </div>
     </section>
 
     <section class="stat-grid">
@@ -134,22 +171,4 @@
         @endforeach
     </section>
 
-    <section class="workspace-grid">
-        <article class="info-card">
-            <p class="eyebrow">Next Step</p>
-            <h3 class="brand-text h4 section-title">Quick Actions</h3>
-            <div class="action-grid">
-                @foreach ($quickActions as $action)
-                    <a class="action-card" href="{{ $action['href'] }}">
-                        <span class="icon-tile"><span class="material-symbols-outlined">{{ $action['icon'] }}</span></span>
-                        <div>
-                            <p class="fw-bold mb-1" style="color: var(--psu-navy);">{{ $action['label'] }}</p>
-                            <p class="text-secondary mb-0">{{ $action['description'] }}</p>
-                        </div>
-                    </a>
-                @endforeach
-            </div>
-        </article>
-
-    </section>
 @endsection

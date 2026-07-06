@@ -73,20 +73,6 @@
             color: var(--psu-navy);
         }
 
-        .nav-tabs .nav-link {
-            color: var(--psu-muted);
-            font-weight: 700;
-            border: 0;
-            border-bottom: 2px solid transparent;
-            border-radius: 0;
-        }
-
-        .nav-tabs .nav-link.active {
-            color: var(--psu-navy);
-            background: transparent;
-            border-bottom-color: var(--psu-gold);
-        }
-
         .modal-header {
             background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 100%);
             color: #fff;
@@ -119,14 +105,18 @@
         </div>
     @endif
 
-    <ul class="nav nav-tabs mb-3" id="authorizationTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active px-4 py-3" data-bs-target="#adminDeanPane" data-bs-toggle="tab" type="button" role="tab">Admin/Dean</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link px-4 py-3" data-bs-target="#departmentChairPane" data-bs-toggle="tab" type="button" role="tab">Department Chair</button>
-        </li>
-    </ul>
+    <div class="table-switch-tabs" id="authorizationTabs" role="tablist">
+        <button class="btn btn-outline-primary table-switch-button active d-inline-flex align-items-center gap-2" data-bs-target="#adminDeanPane" data-bs-toggle="tab" type="button" role="tab">
+            <span class="material-symbols-outlined fs-5">admin_panel_settings</span>
+            Admin/Dean
+            <span class="table-switch-count">{{ $adminDeans->count() }}</span>
+        </button>
+        <button class="btn btn-outline-primary table-switch-button d-inline-flex align-items-center gap-2" data-bs-target="#departmentChairPane" data-bs-toggle="tab" type="button" role="tab">
+            <span class="material-symbols-outlined fs-5">supervisor_account</span>
+            Department Chair
+            <span class="table-switch-count">{{ $departmentChairs->count() }}</span>
+        </button>
+    </div>
 
     <div class="tab-content">
         {{-- Admin/Dean table --}}

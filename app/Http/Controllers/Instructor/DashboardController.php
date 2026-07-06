@@ -70,6 +70,26 @@ class DashboardController extends BaseController
                     'icon' => 'assignment',
                 ],
             ],
+            'quickActions' => [
+                [
+                    'label' => 'Open Classes',
+                    'description' => 'Manage your active classes.',
+                    'href' => route('instructor.classes'),
+                    'icon' => 'school',
+                ],
+                [
+                    'label' => 'Create Assessment',
+                    'description' => 'Prepare a new assessment.',
+                    'href' => route('instructor.assessments.create'),
+                    'icon' => 'assignment_add',
+                ],
+                [
+                    'label' => 'Prepare Reports',
+                    'description' => 'Build formative or summative reports.',
+                    'href' => route('instructor.reports'),
+                    'icon' => 'summarize',
+                ],
+            ],
             'activeClassPerformance' => $classes
                 ->map(fn (AcademicClass $class): array => $this->classPerformanceSummary($class)),
         ]);

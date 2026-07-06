@@ -81,9 +81,6 @@
             border-radius: 0.25rem;
         }
 
-        .class-list-tab {
-            border-radius: 0.5rem;
-        }
     </style>
 @endpush
 

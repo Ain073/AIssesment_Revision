@@ -10,6 +10,7 @@
         const setActivePanel = (type) => {
             tabs.forEach((tab) => {
                 const isActive = tab.dataset.reportTab === type;
+                tab.classList.toggle('active', isActive);
                 tab.classList.toggle('btn-psu', isActive);
                 tab.classList.toggle('btn-outline-primary', ! isActive);
             });

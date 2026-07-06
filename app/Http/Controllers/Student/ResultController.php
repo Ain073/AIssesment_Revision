@@ -30,7 +30,7 @@ class ResultController extends BaseController
         $results = $this->buildResults($submissions);
         $releasedResults = $results->where('score_visible', true);
 
-        return view('student.results', $this->sharedData($user, 'results') + [
+        return view('student.results.index', $this->sharedData($user, 'results') + [
             'studentProfile' => $studentProfile,
             'results' => $results,
             'summary' => [

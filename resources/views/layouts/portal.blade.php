@@ -106,6 +106,45 @@
             box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
         }
 
+        .table-switch-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .table-switch-button {
+            min-height: 3rem;
+            border-radius: 0.45rem;
+            font-weight: 800;
+            padding: 0.65rem 1rem;
+            text-decoration: none;
+        }
+
+        .table-switch-button .table-switch-count {
+            min-width: 1.8rem;
+            height: 1.8rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.45rem;
+            background: #fff;
+            color: var(--psu-navy);
+            font-weight: 900;
+        }
+
+        .table-switch-button.active {
+            background: var(--psu-navy-2);
+            border-color: var(--psu-navy-2);
+            color: #fff;
+            box-shadow: 0 12px 24px rgba(9, 39, 216, 0.18);
+        }
+
+        .table-switch-button:not(.active):hover {
+            background: #edf2ff;
+            color: var(--psu-navy);
+        }
+
         .global-search {
             position: relative;
         }
@@ -403,6 +442,22 @@
             color: #9f1d2a;
         }
 
+        .sidebar-profile-photo {
+            width: 44px;
+            height: 44px;
+            overflow: hidden;
+            flex: 0 0 44px;
+            border-radius: 50%;
+            background: var(--psu-gold);
+            color: var(--psu-navy);
+        }
+
+        .sidebar-profile-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
         .notification-button {
             position: relative;
         }
@@ -540,6 +595,13 @@
     </style>
 </head>
 <body class="@yield('body_class')">
+    @php
+        $sidebarUser = auth()->user();
+        $sidebarPhotoUrl = $sidebarUser?->profile_photo_path
+            ? asset('storage/'.$sidebarUser->profile_photo_path)
+            : null;
+    @endphp
+
     <aside class="sidebar d-flex flex-column">
         <div class="p-4">
             <div class="d-flex align-items-center gap-3">
@@ -576,8 +638,12 @@
         <div class="border-top border-white border-opacity-10 profile-menu-shell">
             <button class="profile-menu-toggle" data-bs-target="#sidebarProfileMenu" data-bs-toggle="collapse" type="button" aria-expanded="false" aria-controls="sidebarProfileMenu">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 44px; height: 44px; background: var(--psu-gold); color: var(--psu-navy);">
-                        {{ $profileInitials ?? 'U' }}
+                    <div class="sidebar-profile-photo d-flex align-items-center justify-content-center fw-bold">
+                        @if ($sidebarPhotoUrl)
+                            <img src="{{ $sidebarPhotoUrl }}" alt="{{ $profileName ?? 'User' }} profile picture">
+                        @else
+                            {{ $profileInitials ?? 'U' }}
+                        @endif
                     </div>
                     <div class="sidebar-text">
                         <p class="fw-bold text-white mb-0">{{ $profileName ?? 'User' }}</p>
@@ -587,6 +653,10 @@
             </button>
             <div class="collapse profile-menu-panel" id="sidebarProfileMenu">
                 <div class="d-grid gap-2">
+                    <a class="profile-menu-link" href="{{ route('profile.show') }}">
+                        <span class="material-symbols-outlined">account_circle</span>
+                        <span class="sidebar-text">Profile</span>
+                    </a>
                     <a class="profile-menu-link disabled" href="#" aria-disabled="true">
                         <span class="material-symbols-outlined">settings</span>
                         <span class="sidebar-text">Settings</span>
@@ -1107,7 +1177,7 @@
             const ajaxPageSelectors = [
                 '.sidebar-link',
                 '.mode-switch-link',
-                '.quick-action-card',
+                '.hero-action-link',
                 '.status-pill',
                 '.class-tablink',
                 '.class-list-tab',
@@ -1290,6 +1360,7 @@
 
             document.querySelectorAll('[data-report-tab]').forEach((button) => {
                 const isActive = button.dataset.reportTab === type;
+                button.classList.toggle('active', isActive);
                 button.classList.toggle('btn-psu', isActive);
                 button.classList.toggle('btn-outline-primary', ! isActive);
             });

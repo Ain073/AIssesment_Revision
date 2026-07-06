@@ -16,17 +16,17 @@ class ClassController extends BaseController
     {
         $user = $this->currentUser();
 
-        return view('student.classes', $this->sharedData($user, 'classes') + $this->studentClassesData($user));
+        return view('student.classes.index', $this->sharedData($user, 'classes') + $this->studentClassesData($user));
     }
 
     public function classesLive(): View
     {
-        return view('student.partials.classes-live', $this->studentClassesData($this->currentUser()));
+        return view('student.classes.class-list', $this->studentClassesData($this->currentUser()));
     }
 
     public function classRequestsLive(): View
     {
-        return view('student.partials.join-requests-table', $this->studentClassesData($this->currentUser()));
+        return view('student.classes.join-request-list', $this->studentClassesData($this->currentUser()));
     }
 
     public function showClassJoinLink(string $token): View|RedirectResponse
@@ -52,7 +52,7 @@ class ClassController extends BaseController
             ->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)
             ->exists();
 
-        return view('student.class-join', $this->sharedData($user, 'classes') + [
+        return view('student.classes.join', $this->sharedData($user, 'classes') + [
             'class' => $class,
             'studentProfile' => $studentProfile,
             'existingRequest' => $existingRequest,

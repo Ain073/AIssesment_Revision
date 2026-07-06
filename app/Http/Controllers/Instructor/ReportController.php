@@ -132,6 +132,7 @@ class ReportController extends BaseController
 
         $validated = $request->validate([
             'report_type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
+            'save_action' => ['required', 'string', Rule::in(['draft', 'finalized'])],
             'paper_size' => ['nullable', 'string', Rule::in(['a4', 'short', 'long'])],
             'course_code_title' => ['nullable', 'string', 'max:255'],
             'class_assessment_keys' => ['required', 'array', 'min:1'],
@@ -177,7 +178,9 @@ class ReportController extends BaseController
                         'future_plans_curriculum' => $validated['report_type'] === Report::TYPE_SUMMATIVE
                             ? ($row['future_plans_curriculum'] ?? null)
                             : null,
-                        'report_status' => Report::STATUS_DRAFT,
+                        'report_status' => $validated['save_action'] === 'finalized'
+                            ? Report::STATUS_FINALIZED
+                            : Report::STATUS_DRAFT,
                     ],
                 );
             }
@@ -196,7 +199,9 @@ class ReportController extends BaseController
                 'paper' => $validated['paper_size'] ?? 'long',
                 'class_assessment_keys' => $classAssessmentKeys->all(),
             ])
-            ->with('status', 'Report details saved.');
+            ->with('status', $validated['save_action'] === 'finalized'
+                ? 'Report finalized successfully.'
+                : 'Report draft saved.');
     }
 
     public function generateAiDrafts(Request $request, ReportAiService $aiService): JsonResponse
