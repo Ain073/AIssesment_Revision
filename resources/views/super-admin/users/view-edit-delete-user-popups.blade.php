@@ -152,12 +152,10 @@
                                         <option value="">No departments available yet</option>
                                     @endforelse
                                 </select>
-                                <div class="form-text">Required for teacher accounts.</div>
                             </div>
                             <div class="col-md-6 profile-section teacher-profile-section" id="edit_teacher_employee_section_{{ $user->id }}">
                                 <label class="form-label fw-bold text-uppercase small" for="edit_employee_number_{{ $user->id }}">Employee Number</label>
                                 <input class="form-control teacher-profile-field" id="edit_employee_number_{{ $user->id }}" name="employee_number" type="text" value="{{ $isEditTarget ? old('employee_number') : $user->instructorProfile?->employee_number }}">
-                                <div class="form-text">Required for teacher accounts.</div>
                             </div>
                             <div class="col-md-6 profile-section student-profile-section" id="edit_student_program_section_{{ $user->id }}">
                                 <label class="form-label fw-bold text-uppercase small" for="edit_program_id_{{ $user->id }}">Program</label>
@@ -171,19 +169,16 @@
                                         <option value="">No programs available yet</option>
                                     @endforelse
                                 </select>
-                                <div class="form-text">Required for student accounts.</div>
                             </div>
                             <div class="col-md-6 profile-section student-profile-section" id="edit_student_number_section_{{ $user->id }}">
                                 <label class="form-label fw-bold text-uppercase small" for="edit_student_number_{{ $user->id }}">Student Number</label>
                                 <input class="form-control student-profile-field" id="edit_student_number_{{ $user->id }}" name="student_number" type="text" value="{{ $isEditTarget ? old('student_number') : $user->studentProfile?->student_number }}">
-                                <div class="form-text">Required for student accounts.</div>
                             </div>
                             <div class="col-12 profile-section teacher-profile-section" id="edit_authorization_section_{{ $user->id }}">
                                 <div class="border rounded p-3" style="background: #eff4ff;">
                                     <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
                                         <div>
                                             <p class="small fw-bold text-uppercase text-secondary mb-1">Authorization</p>
-                                            <p class="small text-secondary mb-0">Teacher accounts can receive elevated access here.</p>
                                         </div>
                                         <span class="badge text-bg-light border">Teachers only</span>
                                     </div>
@@ -192,22 +187,15 @@
                                             <input class="form-check-input mt-1 authorization-checkbox" data-teacher-target="edit_base_role_{{ $user->id }}" name="authorizations[]" type="checkbox" value="admin_dean" @checked($selectedAuthorizations->contains('admin_dean'))>
                                             <span>
                                                 <span class="fw-bold d-block" style="color: var(--psu-navy);">Admin/Dean</span>
-                                                <span class="small text-secondary">Assign dean-level access to this teacher account.</span>
                                             </span>
                                         </label>
                                         <label class="border rounded p-3 d-flex align-items-start gap-3 bg-white">
                                             <input class="form-check-input mt-1 authorization-checkbox" data-teacher-target="edit_base_role_{{ $user->id }}" name="authorizations[]" type="checkbox" value="department_chair" @checked($selectedAuthorizations->contains('department_chair'))>
                                             <span>
                                                 <span class="fw-bold d-block" style="color: var(--psu-navy);">Department Chair</span>
-                                                <span class="small text-secondary">Assign chair-level access to this teacher account.</span>
                                             </span>
                                         </label>
                                     </div>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="alert alert-light border mb-0">
-                                    Password is managed by the account owner.
                                 </div>
                             </div>
                         </div>

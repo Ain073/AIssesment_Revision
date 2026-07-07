@@ -62,6 +62,5 @@
     <section class="directory-card p-5 text-center">
         <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">assignment</span></div>
         <h2 class="h4" style="color: var(--psu-navy);">No assessments yet</h2>
-        <p class="text-secondary mb-0">Assessments will appear here after your teacher publishes them to your enrolled classes.</p>
     </section>
 @endif

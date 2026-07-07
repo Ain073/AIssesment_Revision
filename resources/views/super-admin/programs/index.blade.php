@@ -176,7 +176,6 @@
                             <td class="text-center py-5" colspan="5">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">school</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No programs yet</h4>
-                                <p class="text-secondary mb-4">Create the first program to organize students and subject mappings.</p>
                                 <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#programModal" data-bs-toggle="modal" type="button">
                                     <span class="material-symbols-outlined fs-5">add</span>
                                     Add First Program

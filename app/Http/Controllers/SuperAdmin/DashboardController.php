@@ -69,19 +69,16 @@ class DashboardController extends Controller
             'quickActions' => [
                 [
                     'label' => 'Users',
-                    'description' => 'Create and manage accounts.',
                     'href' => route('super-admin.users'),
                     'icon' => 'person_search',
                 ],
                 [
                     'label' => 'Programs',
-                    'description' => 'Manage academic programs.',
                     'href' => route('super-admin.programs'),
                     'icon' => 'school',
                 ],
                 [
                     'label' => 'Subjects',
-                    'description' => 'Manage active subjects.',
                     'href' => route('super-admin.subjects'),
                     'icon' => 'menu_book',
                 ],

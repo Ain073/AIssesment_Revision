@@ -194,7 +194,6 @@
                 <div class="modal-header">
                     <div>
                         <h3 class="modal-title h4" id="editProfileModalLabel">Edit Profile</h3>
-                        <p class="small text-white-50 mb-0">Update your profile picture or password.</p>
                     </div>
                     <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>

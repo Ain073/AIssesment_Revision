@@ -1,7 +1,6 @@
 <section class="profile-card">
     <div class="profile-card-header">
         <h3 class="brand-text h4 mb-1" style="color: var(--psu-navy);">Change Password</h3>
-        <p class="text-secondary mb-0">Use a password that is hard to guess and only known by you.</p>
     </div>
 
     <form action="{{ route('profile.password.update') }}" class="profile-card-body" method="POST">
@@ -29,10 +28,6 @@
                 <label class="form-label fw-bold" for="password_confirmation">Confirm New Password</label>
                 <input class="form-control" id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" required>
             </div>
-        </div>
-
-        <div class="profile-note small mt-3">
-            Your name, role, student number, employee number, program, and department are protected school records.
         </div>
 
         <button class="btn btn-psu d-inline-flex align-items-center gap-2 mt-3" type="submit">

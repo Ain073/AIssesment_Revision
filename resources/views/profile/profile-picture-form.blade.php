@@ -1,7 +1,6 @@
 <section class="profile-card">
     <div class="profile-card-header">
         <h3 class="brand-text h4 mb-1" style="color: var(--psu-navy);">Profile Picture</h3>
-        <p class="text-secondary mb-0">Upload a clear photo for your account display.</p>
     </div>
 
     <form action="{{ route('profile.photo.update') }}" class="profile-card-body" method="POST" enctype="multipart/form-data">

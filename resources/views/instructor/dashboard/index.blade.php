@@ -25,7 +25,7 @@
 
         .hero-layout {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+            grid-template-columns: minmax(0, 1fr) minmax(220px, 260px);
             gap: 1.5rem;
             align-items: center;
         }
@@ -310,7 +310,6 @@
                         <span class="hero-action-icon"><span class="material-symbols-outlined">{{ $action['icon'] }}</span></span>
                         <span>
                             <span class="fw-bold d-block">{{ $action['label'] }}</span>
-                            <span class="small text-white-50">{{ $action['description'] }}</span>
                         </span>
                     </a>
                 @endforeach
@@ -325,7 +324,6 @@
                     <div>
                         <p class="stat-label">{{ $stat['label'] }}</p>
                         <div class="stat-value">{{ $stat['value'] }}</div>
-                        <p class="small text-secondary mb-0">{{ $stat['caption'] }}</p>
                     </div>
                     <span class="icon-tile"><span class="material-symbols-outlined">{{ $stat['icon'] }}</span></span>
                 </div>

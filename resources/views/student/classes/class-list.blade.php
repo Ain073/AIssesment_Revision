@@ -1,7 +1,6 @@
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
     <div>
         <h1 class="brand-text mb-1" style="color: var(--psu-navy);">My Classes</h1>
-        <p class="text-secondary mb-0">Classes appear here after your teacher adds you or approves your join request.</p>
     </div>
     <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
         <span class="badge text-bg-primary rounded-1 px-3 py-2">
@@ -55,7 +54,6 @@
     <section class="class-card p-5 text-center mb-4">
         <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">school</span></div>
         <h2 class="h4" style="color: var(--psu-navy);">No enrolled classes yet</h2>
-        <p class="text-secondary mb-0">Enter the class code or open the join link from your teacher, then wait for approval.</p>
     </section>
 @endif
 

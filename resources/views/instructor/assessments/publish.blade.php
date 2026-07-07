@@ -179,7 +179,6 @@
                 Back to Assessments
             </a>
             <h1 class="brand-text mt-2 mb-1" style="color: var(--psu-navy);">Publish Assessment</h1>
-            <p class="text-secondary mb-0">Choose a subject, reusable assessment, and class.</p>
         </div>
         <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments', ['tab' => 'published']) }}">
             <span class="material-symbols-outlined fs-5">task_alt</span>
@@ -309,7 +308,6 @@
                                     <option value="all_questions" @selected(old('display_mode', 'all_questions') === 'all_questions')>Show all questions</option>
                                     <option value="one_question" @selected(old('display_mode') === 'one_question')>One question at a time</option>
                                 </select>
-                                <div class="form-text">Choose how questions appear to students.</div>
                             </div>
 
                             <div class="col-lg-7">
@@ -338,7 +336,6 @@
                     <div class="publish-section d-flex flex-wrap align-items-center justify-content-between gap-3 mt-3">
                         <div>
                             <p class="fw-bold mb-1" style="color: var(--psu-navy);">Security Settings</p>
-                            <p class="small text-secondary mb-0">Choose student restrictions in a floating panel.</p>
                         </div>
                         <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" data-bs-target="#securitySettingsModal" data-bs-toggle="modal" type="button">
                             <span class="material-symbols-outlined fs-5">shield_lock</span>

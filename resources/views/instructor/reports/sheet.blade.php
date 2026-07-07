@@ -405,7 +405,6 @@
     <div class="report-toolbar">
         <div>
             <h1 class="brand-text mb-1" style="color: var(--psu-navy);">{{ $reportTypeLabel }} Report</h1>
-            <p class="text-secondary mb-0">Calculated details are from completed submissions. AI draft is only for most and least learned concepts.</p>
         </div>
         <div class="report-toolbar-actions">
             <div class="report-paper-control">

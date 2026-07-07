@@ -315,7 +315,6 @@
             <section class="directory-card shadow-sm mb-4">
                 <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
                     <h3 class="h4 mb-0">Pending Join Requests</h3>
-                    <span class="small text-white-50">Approve only students who belong in this class</span>
                 </div>
 
                 <div class="table-responsive">
@@ -380,7 +379,6 @@
         <section class="directory-card shadow-sm">
             <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
                 <h3 class="h4 mb-0">Students in Class</h3>
-                <span class="small text-white-50">Add manually, import a file, or approve join-link requests</span>
             </div>
 
             <div class="table-responsive">
@@ -457,7 +455,6 @@
                                 <td class="text-center py-5" colspan="4">
                                     <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">groups</span></div>
                                     <h4 class="h4" style="color: var(--psu-navy);">No students enrolled yet</h4>
-                                    <p class="text-secondary mb-4">Use a valid student number from an existing student account to add the first student to this class.</p>
                                     @if (! $class->archived_at)
                                         <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#addStudentModal" data-bs-toggle="modal" type="button">
                                             <span class="material-symbols-outlined fs-5">person_add</span>
@@ -473,7 +470,6 @@
 
             <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #edf2ff;">
                 <span class="small text-secondary">Showing {{ $enrolledStudents->count() }} {{ $enrolledStudents->count() === 1 ? 'student' : 'students' }}</span>
-                <span class="small text-secondary">Only the class owner can manage this roster</span>
             </div>
         </section>
 

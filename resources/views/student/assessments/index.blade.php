@@ -49,7 +49,6 @@
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
         <div>
             <h1 class="brand-text mb-1" style="color: var(--psu-navy);">My Assessments</h1>
-            <p class="text-secondary mb-0">Published assessments from your enrolled classes appear here.</p>
         </div>
     </div>
 

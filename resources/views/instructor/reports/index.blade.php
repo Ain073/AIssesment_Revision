@@ -10,13 +10,11 @@
             'label' => 'Formative Reports',
             'icon' => 'description',
             'items' => $formativeAssessments,
-            'helper' => 'Completed quizzes, activities, and other formative assessments appear here.',
         ],
         'summative' => [
             'label' => 'Summative Reports',
             'icon' => 'assignment',
             'items' => $summativeAssessments,
-            'helper' => 'Completed exams and summative assessments appear here.',
         ],
     ];
 @endphp
@@ -128,7 +126,6 @@
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
         <div>
             <h1 class="brand-text mb-1" style="color: var(--psu-navy);">Reports</h1>
-            <p class="text-secondary mb-0">Select completed assessments for formative or summative report preparation.</p>
         </div>
         <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments', ['tab' => 'published']) }}">
             <span class="material-symbols-outlined fs-5">assignment</span>
@@ -155,7 +152,6 @@
             <div class="reports-panel-header">
                 <div>
                     <h2 class="h4 mb-1">{{ $group['label'] }}</h2>
-                    <p class="small text-white-50 mb-0">{{ $group['helper'] }}</p>
                 </div>
                 <span class="badge text-bg-light border">{{ $group['items']->count() }} completed</span>
             </div>

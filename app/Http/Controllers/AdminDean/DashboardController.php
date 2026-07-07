@@ -24,7 +24,6 @@ class DashboardController extends BaseController
                     'value' => Department::query()
                         ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
                         ->count(),
-                    'caption' => 'Academic units under your college',
                     'icon' => 'apartment',
                 ],
                 [
@@ -32,7 +31,6 @@ class DashboardController extends BaseController
                     'value' => Program::query()
                         ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
                         ->count(),
-                    'caption' => 'Degree programs to organize',
                     'icon' => 'school',
                 ],
                 [
@@ -44,7 +42,6 @@ class DashboardController extends BaseController
                             fn ($query) => $query->when($scopedCollegeId, fn ($inner) => $inner->where('college_id', $scopedCollegeId), fn ($inner) => $inner->whereRaw('1 = 0'))
                         )
                         ->count(),
-                    'caption' => 'Faculty accounts under your scope',
                     'icon' => 'badge',
                 ],
                 [
@@ -52,26 +49,22 @@ class DashboardController extends BaseController
                     'value' => StudentProfile::query()
                         ->whereHas('program', fn ($query) => $query->when($scopedCollegeId, fn ($inner) => $inner->where('college_id', $scopedCollegeId), fn ($inner) => $inner->whereRaw('1 = 0')))
                         ->count(),
-                    'caption' => 'Students grouped by program',
                     'icon' => 'groups',
                 ],
             ],
             'quickActions' => [
                 [
                     'label' => 'Open Departments',
-                    'description' => 'Review department records under your college.',
                     'href' => route('admin-dean.departments'),
                     'icon' => 'apartment',
                 ],
                 [
                     'label' => 'Manage Programs',
-                    'description' => 'Prepare the program structure for students.',
                     'href' => route('admin-dean.programs'),
                     'icon' => 'school',
                 ],
                 [
                     'label' => 'View Teachers',
-                    'description' => 'Check the teacher accounts in your area.',
                     'href' => route('admin-dean.teachers'),
                     'icon' => 'badge',
                 ],

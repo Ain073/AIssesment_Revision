@@ -207,7 +207,6 @@
                 <section class="tab-pane fade show active directory-card shadow-sm" id="teachersPane" role="tabpanel">
                     <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
                         <h3 class="h4 mb-0">Teachers</h3>
-                        <span class="small text-white-50">Faculty accounts with authorization managed from edit</span>
                     </div>
 
                     <div class="table-responsive">
@@ -293,7 +292,6 @@
                                         <td class="text-center py-5" colspan="6">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">school</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No teacher accounts yet</h4>
-                                            <p class="text-secondary mb-4">Create the first instructor account to start assigning academic roles.</p>
                                             <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button">
                                                 <span class="material-symbols-outlined fs-5">person_add</span>
                                                 Create Instructor
@@ -307,7 +305,6 @@
 
                     <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #eff4ff;">
                         <span class="small text-secondary">Showing {{ $teachers->count() }} {{ $teachers->count() === 1 ? 'entry' : 'entries' }}</span>
-                        <span class="small text-secondary">Edit a teacher to manage authorization</span>
                     </div>
                 </section>
 
@@ -315,7 +312,6 @@
                 <section class="tab-pane fade directory-card shadow-sm" id="studentsPane" role="tabpanel">
                     <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
                         <h3 class="h4 mb-0">Students</h3>
-                        <span class="small text-white-50">Student accounts listed separately for cleaner management</span>
                     </div>
 
                     <div class="table-responsive">
@@ -386,7 +382,6 @@
                                         <td class="text-center py-5" colspan="5">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No student accounts yet</h4>
-                                            <p class="text-secondary mb-4">Create the first student account to populate the student list.</p>
                                             <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createStudentModal" data-bs-toggle="modal" type="button">
                                                 <span class="material-symbols-outlined fs-5">person_add</span>
                                                 Create Student
@@ -400,7 +395,6 @@
 
                     <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #eff4ff;">
                         <span class="small text-secondary">Showing {{ $students->count() }} {{ $students->count() === 1 ? 'entry' : 'entries' }}</span>
-                        <span class="small text-secondary">Student accounts only</span>
                     </div>
                 </section>
 

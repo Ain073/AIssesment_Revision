@@ -57,12 +57,10 @@
                                 <option value="">No programs available yet</option>
                             @endforelse
                         </select>
-                        <div class="form-text">Required for student accounts.</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold text-uppercase small" for="student_number">Student Number</label>
                         <input class="form-control student-profile-field" id="student_number" name="student_number" required type="text" value="{{ old('base_role') === 'student' ? old('student_number') : '' }}">
-                        <div class="form-text">Required for student accounts.</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold text-uppercase small" for="student_password">Password</label>

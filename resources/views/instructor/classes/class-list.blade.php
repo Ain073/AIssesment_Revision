@@ -109,7 +109,6 @@
                         <td class="text-center py-5" colspan="6">
                             <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">school</span></div>
                             <h4 class="h4" style="color: var(--psu-navy);">{{ $activeClassTab === 'archived' ? 'No archived classes yet' : 'No classes yet' }}</h4>
-                            <p class="text-secondary mb-4">{{ $activeClassTab === 'archived' ? 'Archived semester classes will appear here as records.' : 'Create your first class record based on the ERD fields.' }}</p>
                             @if ($activeClassTab === 'active')
                                 <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#classModal" data-bs-toggle="modal" type="button" @disabled(! $instructorProfile || $subjects->isEmpty())>
                                     <span class="material-symbols-outlined fs-5">add</span>
@@ -125,7 +124,6 @@
 
     <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #edf2ff;">
         <span class="small text-secondary">Showing {{ $classes->count() }} {{ $classes->count() === 1 ? 'entry' : 'entries' }}</span>
-        <span class="small text-secondary">Handled by {{ $profileName }}</span>
     </div>
 </section>
 

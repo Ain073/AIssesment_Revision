@@ -230,14 +230,12 @@
             <span class="step-number">1</span>
             <div>
                 <p class="fw-bold mb-0" style="color: var(--psu-navy);">Details and Instructions</p>
-                <p class="small text-secondary mb-0">Edit assessment setup</p>
             </div>
         </button>
         <button class="step-pill clickable" data-bs-target="#questionBuilderModal" data-bs-toggle="modal" type="button" aria-selected="false">
             <span class="step-number">2</span>
             <div>
                 <p class="fw-bold mb-0" style="color: var(--psu-navy);">Question Builder</p>
-                <p class="small text-secondary mb-0">Open floating question form</p>
             </div>
         </button>
     </section>
@@ -345,7 +343,6 @@
                 <div class="builder-empty">
                     <span class="material-symbols-outlined fs-1 mb-2" style="color: var(--psu-navy-2);">quiz</span>
                     <h3 class="h5" style="color: var(--psu-navy);">No saved questions yet</h3>
-                    <p class="text-secondary mb-0">Use Add Questions to open the floating form.</p>
                 </div>
             @endif
         </div>

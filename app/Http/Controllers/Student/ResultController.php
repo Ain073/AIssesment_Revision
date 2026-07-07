@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Student;
 
 use App\Models\Submission;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ResultController extends BaseController
 {
-    public function results(): View
+    public function results(Request $request): View
     {
         $user = $this->currentUser();
         $studentProfile = $user->studentProfile;
@@ -27,19 +28,33 @@ class ResultController extends BaseController
                 ->latest('submitted_at')
                 ->get()
             : collect();
-        $results = $this->buildResults($submissions);
+        $allResults = $this->buildResults($submissions);
+        $classOptions = $this->classOptions($allResults);
+        $selectedClassKey = (string) $request->query('class', '');
+
+        if (! $classOptions->contains('key', $selectedClassKey)) {
+            $selectedClassKey = '';
+        }
+
+        $results = $selectedClassKey !== ''
+            ? $allResults
+                ->where('class_key', $selectedClassKey)
+                ->values()
+            : $allResults;
         $releasedResults = $results->where('score_visible', true);
 
         return view('student.results.index', $this->sharedData($user, 'results') + [
             'studentProfile' => $studentProfile,
             'results' => $results,
+            'classOptions' => $classOptions,
+            'selectedClassKey' => $selectedClassKey,
+            'selectedClassLabel' => $selectedClassKey !== ''
+                ? $classOptions->firstWhere('key', $selectedClassKey)['label']
+                : 'All Classes',
             'summary' => [
                 'submitted_assessments' => $results->count(),
-                'released_scores' => $releasedResults->count(),
                 'passed_count' => $releasedResults->where('passed', true)->count(),
-                'average_percentage' => $releasedResults->isNotEmpty()
-                    ? round((float) $releasedResults->avg('percentage'), 1)
-                    : null,
+                'failed_count' => $releasedResults->where('passed', false)->count(),
             ],
             'topbarSearchPlaceholder' => 'Search results...',
         ]);
@@ -81,6 +96,7 @@ class ResultController extends BaseController
                     'class_assessment' => $classAssessment,
                     'assessment' => $assessment,
                     'class' => $classAssessment?->class,
+                    'class_key' => $classAssessment?->class?->public_id,
                     'best_attempt' => $bestAttempt,
                     'attempts' => $attemptRows,
                     'attempt_count' => $attemptRows->count(),
@@ -94,6 +110,20 @@ class ResultController extends BaseController
                 ];
             })
             ->sortByDesc(fn (array $result): int => $result['latest_submitted_at']?->timestamp ?? 0)
+            ->values();
+    }
+
+    private function classOptions(Collection $results): Collection
+    {
+        return $results
+            ->pluck('class')
+            ->filter()
+            ->unique('class_id')
+            ->map(fn ($class): array => [
+                'key' => $class->public_id,
+                'label' => $class->class_name,
+                'subject' => $class->subject?->subject_code ?? 'No subject',
+            ])
             ->values();
     }
 

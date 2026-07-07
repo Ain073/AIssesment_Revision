@@ -87,19 +87,7 @@
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
-    @if ($scopedDepartment)
-        <div class="alert alert-primary border-0 shadow-sm mb-4">
-            You are viewing students under programs connected to <strong>{{ $scopedDepartment->dept_name }}</strong>.
-            @if ($scopedPrograms->isNotEmpty())
-                <span class="d-block mt-2">
-                    Programs:
-                    @foreach ($scopedPrograms as $program)
-                        <span class="badge text-bg-light border rounded-1">{{ $program->program_name }}</span>
-                    @endforeach
-                </span>
-            @endif
-        </div>
-    @else
+    @if (! $scopedDepartment)
         <div class="alert alert-warning border-0 shadow-sm mb-4">
             This account has no assigned department yet, so student scope cannot be resolved.
         </div>
@@ -128,7 +116,6 @@
     <section class="directory-card shadow-sm">
         <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
             <h3 class="h4 mb-0">Students</h3>
-            <span class="small text-white-50">Scoped through programs under the current chair assignment</span>
         </div>
 
         <div class="table-responsive">
@@ -179,7 +166,6 @@
                             <td class="text-center py-5" colspan="4">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No students found</h4>
-                                <p class="text-secondary mb-0">No student accounts are currently mapped to programs under this chair scope.</p>
                             </td>
                         </tr>
                     @endforelse
@@ -189,7 +175,6 @@
 
         <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #edf2ff;">
             <span class="small text-secondary">Showing {{ $students->count() }} {{ $students->count() === 1 ? 'entry' : 'entries' }}</span>
-            <span class="small text-secondary">Department Chair view only</span>
         </div>
     </section>
 

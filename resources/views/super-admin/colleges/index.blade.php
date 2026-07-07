@@ -177,7 +177,6 @@
                                         <td class="text-center py-5" colspan="3">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">account_balance</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No colleges yet</h4>
-                                            <p class="text-secondary mb-4">Create your first college to start setting up academic units and departments.</p>
                                             <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#collegeModal" data-bs-toggle="modal" type="button">
                                                 <span class="material-symbols-outlined fs-5">add</span>
                                                 Add First College
@@ -240,7 +239,6 @@
                                         <td class="text-center py-5" colspan="4">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">add_business</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No departments yet</h4>
-                                            <p class="text-secondary mb-4">Add a department after creating at least one college.</p>
                                             <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#departmentModal" data-bs-toggle="modal" type="button">
                                                 <span class="material-symbols-outlined fs-5">add</span>
                                                 Add First Department

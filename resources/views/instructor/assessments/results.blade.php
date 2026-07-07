@@ -111,14 +111,12 @@
             <section class="result-summary">
                 <p class="small fw-bold text-secondary text-uppercase mb-2">Students Submitted</p>
                 <div class="h2 fw-bold mb-1" style="color: var(--psu-navy);">{{ $analytics['takers_count'] }} / {{ $analytics['students_count'] }}</div>
-                <p class="small text-secondary mb-0">{{ $analytics['students_count'] > 0 ? round(($analytics['takers_count'] / $analytics['students_count']) * 100, 2) : 0 }}% completion</p>
             </section>
         </div>
         <div class="col-md-6">
             <section class="result-summary">
                 <p class="small fw-bold text-secondary text-uppercase mb-2">Auto Submitted</p>
                 <div class="h2 fw-bold mb-1" style="color: var(--psu-navy);">{{ $autoSubmittedCount }}</div>
-                <p class="small text-secondary mb-0">Attempts submitted after reaching the security warning limit</p>
             </section>
         </div>
     </div>
@@ -127,7 +125,6 @@
         <div class="results-panel-header d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
                 <h2 class="h5 mb-1">Student Results</h2>
-                <p class="small text-white-50 mb-0">Final score and passing status for each student.</p>
             </div>
             <span class="badge text-bg-light border">{{ $studentResults->count() }} students</span>
         </div>
@@ -218,7 +215,6 @@
             <div class="p-5 text-center">
                 <span class="material-symbols-outlined fs-1 text-secondary">group_off</span>
                 <h2 class="h5 mt-2" style="color: var(--psu-navy);">No students in this class</h2>
-                <p class="text-secondary mb-0">There are no roster or submission records to display.</p>
             </div>
         @endif
     </section>

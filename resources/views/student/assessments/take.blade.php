@@ -66,8 +66,6 @@
         <div class="p-4">
             @if ($assessment->instructions)
                 <p class="mb-4">{{ $assessment->instructions }}</p>
-            @else
-                <p class="text-secondary mb-4">No special instructions were added by the instructor.</p>
             @endif
 
             <div class="row g-3 mb-4">

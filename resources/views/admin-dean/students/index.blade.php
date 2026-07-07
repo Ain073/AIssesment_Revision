@@ -102,7 +102,6 @@
     <section class="directory-card shadow-sm">
         <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
             <h3 class="h4 mb-0">Students List</h3>
-            <span class="small text-white-50">Only student accounts within your scoped college are shown here</span>
         </div>
 
         <div class="table-responsive">
@@ -153,7 +152,6 @@
                             <td class="text-center py-5" colspan="4">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No students found</h4>
-                                <p class="text-secondary mb-0">No student accounts are currently mapped to this college scope.</p>
                             </td>
                         </tr>
                     @endforelse
@@ -163,7 +161,6 @@
 
         <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #edf2ff;">
             <span class="small text-secondary">Showing {{ $students->count() }} {{ $students->count() === 1 ? 'entry' : 'entries' }}</span>
-            <span class="small text-secondary">Student creation is limited to your college programs</span>
         </div>
     </section>
 

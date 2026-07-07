@@ -327,9 +327,6 @@
                                 <h4 class="h4" style="color: var(--psu-navy);">
                                     {{ $hasSubjectFilters ? 'No subjects match these filters' : 'No subject mappings yet' }}
                                 </h4>
-                                <p class="text-secondary mb-4">
-                                    {{ $hasSubjectFilters ? 'Try another program, year level, or semester.' : 'Create your first subject and assign it to a program.' }}
-                                </p>
                                 <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#subjectModal" data-bs-toggle="modal" type="button">
                                     <span class="material-symbols-outlined fs-5">add</span>
                                     Add First Subject

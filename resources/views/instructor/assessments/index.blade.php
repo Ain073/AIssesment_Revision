@@ -89,8 +89,6 @@
 
                             @if ($assessment->description)
                                 <p class="text-secondary">{{ $assessment->description }}</p>
-                            @else
-                                <p class="text-secondary">No description added.</p>
                             @endif
 
                             <div class="d-flex flex-wrap gap-2">
@@ -118,7 +116,6 @@
         <section class="directory-card p-5 text-center">
             <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">assignment</span></div>
             <h2 class="h4" style="color: var(--psu-navy);">No assessments yet</h2>
-            <p class="text-secondary mb-4">Create a reusable assessment for one of the subjects you handle.</p>
             <a class="btn btn-psu d-inline-flex align-items-center gap-2 {{ (! $instructorProfile || $handledSubjects->isEmpty()) ? 'disabled' : '' }}" href="{{ route('instructor.assessments.create') }}" aria-disabled="{{ (! $instructorProfile || $handledSubjects->isEmpty()) ? 'true' : 'false' }}">
                 <span class="material-symbols-outlined fs-5">add</span>
                 Create First Assessment
@@ -184,7 +181,6 @@
             <section class="directory-card p-5 text-center">
                 <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">task_alt</span></div>
                 <h2 class="h4" style="color: var(--psu-navy);">No published assessments yet</h2>
-                <p class="text-secondary mb-4">Published, pending, and completed assessment records will appear here.</p>
                 <a class="btn btn-psu d-inline-flex align-items-center gap-2 {{ (! $instructorProfile || $assessments->isEmpty()) ? 'disabled' : '' }}" href="{{ route('instructor.assessments.publish.form') }}" aria-disabled="{{ (! $instructorProfile || $assessments->isEmpty()) ? 'true' : 'false' }}">
                     <span class="material-symbols-outlined fs-5">publish</span>
                     Publish Assessment

@@ -4,7 +4,6 @@
             <div class="modal-header">
                 <div>
                     <h3 class="modal-title h4" id="joinRequestsModalLabel">Join Requests</h3>
-                    <p class="small text-secondary mb-0">Pending requests still need teacher confirmation.</p>
                 </div>
                 <button class="btn-close" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
             </div>

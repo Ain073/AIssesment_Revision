@@ -40,38 +40,32 @@ class DashboardController extends BaseController
                 [
                     'label' => 'Enrolled Classes',
                     'value' => $classes->count(),
-                    'caption' => 'Classes linked to your account',
                     'icon' => 'school',
                 ],
                 [
                     'label' => 'Assigned Assessments',
                     'value' => $assignedAssessmentsCount,
-                    'caption' => 'Assessments currently available',
                     'icon' => 'assignment',
                 ],
                 [
                     'label' => 'Released Results',
                     'value' => $releasedResultsCount,
-                    'caption' => 'Scores and published outcomes',
                     'icon' => 'monitoring',
                 ],
             ],
             'quickActions' => [
                 [
                     'label' => 'Open Classes',
-                    'description' => 'View your enrolled classes and sections.',
                     'href' => route('student.classes'),
                     'icon' => 'school',
                 ],
                 [
                     'label' => 'Take Assessments',
-                    'description' => 'Open the assessments assigned to you.',
                     'href' => route('student.assessments'),
                     'icon' => 'assignment',
                 ],
                 [
                     'label' => 'View Results',
-                    'description' => 'Check released scores and assessment outcomes.',
                     'href' => route('student.results'),
                     'icon' => 'grading',
                 ],

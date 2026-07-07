@@ -4,7 +4,6 @@
             <div class="modal-header publish-header">
                 <div>
                     <h3 class="modal-title h4" id="securitySettingsModalLabel">Security Settings</h3>
-                    <p class="small text-white-50 mb-0">Choose what will be enabled when students start.</p>
                 </div>
                 <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
             </div>

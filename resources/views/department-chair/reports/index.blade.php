@@ -10,13 +10,11 @@
             'label' => 'Formative Reports',
             'icon' => 'description',
             'items' => $formativeReports,
-            'helper' => 'Finalized formative reports from instructors in your department.',
         ],
         'summative' => [
             'label' => 'Summative Reports',
             'icon' => 'assignment',
             'items' => $summativeReports,
-            'helper' => 'Finalized summative reports from instructors in your department.',
         ],
     ];
 @endphp
@@ -100,10 +98,6 @@
     <section class="reports-hero">
         <p class="small fw-bold text-uppercase mb-2" style="color: rgba(255, 245, 191, 0.92);">Department Chair Module</p>
         <h2 class="brand-text h1 mb-3">Finalized Reports</h2>
-        <p>
-            These are finalized formative and summative reports submitted by instructors under
-            {{ $department?->dept_name ?? 'your assigned department' }}.
-        </p>
     </section>
 
     <div class="table-switch-tabs mt-3">
@@ -125,7 +119,6 @@
             <div class="report-table-header">
                 <div>
                     <h3 class="brand-text h3 mb-1">{{ $group['label'] }}</h3>
-                    <p class="small text-white-50 mb-0">{{ $group['helper'] }}</p>
                 </div>
                 <span class="badge text-bg-light rounded-1">{{ $group['items']->count() }} {{ $group['items']->count() === 1 ? 'report' : 'reports' }}</span>
             </div>
@@ -178,7 +171,6 @@
                 <div class="p-4">
                     <div class="report-empty">
                         <h4 class="h5 mb-2" style="color: var(--psu-navy);">No finalized {{ strtolower($group['label']) }} yet</h4>
-                        <p class="text-secondary mb-0">Reports will appear here after instructors finalize them.</p>
                     </div>
                 </div>
             @endif

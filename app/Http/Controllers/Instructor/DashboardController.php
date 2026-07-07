@@ -54,38 +54,32 @@ class DashboardController extends BaseController
                 [
                     'label' => 'Classes Handled',
                     'value' => $classesCount,
-                    'caption' => 'Classes currently linked to your account',
                     'icon' => 'school',
                 ],
                 [
                     'label' => 'Students',
                     'value' => $studentsCount,
-                    'caption' => 'Across your active classes',
                     'icon' => 'groups',
                 ],
                 [
                     'label' => 'Assessments',
                     'value' => $assessmentsCount,
-                    'caption' => 'Reusable assessments you created',
                     'icon' => 'assignment',
                 ],
             ],
             'quickActions' => [
                 [
                     'label' => 'Open Classes',
-                    'description' => 'Manage your active classes.',
                     'href' => route('instructor.classes'),
                     'icon' => 'school',
                 ],
                 [
                     'label' => 'Create Assessment',
-                    'description' => 'Prepare a new assessment.',
                     'href' => route('instructor.assessments.create'),
                     'icon' => 'assignment_add',
                 ],
                 [
                     'label' => 'Prepare Reports',
-                    'description' => 'Build formative or summative reports.',
                     'href' => route('instructor.reports'),
                     'icon' => 'summarize',
                 ],

@@ -31,6 +31,36 @@
             overflow-x: hidden;
         }
 
+        body.portal-loading::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: 3000;
+            background: rgba(247, 249, 255, 0.72);
+            backdrop-filter: blur(2px);
+        }
+
+        body.portal-loading::after {
+            content: "";
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            z-index: 3001;
+            width: 46px;
+            height: 46px;
+            margin: -23px 0 0 -23px;
+            border: 4px solid #dbe4ff;
+            border-top-color: var(--psu-navy-2);
+            border-radius: 50%;
+            animation: portalSpin 0.75s linear infinite;
+        }
+
+        @keyframes portalSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         h1, h2, h3, .brand-text {
             font-family: "Oswald", sans-serif;
         }
@@ -300,67 +330,6 @@
             color: #fff;
         }
 
-        .mode-switcher {
-            width: 100%;
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 0.4rem;
-            padding: 0.35rem;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            border-radius: 0.85rem;
-        }
-
-        .mode-switcher.mode-switcher-stacked {
-            grid-template-columns: 1fr;
-        }
-
-        .mode-switcher.mode-switcher-stacked .mode-switch-link {
-            justify-content: flex-start;
-            padding-inline: 1rem;
-        }
-
-        .mode-switch-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.45rem;
-            min-height: 40px;
-            min-width: 0;
-            padding: 0.65rem 0.8rem;
-            border-radius: 0.7rem;
-            color: rgba(255, 255, 255, 0.76);
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 0.92rem;
-            white-space: nowrap;
-        }
-
-        .mode-switch-link:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: #fff;
-        }
-
-        .mode-switch-link.active {
-            background: #fff;
-            color: var(--psu-navy);
-            border: 1px solid rgba(255, 218, 39, 0.8);
-            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
-        }
-
-        .mode-switch-link .material-symbols-outlined {
-            font-size: 1.1rem;
-            flex-shrink: 0;
-        }
-
-        .sidebar-mode-switcher {
-            padding: 0 1rem 1rem;
-        }
-
-        .sidebar-mode-switcher .sidebar-text {
-            display: inline;
-        }
-
         .profile-menu-shell {
             position: relative;
             margin-top: auto;
@@ -385,7 +354,7 @@
             position: absolute;
             left: calc(100% + 12px);
             bottom: 12px;
-            width: 220px;
+            width: 280px;
             padding: 0.75rem;
             background: #fff;
             border: 1px solid rgba(0, 17, 58, 0.12);
@@ -406,6 +375,7 @@
             text-decoration: none;
             font-weight: 600;
             border-radius: 0.4rem;
+            text-align: left;
         }
 
         .profile-menu-link:hover,
@@ -440,6 +410,37 @@
         .profile-logout-btn:focus {
             background: #ffe8eb;
             color: #9f1d2a;
+        }
+
+        .role-switch-card {
+            border: 1px solid var(--psu-line);
+            border-radius: 0.55rem;
+            background: #f8faff;
+            padding: 1rem;
+        }
+
+        .role-switch-current {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border: 1px solid rgba(25, 135, 84, 0.18);
+            border-radius: 0.5rem;
+            background: #eaf8f0;
+            color: #12613a;
+            padding: 0.85rem 1rem;
+            font-weight: 800;
+        }
+
+        .role-switch-target {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border: 1px solid #d8e0fb;
+            border-radius: 0.5rem;
+            background: #fff;
+            color: var(--psu-navy);
+            padding: 0.85rem 1rem;
+            font-weight: 800;
         }
 
         .sidebar-profile-photo {
@@ -524,10 +525,6 @@
                 margin-left: 86px;
             }
 
-            .mode-switcher {
-                grid-template-columns: 1fr;
-            }
-
             .portal-toast-stack {
                 top: auto;
                 left: auto;
@@ -592,6 +589,47 @@
             letter-spacing: 0.01em;
             text-shadow: 0 2px 8px rgba(0, 18, 79, 0.24);
         }
+
+        .hero-card .hero-actions {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+            max-width: 260px;
+            justify-self: end;
+        }
+
+        .hero-card .hero-action-link {
+            min-height: 42px;
+            justify-content: flex-start;
+            gap: 0.45rem;
+            padding: 0.5rem 0.7rem;
+            text-align: left;
+        }
+
+        .hero-card .hero-action-icon {
+            width: 28px;
+            height: 28px;
+            flex-basis: 28px;
+        }
+
+        .hero-card .hero-action-icon .material-symbols-outlined {
+            font-size: 1.15rem;
+        }
+
+        .hero-card .hero-action-link .small {
+            display: none;
+        }
+
+        @media (max-width: 991.98px) {
+            .hero-card .hero-actions {
+                max-width: none;
+                justify-self: stretch;
+            }
+
+            .hero-card .hero-action-link {
+                justify-content: flex-start;
+                text-align: left;
+            }
+        }
     </style>
 </head>
 <body class="@yield('body_class')">
@@ -600,6 +638,21 @@
         $sidebarPhotoUrl = $sidebarUser?->profile_photo_path
             ? asset('storage/'.$sidebarUser->profile_photo_path)
             : null;
+        $roleSwitches = collect($viewSwitches ?? []);
+        $currentRoleSwitch = $roleSwitches->firstWhere('active', true);
+        $availableRoleSwitches = $roleSwitches
+            ->filter(fn (array $switch): bool => empty($switch['active']))
+            ->values();
+        $roleSwitchTarget = null;
+
+        if ($currentRoleSwitch && ($currentRoleSwitch['label'] ?? '') === 'Instructor') {
+            $roleSwitchTarget = $availableRoleSwitches->firstWhere('label', 'Dept Chair')
+                ?? $availableRoleSwitches->firstWhere('label', 'Admin/Dean')
+                ?? $availableRoleSwitches->first();
+        } else {
+            $roleSwitchTarget = $availableRoleSwitches->firstWhere('label', 'Instructor')
+                ?? $availableRoleSwitches->first();
+        }
     @endphp
 
     <aside class="sidebar d-flex flex-column">
@@ -612,19 +665,6 @@
                 </div>
             </div>
         </div>
-
-        @if (! empty($viewSwitches))
-            <div class="sidebar-mode-switcher">
-                <div class="mode-switcher {{ count($viewSwitches) > 2 ? 'mode-switcher-stacked' : '' }}">
-                    @foreach ($viewSwitches as $switch)
-                        <a class="mode-switch-link {{ !empty($switch['active']) ? 'active' : '' }}" href="{{ $switch['href'] }}">
-                            <span class="material-symbols-outlined">{{ $switch['icon'] }}</span>
-                            <span class="sidebar-text">{{ $switch['label'] }}</span>
-                        </a>
-                    @endforeach
-                </div>
-            </div>
-        @endif
 
         <nav class="flex-grow mt-4">
             @foreach (($navItems ?? []) as $item)
@@ -657,10 +697,13 @@
                         <span class="material-symbols-outlined">account_circle</span>
                         <span class="sidebar-text">Profile</span>
                     </a>
-                    <a class="profile-menu-link disabled" href="#" aria-disabled="true">
-                        <span class="material-symbols-outlined">settings</span>
-                        <span class="sidebar-text">Settings</span>
-                    </a>
+                    @if ($roleSwitchTarget)
+                        <button class="profile-menu-link" data-bs-target="#roleSwitchModal" data-bs-toggle="modal" type="button">
+                            <span class="material-symbols-outlined">{{ $roleSwitchTarget['icon'] }}</span>
+                            <span class="sidebar-text">{{ $roleSwitchTarget['label'] }}</span>
+                            <span class="material-symbols-outlined ms-auto">sync_alt</span>
+                        </button>
+                    @endif
                     <form action="{{ route('logout') }}" class="profile-menu-form" method="POST">
                         @csrf
                         <button class="profile-logout-btn" type="submit">
@@ -672,6 +715,50 @@
             </div>
         </div>
     </aside>
+
+    @if ($roleSwitchTarget)
+        <div class="modal fade" id="roleSwitchModal" tabindex="-1" aria-labelledby="roleSwitchModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title h4" id="roleSwitchModalLabel">Switch to {{ $roleSwitchTarget['label'] }}</h3>
+                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if ($currentRoleSwitch)
+                            <div class="mb-3">
+                                <p class="small fw-bold text-uppercase text-secondary mb-2">Current Role</p>
+                                <div class="role-switch-current">
+                                    <span class="material-symbols-outlined">{{ $currentRoleSwitch['icon'] }}</span>
+                                    <span>{{ $currentRoleSwitch['label'] }}</span>
+                                </div>
+                            </div>
+                        @endif
+
+                        <div class="role-switch-card">
+                            <p class="small fw-bold text-uppercase text-secondary mb-2">Switch To</p>
+                            <div class="role-switch-target">
+                                <span class="material-symbols-outlined">{{ $roleSwitchTarget['icon'] }}</span>
+                                <span>{{ $roleSwitchTarget['label'] }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>
+                        <button
+                            class="btn btn-psu px-4 d-inline-flex align-items-center gap-2"
+                            data-role-switch-confirm
+                            data-role-href="{{ $roleSwitchTarget['href'] }}"
+                            type="button"
+                        >
+                            <span class="material-symbols-outlined fs-5">switch_account</span>
+                            Switch Role
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <header class="topbar d-flex align-items-center justify-content-between px-4">
         <div class="d-flex align-items-center gap-4">
@@ -726,7 +813,6 @@
                     @endforelse
                 </div>
             </div>
-            <button class="btn btn-link text-secondary p-1" type="button"><span class="material-symbols-outlined">help_outline</span></button>
         </div>
     </header>
 
@@ -1176,12 +1262,12 @@
 
             const ajaxPageSelectors = [
                 '.sidebar-link',
-                '.mode-switch-link',
                 '.hero-action-link',
                 '.status-pill',
                 '.class-tablink',
                 '.class-list-tab',
                 '.assessment-tab-button',
+                '.results-class-filter-link',
             ].join(', ');
 
             const url = new URL(link.href, window.location.href);
@@ -1337,6 +1423,24 @@
                 document.body.classList.remove('portal-loading');
             }
         };
+
+        document.addEventListener('click', (event) => {
+            const confirmButton = event.target.closest('[data-role-switch-confirm]');
+
+            if (! confirmButton) {
+                return;
+            }
+
+            const roleHref = confirmButton.dataset.roleHref || '';
+
+            if (! roleHref) {
+                return;
+            }
+
+            confirmButton.disabled = true;
+            document.body.classList.add('portal-loading');
+            window.location.href = roleHref;
+        });
 
         document.addEventListener('click', (event) => {
             const link = event.target.closest('a[href]');

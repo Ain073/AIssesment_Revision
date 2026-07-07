@@ -122,7 +122,6 @@
     <section class="directory-card shadow-sm">
         <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
             <h3 class="h4 mb-0">Teachers</h3>
-            <span class="small text-white-50">Only instructor accounts within your scoped department are shown here</span>
         </div>
 
         <div class="table-responsive">
@@ -193,7 +192,6 @@
                             <td class="text-center py-5" colspan="5">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">badge</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No teachers found</h4>
-                                <p class="text-secondary mb-0">No instructor accounts are currently mapped to this department scope.</p>
                             </td>
                         </tr>
                     @endforelse
@@ -203,7 +201,6 @@
 
         <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #edf2ff;">
             <span class="small text-secondary">Showing {{ $teachers->count() }} {{ $teachers->count() === 1 ? 'entry' : 'entries' }}</span>
-            <span class="small text-secondary">This roster is scoped to the assigned department only</span>
         </div>
     </section>
 

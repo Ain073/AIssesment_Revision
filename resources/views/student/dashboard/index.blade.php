@@ -25,7 +25,7 @@
 
         .hero-layout {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+            grid-template-columns: minmax(0, 1fr) minmax(220px, 260px);
             gap: 1.5rem;
             align-items: center;
         }
@@ -210,7 +210,6 @@
                         <span class="hero-action-icon"><span class="material-symbols-outlined">{{ $action['icon'] }}</span></span>
                         <span>
                             <span class="fw-bold d-block">{{ $action['label'] }}</span>
-                            <span class="small text-white-50">{{ $action['description'] }}</span>
                         </span>
                     </a>
                 @endforeach
@@ -225,7 +224,6 @@
                     <div>
                         <p class="stat-label">{{ $stat['label'] }}</p>
                         <div class="stat-value">{{ $stat['value'] }}</div>
-                        <p class="small text-secondary mb-0">{{ $stat['caption'] }}</p>
                     </div>
                     <span class="icon-tile"><span class="material-symbols-outlined">{{ $stat['icon'] }}</span></span>
                 </div>
@@ -237,7 +235,6 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
                 <h3 class="brand-text h4 section-title mb-1">Class Performance</h3>
-                <p class="text-secondary mb-0">Your average released scores per active class.</p>
             </div>
             <span class="badge text-bg-light border">{{ $classPerformance->count() }} active</span>
         </div>
@@ -268,7 +265,6 @@
                                 <div class="performance-percent" style="color: {{ $barColor }};">
                                     {{ $hasScore ? $percentage.'%' : 'N/A' }}
                                 </div>
-                                <p class="small text-secondary mb-0">{{ $hasScore ? 'Average' : 'No released score' }}</p>
                             </div>
                         </div>
 
@@ -297,7 +293,6 @@
             <div class="performance-empty">
                 <span class="material-symbols-outlined fs-2 mb-2" style="color: var(--psu-navy);">monitoring</span>
                 <h4 class="h5 mb-1" style="color: var(--psu-navy);">No active classes yet</h4>
-                <p class="text-secondary mb-0">Class performance will appear here after you join a class and results are released.</p>
             </div>
         @endif
     </section>

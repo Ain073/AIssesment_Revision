@@ -102,7 +102,6 @@
     <section class="directory-card shadow-sm">
         <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
             <h3 class="h4 mb-0">Departments List</h3>
-            <span class="small text-white-50">Department records currently visible in the dean workspace</span>
         </div>
 
         <div class="table-responsive">
@@ -134,7 +133,6 @@
                             <td class="text-center py-5" colspan="3">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">apartment</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No departments yet</h4>
-                                <p class="text-secondary mb-4">Create the first department to start organizing academic units.</p>
                                 <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#departmentModal" data-bs-toggle="modal" type="button">
                                     <span class="material-symbols-outlined fs-5">add_business</span>
                                     Create First Department
@@ -148,7 +146,6 @@
 
         <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #edf2ff;">
             <span class="small text-secondary">Showing {{ $departments->count() }} {{ $departments->count() === 1 ? 'entry' : 'entries' }}</span>
-            <span class="small text-secondary">Programs and chair assignment can follow next</span>
         </div>
     </section>
 

@@ -35,7 +35,6 @@ class DashboardController extends BaseController
                 [
                     'label' => 'Teachers',
                     'value' => (clone $teacherQuery)->count(),
-                    'caption' => 'Instructor profiles in your department',
                     'icon' => 'badge',
                 ],
                 [
@@ -43,32 +42,27 @@ class DashboardController extends BaseController
                     'value' => $scopedProgramIds->isNotEmpty()
                         ? StudentProfile::query()->whereIn('program_id', $scopedProgramIds)->count()
                         : 0,
-                    'caption' => 'Student accounts under your current program scope',
                     'icon' => 'groups',
                 ],
                 [
                     'label' => 'Reports',
                     'value' => $reportsCount,
-                    'caption' => 'Finalized instructor reports to monitor',
                     'icon' => 'summarize',
                 ],
             ],
             'quickActions' => [
                 [
                     'label' => 'View Teachers',
-                    'description' => 'Check instructor records under your department.',
                     'href' => route('department-chair.teachers'),
                     'icon' => 'badge',
                 ],
                 [
                     'label' => 'View Students',
-                    'description' => 'Check student records under your current program scope.',
                     'href' => route('department-chair.students'),
                     'icon' => 'groups',
                 ],
                 [
                     'label' => 'View Reports',
-                    'description' => 'Monitor finalized instructor reports.',
                     'href' => route('department-chair.reports'),
                     'icon' => 'summarize',
                 ],

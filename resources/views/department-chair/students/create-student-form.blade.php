@@ -1,7 +1,7 @@
 {{-- Create student form --}}
 <div class="modal fade" id="createStudentModal" tabindex="-1" aria-labelledby="createStudentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <form action="{{ route('department-chair.users.store') }}" class="modal-content" method="POST">
+        <form action="{{ route('department-chair.users.store') }}" class="modal-content" method="POST" autocomplete="off">
             @csrf
             <input name="base_role" type="hidden" value="student">
 
@@ -37,7 +37,7 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold text-uppercase small" for="student_email">Email</label>
-                        <input class="form-control" id="student_email" name="email" required type="email" value="{{ old('base_role') === 'student' ? old('email') : '' }}">
+                        <input class="form-control" id="student_email" name="email" required type="email" value="{{ old('base_role') === 'student' ? old('email') : '' }}" autocomplete="off">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold text-uppercase small" for="student_status">Status</label>
@@ -63,11 +63,11 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold text-uppercase small" for="student_password">Password</label>
-                        <input class="form-control" id="student_password" name="password" required type="password">
+                        <input class="form-control" id="student_password" name="password" required type="password" autocomplete="new-password">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold text-uppercase small" for="student_password_confirmation">Confirm Password</label>
-                        <input class="form-control" id="student_password_confirmation" name="password_confirmation" required type="password">
+                        <input class="form-control" id="student_password_confirmation" name="password_confirmation" required type="password" autocomplete="new-password">
                     </div>
                 </div>
             </div>

@@ -42,7 +42,6 @@
                         <div class="builder-empty" id="emptyBuilderState">
                             <span class="material-symbols-outlined fs-1 mb-2" style="color: var(--psu-navy-2);">post_add</span>
                             <h3 class="h5" style="color: var(--psu-navy);">No question fields yet</h3>
-                            <p class="text-secondary mb-0">Click Add Question Field to start building this assessment.</p>
                         </div>
 
                         <div class="generated-list d-none" id="questionBlocks"></div>

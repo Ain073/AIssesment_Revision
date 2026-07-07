@@ -33,6 +33,17 @@
             line-height: 1;
         }
 
+        .class-filter-button {
+            min-width: 210px;
+            justify-content: space-between;
+        }
+
+        .class-filter-menu {
+            max-height: 320px;
+            overflow-y: auto;
+            width: 280px;
+        }
+
         .results-panel {
             overflow: hidden;
         }
@@ -98,39 +109,52 @@
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
         <div>
             <h1 class="brand-text mb-1" style="color: var(--psu-navy);">My Results</h1>
-            <p class="text-secondary mb-0">Submitted assessments and released scores from your classes appear here.</p>
+        </div>
+        <div class="dropdown">
+            <button
+                class="btn btn-outline-primary class-filter-button d-inline-flex align-items-center gap-2"
+                data-bs-toggle="dropdown"
+                type="button"
+                aria-expanded="false"
+            >
+                <span class="material-symbols-outlined fs-5">school</span>
+                <span class="text-truncate">{{ $selectedClassLabel }}</span>
+                <span class="material-symbols-outlined fs-5 ms-auto">expand_more</span>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end class-filter-menu shadow-sm">
+                <a class="dropdown-item results-class-filter-link {{ $selectedClassKey === '' ? 'active' : '' }}" href="{{ route('student.results') }}">
+                    All Classes
+                </a>
+                @foreach ($classOptions as $classOption)
+                    <a
+                        class="dropdown-item results-class-filter-link {{ $selectedClassKey === $classOption['key'] ? 'active' : '' }}"
+                        href="{{ route('student.results', ['class' => $classOption['key']]) }}"
+                    >
+                        <span class="fw-semibold d-block">{{ $classOption['label'] }}</span>
+                        <span class="small">{{ $classOption['subject'] }}</span>
+                    </a>
+                @endforeach
+            </div>
         </div>
     </div>
 
     <div class="row g-3 mb-4">
-        <div class="col-md-6 col-xl-3">
+        <div class="col-md-4">
             <section class="result-card">
                 <p class="result-label">Submitted Assessments</p>
                 <div class="result-value">{{ $summary['submitted_assessments'] }}</div>
-                <p class="small text-secondary mb-0 mt-2">Assessments with submitted attempts</p>
             </section>
         </div>
-        <div class="col-md-6 col-xl-3">
-            <section class="result-card">
-                <p class="result-label">Released Scores</p>
-                <div class="result-value">{{ $summary['released_scores'] }}</div>
-                <p class="small text-secondary mb-0 mt-2">Scores visible to you</p>
-            </section>
-        </div>
-        <div class="col-md-6 col-xl-3">
+        <div class="col-md-4">
             <section class="result-card">
                 <p class="result-label">Passed</p>
                 <div class="result-value">{{ $summary['passed_count'] }}</div>
-                <p class="small text-secondary mb-0 mt-2">Based on released scores</p>
             </section>
         </div>
-        <div class="col-md-6 col-xl-3">
+        <div class="col-md-4">
             <section class="result-card">
-                <p class="result-label">Average</p>
-                <div class="result-value">
-                    {{ $summary['average_percentage'] !== null ? $summary['average_percentage'].'%' : 'N/A' }}
-                </div>
-                <p class="small text-secondary mb-0 mt-2">Average of released percentages</p>
+                <p class="result-label">Failed</p>
+                <div class="result-value">{{ $summary['failed_count'] }}</div>
             </section>
         </div>
     </div>
@@ -139,7 +163,6 @@
         <div class="results-header d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
                 <h2 class="brand-text h4 mb-1">Assessment Results</h2>
-                <p class="small text-white-50 mb-0">Best score is shown when multiple attempts are submitted.</p>
             </div>
             <span class="badge text-bg-light border">{{ $results->count() }} record{{ $results->count() === 1 ? '' : 's' }}</span>
         </div>
@@ -228,7 +251,6 @@
                     <span class="material-symbols-outlined fs-2">grading</span>
                 </div>
                 <h2 class="h4" style="color: var(--psu-navy);">No results yet</h2>
-                <p class="text-secondary mb-0">Your submitted assessment results will appear here after you finish an assessment.</p>
             </div>
         @endif
     </section>

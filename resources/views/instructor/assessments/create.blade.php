@@ -75,7 +75,6 @@
             Back to Assessments
         </a>
         <h1 class="brand-text mt-2 mb-1" style="color: var(--psu-navy);">Create Assessment</h1>
-        <p class="text-secondary mb-0">Start with the reusable assessment details. Items and publishing come next on the builder page.</p>
     </div>
 
     <section class="step-track mb-4">
@@ -83,14 +82,12 @@
             <span class="step-number">1</span>
             <div>
                 <p class="fw-bold mb-0" style="color: var(--psu-navy);">Details and Instructions</p>
-                <p class="small text-secondary mb-0">Assessment setup</p>
             </div>
         </div>
         <div class="step-pill">
             <span class="step-number">2</span>
             <div>
                 <p class="fw-bold mb-0" style="color: var(--psu-navy);">Question Builder</p>
-                <p class="small text-secondary mb-0">Items and answer keys</p>
             </div>
         </div>
     </section>
@@ -112,7 +109,6 @@
                             </option>
                         @endforeach
                     </select>
-                    <div class="form-text">Only subjects from your assigned classes are available.</div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-bold text-uppercase small" for="type">Type</label>
