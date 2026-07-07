@@ -25,7 +25,13 @@ class AssessmentController extends BaseController
         $assessments = $instructorProfile
             ? $instructorProfile->assessments()
                 ->with(['subject', 'items.choices', 'classAssessments.class'])
-                ->withCount('items', 'classAssessments')
+                ->withCount([
+                    'items',
+                    'classAssessments',
+                    'classAssessments as submissions_count' => function ($query): void {
+                        $query->join('submissions', 'submissions.class_assessment_id', '=', 'class_assessment.class_assessment_id');
+                    },
+                ])
                 ->latest('assessment_id')
                 ->get()
             : collect();
@@ -176,9 +182,13 @@ class AssessmentController extends BaseController
         $instructorProfile = $this->instructorProfile($user);
         $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
 
-        if ($ownedAssessment->status !== Assessment::STATUS_DRAFT) {
+        $hasSubmissions = $ownedAssessment->classAssessments()
+            ->whereHas('submissions')
+            ->exists();
+
+        if ($hasSubmissions) {
             throw ValidationException::withMessages([
-                'assessment' => 'Only draft assessments can be deleted.',
+                'assessment' => 'Assessments with student submissions cannot be deleted.',
             ]);
         }
 
@@ -191,7 +201,7 @@ class AssessmentController extends BaseController
             $ownedAssessment->delete();
         });
 
-        Log::warning('Draft assessment deleted by instructor.', [
+        Log::warning('Assessment deleted by instructor.', [
             'actor_id' => $user->id,
             'assessment_id' => $assessmentId,
             'assessment_title' => $assessmentTitle,
@@ -199,12 +209,12 @@ class AssessmentController extends BaseController
         ]);
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Draft assessment deleted successfully.']);
+            return response()->json(['message' => 'Assessment deleted successfully.']);
         }
 
         return redirect()
             ->route('instructor.assessments', ['tab' => 'draft'])
-            ->with('status', 'Draft assessment deleted successfully.');
+            ->with('status', 'Assessment deleted successfully.');
     }
 
     public function storeAssessmentItem(Request $request, Assessment $assessment): RedirectResponse

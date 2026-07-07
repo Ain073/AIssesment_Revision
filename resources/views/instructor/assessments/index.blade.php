@@ -70,6 +70,9 @@
     @if ($assessments->isNotEmpty())
         <div class="row g-4">
             @foreach ($assessments as $assessment)
+                @php
+                    $canDeleteAssessment = (int) $assessment->submissions_count === 0;
+                @endphp
                 <div class="col-xl-6">
                     <section class="assessment-card h-100" id="assessmentCard{{ $assessment->assessment_id }}">
                         <div class="directory-header px-4 py-3 d-flex justify-content-between gap-3">
@@ -100,8 +103,13 @@
                                     <span class="material-symbols-outlined fs-5">publish</span>
                                     Publish
                                 </a>
-                                @if ($assessment->status === \App\Models\Assessment::STATUS_DRAFT)
+                                @if ($canDeleteAssessment)
                                     <button class="btn btn-outline-danger d-inline-flex align-items-center gap-2" data-bs-target="#deleteAssessmentModal{{ $assessment->assessment_id }}" data-bs-toggle="modal" type="button">
+                                        <span class="material-symbols-outlined fs-5">delete</span>
+                                        Delete
+                                    </button>
+                                @else
+                                    <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" type="button" disabled title="This assessment already has student submissions.">
                                         <span class="material-symbols-outlined fs-5">delete</span>
                                         Delete
                                     </button>

@@ -49,7 +49,7 @@
 
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
         <div>
-            <a class="small fw-semibold text-decoration-none" href="{{ route('student.assessments') }}" style="color: var(--psu-navy-2);">
+            <a class="portal-ajax-link small fw-semibold text-decoration-none" href="{{ route('student.assessments') }}" style="color: var(--psu-navy-2);">
                 <span class="material-symbols-outlined align-middle fs-6">arrow_back</span>
                 Back to Assessments
             </a>
@@ -131,7 +131,7 @@
             </div>
 
             <div class="d-flex flex-wrap justify-content-end gap-2">
-                <a class="btn btn-outline-secondary px-4" href="{{ route('student.assessments') }}">Cancel</a>
+                <a class="btn btn-outline-secondary portal-ajax-link px-4" href="{{ route('student.assessments') }}">Cancel</a>
                 <a class="btn btn-psu px-4 d-inline-flex align-items-center gap-2 {{ $assessment->items->isEmpty() ? 'disabled' : '' }}" href="{{ route('student.assessments.start', $classAssessment) }}" aria-disabled="{{ $assessment->items->isEmpty() ? 'true' : 'false' }}">
                     <span class="material-symbols-outlined fs-5">play_arrow</span>
                     Start Assessment

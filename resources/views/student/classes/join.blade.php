@@ -69,17 +69,17 @@
                         <div class="alert alert-success border-0">
                             You are already enrolled in this class.
                         </div>
-                        <a class="btn btn-psu px-4" href="{{ route('student.classes') }}">Back to Classes</a>
+                        <a class="btn btn-psu portal-ajax-link px-4" href="{{ route('student.classes') }}">Back to Classes</a>
                     @elseif ($existingRequest?->status === 'pending')
                         <div class="alert alert-warning border-0">
                             Your join request is already pending. Please wait for your teacher to approve it.
                         </div>
-                        <a class="btn btn-psu px-4" href="{{ route('student.classes') }}">Back to Classes</a>
+                        <a class="btn btn-psu portal-ajax-link px-4" href="{{ route('student.classes') }}">Back to Classes</a>
                     @elseif ($existingRequest?->status === 'approved')
                         <div class="alert alert-success border-0">
                             Your request was approved. This class should now appear in your Classes page.
                         </div>
-                        <a class="btn btn-psu px-4" href="{{ route('student.classes') }}">Back to Classes</a>
+                        <a class="btn btn-psu portal-ajax-link px-4" href="{{ route('student.classes') }}">Back to Classes</a>
                     @else
                         @if ($existingRequest?->status === 'rejected')
                             <div class="alert alert-danger border-0">
@@ -94,7 +94,7 @@
                         <form action="{{ route('student.classes.join.request', $class->join_token) }}" method="POST" data-ajax-form data-redirect-on-success="{{ route('student.classes') }}">
                             @csrf
                             <div class="d-flex flex-wrap gap-2 justify-content-end">
-                                <a class="btn btn-outline-secondary px-4" href="{{ route('student.classes') }}">Cancel</a>
+                                <a class="btn btn-outline-secondary portal-ajax-link px-4" href="{{ route('student.classes') }}">Cancel</a>
                                 <button class="btn btn-psu px-4" type="submit">Request to Join</button>
                             </div>
                         </form>

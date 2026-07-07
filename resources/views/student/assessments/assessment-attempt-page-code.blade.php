@@ -12,6 +12,8 @@
     let currentIndex = 0;
     let warnings = Number(@json($submission->warning_count));
     let isAutoSubmitting = false;
+    let isFinalSubmitting = false;
+    let isSubmitConfirmOpen = false;
     let isRecordingWarning = false;
     let lastSecurityIncidentAt = 0;
 
@@ -139,7 +141,13 @@
     const recordWarning = async (eventType) => {
         const now = Date.now();
 
-        if (isAutoSubmitting || isRecordingWarning || now - lastSecurityIncidentAt < 1200) {
+        if (
+            isAutoSubmitting
+            || isFinalSubmitting
+            || isSubmitConfirmOpen
+            || isRecordingWarning
+            || now - lastSecurityIncidentAt < 1200
+        ) {
             return;
         }
 
@@ -235,11 +243,33 @@
             paste: 'paste_attempt',
             contextmenu: 'context_menu_attempt',
         };
+        const isAnswerField = (element) => {
+            return ['INPUT', 'TEXTAREA'].includes(element?.tagName);
+        };
 
         Object.entries(restrictedEvents).forEach(([eventName, eventType]) => {
             document.addEventListener(eventName, (event) => {
                 event.preventDefault();
                 recordWarning(eventType);
+            });
+        });
+
+        document.querySelectorAll('[data-copy-protected]').forEach((section) => {
+            section.addEventListener('selectstart', (event) => {
+                if (isAnswerField(event.target)) {
+                    return;
+                }
+
+                event.preventDefault();
+                window.getSelection()?.removeAllRanges();
+            });
+
+            section.addEventListener('dragstart', (event) => {
+                event.preventDefault();
+            });
+
+            section.addEventListener('mouseup', () => {
+                window.getSelection()?.removeAllRanges();
             });
         });
     }
@@ -273,20 +303,60 @@
         setCurrentQuestion(0);
     }
 
-    document.getElementById('assessmentAttemptForm').addEventListener('submit', (event) => {
-        if (isAutoSubmitting) {
+    const assessmentForm = document.getElementById('assessmentAttemptForm');
+    const submitConfirmModalElement = document.getElementById('submitConfirmModal');
+    const submitConfirmModal = submitConfirmModalElement
+        ? new bootstrap.Modal(submitConfirmModalElement)
+        : null;
+
+    submitConfirmModalElement?.addEventListener('shown.bs.modal', () => {
+        isSubmitConfirmOpen = true;
+    });
+
+    submitConfirmModalElement?.addEventListener('hidden.bs.modal', () => {
+        isSubmitConfirmOpen = false;
+    });
+
+    document.getElementById('confirmSubmitAssessment')?.addEventListener('click', () => {
+        if (! assessmentForm) {
             return;
         }
 
+        isFinalSubmitting = true;
+        isSubmitConfirmOpen = true;
+
+        const button = document.getElementById('confirmSubmitAssessment');
+
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Submitting...';
+        }
+
+        assessmentForm.submit();
+    });
+
+    assessmentForm?.addEventListener('submit', (event) => {
+        if (isAutoSubmitting || isFinalSubmitting) {
+            return;
+        }
+
+        event.preventDefault();
         updateProgress();
 
         const answered = answeredQuestions().length;
         const message = answered < cards.length
-            ? `You answered ${answered} of ${cards.length} questions. Submit anyway?`
-            : 'Submit your assessment now?';
+            ? `You answered ${answered} of ${cards.length} questions. You may still submit, but unanswered questions will be marked as blank.`
+            : 'All questions have an answer. Submit your assessment now?';
 
-        if (! window.confirm(message)) {
-            event.preventDefault();
+        document.getElementById('submitConfirmMessage').textContent = message;
+        document.getElementById('submitConfirmAnswered').textContent = `${answered} / ${cards.length}`;
+
+        if (submitConfirmModal) {
+            isSubmitConfirmOpen = true;
+            submitConfirmModal.show();
+        } else if (window.confirm(message)) {
+            isFinalSubmitting = true;
+            assessmentForm.submit();
         }
     });
 

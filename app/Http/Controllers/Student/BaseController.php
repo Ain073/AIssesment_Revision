@@ -134,7 +134,13 @@ class BaseController extends Controller
                 ->where('publish_status', ClassAssessment::STATUS_PUBLISHED)
                 ->latest('class_assessment_id')
                 ->get()
-                ->each(fn (ClassAssessment $classAssessment) => $classAssessment->student_status = $this->studentAssessmentStatus($classAssessment))
+                ->map(function (ClassAssessment $classAssessment): ClassAssessment {
+                    $classAssessment->student_status = $this->studentAssessmentStatus($classAssessment);
+
+                    return $classAssessment;
+                })
+                ->reject(fn (ClassAssessment $classAssessment): bool => $classAssessment->student_status === 'completed')
+                ->values()
             : collect();
 
         return [

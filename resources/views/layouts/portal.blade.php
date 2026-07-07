@@ -1268,6 +1268,7 @@
                 '.class-list-tab',
                 '.assessment-tab-button',
                 '.results-class-filter-link',
+                '.portal-ajax-link',
             ].join(', ');
 
             const url = new URL(link.href, window.location.href);
@@ -1365,8 +1366,6 @@
 
         const loadPortalPage = async (url, pushHistory = true) => {
             try {
-                document.body.classList.add('portal-loading');
-
                 const response = await fetch(url, {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
@@ -1419,8 +1418,6 @@
                 }
             } catch (error) {
                 window.location.href = url;
-            } finally {
-                document.body.classList.remove('portal-loading');
             }
         };
 

@@ -213,6 +213,24 @@
             animation: warningPulse 1.2s infinite;
         }
 
+        .submit-confirm-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 4rem;
+            height: 4rem;
+            border-radius: 50%;
+            background: var(--psu-gold-soft);
+            color: var(--psu-navy);
+            border: 1px solid rgba(255, 218, 39, 0.75);
+        }
+
+        .submit-confirm-summary {
+            border: 1px solid var(--psu-line);
+            border-radius: 0.5rem;
+            background: #f8faff;
+        }
+
         @keyframes warningFadeIn {
             from {
                 opacity: 0;
@@ -269,6 +287,19 @@
 
         .no-select {
             user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .no-select *:not(input):not(textarea) {
+            user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .no-select img {
+            -webkit-user-drag: none;
+            user-drag: none;
         }
 
         @media (max-width: 575.98px) {
@@ -326,6 +357,45 @@
                         <span class="material-symbols-outlined">check_circle</span>
                         I Understand
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="submitConfirmModal" tabindex="-1" aria-labelledby="submitConfirmTitle" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-body p-4 p-lg-5">
+                    <div class="text-center">
+                        <div class="submit-confirm-icon mx-auto mb-3">
+                            <span class="material-symbols-outlined fs-1">send</span>
+                        </div>
+                        <h2 class="brand-text h3 mb-2" id="submitConfirmTitle" style="color: var(--psu-navy);">Submit Assessment?</h2>
+                        <p class="text-secondary mb-4" id="submitConfirmMessage">
+                            Review your answers before submitting. You cannot edit this attempt after submission.
+                        </p>
+                    </div>
+
+                    <div class="submit-confirm-summary p-3 mb-4">
+                        <div class="row g-3 text-center">
+                            <div class="col-6">
+                                <p class="small fw-bold text-secondary text-uppercase mb-1">Answered</p>
+                                <p class="h3 fw-bold mb-0" style="color: var(--psu-navy);" id="submitConfirmAnswered">0</p>
+                            </div>
+                            <div class="col-6">
+                                <p class="small fw-bold text-secondary text-uppercase mb-1">Total Items</p>
+                                <p class="h3 fw-bold mb-0" style="color: var(--psu-navy);">{{ $itemCount }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column flex-sm-row justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary px-4" id="cancelSubmitConfirm" data-bs-dismiss="modal" type="button">Review Answers</button>
+                        <button class="btn btn-psu px-4 d-inline-flex align-items-center justify-content-center gap-2" id="confirmSubmitAssessment" type="button">
+                            <span class="material-symbols-outlined fs-5">check_circle</span>
+                            Submit Now
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -392,7 +462,7 @@
     </div>
 
     @if ($isOneQuestionMode)
-        <div class="d-flex gap-2 overflow-auto pb-3 mb-4 {{ $classAssessment->prevent_copy_paste ? 'no-select' : '' }}">
+        <div class="d-flex gap-2 overflow-auto pb-3 mb-4 {{ $classAssessment->prevent_copy_paste ? 'no-select' : '' }}" data-copy-protected>
             @foreach ($items as $item)
                 <button class="question-jump {{ $loop->first ? 'active' : '' }}" data-question-jump="{{ $loop->index }}" type="button">
                     {{ $loop->iteration }}
@@ -404,7 +474,7 @@
     <form id="assessmentAttemptForm" action="{{ route('student.assessments.submit', $classAssessment) }}" method="POST">
         @csrf
 
-        <div class="d-grid gap-4 {{ $classAssessment->prevent_copy_paste ? 'no-select' : '' }} {{ $isOneQuestionMode ? 'one-question-mode' : '' }}">
+        <div class="d-grid gap-4 {{ $classAssessment->prevent_copy_paste ? 'no-select' : '' }} {{ $isOneQuestionMode ? 'one-question-mode' : '' }}" data-copy-protected>
             @foreach ($items as $item)
                 <article class="question-card {{ $isOneQuestionMode && $loop->first ? 'active-question' : '' }}" id="questionCard{{ $loop->iteration }}" data-question-card data-question-index="{{ $loop->index }}">
                     <div class="mb-3 d-flex flex-wrap gap-2">

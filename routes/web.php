@@ -175,6 +175,7 @@ Route::middleware(['student', 'no_cache'])
         Route::post('/classes/join/{token}', [StudentClassController::class, 'requestClassJoin'])->name('classes.join.request');
         Route::get('/assessments', [StudentAssessmentController::class, 'assessments'])->name('assessments');
         Route::get('/assessments/live', [StudentAssessmentController::class, 'assessmentsLive'])->name('assessments.live');
+        Route::get('/assessments/{classAssessment}/submitted', [StudentAssessmentController::class, 'submittedAssessment'])->name('assessments.submitted');
         Route::get('/assessments/{classAssessment}/start', [StudentAssessmentController::class, 'startAssessment'])->name('assessments.start');
         Route::post('/assessments/{classAssessment}/security-events', [StudentAssessmentController::class, 'recordSecurityEvent'])
             ->middleware('throttle:30,1')

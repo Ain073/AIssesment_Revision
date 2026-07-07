@@ -43,7 +43,7 @@
                         </div>
 
                         @if ($classAssessment->student_status === 'available')
-                            <a class="btn btn-psu d-inline-flex align-items-center gap-2" href="{{ route('student.assessments.take', $classAssessment) }}">
+                            <a class="btn btn-psu portal-ajax-link d-inline-flex align-items-center gap-2" href="{{ route('student.assessments.take', $classAssessment) }}">
                                 <span class="material-symbols-outlined fs-5">edit_document</span>
                                 Take Assessment
                             </a>
@@ -61,6 +61,6 @@
 @else
     <section class="directory-card p-5 text-center">
         <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">assignment</span></div>
-        <h2 class="h4" style="color: var(--psu-navy);">No assessments yet</h2>
+        <h2 class="h4" style="color: var(--psu-navy);">No pending or ongoing assessments</h2>
     </section>
 @endif

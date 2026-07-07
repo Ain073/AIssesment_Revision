@@ -9,6 +9,7 @@ use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -58,6 +59,54 @@ class AssessmentController extends BaseController
             'assessment' => $classAssessment->assessment,
             'class' => $classAssessment->class,
             'warningLimit' => $this->warningLimit($classAssessment),
+        ]);
+    }
+
+    public function submittedAssessment(ClassAssessment $classAssessment): View|RedirectResponse
+    {
+        $user = $this->currentUser();
+        $studentProfile = $this->studentProfileOrRedirect($user);
+
+        if ($studentProfile instanceof RedirectResponse) {
+            return $studentProfile;
+        }
+
+        $this->ensurePublishedAssessmentEnrollment($classAssessment, $studentProfile);
+
+        $submission = Submission::query()
+            ->with(['answers.choice'])
+            ->where('class_assessment_id', $classAssessment->class_assessment_id)
+            ->where('student_profile_id', $studentProfile->student_profile_id)
+            ->where('status', Submission::STATUS_SUBMITTED)
+            ->latest('submitted_at')
+            ->first();
+
+        if (! $submission) {
+            return redirect()
+                ->route('student.assessments')
+                ->withErrors(['assessment' => 'No submitted attempt was found for this assessment.']);
+        }
+
+        $items = $classAssessment->assessment?->items ?? collect();
+        $maxScore = (float) $items->sum(fn ($item): float => (float) $item->points);
+        $score = $this->submissionScore($submission, $items);
+        $percentage = $maxScore > 0 ? round(($score / $maxScore) * 100, 1) : 0;
+        $passingScore = $maxScore * 0.75;
+
+        return view('student.assessments.submitted', $this->sharedData($user, 'assessments') + [
+            'classAssessment' => $classAssessment,
+            'assessment' => $classAssessment->assessment,
+            'class' => $classAssessment->class,
+            'submission' => $submission,
+            'showScore' => (bool) $classAssessment->score_visibility,
+            'showAnswers' => (bool) $classAssessment->answer_visibility,
+            'score' => $score,
+            'scoreText' => $this->formatNumber($score),
+            'maxScore' => $maxScore,
+            'maxScoreText' => $this->formatNumber($maxScore),
+            'percentage' => $percentage,
+            'passed' => $maxScore > 0 && $score >= $passingScore,
+            'answerRows' => $this->answerRows($submission, $items),
         ]);
     }
 
@@ -318,7 +367,86 @@ class AssessmentController extends BaseController
         }
 
         return redirect()
-            ->route('student.assessments')
-            ->with('status', 'Assessment submitted successfully.');
+            ->route('student.assessments.submitted', $classAssessment);
+    }
+
+    private function answerRows(Submission $submission, Collection $items): Collection
+    {
+        $answers = $submission->answers->keyBy('assessment_item_id');
+
+        return $items
+            ->map(function ($item) use ($answers): array {
+                $answer = $answers->get($item->assessment_item_id);
+                $isCorrect = $answer ? $this->isCorrectAnswer($item, $answer) : false;
+
+                return [
+                    'item' => $item,
+                    'student_answer' => $answer ? $this->studentAnswerText($answer) : 'No answer',
+                    'correct_answer' => $this->correctAnswerText($item),
+                    'is_correct' => $isCorrect,
+                    'earned_points' => $isCorrect ? (float) $item->points : 0.0,
+                ];
+            })
+            ->values();
+    }
+
+    private function submissionScore(Submission $submission, Collection $items): float
+    {
+        $answers = $submission->answers->keyBy('assessment_item_id');
+
+        return (float) $items->sum(function ($item) use ($answers): float {
+            $answer = $answers->get($item->assessment_item_id);
+
+            return $answer && $this->isCorrectAnswer($item, $answer)
+                ? (float) $item->points
+                : 0.0;
+        });
+    }
+
+    private function isCorrectAnswer($item, $answer): bool
+    {
+        if ($answer->choice) {
+            return (bool) $answer->choice->is_correct;
+        }
+
+        $correctAnswers = $item->choices
+            ->where('is_correct', true)
+            ->pluck('choice_text')
+            ->map(fn ($choice): string => Str::lower(trim((string) $choice)))
+            ->filter();
+        $studentAnswer = Str::lower(trim((string) $answer->answer_text));
+
+        return $studentAnswer !== '' && $correctAnswers->contains($studentAnswer);
+    }
+
+    private function studentAnswerText($answer): string
+    {
+        if ($answer->choice) {
+            return (string) $answer->choice->choice_text;
+        }
+
+        if (filled($answer->answer_text)) {
+            return (string) $answer->answer_text;
+        }
+
+        return 'No answer';
+    }
+
+    private function correctAnswerText($item): string
+    {
+        $correctAnswers = $item->choices
+            ->where('is_correct', true)
+            ->pluck('choice_text')
+            ->filter()
+            ->values();
+
+        return $correctAnswers->isNotEmpty()
+            ? $correctAnswers->join(', ')
+            : 'For teacher checking';
+    }
+
+    private function formatNumber(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
     }
 }
