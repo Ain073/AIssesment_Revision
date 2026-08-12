@@ -16,5 +16,6 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RoleAndSuperAdminSeeder::class);
         $this->call(AcademicStructureSeeder::class);
+        $this->call(PublicIdSeeder::class);
     }
 }
