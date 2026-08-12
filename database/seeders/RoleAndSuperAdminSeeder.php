@@ -32,23 +32,36 @@ class RoleAndSuperAdminSeeder extends Seeder
             ->where('role_name', 'super_admin')
             ->value('role_id');
 
-        DB::table('users')->updateOrInsert(
-            ['email' => 'superadmin@psu.edu.ph'],
-            [
+        $superAdmin = DB::table('users')
+            ->where('email', 'superadmin@psu.edu.ph')
+            ->first();
+
+        if ($superAdmin) {
+            $userId = $superAdmin->id;
+
+            DB::table('users')
+                ->where('id', $userId)
+                ->update([
+                    'name' => 'Super Admin',
+                    'first_name' => 'Super',
+                    'middle_name' => null,
+                    'last_name' => 'Admin',
+                    'status' => 'active',
+                    'updated_at' => now(),
+                ]);
+        } else {
+            $userId = DB::table('users')->insertGetId([
                 'name' => 'Super Admin',
                 'first_name' => 'Super',
                 'middle_name' => null,
                 'last_name' => 'Admin',
+                'email' => 'superadmin@psu.edu.ph',
                 'password' => Hash::make('password'),
                 'status' => 'active',
                 'created_at' => now(),
                 'updated_at' => now(),
-            ],
-        );
-
-        $userId = DB::table('users')
-            ->where('email', 'superadmin@psu.edu.ph')
-            ->value('id');
+            ]);
+        }
 
         DB::table('user_roles')->updateOrInsert(
             [
