@@ -230,12 +230,18 @@ class ReportController extends BaseController
             ]);
         }
 
-        $drafts = $ownedCompletedAssessments
-            ->mapWithKeys(function ($classAssessment) use ($aiService): array {
-                return [
-                    $classAssessment->public_id => $aiService->generate($classAssessment),
-                ];
-            });
+        try {
+            $drafts = $ownedCompletedAssessments
+                ->mapWithKeys(function ($classAssessment) use ($aiService): array {
+                    return [
+                        $classAssessment->public_id => $aiService->generate($classAssessment),
+                    ];
+                });
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
 
         Log::info('Instructor generated AI report drafts.', [
             'actor_id' => $user->id,

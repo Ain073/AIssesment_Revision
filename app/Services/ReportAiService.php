@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ClassAssessment;
 use App\Models\Submission;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +20,7 @@ class ReportAiService
         $key = (string) config('services.ai_report.key', '');
 
         if ($provider === 'mock' || $model === '' || $key === '') {
-            return $this->mockDraft($data, 'mock');
+            throw new \RuntimeException('AI is not fully configured. Please check the provider, model, and API key.');
         }
 
         try {
@@ -31,15 +32,30 @@ class ReportAiService
                 return $this->claudeDraft($data, $model, $key);
             }
 
-            return $this->mockDraft($data, 'mock');
+            throw new \RuntimeException('The selected AI provider is not supported.');
+        } catch (RequestException $exception) {
+            Log::warning('AI report draft request failed.', [
+                'provider' => $provider,
+                'class_assessment_id' => $classAssessment->class_assessment_id,
+                'status' => $exception->response?->status(),
+                'message' => $exception->getMessage(),
+            ]);
+
+            throw new \RuntimeException(
+                'AI draft could not be generated. Please check the API key, billing credits, or internet connection.',
+                previous: $exception,
+            );
         } catch (\Throwable $exception) {
-            Log::warning('AI report draft failed. Mock draft was used instead.', [
+            Log::warning('AI report draft failed.', [
                 'provider' => $provider,
                 'class_assessment_id' => $classAssessment->class_assessment_id,
                 'message' => $exception->getMessage(),
             ]);
 
-            return $this->mockDraft($data, 'mock');
+            throw new \RuntimeException(
+                'AI draft could not be generated. Please try again or check the AI settings.',
+                previous: $exception,
+            );
         }
     }
 
@@ -171,24 +187,6 @@ PROMPT;
         return [
             'concepts_most_learned_skills' => trim((string) ($draft['concepts_most_learned_skills'] ?? '')),
             'concepts_least_learned_skills' => trim((string) ($draft['concepts_least_learned_skills'] ?? '')),
-            'source' => $source,
-        ];
-    }
-
-    private function mockDraft(array $data, string $source): array
-    {
-        $items = collect($data['items']);
-        $strongItems = $items->sortByDesc('correct_rate')->take(2)->pluck('question')->filter()->values();
-        $weakItems = $items->sortBy('correct_rate')->take(2)->pluck('question')->filter()->values();
-        $subject = $data['subject'] !== '' ? $data['subject'] : $data['assessment_title'];
-
-        return [
-            'concepts_most_learned_skills' => $strongItems->isNotEmpty()
-                ? 'Students showed stronger understanding of '.$subject.', especially in items related to '.$strongItems->implode('; ').'.'
-                : 'Students showed stronger understanding of the assessed topics based on the submitted assessment results.',
-            'concepts_least_learned_skills' => $weakItems->isNotEmpty()
-                ? 'Students need more guided practice in '.$subject.', especially in items related to '.$weakItems->implode('; ').'.'
-                : 'Students need more guided practice in the lower-performing parts of the assessment.',
             'source' => $source,
         ];
     }

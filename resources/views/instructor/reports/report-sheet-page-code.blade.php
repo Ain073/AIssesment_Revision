@@ -94,25 +94,17 @@
                     }),
                 });
 
+                const data = await response.json();
+
                 if (! response.ok) {
-                    throw new Error('AI draft request failed.');
+                    throw new Error(data.message ?? 'AI draft request failed.');
                 }
 
-                const data = await response.json();
                 fillAiDrafts(data.drafts ?? {});
 
-                const sources = Object.values(data.drafts ?? {})
-                    .map((draft) => draft.source)
-                    .filter(Boolean);
-                const usedMock = sources.includes('mock');
-                showAiStatus(
-                    usedMock
-                        ? 'Mock AI draft generated. Add an API key later to use a live AI provider.'
-                        : 'AI draft generated. Review and edit before saving.',
-                    usedMock ? 'warning' : 'success'
-                );
+                showAiStatus('AI draft generated. Review and edit before saving.', 'success');
             } catch (error) {
-                showAiStatus('Unable to generate AI draft. Please try again.', 'danger');
+                showAiStatus(error.message || 'Unable to generate AI draft. Please try again.', 'danger');
             } finally {
                 aiButton.disabled = false;
             }
