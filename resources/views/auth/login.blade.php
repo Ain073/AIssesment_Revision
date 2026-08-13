@@ -218,8 +218,8 @@
         </section>
     </main>
 
-    <footer class="login-footer d-flex flex-column flex-md-row align-items-center justify-content-between gap-2 px-3 px-md-5 py-2 fixed-bottom">
-        <div class="d-flex align-items-center gap-3">
+    <footer class="login-footer d-flex align-items-center justify-content-center px-3 py-2 fixed-bottom">
+        <div class="d-flex flex-wrap align-items-center justify-content-center gap-3 text-center">
             <span class="footer-brand h4 mb-0" style="color: var(--psu-navy);">PSU</span>
             <p class="mb-0 small">&copy; 2024 Pangasinan State University. All Rights Reserved.</p>
         </div>
