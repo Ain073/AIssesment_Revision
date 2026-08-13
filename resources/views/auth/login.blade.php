@@ -223,12 +223,6 @@
             <span class="footer-brand h4 mb-0" style="color: var(--psu-navy);">PSU</span>
             <p class="mb-0 small">&copy; 2024 Pangasinan State University. All Rights Reserved.</p>
         </div>
-        <div class="d-flex flex-wrap justify-content-center gap-3 small">
-            <a class="text-dark" href="#">Privacy Policy</a>
-            <a class="text-dark" href="#">Terms of Service</a>
-            <a class="text-dark" href="#">Contact Us</a>
-            <a class="text-dark" href="#">PSU Main Website</a>
-        </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
