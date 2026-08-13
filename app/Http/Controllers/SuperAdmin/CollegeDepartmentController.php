@@ -74,6 +74,59 @@ class CollegeDepartmentController extends Controller
             ->with('status', 'Department added successfully.');
     }
 
+    public function updateCollege(Request $request, College $college): RedirectResponse
+    {
+        $validated = $request->validate([
+            'college_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('colleges', 'college_name')
+                    ->ignore($college->getKey(), $college->getKeyName()),
+            ],
+        ]);
+
+        $college->update($validated);
+
+        Log::info('College updated by super admin.', [
+            'actor_id' => Auth::id(),
+            'college_id' => $college->college_id,
+            'college_name' => $college->college_name,
+        ]);
+
+        return redirect()
+            ->route('super-admin.colleges')
+            ->with('status', 'College updated successfully.');
+    }
+
+    public function updateDepartment(Request $request, Department $department): RedirectResponse
+    {
+        $validated = $request->validate([
+            'college_id' => ['required', 'exists:colleges,college_id'],
+            'dept_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('departments', 'dept_name')
+                    ->where('college_id', $request->input('college_id'))
+                    ->ignore($department->getKey(), $department->getKeyName()),
+            ],
+        ]);
+
+        $department->update($validated);
+
+        Log::info('Department updated by super admin.', [
+            'actor_id' => Auth::id(),
+            'department_id' => $department->department_id,
+            'department_name' => $department->dept_name,
+            'college_id' => $department->college_id,
+        ]);
+
+        return redirect()
+            ->route('super-admin.colleges')
+            ->with('status', 'Department updated successfully.');
+    }
+
     public function destroyCollege(College $college): RedirectResponse
     {
         $collegeName = $college->college_name;

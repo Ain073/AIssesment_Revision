@@ -86,6 +86,25 @@
             background: var(--psu-gold-soft);
             color: var(--psu-navy);
         }
+
+        .action-button {
+            width: 36px;
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .delete-warning-icon {
+            width: 56px;
+            height: 56px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #fff1f2;
+            color: #dc3545;
+        }
     </style>
 @endpush
 
@@ -157,19 +176,14 @@
                                             {{ $college->departments_count }} {{ $college->departments_count === 1 ? 'Department' : 'Departments' }}
                                         </td>
                                         <td class="text-end">
-                                            <form
-                                                action="{{ route('super-admin.colleges.destroy', $college) }}"
-                                                class="d-inline"
-                                                method="POST"
-                                                data-confirm-message="{{ 'Delete '.$college->college_name.'? Related departments and programs under this college will also be removed.' }}"
-                                                onsubmit="return confirm(this.dataset.confirmMessage);"
-                                            >
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="btn btn-sm btn-outline-danger" type="submit">
+                                            <div class="d-inline-flex justify-content-end gap-2">
+                                                <button class="btn btn-sm btn-outline-psu action-button" data-bs-target="#editCollegeModal{{ $college->college_id }}" data-bs-toggle="modal" type="button" title="Edit college">
+                                                    <span class="material-symbols-outlined fs-6">edit</span>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger action-button" data-bs-target="#deleteCollegeModal{{ $college->college_id }}" data-bs-toggle="modal" type="button" title="Delete college">
                                                     <span class="material-symbols-outlined fs-6">delete</span>
                                                 </button>
-                                            </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
@@ -219,19 +233,14 @@
                                             {{ $department->instructor_profiles_count === 1 ? 'Instructor' : 'Instructors' }}
                                         </td>
                                         <td class="text-end">
-                                            <form
-                                                action="{{ route('super-admin.departments.destroy', $department) }}"
-                                                class="d-inline"
-                                                method="POST"
-                                                data-confirm-message="{{ 'Delete '.$department->dept_name.'? This may remove the department assignment from linked instructor profiles.' }}"
-                                                onsubmit="return confirm(this.dataset.confirmMessage);"
-                                            >
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="btn btn-sm btn-outline-danger" type="submit">
+                                            <div class="d-inline-flex justify-content-end gap-2">
+                                                <button class="btn btn-sm btn-outline-psu action-button" data-bs-target="#editDepartmentModal{{ $department->department_id }}" data-bs-toggle="modal" type="button" title="Edit department">
+                                                    <span class="material-symbols-outlined fs-6">edit</span>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger action-button" data-bs-target="#deleteDepartmentModal{{ $department->department_id }}" data-bs-toggle="modal" type="button" title="Delete department">
                                                     <span class="material-symbols-outlined fs-6">delete</span>
                                                 </button>
-                                            </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
@@ -259,4 +268,5 @@
 
     @include('super-admin.colleges.create-college-form')
     @include('super-admin.colleges.create-department-form')
+    @include('super-admin.colleges.edit-delete-popups')
 @endsection

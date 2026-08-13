@@ -68,8 +68,10 @@ Route::middleware(['super_admin', 'no_cache'])
         Route::get('/dashboard', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
         Route::get('/colleges', [CollegeDepartmentController::class, 'index'])->name('colleges');
         Route::post('/colleges', [CollegeDepartmentController::class, 'storeCollege'])->name('colleges.store');
+        Route::put('/colleges/{college}', [CollegeDepartmentController::class, 'updateCollege'])->name('colleges.update');
         Route::delete('/colleges/{college}', [CollegeDepartmentController::class, 'destroyCollege'])->name('colleges.destroy');
         Route::post('/departments', [CollegeDepartmentController::class, 'storeDepartment'])->name('departments.store');
+        Route::put('/departments/{department}', [CollegeDepartmentController::class, 'updateDepartment'])->name('departments.update');
         Route::delete('/departments/{department}', [CollegeDepartmentController::class, 'destroyDepartment'])->name('departments.destroy');
         Route::get('/programs', [ProgramController::class, 'index'])->name('programs');
         Route::post('/programs', [ProgramController::class, 'store'])->name('programs.store');
