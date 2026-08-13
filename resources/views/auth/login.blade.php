@@ -146,9 +146,8 @@
     </style>
 </head>
 <body>
-    <header class="topbar fixed-top d-flex align-items-center justify-content-between px-3 px-md-5">
+    <header class="topbar fixed-top d-flex align-items-center px-3 px-md-5">
         <span class="brand-title h4 mb-0 fw-bold text-white d-none d-lg-inline">AISSESSMENT</span>
-        <a class="fw-bold text-white text-decoration-none" href="#">Help Desk</a>
     </header>
 
     <main class="login-shell">
@@ -211,10 +210,6 @@
                 </button>
             </form>
 
-            <p class="small text-center text-white-50 position-absolute start-50 translate-middle-x mt-3" style="width: 100%;">
-                <span class="material-symbols-outlined align-middle small">verified_user</span>
-                Secured by PSU Information &amp; Communication Technology Office
-            </p>
         </section>
     </main>
 
