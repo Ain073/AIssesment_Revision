@@ -339,25 +339,30 @@
 
     .subjects-table thead th:nth-child(2),
     .subjects-table tbody td[data-label="Subject Name"] {
-        width: 68%;
+        width: 72%;
         text-align: left !important;
     }
 
     .subjects-table thead th:nth-child(7),
     .subjects-table tbody td[data-label="Actions"] {
-        width: 32%;
+        width: 28%;
         text-align: right !important;
     }
 
     .subjects-table tbody td[data-label="Subject Name"] {
         color: var(--psu-navy);
         font-weight: 700;
-        line-height: 1.3;
+        font-size: 0.94rem;
+        line-height: 1.35;
         padding: 0.85rem 0.75rem !important;
+        white-space: normal;
+        overflow-wrap: break-word;
+        word-break: normal;
     }
 
     .subjects-table tbody td[data-label="Actions"] {
         padding: 0.85rem 0.75rem !important;
+        white-space: normal;
     }
 
     .subjects-table tbody td.subject-empty-cell {
@@ -450,15 +455,17 @@
     }
 
     .subjects-table tbody td[data-label="Subject Name"] {
-        font-size: 0.84rem;
-        line-height: 1.25;
+        font-size: 0.9rem;
+        line-height: 1.35;
+        padding: 0.8rem 0.65rem !important;
     }
 
     .subjects-table .record-action-trigger {
-        min-width: 64px;
+        min-width: 58px;
         min-height: 32px;
-        padding: 0.3rem 0.5rem;
+        padding: 0.3rem 0.45rem;
         font-size: 0.78rem;
+        white-space: normal;
     }
 }
 

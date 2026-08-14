@@ -1065,11 +1065,15 @@ h1, h2, h3, .brand-text {
         padding: 0.65rem 0.6rem;
         font-size: 0.64rem;
         letter-spacing: 0.035em;
+        white-space: normal;
     }
 
     .table tbody td {
         padding: 0.7rem 0.6rem;
         font-size: 0.84rem;
+        white-space: normal;
+        overflow-wrap: break-word;
+        word-break: normal;
     }
 
     .compact-data-table thead th:first-child,
