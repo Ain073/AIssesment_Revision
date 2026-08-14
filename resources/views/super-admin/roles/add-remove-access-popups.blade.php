@@ -58,6 +58,40 @@
 
     {{-- Remove Admin/Dean access popups --}}
     @foreach ($adminDeans as $user)
+        <div class="modal fade" id="viewAdminDeanModal{{ $user->id }}" tabindex="-1" aria-labelledby="viewAdminDeanModalLabel{{ $user->id }}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div>
+                            <h3 class="modal-title h4 mb-1" id="viewAdminDeanModalLabel{{ $user->id }}">Authorization Details</h3>
+                            <p class="small text-white-50 mb-0">Admin/Dean Access</p>
+                        </div>
+                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-bold text-uppercase small">Teacher</label>
+                                <div class="form-control bg-light">{{ $user->displayName() }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-uppercase small">Email</label>
+                                <div class="form-control bg-light">{{ $user->email }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-uppercase small">Status</label>
+                                <div class="form-control bg-light">{{ ucfirst($user->status) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Close</button>
+                        <button class="btn btn-danger px-4" data-bs-target="#removeAdminDeanModal{{ $user->id }}" data-bs-toggle="modal" type="button">Remove</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="modal fade" id="removeAdminDeanModal{{ $user->id }}" tabindex="-1" aria-labelledby="removeAdminDeanModalLabel{{ $user->id }}" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <form action="{{ route('super-admin.roles.revoke') }}" class="modal-content" method="POST">
@@ -87,6 +121,40 @@
 
     {{-- Remove Department Chair access popups --}}
     @foreach ($departmentChairs as $user)
+        <div class="modal fade" id="viewDepartmentChairModal{{ $user->id }}" tabindex="-1" aria-labelledby="viewDepartmentChairModalLabel{{ $user->id }}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div>
+                            <h3 class="modal-title h4 mb-1" id="viewDepartmentChairModalLabel{{ $user->id }}">Authorization Details</h3>
+                            <p class="small text-white-50 mb-0">Department Chair Access</p>
+                        </div>
+                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-bold text-uppercase small">Teacher</label>
+                                <div class="form-control bg-light">{{ $user->displayName() }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-uppercase small">Email</label>
+                                <div class="form-control bg-light">{{ $user->email }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-uppercase small">Status</label>
+                                <div class="form-control bg-light">{{ ucfirst($user->status) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Close</button>
+                        <button class="btn btn-danger px-4" data-bs-target="#removeDepartmentChairModal{{ $user->id }}" data-bs-toggle="modal" type="button">Remove</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="modal fade" id="removeDepartmentChairModal{{ $user->id }}" tabindex="-1" aria-labelledby="removeDepartmentChairModalLabel{{ $user->id }}" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <form action="{{ route('super-admin.roles.revoke') }}" class="modal-content" method="POST">

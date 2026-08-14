@@ -330,6 +330,26 @@
             color: #fff;
         }
 
+        .record-action-trigger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            min-width: 92px;
+            min-height: 36px;
+            border-color: var(--psu-line);
+            color: var(--psu-navy);
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .record-action-trigger:hover,
+        .record-action-trigger:focus {
+            border-color: var(--psu-navy-2);
+            background: #edf2ff;
+            color: var(--psu-navy);
+        }
+
         .profile-menu-shell {
             position: relative;
             margin-top: auto;
@@ -817,6 +837,11 @@
             .mobile-card-table .action-buttons,
             .mobile-card-table .action-button-group {
                 justify-content: flex-start !important;
+            }
+
+            .mobile-card-table .record-action-trigger {
+                width: 100%;
+                min-width: 0;
             }
 
             .page-container > .d-flex,

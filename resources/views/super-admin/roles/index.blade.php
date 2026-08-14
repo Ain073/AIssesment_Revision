@@ -158,9 +158,9 @@
                                             </span>
                                         </td>
                                         <td class="text-end" data-label="Action">
-                                            <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" data-bs-target="#removeAdminDeanModal{{ $user->id }}" data-bs-toggle="modal" type="button">
-                                                <span class="material-symbols-outlined fs-6">remove_circle</span>
-                                                Remove
+                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewAdminDeanModal{{ $user->id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $user->displayName() }}">
+                                                <span class="material-symbols-outlined fs-6">visibility</span>
+                                                Manage
                                             </button>
                                         </td>
                                     </tr>
@@ -226,9 +226,9 @@
                                             </span>
                                         </td>
                                         <td class="text-end" data-label="Action">
-                                            <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" data-bs-target="#removeDepartmentChairModal{{ $user->id }}" data-bs-toggle="modal" type="button">
-                                                <span class="material-symbols-outlined fs-6">remove_circle</span>
-                                                Remove
+                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewDepartmentChairModal{{ $user->id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $user->displayName() }}">
+                                                <span class="material-symbols-outlined fs-6">visibility</span>
+                                                Manage
                                             </button>
                                         </td>
                                     </tr>

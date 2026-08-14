@@ -274,17 +274,10 @@
                                             </span>
                                         </td>
                                         <td class="text-center" data-label="Actions">
-                                            <div class="action-buttons">
-                                                <button class="btn btn-sm btn-outline-secondary d-inline-flex" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" title="View user" aria-label="View {{ $user->displayName() }}">
-                                                    <span class="material-symbols-outlined fs-6">visibility</span>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-psu d-inline-flex" data-bs-target="#editUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" title="Edit user" aria-label="Edit {{ $user->displayName() }}">
-                                                    <span class="material-symbols-outlined fs-6">edit</span>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-danger d-inline-flex" data-bs-target="#deleteUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" title="Delete user" aria-label="Delete {{ $user->displayName() }}">
-                                                    <span class="material-symbols-outlined fs-6">delete</span>
-                                                </button>
-                                            </div>
+                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $user->displayName() }}">
+                                                <span class="material-symbols-outlined fs-6">visibility</span>
+                                                Manage
+                                            </button>
                                         </td>
                                     </tr>
                                 @empty
@@ -364,17 +357,10 @@
                                             </span>
                                         </td>
                                         <td class="text-center" data-label="Actions">
-                                            <div class="action-buttons">
-                                                <button class="btn btn-sm btn-outline-secondary d-inline-flex" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" title="View user" aria-label="View {{ $user->displayName() }}">
-                                                    <span class="material-symbols-outlined fs-6">visibility</span>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-psu d-inline-flex" data-bs-target="#editUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" title="Edit user" aria-label="Edit {{ $user->displayName() }}">
-                                                    <span class="material-symbols-outlined fs-6">edit</span>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-danger d-inline-flex" data-bs-target="#deleteUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" title="Delete user" aria-label="Delete {{ $user->displayName() }}">
-                                                    <span class="material-symbols-outlined fs-6">delete</span>
-                                                </button>
-                                            </div>
+                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $user->displayName() }}">
+                                                <span class="material-symbols-outlined fs-6">visibility</span>
+                                                Manage
+                                            </button>
                                         </td>
                                     </tr>
                                 @empty

@@ -176,14 +176,10 @@
                                             {{ $college->departments_count }} {{ $college->departments_count === 1 ? 'Department' : 'Departments' }}
                                         </td>
                                         <td class="text-end" data-label="Actions">
-                                            <div class="action-button-group d-inline-flex justify-content-end gap-2">
-                                                <button class="btn btn-sm btn-outline-psu action-button" data-bs-target="#editCollegeModal{{ $college->college_id }}" data-bs-toggle="modal" type="button" title="Edit college">
-                                                    <span class="material-symbols-outlined fs-6">edit</span>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-danger action-button" data-bs-target="#deleteCollegeModal{{ $college->college_id }}" data-bs-toggle="modal" type="button" title="Delete college">
-                                                    <span class="material-symbols-outlined fs-6">delete</span>
-                                                </button>
-                                            </div>
+                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewCollegeModal{{ $college->college_id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $college->college_name }}">
+                                                <span class="material-symbols-outlined fs-6">visibility</span>
+                                                Manage
+                                            </button>
                                         </td>
                                     </tr>
                                 @empty
@@ -233,14 +229,10 @@
                                             {{ $department->instructor_profiles_count === 1 ? 'Instructor' : 'Instructors' }}
                                         </td>
                                         <td class="text-end" data-label="Actions">
-                                            <div class="action-button-group d-inline-flex justify-content-end gap-2">
-                                                <button class="btn btn-sm btn-outline-psu action-button" data-bs-target="#editDepartmentModal{{ $department->department_id }}" data-bs-toggle="modal" type="button" title="Edit department">
-                                                    <span class="material-symbols-outlined fs-6">edit</span>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-danger action-button" data-bs-target="#deleteDepartmentModal{{ $department->department_id }}" data-bs-toggle="modal" type="button" title="Delete department">
-                                                    <span class="material-symbols-outlined fs-6">delete</span>
-                                                </button>
-                                            </div>
+                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewDepartmentModal{{ $department->department_id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $department->dept_name }}">
+                                                <span class="material-symbols-outlined fs-6">visibility</span>
+                                                Manage
+                                            </button>
                                         </td>
                                     </tr>
                                 @empty

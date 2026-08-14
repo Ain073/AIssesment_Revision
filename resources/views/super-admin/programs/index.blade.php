@@ -158,17 +158,10 @@
                                 </span>
                             </td>
                             <td class="text-center" data-label="Actions">
-                                <div class="action-buttons">
-                                    <button class="btn btn-sm btn-outline-secondary d-inline-flex" data-bs-target="#viewProgramModal{{ $program->program_id }}" data-bs-toggle="modal" type="button" title="View program" aria-label="View {{ $program->program_name }}">
-                                        <span class="material-symbols-outlined fs-6">visibility</span>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-primary d-inline-flex" data-bs-target="#editProgramModal{{ $program->program_id }}" data-bs-toggle="modal" type="button" title="Edit program" aria-label="Edit {{ $program->program_name }}">
-                                        <span class="material-symbols-outlined fs-6">edit</span>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger d-inline-flex" data-bs-target="#deleteProgramModal{{ $program->program_id }}" data-bs-toggle="modal" type="button" title="Delete program" aria-label="Delete {{ $program->program_name }}">
-                                        <span class="material-symbols-outlined fs-6">delete</span>
-                                    </button>
-                                </div>
+                                <button class="btn btn-sm record-action-trigger" data-bs-target="#viewProgramModal{{ $program->program_id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $program->program_name }}">
+                                    <span class="material-symbols-outlined fs-6">visibility</span>
+                                    Manage
+                                </button>
                             </td>
                         </tr>
                     @empty

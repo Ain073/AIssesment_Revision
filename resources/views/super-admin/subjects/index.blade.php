@@ -164,6 +164,10 @@
             .subjects-table .action-buttons {
                 justify-content: flex-start;
             }
+
+            .subjects-table .record-action-trigger {
+                width: 100%;
+            }
         }
 
         .empty-icon {
@@ -307,17 +311,10 @@
                                 </span>
                             </td>
                             <td class="text-center" data-label="Actions">
-                                <div class="action-buttons">
-                                    <button class="btn btn-sm btn-outline-secondary d-inline-flex" data-bs-target="#viewSubjectModal{{ $mapping->subject_program_id }}" data-bs-toggle="modal" type="button" title="View subject" aria-label="View {{ $mapping->subject?->subject_code }}">
-                                        <span class="material-symbols-outlined fs-6">visibility</span>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-primary d-inline-flex" data-bs-target="#editSubjectModal{{ $mapping->subject_program_id }}" data-bs-toggle="modal" type="button" title="Edit subject" aria-label="Edit {{ $mapping->subject?->subject_code }}">
-                                        <span class="material-symbols-outlined fs-6">edit</span>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger d-inline-flex" data-bs-target="#deleteSubjectModal{{ $mapping->subject_program_id }}" data-bs-toggle="modal" type="button" title="Delete subject" aria-label="Delete {{ $mapping->subject?->subject_code }}">
-                                        <span class="material-symbols-outlined fs-6">delete</span>
-                                    </button>
-                                </div>
+                                <button class="btn btn-sm record-action-trigger" data-bs-target="#viewSubjectModal{{ $mapping->subject_program_id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $mapping->subject?->subject_code }}">
+                                    <span class="material-symbols-outlined fs-6">visibility</span>
+                                    Manage
+                                </button>
                             </td>
                         </tr>
                     @empty

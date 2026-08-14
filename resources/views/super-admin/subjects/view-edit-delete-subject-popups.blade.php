@@ -43,6 +43,8 @@
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Close</button>
+                        <button class="btn btn-outline-primary px-4" data-bs-target="#editSubjectModal{{ $mapping->subject_program_id }}" data-bs-toggle="modal" type="button">Edit</button>
+                        <button class="btn btn-danger px-4" data-bs-target="#deleteSubjectModal{{ $mapping->subject_program_id }}" data-bs-toggle="modal" type="button">Delete</button>
                     </div>
                 </div>
             </div>
