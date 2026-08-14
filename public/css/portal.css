@@ -788,6 +788,10 @@ h1, h2, h3, .brand-text {
         white-space: normal;
     }
 
+    .mobile-card-table tbody td:not(.mobile-primary-cell):not([data-label="Actions"]):not(.mobile-empty-cell) {
+        display: none;
+    }
+
     .mobile-card-table tbody td:last-child {
         border-bottom: 0;
     }
@@ -808,7 +812,16 @@ h1, h2, h3, .brand-text {
         background: #fbfcff;
     }
 
+    .mobile-card-table tbody td[data-label="Actions"] {
+        display: block;
+        padding: 0.75rem 0.85rem !important;
+        border-top: 1px solid #edf1fb;
+        border-bottom: 0;
+        background: #fff;
+    }
+
     .mobile-card-table tbody td.mobile-primary-cell::before,
+    .mobile-card-table tbody td[data-label="Actions"]::before,
     .mobile-card-table tbody td.mobile-empty-cell::before {
         content: none;
     }

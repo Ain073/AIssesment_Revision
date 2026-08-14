@@ -135,7 +135,10 @@
                             $mappingIsActive = $mapping->subject?->is_active && $activeSemester === $mapping->semester;
                         @endphp
                         <tr>
-                            <td class="fw-bold" data-label="Subject Code" style="color: var(--psu-navy);">{{ $mapping->subject?->subject_code }}</td>
+                            <td class="fw-bold subject-primary-cell" data-label="Subject" style="color: var(--psu-navy);">
+                                <div>{{ $mapping->subject?->subject_code }}</div>
+                                <div class="small text-secondary fw-semibold mt-1 d-md-none">{{ $mapping->subject?->subject_name }}</div>
+                            </td>
                             <td data-label="Subject Name">{{ $mapping->subject?->subject_name }}</td>
                             <td data-label="Program">
                                 <div class="fw-semibold">{{ $mapping->program?->program_name ?? 'Not assigned' }}</div>
