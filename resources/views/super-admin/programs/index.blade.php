@@ -83,10 +83,10 @@
                                 </span>
                             </td>
                             <td class="text-center" data-label="Actions">
-                                <button class="btn btn-sm record-action-trigger" data-bs-target="#viewProgramModal{{ $program->program_id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $program->program_name }}">
+                                <button class="btn btn-sm record-action-trigger" data-bs-target="#viewProgramModal{{ $program->program_id }}" data-bs-toggle="modal" type="button" aria-label="View {{ $program->program_name }}">
                                     <span class="material-symbols-outlined fs-6">visibility</span>
-                                    Manage
-                                </button>
+                                                View
+                                            </button>
                             </td>
                         </tr>
                     @empty

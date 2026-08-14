@@ -88,9 +88,9 @@
                                             </span>
                                         </td>
                                         <td class="text-end" data-label="Action">
-                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewAdminDeanModal{{ $user->id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $user->displayName() }}">
+                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewAdminDeanModal{{ $user->id }}" data-bs-toggle="modal" type="button" aria-label="View {{ $user->displayName() }}">
                                                 <span class="material-symbols-outlined fs-6">visibility</span>
-                                                Manage
+                                                View
                                             </button>
                                         </td>
                                     </tr>
@@ -156,9 +156,9 @@
                                             </span>
                                         </td>
                                         <td class="text-end" data-label="Action">
-                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewDepartmentChairModal{{ $user->id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $user->displayName() }}">
+                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewDepartmentChairModal{{ $user->id }}" data-bs-toggle="modal" type="button" aria-label="View {{ $user->displayName() }}">
                                                 <span class="material-symbols-outlined fs-6">visibility</span>
-                                                Manage
+                                                View
                                             </button>
                                         </td>
                                     </tr>

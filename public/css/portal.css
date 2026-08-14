@@ -746,100 +746,98 @@ h1, h2, h3, .brand-text {
 
     .table-responsive > .mobile-card-table {
         min-width: 0;
+        table-layout: auto;
     }
 
-    .mobile-card-table,
-    .mobile-card-table tbody,
-    .mobile-card-table tr,
-    .mobile-card-table td {
-        display: block;
-        width: 100%;
-    }
-
-    .mobile-card-table colgroup,
-    .mobile-card-table thead {
+    .mobile-card-table colgroup {
         display: none;
+    }
+
+    .mobile-card-table thead {
+        display: table-header-group;
     }
 
     .mobile-card-table tbody {
-        display: grid;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        background: #f7f9ff;
-    }
-
-    .mobile-card-table tbody tr {
-        border: 1px solid var(--psu-line);
-        border-radius: 0.55rem;
+        display: table-row-group;
         background: #fff;
-        box-shadow: 0 8px 18px rgba(0, 26, 112, 0.06);
-        overflow: hidden;
     }
 
+    .mobile-card-table tr {
+        display: table-row;
+    }
+
+    .mobile-card-table thead th,
     .mobile-card-table tbody td {
-        display: grid;
-        grid-template-columns: minmax(96px, 34%) minmax(0, 1fr);
-        gap: 0.75rem;
-        align-items: start;
-        padding: 0.7rem 0.85rem !important;
-        border: 0;
-        border-bottom: 1px solid #edf1fb;
-        text-align: left !important;
-        white-space: normal;
-    }
-
-    .mobile-card-table tbody td:not(.mobile-primary-cell):not([data-label="Actions"]):not(.mobile-empty-cell) {
         display: none;
     }
 
-    .mobile-card-table tbody td:last-child {
-        border-bottom: 0;
+    .mobile-card-table thead th:first-child,
+    .mobile-card-table thead th:last-child,
+    .mobile-card-table tbody td.mobile-primary-cell,
+    .mobile-card-table tbody td[data-label="Actions"],
+    .mobile-card-table tbody td[data-label="Action"] {
+        display: table-cell;
+        vertical-align: middle;
     }
 
-    .mobile-card-table tbody td::before {
-        content: attr(data-label);
-        color: var(--psu-muted);
-        font-size: 0.68rem;
-        font-weight: 800;
-        line-height: 1.25;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-    }
-
+    .mobile-card-table thead th:first-child,
     .mobile-card-table tbody td.mobile-primary-cell {
-        display: block;
-        padding: 0.9rem 0.85rem !important;
-        background: #fbfcff;
+        width: 68%;
+        padding: 0.85rem 0.75rem !important;
+        text-align: left !important;
+        background: #fff;
+        color: var(--psu-navy);
     }
 
-    .mobile-card-table tbody td[data-label="Actions"] {
-        display: block;
-        padding: 0.75rem 0.85rem !important;
-        border-top: 1px solid #edf1fb;
-        border-bottom: 0;
+    .mobile-card-table thead th:last-child,
+    .mobile-card-table tbody td[data-label="Actions"],
+    .mobile-card-table tbody td[data-label="Action"] {
+        width: 32%;
+        padding: 0.85rem 0.75rem !important;
+        text-align: right !important;
         background: #fff;
     }
 
-    .mobile-card-table tbody td.mobile-primary-cell::before,
-    .mobile-card-table tbody td[data-label="Actions"]::before,
-    .mobile-card-table tbody td.mobile-empty-cell::before {
-        content: none;
-    }
-
     .mobile-card-table tbody td.mobile-empty-cell {
-        display: block;
+        display: table-cell;
         padding: 2rem 1rem !important;
         text-align: center !important;
     }
 
-    .mobile-card-table .action-buttons,
-    .mobile-card-table .action-button-group {
-        justify-content: flex-start !important;
+    .mobile-card-table tbody td.mobile-primary-cell::before,
+    .mobile-card-table tbody td[data-label="Actions"]::before,
+    .mobile-card-table tbody td[data-label="Action"]::before,
+    .mobile-card-table tbody td.mobile-empty-cell::before {
+        content: none;
+    }
+
+    .mobile-card-table .mobile-primary-cell .icon-box,
+    .mobile-card-table .mobile-primary-cell .avatar {
+        width: 34px;
+        height: 34px;
+        flex: 0 0 34px;
+        font-size: 0.85rem;
+    }
+
+    .mobile-card-table .mobile-primary-cell .small,
+    .mobile-card-table .mobile-primary-cell .user-subtext {
+        display: none;
+    }
+
+    .mobile-card-table .mobile-primary-cell .fw-bold,
+    .mobile-card-table .mobile-primary-cell .user-name {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-height: 1.25;
     }
 
     .mobile-card-table .record-action-trigger {
-        width: 100%;
-        min-width: 0;
+        width: auto;
+        min-width: 72px;
+        min-height: 34px;
+        padding: 0.35rem 0.5rem;
     }
 
     .page-container > .d-flex,

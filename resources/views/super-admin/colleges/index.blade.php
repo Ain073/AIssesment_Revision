@@ -89,9 +89,9 @@
                                             {{ $college->departments_count }} {{ $college->departments_count === 1 ? 'Department' : 'Departments' }}
                                         </td>
                                         <td class="text-end" data-label="Actions">
-                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewCollegeModal{{ $college->college_id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $college->college_name }}">
+                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewCollegeModal{{ $college->college_id }}" data-bs-toggle="modal" type="button" aria-label="View {{ $college->college_name }}">
                                                 <span class="material-symbols-outlined fs-6">visibility</span>
-                                                Manage
+                                                View
                                             </button>
                                         </td>
                                     </tr>
@@ -142,9 +142,9 @@
                                             {{ $department->instructor_profiles_count === 1 ? 'Instructor' : 'Instructors' }}
                                         </td>
                                         <td class="text-end" data-label="Actions">
-                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewDepartmentModal{{ $department->department_id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $department->dept_name }}">
+                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewDepartmentModal{{ $department->department_id }}" data-bs-toggle="modal" type="button" aria-label="View {{ $department->dept_name }}">
                                                 <span class="material-symbols-outlined fs-6">visibility</span>
-                                                Manage
+                                                View
                                             </button>
                                         </td>
                                     </tr>

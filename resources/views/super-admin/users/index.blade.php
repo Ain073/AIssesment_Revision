@@ -138,9 +138,9 @@
                                             </span>
                                         </td>
                                         <td class="text-center" data-label="Actions">
-                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $user->displayName() }}">
+                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" aria-label="View {{ $user->displayName() }}">
                                                 <span class="material-symbols-outlined fs-6">visibility</span>
-                                                Manage
+                                                View
                                             </button>
                                         </td>
                                     </tr>
@@ -221,9 +221,9 @@
                                             </span>
                                         </td>
                                         <td class="text-center" data-label="Actions">
-                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $user->displayName() }}">
+                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" aria-label="View {{ $user->displayName() }}">
                                                 <span class="material-symbols-outlined fs-6">visibility</span>
-                                                Manage
+                                                View
                                             </button>
                                         </td>
                                     </tr>
