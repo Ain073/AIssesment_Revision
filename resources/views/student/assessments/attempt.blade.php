@@ -24,6 +24,11 @@
             background: #eff4ff;
         }
 
+        .attempt-status-grid {
+            --bs-gutter-x: 1rem;
+            --bs-gutter-y: 1rem;
+        }
+
         .stat-label {
             color: var(--psu-muted);
             font-size: 0.72rem;
@@ -111,6 +116,11 @@
         .question-card {
             padding: 1.5rem;
             scroll-margin-top: 5.5rem;
+        }
+
+        .question-card .form-control {
+            font-size: 1rem;
+            line-height: 1.5;
         }
 
         .one-question-mode .question-card {
@@ -297,18 +307,78 @@
             -ms-user-select: none;
         }
 
+        .no-select input,
+        .no-select textarea {
+            user-select: text;
+            -webkit-user-select: text;
+            -ms-user-select: text;
+            touch-action: manipulation;
+        }
+
         .no-select img {
             -webkit-user-drag: none;
             user-drag: none;
         }
 
         @media (max-width: 575.98px) {
+            .status-card {
+                padding: 0.85rem !important;
+            }
+
+            .attempt-status-grid {
+                --bs-gutter-x: 0.65rem;
+                --bs-gutter-y: 0.65rem;
+            }
+
+            .stat-label {
+                font-size: 0.62rem;
+            }
+
             .stat-value {
-                font-size: 2.1rem;
+                font-size: 1.65rem;
+            }
+
+            .stat-sub {
+                font-size: 0.78rem;
+            }
+
+            .monitoring-badge {
+                width: 100%;
+                justify-content: center;
+                padding: 0.6rem 0.75rem;
+                font-size: 0.76rem;
             }
 
             .question-card {
-                padding: 1rem;
+                padding: 0.9rem;
+                border-radius: 0.45rem;
+            }
+
+            .question-card h2 {
+                font-size: 1.05rem;
+                line-height: 1.35;
+            }
+
+            .question-card .badge {
+                padding: 0.45rem 0.65rem !important;
+                font-size: 0.68rem;
+                white-space: normal;
+            }
+
+            .option-label {
+                gap: 0.6rem;
+                padding: 0.75rem;
+                line-height: 1.35;
+            }
+
+            .question-card .form-control,
+            .question-card .form-control-lg {
+                min-height: 2.85rem;
+                font-size: 1rem;
+            }
+
+            .question-card textarea.form-control {
+                min-height: 8rem;
             }
 
             .sticky-action-bar .container {
@@ -318,6 +388,10 @@
             .sticky-action-bar .btn {
                 width: 100%;
                 justify-content: center;
+            }
+
+            .security-alert {
+                font-size: 0.82rem;
             }
         }
     </style>
@@ -402,7 +476,7 @@
     </div>
 
     <div class="status-card p-3 p-md-4 mb-4">
-        <div class="row g-4 align-items-center">
+        <div class="row attempt-status-grid align-items-center">
             <div class="col-6 col-md-3 col-lg-2">
                 <div class="stat-label mb-1">Progress</div>
                 <div class="d-flex align-items-baseline gap-2">

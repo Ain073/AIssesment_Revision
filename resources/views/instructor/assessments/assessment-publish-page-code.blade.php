@@ -7,6 +7,13 @@
         const classEmptyState = document.getElementById('classEmptyState');
         const selectedClassCount = document.getElementById('selectedClassCount');
         const classDropdownLabel = document.getElementById('classDropdownLabel');
+        const publishForm = document.getElementById('publishAssessmentForm');
+        const publishConfirmModalElement = document.getElementById('publishConfirmModal');
+        const publishConfirmModal = publishConfirmModalElement
+            ? new bootstrap.Modal(publishConfirmModalElement)
+            : null;
+        const confirmPublishButton = document.getElementById('confirmPublishAssessment');
+        let publishConfirmed = false;
 
         const filterSelect = (select, subjectId) => {
             Array.from(select.options).forEach((option) => {
@@ -78,6 +85,32 @@
         subjectSelect.addEventListener('change', syncSubjectChoices);
         classCheckboxes.forEach((checkbox) => {
             checkbox.addEventListener('change', () => syncClassOptions(subjectSelect.value));
+        });
+
+        publishForm?.addEventListener('submit', (event) => {
+            if (publishConfirmed) {
+                return;
+            }
+
+            const selectedCount = Array.from(classCheckboxes).filter((checkbox) => checkbox.checked && ! checkbox.disabled).length;
+
+            if (selectedCount === 0) {
+                return;
+            }
+
+            event.preventDefault();
+            publishConfirmModal?.show();
+        });
+
+        confirmPublishButton?.addEventListener('click', () => {
+            if (! publishForm) {
+                return;
+            }
+
+            publishConfirmed = true;
+            confirmPublishButton.disabled = true;
+            confirmPublishButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Publishing...';
+            publishForm.requestSubmit();
         });
 
         syncSubjectChoices();

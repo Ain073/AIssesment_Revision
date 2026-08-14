@@ -244,11 +244,15 @@
             contextmenu: 'context_menu_attempt',
         };
         const isAnswerField = (element) => {
-            return ['INPUT', 'TEXTAREA'].includes(element?.tagName);
+            return element?.matches?.('input[type="text"], textarea');
         };
 
         Object.entries(restrictedEvents).forEach(([eventName, eventType]) => {
             document.addEventListener(eventName, (event) => {
+                if (isAnswerField(event.target)) {
+                    return;
+                }
+
                 event.preventDefault();
                 recordWarning(eventType);
             });
@@ -265,10 +269,18 @@
             });
 
             section.addEventListener('dragstart', (event) => {
+                if (isAnswerField(event.target)) {
+                    return;
+                }
+
                 event.preventDefault();
             });
 
-            section.addEventListener('mouseup', () => {
+            section.addEventListener('mouseup', (event) => {
+                if (isAnswerField(event.target)) {
+                    return;
+                }
+
                 window.getSelection()?.removeAllRanges();
             });
         });

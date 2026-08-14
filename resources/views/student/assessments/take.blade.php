@@ -27,6 +27,59 @@
             border-radius: 0.5rem;
             background: #f8faff;
         }
+
+        @media (max-width: 575.98px) {
+            .assessment-panel {
+                border-radius: 0.45rem;
+            }
+
+            .assessment-header {
+                padding: 0.85rem 1rem !important;
+            }
+
+            .assessment-header h2 {
+                font-size: 1.1rem;
+            }
+
+            .assessment-panel > .p-4 {
+                padding: 1rem !important;
+            }
+
+            h1.brand-text {
+                font-size: 1.45rem;
+                line-height: 1.15;
+                overflow-wrap: anywhere;
+            }
+
+            .detail-card {
+                padding: 0.85rem !important;
+            }
+
+            .detail-card .small {
+                font-size: 0.68rem;
+            }
+
+            .detail-card p:last-child {
+                font-size: 0.9rem;
+                line-height: 1.35;
+                overflow-wrap: anywhere;
+            }
+
+            .security-line {
+                padding: 0.85rem;
+                font-size: 0.86rem;
+            }
+
+            .security-line .badge {
+                white-space: normal;
+                text-align: left;
+            }
+
+            .assessment-panel .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
 @endpush
 

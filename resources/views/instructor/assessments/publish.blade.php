@@ -143,6 +143,22 @@
             color: var(--psu-muted);
         }
 
+        .publish-note {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+            border: 1px solid #f5d776;
+            border-radius: 0.5rem;
+            background: #fff9db;
+            color: #6b5200;
+            padding: 0.85rem 1rem;
+            font-size: 0.92rem;
+        }
+
+        .publish-note .material-symbols-outlined {
+            color: #9a7500;
+        }
+
         @media (max-width: 1199.98px) {
             .toggle-row {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -275,6 +291,14 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="publish-note mt-3">
+                                <span class="material-symbols-outlined fs-5">info</span>
+                                <div>
+                                    Publishing the same assessment to the same class again updates the existing published schedule and settings.
+                                    It will not create a duplicate copy.
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -349,11 +373,36 @@
                         <a class="btn btn-outline-secondary px-4" href="{{ route('instructor.assessments') }}">Cancel</a>
                         <button class="btn btn-psu px-4 d-inline-flex align-items-center gap-2" type="submit">
                             <span class="material-symbols-outlined fs-5">publish</span>
-                            Publish
+                            Publish / Update
                         </button>
                     </div>
                 </form>
             </section>
+        </div>
+    </div>
+
+    <div class="modal fade" id="publishConfirmModal" tabindex="-1" aria-labelledby="publishConfirmTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-body p-4">
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        <span class="material-symbols-outlined fs-2" style="color: var(--psu-navy-2);">publish</span>
+                        <div>
+                            <h2 class="h4 brand-text mb-1" id="publishConfirmTitle" style="color: var(--psu-navy);">Publish Assessment?</h2>
+                            <p class="text-secondary mb-0">
+                                If this assessment was already published to the selected class, its schedule and settings will be updated.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column flex-sm-row justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Review</button>
+                        <button class="btn btn-psu px-4 d-inline-flex align-items-center justify-content-center gap-2" id="confirmPublishAssessment" type="button">
+                            <span class="material-symbols-outlined fs-5">check_circle</span>
+                            Continue
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 @endsection

@@ -104,11 +104,55 @@
         @media (max-width: 767.98px) {
             .report-assessment-card {
                 grid-template-columns: auto minmax(0, 1fr);
+                gap: 0.75rem;
+                padding: 0.85rem;
             }
 
             .report-assessment-card .report-badge {
                 grid-column: 2;
                 justify-self: start;
+            }
+
+            .reports-panel-header {
+                padding: 0.85rem 1rem;
+            }
+
+            .reports-panel-header h2 {
+                font-size: 1.05rem;
+            }
+
+            .report-meta-line {
+                font-size: 0.78rem;
+                line-height: 1.35;
+                overflow-wrap: anywhere;
+            }
+
+            .report-badge {
+                padding: 0.32rem 0.55rem;
+                font-size: 0.66rem;
+                white-space: normal;
+            }
+
+            .reports-panel form {
+                padding: 0.85rem !important;
+            }
+
+            .reports-panel .btn {
+                min-height: 2.35rem;
+                font-size: 0.84rem;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .table-switch-tabs {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .table-switch-button {
+                min-height: 2.5rem;
+                justify-content: center;
+                font-size: 0.78rem;
+                white-space: normal;
             }
         }
     </style>

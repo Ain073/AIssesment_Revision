@@ -74,11 +74,26 @@
 
         @media (max-width: 575.98px) {
             body {
-                padding-bottom: 7.5rem;
+                padding-bottom: 7rem;
             }
 
             .assessment-container {
-                padding-inline: 1rem;
+                width: 100%;
+                padding: 1rem 0.75rem;
+            }
+
+            .assessment-navbar .container-fluid {
+                padding-inline: 0.85rem !important;
+                gap: 0.75rem !important;
+            }
+
+            .assessment-navbar .brand-text {
+                font-size: 1rem;
+            }
+
+            .assessment-navbar .btn {
+                padding: 0.35rem 0.55rem;
+                font-size: 0.78rem;
             }
         }
     </style>
