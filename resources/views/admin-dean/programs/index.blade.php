@@ -92,7 +92,7 @@
         </div>
 
         <div class="table-responsive">
-            <table class="table table-hover mb-0 programs-table">
+            <table class="table table-hover mb-0 programs-table compact-data-table">
                 <thead>
                     <tr>
                         <th>Program Name</th>

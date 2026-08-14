@@ -109,7 +109,7 @@
         </div>
 
         <div class="table-responsive">
-            <table class="table table-hover mb-0 teachers-table">
+            <table class="table table-hover mb-0 teachers-table compact-data-table">
                 <colgroup>
                     <col style="width: 25%;">
                     <col style="width: 22%;">

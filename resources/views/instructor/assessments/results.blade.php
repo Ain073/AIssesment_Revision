@@ -131,7 +131,7 @@
 
         @if ($studentResults->isNotEmpty())
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 results-table">
+                <table class="table table-hover align-middle mb-0 results-table mobile-result-table student-result-table">
                     <thead>
                         <tr>
                             <th>Student</th>

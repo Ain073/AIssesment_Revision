@@ -740,40 +740,54 @@ h1, h2, h3, .brand-text {
         min-width: 640px;
     }
 
-    .table-responsive:has(.mobile-card-table) {
+    .table-responsive:has(.mobile-card-table),
+    .table-responsive:has(.compact-data-table),
+    .table-responsive:has(.mobile-result-table) {
         overflow-x: visible;
     }
 
-    .table-responsive > .mobile-card-table {
+    .table-responsive > .mobile-card-table,
+    .table-responsive > .compact-data-table,
+    .table-responsive > .mobile-result-table {
         min-width: 0;
         table-layout: auto;
     }
 
-    .mobile-card-table colgroup {
+    .mobile-card-table colgroup,
+    .compact-data-table colgroup {
         display: none;
     }
 
-    .mobile-card-table thead {
+    .mobile-card-table thead,
+    .compact-data-table thead {
         display: table-header-group;
     }
 
-    .mobile-card-table tbody {
+    .mobile-card-table tbody,
+    .compact-data-table tbody {
         display: table-row-group;
         background: #fff;
     }
 
-    .mobile-card-table tr {
+    .mobile-card-table tr,
+    .compact-data-table tr {
         display: table-row;
     }
 
     .mobile-card-table thead th,
-    .mobile-card-table tbody td {
+    .mobile-card-table tbody td,
+    .compact-data-table thead th,
+    .compact-data-table tbody td {
         display: none;
     }
 
     .mobile-card-table thead th:first-child,
     .mobile-card-table thead th:last-child,
+    .compact-data-table thead th:first-child,
+    .compact-data-table thead th:last-child,
     .mobile-card-table tbody td.mobile-primary-cell,
+    .compact-data-table tbody td:first-child,
+    .compact-data-table tbody td:last-child,
     .mobile-card-table tbody td[data-label="Actions"],
     .mobile-card-table tbody td[data-label="Action"] {
         display: table-cell;
@@ -781,6 +795,8 @@ h1, h2, h3, .brand-text {
     }
 
     .mobile-card-table thead th:first-child,
+    .compact-data-table thead th:first-child,
+    .compact-data-table tbody td:first-child,
     .mobile-card-table tbody td.mobile-primary-cell {
         width: 68%;
         padding: 0.85rem 0.75rem !important;
@@ -790,6 +806,8 @@ h1, h2, h3, .brand-text {
     }
 
     .mobile-card-table thead th:last-child,
+    .compact-data-table thead th:last-child,
+    .compact-data-table tbody td:last-child,
     .mobile-card-table tbody td[data-label="Actions"],
     .mobile-card-table tbody td[data-label="Action"] {
         width: 32%;
@@ -804,7 +822,14 @@ h1, h2, h3, .brand-text {
         text-align: center !important;
     }
 
+    .compact-data-table tbody td[colspan] {
+        display: table-cell;
+        padding: 2rem 1rem !important;
+        text-align: center !important;
+    }
+
     .mobile-card-table tbody td.mobile-primary-cell::before,
+    .compact-data-table tbody td::before,
     .mobile-card-table tbody td[data-label="Actions"]::before,
     .mobile-card-table tbody td[data-label="Action"]::before,
     .mobile-card-table tbody td.mobile-empty-cell::before {
@@ -812,7 +837,11 @@ h1, h2, h3, .brand-text {
     }
 
     .mobile-card-table .mobile-primary-cell .icon-box,
-    .mobile-card-table .mobile-primary-cell .avatar {
+    .mobile-card-table .mobile-primary-cell .avatar,
+    .compact-data-table tbody td:first-child .icon-box,
+    .compact-data-table tbody td:first-child .avatar,
+    .compact-data-table tbody td:first-child .class-icon,
+    .compact-data-table tbody td:first-child .student-avatar {
         width: 34px;
         height: 34px;
         flex: 0 0 34px;
@@ -820,12 +849,16 @@ h1, h2, h3, .brand-text {
     }
 
     .mobile-card-table .mobile-primary-cell .small,
-    .mobile-card-table .mobile-primary-cell .user-subtext {
+    .mobile-card-table .mobile-primary-cell .user-subtext,
+    .compact-data-table tbody td:first-child .small,
+    .compact-data-table tbody td:first-child .user-subtext {
         display: none;
     }
 
     .mobile-card-table .mobile-primary-cell .fw-bold,
-    .mobile-card-table .mobile-primary-cell .user-name {
+    .mobile-card-table .mobile-primary-cell .user-name,
+    .compact-data-table tbody td:first-child .fw-bold,
+    .compact-data-table tbody td:first-child .user-name {
         display: -webkit-box;
         overflow: hidden;
         -webkit-box-orient: vertical;
@@ -833,11 +866,74 @@ h1, h2, h3, .brand-text {
         line-height: 1.25;
     }
 
+    .mobile-result-table thead th,
+    .mobile-result-table tbody td {
+        display: none;
+    }
+
+    .assessment-result-table thead th:nth-child(1),
+    .assessment-result-table thead th:nth-child(3),
+    .assessment-result-table thead th:nth-child(4),
+    .assessment-result-table tbody td:nth-child(1),
+    .assessment-result-table tbody td:nth-child(3),
+    .assessment-result-table tbody td:nth-child(4),
+    .student-result-table thead th:nth-child(1),
+    .student-result-table thead th:nth-child(2),
+    .student-result-table thead th:nth-child(3),
+    .student-result-table tbody td:nth-child(1),
+    .student-result-table tbody td:nth-child(2),
+    .student-result-table tbody td:nth-child(3) {
+        display: table-cell;
+        vertical-align: middle;
+    }
+
+    .assessment-result-table thead th:nth-child(1),
+    .assessment-result-table tbody td:nth-child(1),
+    .student-result-table thead th:nth-child(1),
+    .student-result-table tbody td:nth-child(1) {
+        width: 52%;
+        text-align: left !important;
+    }
+
+    .assessment-result-table thead th:nth-child(3),
+    .assessment-result-table thead th:nth-child(4),
+    .assessment-result-table tbody td:nth-child(3),
+    .assessment-result-table tbody td:nth-child(4),
+    .student-result-table thead th:nth-child(2),
+    .student-result-table thead th:nth-child(3),
+    .student-result-table tbody td:nth-child(2),
+    .student-result-table tbody td:nth-child(3) {
+        width: 24%;
+        text-align: center !important;
+    }
+
+    .mobile-result-table tbody td:first-child .small,
+    .mobile-result-table .score-meter,
+    .mobile-result-table details {
+        display: none;
+    }
+
+    .mobile-result-table .badge {
+        white-space: normal;
+    }
+
     .mobile-card-table .record-action-trigger {
         width: auto;
         min-width: 72px;
         min-height: 34px;
         padding: 0.35rem 0.5rem;
+    }
+
+    .compact-data-table .action-icon-btn {
+        width: 34px;
+        height: 34px;
+        min-height: 34px;
+        padding: 0;
+    }
+
+    .compact-data-table tbody td:last-child .d-flex {
+        justify-content: flex-end !important;
+        gap: 0.35rem !important;
     }
 
     .page-container > .d-flex,
@@ -908,6 +1004,133 @@ h1, h2, h3, .brand-text {
 }
 
 @media (max-width: 575.98px) {
+    .page-container {
+        padding: 0.85rem 0.65rem;
+    }
+
+    .page-container .btn {
+        min-height: 38px;
+        padding: 0.45rem 0.65rem;
+        font-size: 0.82rem;
+        line-height: 1.15;
+    }
+
+    .page-container .btn .material-symbols-outlined {
+        font-size: 1rem !important;
+    }
+
+    .page-container .form-select,
+    .page-container .form-control {
+        min-height: 38px;
+        padding-top: 0.42rem;
+        padding-bottom: 0.42rem;
+        font-size: 0.82rem;
+    }
+
+    .page-container > .d-flex:first-child {
+        gap: 0.65rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .page-container > .d-flex:first-child > div:last-child {
+        width: 100%;
+    }
+
+    .directory-card,
+    .class-card,
+    .results-panel,
+    .report-table-card {
+        border-radius: 0.45rem;
+    }
+
+    .directory-header,
+    .publish-header,
+    .assessment-header {
+        padding: 0.75rem 0.85rem !important;
+    }
+
+    .directory-header h1,
+    .directory-header h2,
+    .directory-header h3,
+    .publish-header h1,
+    .publish-header h2,
+    .publish-header h3,
+    .assessment-header h1,
+    .assessment-header h2,
+    .assessment-header h3 {
+        font-size: 1rem;
+    }
+
+    .table thead th {
+        padding: 0.65rem 0.6rem;
+        font-size: 0.64rem;
+        letter-spacing: 0.035em;
+    }
+
+    .table tbody td {
+        padding: 0.7rem 0.6rem;
+        font-size: 0.84rem;
+    }
+
+    .compact-data-table thead th:first-child,
+    .compact-data-table tbody td:first-child,
+    .mobile-card-table thead th:first-child,
+    .mobile-card-table tbody td.mobile-primary-cell {
+        width: 70%;
+        padding: 0.75rem 0.65rem !important;
+    }
+
+    .compact-data-table thead th:last-child,
+    .compact-data-table tbody td:last-child,
+    .mobile-card-table thead th:last-child,
+    .mobile-card-table tbody td[data-label="Actions"],
+    .mobile-card-table tbody td[data-label="Action"] {
+        width: 30%;
+        padding: 0.75rem 0.65rem !important;
+    }
+
+    .compact-data-table tbody td:first-child .d-flex,
+    .mobile-card-table .mobile-primary-cell .d-flex {
+        gap: 0.55rem !important;
+    }
+
+    .compact-data-table tbody td:first-child .icon-box,
+    .compact-data-table tbody td:first-child .avatar,
+    .compact-data-table tbody td:first-child .class-icon,
+    .compact-data-table tbody td:first-child .student-avatar,
+    .mobile-card-table .mobile-primary-cell .icon-box,
+    .mobile-card-table .mobile-primary-cell .avatar {
+        width: 30px;
+        height: 30px;
+        flex-basis: 30px;
+    }
+
+    .compact-data-table tbody td:last-child .d-flex:has(form + form),
+    .compact-data-table tbody td:last-child .d-inline-flex:has(.action-icon-btn + .action-icon-btn) {
+        flex-direction: column;
+        align-items: flex-end !important;
+    }
+
+    .compact-data-table tbody td:last-child .btn-sm {
+        min-height: 32px;
+        padding: 0.32rem 0.5rem;
+        font-size: 0.76rem;
+    }
+
+    .mobile-result-table thead th,
+    .mobile-result-table tbody td {
+        padding: 0.65rem 0.5rem !important;
+        font-size: 0.78rem;
+    }
+
+    .mobile-result-table tbody td:first-child .fw-bold {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-height: 1.25;
+    }
+
     .modal-dialog {
         margin: 0.75rem;
     }

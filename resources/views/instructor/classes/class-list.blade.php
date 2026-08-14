@@ -39,7 +39,7 @@
     </div>
 
     <div class="table-responsive">
-        <table class="table table-hover mb-0 classes-table">
+        <table class="table table-hover mb-0 classes-table compact-data-table">
             <thead>
                 <tr>
                     <th>Class</th>

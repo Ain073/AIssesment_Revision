@@ -68,7 +68,7 @@
         </div>
 
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
+            <table class="table table-hover mb-0 compact-data-table">
                 <thead>
                     <tr>
                         <th>Class</th>

@@ -125,7 +125,7 @@
 
             @if ($group['items']->isNotEmpty())
                 <div class="table-responsive">
-                    <table class="table reports-table mb-0">
+                    <table class="table reports-table mb-0 compact-data-table">
                         <thead>
                             <tr>
                                 <th>Assessment</th>

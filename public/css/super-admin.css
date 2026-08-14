@@ -376,6 +376,92 @@
     }
 }
 
+@media (max-width: 575.98px) {
+    .program-toolbar,
+    .subject-toolbar,
+    .academic-term-toolbar {
+        gap: 0.6rem !important;
+        margin-bottom: 0.85rem !important;
+    }
+
+    .program-toolbar {
+        grid-template-columns: minmax(0, 1fr) auto !important;
+    }
+
+    .program-toolbar > form {
+        min-width: 0;
+    }
+
+    .program-toolbar .college-filter-select,
+    .subject-toolbar .program-filter-select,
+    .subject-toolbar .compact-filter-select {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .academic-term-toolbar {
+        padding-bottom: 0.85rem;
+    }
+
+    .academic-term-toolbar form {
+        grid-template-columns: minmax(0, 1fr) auto !important;
+        align-items: end !important;
+    }
+
+    .academic-term-toolbar form > div {
+        min-width: 0;
+    }
+
+    .academic-term-toolbar .btn {
+        width: auto;
+        min-width: 42px;
+        padding-inline: 0.7rem;
+    }
+
+    .active-term-value {
+        font-size: 0.92rem;
+    }
+
+    .subject-toolbar {
+        align-items: stretch !important;
+    }
+
+    .subject-toolbar form {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 0.55rem !important;
+    }
+
+    .subject-toolbar form > div:first-child {
+        grid-column: 1 / -1;
+    }
+
+    .subject-toolbar > button {
+        width: auto !important;
+        justify-self: start;
+        min-width: 0;
+        padding-inline: 0.85rem;
+    }
+
+    .subject-toolbar label,
+    .program-toolbar label,
+    .academic-term-toolbar label {
+        font-size: 0.64rem;
+        margin-bottom: 0.2rem !important;
+    }
+
+    .subjects-table tbody td[data-label="Subject Name"] {
+        font-size: 0.84rem;
+        line-height: 1.25;
+    }
+
+    .subjects-table .record-action-trigger {
+        min-width: 64px;
+        min-height: 32px;
+        padding: 0.3rem 0.5rem;
+        font-size: 0.78rem;
+    }
+}
+
 /* Dashboard */
 .hero-card {
     position: relative;

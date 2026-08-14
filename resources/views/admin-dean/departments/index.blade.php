@@ -105,7 +105,7 @@
         </div>
 
         <div class="table-responsive">
-            <table class="table table-hover mb-0 departments-table">
+            <table class="table table-hover mb-0 departments-table compact-data-table">
                 <thead>
                     <tr>
                         <th>Department Name</th>

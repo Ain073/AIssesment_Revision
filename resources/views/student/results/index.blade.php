@@ -169,7 +169,7 @@
 
         @if ($results->isNotEmpty())
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 results-table">
+                <table class="table table-hover align-middle mb-0 results-table mobile-result-table assessment-result-table">
                     <thead>
                         <tr>
                             <th>Assessment</th>
