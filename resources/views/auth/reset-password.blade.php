@@ -142,6 +142,42 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        @media (max-width: 575.98px) {
+            .auth-shell {
+                min-height: auto;
+                padding: 72px 12px 24px;
+                align-items: flex-start;
+            }
+
+            .auth-card {
+                width: 100%;
+                padding: 1.25rem !important;
+            }
+
+            .auth-logo {
+                width: 76px;
+                height: 76px;
+            }
+
+            .auth-title {
+                font-size: 1.45rem;
+                line-height: 1.18;
+            }
+
+            .form-control.form-control-lg {
+                font-size: 1rem;
+                min-height: 48px;
+            }
+
+            .btn-auth {
+                font-size: 1.15rem;
+            }
+
+            .login-footer {
+                position: static !important;
+            }
+        }
     </style>
 </head>
 <body>

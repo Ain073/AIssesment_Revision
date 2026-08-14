@@ -525,11 +525,246 @@
                 margin-left: 86px;
             }
 
+            .topbar {
+                margin-left: 0;
+            }
+
+            .main-content {
+                left: auto;
+            }
+
             .portal-toast-stack {
                 top: auto;
                 left: auto;
                 bottom: 1rem;
                 right: 1rem;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            body {
+                padding-bottom: 74px;
+            }
+
+            .sidebar {
+                inset: auto 0 0 0;
+                width: 100%;
+                height: 74px;
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center;
+                padding: 0.35rem 0.45rem;
+                box-shadow: 0 -10px 26px rgba(0, 26, 112, 0.22);
+            }
+
+            .sidebar > .p-4 {
+                display: none !important;
+            }
+
+            .sidebar nav {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+                margin: 0 !important;
+                overflow-x: auto;
+                overflow-y: hidden;
+                padding: 0 0.15rem;
+                scrollbar-width: none;
+            }
+
+            .sidebar nav::-webkit-scrollbar {
+                display: none;
+            }
+
+            .sidebar-link {
+                min-width: 72px;
+                height: 60px;
+                flex: 0 0 72px;
+                flex-direction: column;
+                justify-content: center;
+                gap: 0.2rem;
+                padding: 0.35rem 0.25rem;
+                border-radius: 0.5rem;
+                font-size: 0.64rem;
+                line-height: 1.05;
+                text-align: center;
+                letter-spacing: 0;
+            }
+
+            .sidebar-link .material-symbols-outlined {
+                font-size: 1.35rem;
+            }
+
+            .sidebar nav .sidebar-text {
+                display: block;
+                max-width: 66px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .sidebar-link.active {
+                border-left: 0;
+                border-bottom: 3px solid var(--psu-gold);
+                padding-left: 0.25rem;
+                padding-bottom: calc(0.35rem - 3px);
+            }
+
+            .profile-menu-shell {
+                display: block !important;
+                flex: 0 0 54px;
+                margin: 0;
+                padding: 0 0.1rem 0 0.35rem;
+                border-top: 0 !important;
+                border-left: 1px solid rgba(255, 255, 255, 0.18);
+            }
+
+            .profile-menu-toggle {
+                height: 60px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 0.5rem;
+            }
+
+            .profile-menu-toggle > .d-flex {
+                justify-content: center;
+            }
+
+            .sidebar-profile-photo {
+                width: 38px;
+                height: 38px;
+                flex-basis: 38px;
+            }
+
+            .profile-menu-panel {
+                left: auto;
+                right: 0.5rem;
+                bottom: calc(100% + 0.65rem);
+                width: min(280px, calc(100vw - 1rem));
+            }
+
+            .profile-menu-panel .sidebar-text {
+                display: inline;
+            }
+
+            .topbar {
+                left: 0;
+                min-height: 60px;
+                padding: 0.65rem 0.85rem !important;
+                gap: 0.75rem;
+            }
+
+            .topbar > div:first-child {
+                min-width: 0;
+            }
+
+            .topbar > div:last-child {
+                flex-shrink: 0;
+                gap: 0.5rem !important;
+            }
+
+            .topbar .brand-text {
+                max-width: 62vw;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                font-size: 1.15rem;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding-top: 60px;
+                padding-bottom: 0.75rem;
+            }
+
+            .page-container {
+                width: 100%;
+                max-width: 100%;
+                padding: 1rem 0.75rem;
+            }
+
+            .table-switch-tabs {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 0.55rem;
+            }
+
+            .table-switch-button {
+                width: 100%;
+                justify-content: center;
+                min-height: 2.75rem;
+            }
+
+            .directory-header,
+            .publish-header,
+            .assessment-header {
+                padding: 0.9rem 1rem !important;
+            }
+
+            .directory-header h1,
+            .directory-header h2,
+            .directory-header h3,
+            .publish-header h1,
+            .publish-header h2,
+            .publish-header h3,
+            .assessment-header h1,
+            .assessment-header h2,
+            .assessment-header h3 {
+                font-size: 1.2rem;
+            }
+
+            .table-responsive {
+                border-radius: 0 0 0.5rem 0.5rem;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .table-responsive > .table {
+                min-width: 640px;
+            }
+
+            .page-container > .d-flex,
+            .page-container .directory-header,
+            .page-container .publish-header,
+            .page-container .assessment-header {
+                align-items: stretch !important;
+            }
+
+            .page-container .btn {
+                min-height: 42px;
+                white-space: normal;
+            }
+
+            .portal-toast-stack {
+                right: 0.75rem;
+                bottom: 5.25rem;
+                width: calc(100vw - 1.5rem);
+            }
+
+            .portal-toast {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .modal-dialog {
+                margin: 0.75rem;
+            }
+
+            .modal-footer {
+                flex-direction: column-reverse;
+                align-items: stretch;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+            }
+
+            .notification-menu {
+                width: calc(100vw - 1rem);
+                max-height: min(430px, calc(100vh - 6rem));
             }
         }
     </style>

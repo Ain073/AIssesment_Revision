@@ -143,6 +143,42 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        @media (max-width: 575.98px) {
+            .login-shell {
+                min-height: auto;
+                padding: 72px 12px 24px;
+                align-items: flex-start;
+            }
+
+            .login-card {
+                width: 100%;
+                padding: 1.25rem !important;
+            }
+
+            .login-logo {
+                width: 78px;
+                height: 78px;
+            }
+
+            .login-title {
+                font-size: 1.45rem;
+                line-height: 1.18;
+            }
+
+            .form-control.form-control-lg {
+                font-size: 1rem;
+                min-height: 48px;
+            }
+
+            .btn-login {
+                font-size: 1.25rem;
+            }
+
+            .login-footer {
+                position: static !important;
+            }
+        }
     </style>
 </head>
 <body>
