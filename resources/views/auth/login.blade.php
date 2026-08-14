@@ -158,8 +158,8 @@
             }
 
             .login-shell {
-                min-height: calc(100dvh - 112px);
-                padding: 60px 14px 16px;
+                min-height: calc(100dvh - 92px);
+                padding: 56px 14px 10px;
                 align-items: center;
             }
 
@@ -229,17 +229,22 @@
             }
 
             .login-footer {
-                position: static !important;
-                padding: 0.75rem 1rem !important;
+                min-height: 44px;
+                padding: 0.35rem 0.75rem !important;
+            }
+
+            .login-footer > div {
+                gap: 0.45rem !important;
             }
 
             .login-footer .footer-brand {
-                font-size: 1.15rem;
+                font-size: 1rem;
             }
 
             .login-footer p {
-                max-width: 260px;
-                line-height: 1.35;
+                max-width: none;
+                font-size: 0.72rem;
+                line-height: 1.2;
             }
         }
     </style>
