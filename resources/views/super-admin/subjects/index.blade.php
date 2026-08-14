@@ -152,9 +152,9 @@
                                 </span>
                             </td>
                             <td class="text-center" data-label="Actions">
-                                <button class="btn btn-sm record-action-trigger" data-bs-target="#viewSubjectModal{{ $mapping->subject_program_id }}" data-bs-toggle="modal" type="button" aria-label="Manage {{ $mapping->subject?->subject_code }}">
+                                <button class="btn btn-sm record-action-trigger" data-bs-target="#viewSubjectModal{{ $mapping->subject_program_id }}" data-bs-toggle="modal" type="button" aria-label="View {{ $mapping->subject?->subject_name }}">
                                     <span class="material-symbols-outlined fs-6">visibility</span>
-                                    Manage
+                                    View
                                 </button>
                             </td>
                         </tr>
