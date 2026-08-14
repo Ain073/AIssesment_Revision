@@ -156,12 +156,17 @@
         <div class="d-flex align-items-center gap-3">
             @yield('topbar-actions')
             @if (! empty($showTopbarSearch))
-                <div class="global-search d-none d-lg-block">
-                    <div class="input-group" style="width: 320px;">
+                <div class="global-search">
+                    <button class="btn btn-link text-secondary p-1 mobile-search-toggle d-lg-none" data-mobile-search-toggle type="button" aria-expanded="false" aria-controls="topbarSearchPanel" aria-label="Search">
+                        <span class="material-symbols-outlined">search</span>
+                    </button>
+                    <div class="global-search-panel" id="topbarSearchPanel">
+                    <div class="input-group global-search-input">
                         <input class="form-control" data-page-search data-global-search-url="{{ route('portal.search') }}" placeholder="{{ $topbarSearchPlaceholder ?? 'Search records...' }}" type="search" aria-label="Search records">
                         <span class="input-group-text bg-white"><span class="material-symbols-outlined fs-6">search</span></span>
                     </div>
                     <div class="global-search-results d-none" data-global-search-results></div>
+                    </div>
                 </div>
             @endif
             <div class="dropdown">
@@ -380,6 +385,13 @@
 
         const globalSearchBox = () => document.querySelector('[data-global-search-results]');
 
+        const closeMobileSearch = () => {
+            document.querySelectorAll('.global-search.is-open').forEach((search) => {
+                search.classList.remove('is-open');
+                search.querySelector('[data-mobile-search-toggle]')?.setAttribute('aria-expanded', 'false');
+            });
+        };
+
         const hideGlobalSearchResults = () => {
             const box = globalSearchBox();
 
@@ -493,13 +505,33 @@
         });
 
         document.addEventListener('click', (event) => {
+            const searchToggle = event.target.closest('[data-mobile-search-toggle]');
+
+            if (searchToggle) {
+                const search = searchToggle.closest('.global-search');
+                const input = search?.querySelector('[data-page-search]');
+                const isOpen = search?.classList.toggle('is-open');
+
+                searchToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+
+                if (isOpen) {
+                    window.setTimeout(() => input?.focus(), 0);
+                } else {
+                    hideGlobalSearchResults();
+                }
+
+                return;
+            }
+
             if (! event.target.closest('.global-search')) {
+                closeMobileSearch();
                 hideGlobalSearchResults();
             }
         });
 
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
+                closeMobileSearch();
                 hideGlobalSearchResults();
             }
         });

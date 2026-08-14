@@ -164,6 +164,10 @@ h1, h2, h3, .brand-text {
     position: relative;
 }
 
+.global-search-input {
+    width: 320px;
+}
+
 .global-search-results {
     position: absolute;
     top: calc(100% + 0.45rem);
@@ -672,6 +676,57 @@ h1, h2, h3, .brand-text {
         text-overflow: ellipsis;
         white-space: nowrap;
         font-size: 1.15rem;
+    }
+
+    .global-search {
+        position: static;
+    }
+
+    .mobile-search-toggle {
+        min-width: 36px;
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.35rem;
+        text-decoration: none;
+    }
+
+    .mobile-search-toggle:hover,
+    .mobile-search-toggle:focus,
+    .global-search.is-open .mobile-search-toggle {
+        background: #edf2ff;
+        color: var(--psu-navy) !important;
+    }
+
+    .global-search-panel {
+        display: none;
+        position: fixed;
+        top: 60px;
+        left: 0.75rem;
+        right: 0.75rem;
+        z-index: 1085;
+        padding: 0.7rem;
+        background: #fff;
+        border: 1px solid var(--psu-line);
+        border-radius: 0.5rem;
+        box-shadow: 0 18px 36px rgba(0, 26, 112, 0.18);
+    }
+
+    .global-search.is-open .global-search-panel {
+        display: block;
+    }
+
+    .global-search-input {
+        width: 100%;
+    }
+
+    .global-search-results {
+        position: static;
+        width: 100%;
+        max-height: min(320px, calc(100vh - 8.5rem));
+        margin-top: 0.55rem;
+        box-shadow: none;
     }
 
     .main-content {
