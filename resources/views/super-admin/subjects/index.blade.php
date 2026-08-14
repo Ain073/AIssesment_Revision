@@ -190,7 +190,7 @@
     @endif
 
     {{-- Active semester setting --}}
-    <div class="academic-term-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+    <div class="academic-term-toolbar super-admin-form-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
         <div>
             <div class="small fw-bold text-secondary text-uppercase mb-1">Active Semester</div>
             <div class="active-term-value d-flex align-items-center gap-2">
@@ -217,7 +217,7 @@
     </div>
 
     {{-- Filters and actions --}}
-    <div class="subject-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+    <div class="subject-toolbar super-admin-form-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
         <form action="{{ route('super-admin.subjects') }}" class="d-flex flex-wrap align-items-end gap-4" method="GET">
             <div>
                 <label class="form-label small fw-bold text-uppercase mb-1" for="program-filter">View Program</label>

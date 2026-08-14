@@ -178,7 +178,7 @@
             @endif
 
             {{-- Page actions --}}
-            <div class="d-flex flex-wrap justify-content-lg-end gap-2 mb-4">
+            <div class="d-flex flex-wrap justify-content-lg-end gap-2 mb-4 super-admin-toolbar">
                 <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button">
                     <span class="material-symbols-outlined fs-5">person_add</span>
                     Create Instructor
@@ -210,7 +210,7 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0 users-table teachers-table">
+                        <table class="table table-hover mb-0 users-table teachers-table mobile-card-table">
                             <colgroup>
                                 <col style="width: 25%;">
                                 <col style="width: 19%;">
@@ -232,7 +232,7 @@
                             <tbody>
                                 @forelse ($teachers as $user)
                                     <tr>
-                                        <td>
+                                        <td class="mobile-primary-cell" data-label="User">
                                             <div class="d-flex align-items-center gap-3">
                                                 <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
                                                 <div class="user-summary">
@@ -244,8 +244,8 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>{{ $user->email }}</td>
-                                        <td>
+                                        <td data-label="Email">{{ $user->email }}</td>
+                                        <td data-label="Department">
                                             @if ($user->instructorProfile?->department)
                                                 <div>
                                                     <p class="fw-semibold mb-0">{{ $user->instructorProfile->department->dept_name }}</p>
@@ -255,7 +255,7 @@
                                                 <span class="text-secondary fst-italic">Not assigned</span>
                                             @endif
                                         </td>
-                                        <td class="text-center">
+                                        <td class="text-center" data-label="Elevated Access">
                                             <div class="d-flex flex-wrap justify-content-center gap-2">
                                                 @if ($user->hasRole('admin_dean'))
                                                     <span class="badge text-bg-primary rounded-1">Admin/Dean</span>
@@ -268,12 +268,12 @@
                                                 @endif
                                             </div>
                                         </td>
-                                        <td class="text-center">
+                                        <td class="text-center" data-label="Status">
                                             <span class="badge {{ $user->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
                                                 {{ ucfirst($user->status) }}
                                             </span>
                                         </td>
-                                        <td class="text-center">
+                                        <td class="text-center" data-label="Actions">
                                             <div class="action-buttons">
                                                 <button class="btn btn-sm btn-outline-secondary d-inline-flex" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" title="View user" aria-label="View {{ $user->displayName() }}">
                                                     <span class="material-symbols-outlined fs-6">visibility</span>
@@ -289,7 +289,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="text-center py-5" colspan="6">
+                                        <td class="text-center py-5 mobile-empty-cell" colspan="6">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">school</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No teacher accounts yet</h4>
                                             <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button">
@@ -315,7 +315,7 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0 users-table students-table">
+                        <table class="table table-hover mb-0 users-table students-table mobile-card-table">
                             <colgroup>
                                 <col style="width: 31%;">
                                 <col style="width: 22%;">
@@ -335,7 +335,7 @@
                             <tbody>
                                 @forelse ($students as $user)
                                     <tr>
-                                        <td class="text-center">
+                                        <td class="mobile-primary-cell" data-label="User">
                                             <div class="d-flex align-items-center gap-3">
                                                 <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
                                                 <div class="user-summary">
@@ -347,8 +347,8 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>{{ $user->email }}</td>
-                                        <td>
+                                        <td data-label="Email">{{ $user->email }}</td>
+                                        <td data-label="Program">
                                             @if ($user->studentProfile?->program)
                                                 <div>
                                                     <p class="fw-semibold mb-0">{{ $user->studentProfile->program->program_name }}</p>
@@ -358,12 +358,12 @@
                                                 <span class="text-secondary fst-italic">Not assigned</span>
                                             @endif
                                         </td>
-                                        <td>
+                                        <td data-label="Status">
                                             <span class="badge {{ $user->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
                                                 {{ ucfirst($user->status) }}
                                             </span>
                                         </td>
-                                        <td class="text-center">
+                                        <td class="text-center" data-label="Actions">
                                             <div class="action-buttons">
                                                 <button class="btn btn-sm btn-outline-secondary d-inline-flex" data-bs-target="#viewUserModal{{ $user->id }}" data-bs-toggle="modal" type="button" title="View user" aria-label="View {{ $user->displayName() }}">
                                                     <span class="material-symbols-outlined fs-6">visibility</span>
@@ -379,7 +379,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="text-center py-5" colspan="5">
+                                        <td class="text-center py-5 mobile-empty-cell" colspan="5">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No student accounts yet</h4>
                                             <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createStudentModal" data-bs-toggle="modal" type="button">

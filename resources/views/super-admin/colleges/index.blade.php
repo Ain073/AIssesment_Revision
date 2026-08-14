@@ -123,7 +123,7 @@
             @endif
 
             {{-- Page actions --}}
-            <div class="d-flex flex-wrap justify-content-lg-end gap-2 mb-4">
+            <div class="d-flex flex-wrap justify-content-lg-end gap-2 mb-4 super-admin-toolbar">
                 <button class="btn btn-outline-psu d-flex align-items-center gap-2" data-bs-target="#departmentModal" data-bs-toggle="modal" type="button">
                     <span class="material-symbols-outlined fs-5">add_business</span>
                     Add Department
@@ -155,7 +155,7 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0 mobile-card-table">
                             <thead>
                                 <tr>
                                     <th>College Name</th>
@@ -166,17 +166,17 @@
                             <tbody>
                                 @forelse ($colleges as $college)
                                     <tr>
-                                        <td>
+                                        <td class="mobile-primary-cell" data-label="College Name">
                                             <div class="d-flex align-items-center gap-3">
                                                 <span class="icon-box"><span class="material-symbols-outlined">account_balance</span></span>
                                                 <span class="fw-bold" style="color: var(--psu-navy);">{{ $college->college_name }}</span>
                                             </div>
                                         </td>
-                                        <td class="fw-semibold">
+                                        <td class="fw-semibold" data-label="Departments">
                                             {{ $college->departments_count }} {{ $college->departments_count === 1 ? 'Department' : 'Departments' }}
                                         </td>
-                                        <td class="text-end">
-                                            <div class="d-inline-flex justify-content-end gap-2">
+                                        <td class="text-end" data-label="Actions">
+                                            <div class="action-button-group d-inline-flex justify-content-end gap-2">
                                                 <button class="btn btn-sm btn-outline-psu action-button" data-bs-target="#editCollegeModal{{ $college->college_id }}" data-bs-toggle="modal" type="button" title="Edit college">
                                                     <span class="material-symbols-outlined fs-6">edit</span>
                                                 </button>
@@ -188,7 +188,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="text-center py-5" colspan="3">
+                                        <td class="text-center py-5 mobile-empty-cell" colspan="3">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">account_balance</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No colleges yet</h4>
                                             <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#collegeModal" data-bs-toggle="modal" type="button">
@@ -214,7 +214,7 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0 mobile-card-table">
                             <thead>
                                 <tr>
                                     <th>Department Name</th>
@@ -226,14 +226,14 @@
                             <tbody>
                                 @forelse ($departments as $department)
                                     <tr>
-                                        <td class="fw-bold" style="color: var(--psu-navy);">{{ $department->dept_name }}</td>
-                                        <td>{{ $department->college?->college_name }}</td>
-                                        <td>
+                                        <td class="fw-bold mobile-primary-cell" data-label="Department Name" style="color: var(--psu-navy);">{{ $department->dept_name }}</td>
+                                        <td data-label="College">{{ $department->college?->college_name }}</td>
+                                        <td data-label="Instructors">
                                             {{ $department->instructor_profiles_count }}
                                             {{ $department->instructor_profiles_count === 1 ? 'Instructor' : 'Instructors' }}
                                         </td>
-                                        <td class="text-end">
-                                            <div class="d-inline-flex justify-content-end gap-2">
+                                        <td class="text-end" data-label="Actions">
+                                            <div class="action-button-group d-inline-flex justify-content-end gap-2">
                                                 <button class="btn btn-sm btn-outline-psu action-button" data-bs-target="#editDepartmentModal{{ $department->department_id }}" data-bs-toggle="modal" type="button" title="Edit department">
                                                     <span class="material-symbols-outlined fs-6">edit</span>
                                                 </button>
@@ -245,7 +245,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="text-center py-5" colspan="4">
+                                        <td class="text-center py-5 mobile-empty-cell" colspan="4">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">add_business</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No departments yet</h4>
                                             <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#departmentModal" data-bs-toggle="modal" type="button">

@@ -130,7 +130,7 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0 mobile-card-table">
                             <thead>
                                 <tr>
                                     <th>Teacher</th>
@@ -142,7 +142,7 @@
                             <tbody>
                                 @forelse ($adminDeans as $user)
                                     <tr>
-                                        <td>
+                                        <td class="mobile-primary-cell" data-label="Teacher">
                                             <div class="d-flex align-items-center gap-3">
                                                 <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
                                                 <div>
@@ -151,13 +151,13 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>{{ $user->email }}</td>
-                                        <td>
+                                        <td data-label="Email">{{ $user->email }}</td>
+                                        <td data-label="Status">
                                             <span class="badge {{ $user->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
                                                 {{ ucfirst($user->status) }}
                                             </span>
                                         </td>
-                                        <td class="text-end">
+                                        <td class="text-end" data-label="Action">
                                             <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" data-bs-target="#removeAdminDeanModal{{ $user->id }}" data-bs-toggle="modal" type="button">
                                                 <span class="material-symbols-outlined fs-6">remove_circle</span>
                                                 Remove
@@ -166,7 +166,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="text-center py-5" colspan="4">
+                                        <td class="text-center py-5 mobile-empty-cell" colspan="4">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">supervisor_account</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No Admin/Dean authorization yet</h4>
                                             <p class="text-secondary mb-4">Assign a teacher account when you are ready to delegate dean-level access.</p>
@@ -198,7 +198,7 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0 mobile-card-table">
                             <thead>
                                 <tr>
                                     <th>Teacher</th>
@@ -210,7 +210,7 @@
                             <tbody>
                                 @forelse ($departmentChairs as $user)
                                     <tr>
-                                        <td>
+                                        <td class="mobile-primary-cell" data-label="Teacher">
                                             <div class="d-flex align-items-center gap-3">
                                                 <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
                                                 <div>
@@ -219,13 +219,13 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>{{ $user->email }}</td>
-                                        <td>
+                                        <td data-label="Email">{{ $user->email }}</td>
+                                        <td data-label="Status">
                                             <span class="badge {{ $user->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
                                                 {{ ucfirst($user->status) }}
                                             </span>
                                         </td>
-                                        <td class="text-end">
+                                        <td class="text-end" data-label="Action">
                                             <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" data-bs-target="#removeDepartmentChairModal{{ $user->id }}" data-bs-toggle="modal" type="button">
                                                 <span class="material-symbols-outlined fs-6">remove_circle</span>
                                                 Remove
@@ -234,7 +234,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="text-center py-5" colspan="4">
+                                        <td class="text-center py-5 mobile-empty-cell" colspan="4">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No Department Chair authorization yet</h4>
                                             <p class="text-secondary mb-4">Assign a teacher account when you are ready to delegate chair-level access.</p>

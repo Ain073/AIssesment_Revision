@@ -107,7 +107,7 @@
     @endif
 
     {{-- Filters and actions --}}
-    <div class="program-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+    <div class="program-toolbar super-admin-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
         <form action="{{ route('super-admin.programs') }}" method="GET">
             <label class="form-label small fw-bold text-uppercase mb-1" for="college-filter">View College</label>
             <select class="form-select college-filter-select" id="college-filter" name="college" onchange="this.form.submit()">
@@ -136,7 +136,7 @@
         </div>
 
         <div class="table-responsive">
-            <table class="table table-hover mb-0 programs-table">
+            <table class="table table-hover mb-0 programs-table mobile-card-table">
                 <thead>
                     <tr>
                         <th>Program</th>
@@ -149,15 +149,15 @@
                 <tbody>
                     @forelse ($programs as $program)
                         <tr>
-                            <td class="fw-bold" style="color: var(--psu-navy);">{{ $program->program_name }}</td>
-                            <td>{{ $program->college?->college_name ?? 'Not assigned' }}</td>
-                            <td class="count-cell">{{ $program->student_profiles_count }}</td>
-                            <td>
+                            <td class="fw-bold mobile-primary-cell" data-label="Program" style="color: var(--psu-navy);">{{ $program->program_name }}</td>
+                            <td data-label="College">{{ $program->college?->college_name ?? 'Not assigned' }}</td>
+                            <td class="count-cell" data-label="Students">{{ $program->student_profiles_count }}</td>
+                            <td data-label="Status">
                                 <span class="badge {{ $program->is_active ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
                                     {{ $program->is_active ? 'Active' : 'Inactive' }}
                                 </span>
                             </td>
-                            <td class="text-center">
+                            <td class="text-center" data-label="Actions">
                                 <div class="action-buttons">
                                     <button class="btn btn-sm btn-outline-secondary d-inline-flex" data-bs-target="#viewProgramModal{{ $program->program_id }}" data-bs-toggle="modal" type="button" title="View program" aria-label="View {{ $program->program_name }}">
                                         <span class="material-symbols-outlined fs-6">visibility</span>
@@ -173,7 +173,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="text-center py-5" colspan="5">
+                            <td class="text-center py-5 mobile-empty-cell" colspan="5">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">school</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No programs yet</h4>
                                 <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#programModal" data-bs-toggle="modal" type="button">
