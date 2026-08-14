@@ -93,8 +93,8 @@
 
         .stat-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.85rem;
             margin-top: 1.5rem;
         }
 
@@ -105,7 +105,7 @@
         }
 
         .stat-card {
-            padding: 1.25rem;
+            padding: 1rem;
         }
 
         .stat-label {
@@ -128,7 +128,28 @@
             }
 
             .stat-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .stat-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 0.65rem;
+            }
+
+            .stat-card {
+                padding: 0.75rem;
+            }
+
+            .stat-label {
+                font-size: 0.64rem;
+                line-height: 1.15;
+                margin-bottom: 0.35rem;
+            }
+
+            .stat-value {
+                font-size: 1.3rem;
             }
         }
     </style>

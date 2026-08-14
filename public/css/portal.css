@@ -1032,6 +1032,52 @@ h1, h2, h3, .brand-text {
         margin-bottom: 1rem !important;
     }
 
+    .stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 0.65rem !important;
+    }
+
+    .dashboard-stat-row {
+        --bs-gutter-x: 0.65rem;
+        --bs-gutter-y: 0.65rem;
+    }
+
+    .stat-card,
+    .dashboard-stat-row .dashboard-card {
+        padding: 0.75rem !important;
+        min-height: 0;
+    }
+
+    .stat-card > .d-flex,
+    .dashboard-stat-row .dashboard-card > .d-flex {
+        gap: 0.5rem !important;
+    }
+
+    .stat-label {
+        font-size: 0.64rem !important;
+        line-height: 1.15;
+        margin-bottom: 0.35rem !important;
+        overflow-wrap: anywhere;
+    }
+
+    .stat-value {
+        font-size: 1.3rem !important;
+        line-height: 1 !important;
+    }
+
+    .stat-card .icon-tile,
+    .dashboard-stat-row .icon-tile {
+        width: 30px;
+        height: 30px;
+        flex-basis: 30px;
+        border-radius: 0.3rem;
+    }
+
+    .stat-card .icon-tile .material-symbols-outlined,
+    .dashboard-stat-row .icon-tile .material-symbols-outlined {
+        font-size: 1.15rem;
+    }
+
     .page-container > .d-flex:first-child > div:last-child {
         width: 100%;
     }

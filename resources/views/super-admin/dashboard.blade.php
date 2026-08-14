@@ -41,8 +41,8 @@
     </section>
 
     {{-- Main account statistics --}}
-    <div class="row g-4 mb-4">
-        <div class="col-md-6 col-xl-3">
+    <div class="row g-3 mb-4 dashboard-stat-row">
+        <div class="col-6 col-lg-3">
             <div class="dashboard-card p-4 h-100">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
@@ -53,7 +53,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-6 col-xl-3">
+        <div class="col-6 col-lg-3">
             <div class="dashboard-card p-4 h-100">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
@@ -64,7 +64,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-6 col-xl-3">
+        <div class="col-6 col-lg-3">
             <div class="dashboard-card p-4 h-100">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
@@ -75,7 +75,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-6 col-xl-3">
+        <div class="col-6 col-lg-3">
             <div class="dashboard-card p-4 h-100">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
