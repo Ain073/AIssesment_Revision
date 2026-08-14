@@ -20,9 +20,10 @@
 
         body {
             min-height: 100vh;
+            min-height: 100dvh;
             font-family: "Open Sans", sans-serif;
             color: var(--psu-text);
-            background: #000;
+            background: #ebedff;
         }
 
         .material-symbols-outlined {
@@ -145,45 +146,107 @@
         }
 
         @media (max-width: 575.98px) {
+            .topbar {
+                height: 48px;
+                justify-content: center;
+            }
+
+            .brand-title {
+                display: inline !important;
+                font-size: 1.05rem;
+                letter-spacing: 0.04em;
+            }
+
             .login-shell {
-                min-height: auto;
-                padding: 72px 12px 24px;
-                align-items: flex-start;
+                min-height: calc(100dvh - 112px);
+                padding: 60px 14px 16px;
+                align-items: center;
             }
 
             .login-card {
                 width: 100%;
-                padding: 1.25rem !important;
+                max-width: 360px;
+                padding: 1.15rem !important;
+                border-top-width: 3px;
+                border-radius: 0.65rem;
+                box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
             }
 
             .login-logo {
-                width: 78px;
-                height: 78px;
+                width: 64px;
+                height: 64px;
+                margin-bottom: 0.7rem !important;
             }
 
             .login-title {
-                font-size: 1.45rem;
-                line-height: 1.18;
+                font-size: 1.28rem;
+                line-height: 1.12;
+            }
+
+            .login-card .text-center.mb-4 {
+                margin-bottom: 1rem !important;
+            }
+
+            .login-card .mb-3 {
+                margin-bottom: 0.85rem !important;
+            }
+
+            .login-card form > .d-flex {
+                margin-bottom: 1rem !important;
+                gap: 0.5rem;
+            }
+
+            .form-label {
+                font-size: 0.9rem;
+                margin-bottom: 0.4rem;
             }
 
             .form-control.form-control-lg {
-                font-size: 1rem;
-                min-height: 48px;
+                font-size: 0.95rem;
+                min-height: 44px;
+                padding-top: 0.55rem;
+                padding-bottom: 0.55rem;
+            }
+
+            .form-control.with-icon {
+                padding-left: 2.45rem;
+            }
+
+            .form-icon {
+                left: 0.8rem;
+                font-size: 1.25rem;
+            }
+
+            .form-check-label,
+            .auth-link {
+                font-size: 0.9rem;
             }
 
             .btn-login {
-                font-size: 1.25rem;
+                font-size: 1.15rem;
+                padding-top: 0.75rem !important;
+                padding-bottom: 0.75rem !important;
             }
 
             .login-footer {
                 position: static !important;
+                padding: 0.75rem 1rem !important;
+            }
+
+            .login-footer .footer-brand {
+                font-size: 1.15rem;
+            }
+
+            .login-footer p {
+                max-width: 260px;
+                line-height: 1.35;
             }
         }
     </style>
 </head>
 <body>
     <header class="topbar fixed-top d-flex align-items-center px-3 px-md-5">
-        <span class="brand-title h4 mb-0 fw-bold text-white d-none d-lg-inline">AISSESSMENT</span>
+        <span class="brand-title h4 mb-0 fw-bold text-white">AISSESSMENT</span>
     </header>
 
     <main class="login-shell">
