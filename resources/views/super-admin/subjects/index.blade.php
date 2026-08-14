@@ -102,7 +102,7 @@
     </div>
 
     {{-- Subjects table --}}
-    <section class="directory-card shadow-sm">
+    <section class="directory-card subject-directory-card shadow-sm">
         <div class="directory-header px-4 py-3">
             <h3 class="h4 mb-0">Subjects by Program</h3>
         </div>

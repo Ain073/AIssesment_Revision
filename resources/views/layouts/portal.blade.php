@@ -12,9 +12,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 
-    <link href="{{ asset('css/portal.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/portal.css') }}?v={{ filemtime(public_path('css/portal.css')) }}" rel="stylesheet">
     @if (request()->routeIs('super-admin.*'))
-        <link href="{{ asset('css/super-admin.css') }}" rel="stylesheet">
+        <link href="{{ asset('css/super-admin.css') }}?v={{ filemtime(public_path('css/super-admin.css')) }}" rel="stylesheet">
     @endif
 
     @stack('styles')

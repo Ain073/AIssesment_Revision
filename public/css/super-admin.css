@@ -382,9 +382,34 @@
 }
 
 @media (max-width: 575.98px) {
+    .subject-directory-card,
+    .subjects-table-wrap,
+    .subjects-table {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .subject-directory-card {
+        display: block;
+        overflow: hidden;
+    }
+
+    .subjects-table-wrap {
+        display: block;
+        overflow-x: hidden !important;
+    }
+
+    .subjects-table {
+        table-layout: fixed !important;
+    }
+
     .program-toolbar,
     .subject-toolbar,
     .academic-term-toolbar {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
         gap: 0.6rem !important;
         margin-bottom: 0.85rem !important;
     }
@@ -458,9 +483,35 @@
         font-size: 0.9rem;
         line-height: 1.35;
         padding: 0.8rem 0.65rem !important;
+        max-width: 0;
+        min-width: 0;
+        width: 74% !important;
+        white-space: normal !important;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        hyphens: auto;
+    }
+
+    .subjects-table thead th:nth-child(2) {
+        width: 74% !important;
+    }
+
+    .subjects-table thead th:nth-child(7),
+    .subjects-table tbody td[data-label="Actions"] {
+        width: 26% !important;
+        min-width: 0;
+        max-width: 0;
+    }
+
+    .subjects-table tbody td[data-label="Actions"] {
+        padding-left: 0.3rem !important;
+        padding-right: 0.4rem !important;
     }
 
     .subjects-table .record-action-trigger {
+        width: 100%;
+        max-width: 100%;
         min-width: 58px;
         min-height: 32px;
         padding: 0.3rem 0.45rem;
