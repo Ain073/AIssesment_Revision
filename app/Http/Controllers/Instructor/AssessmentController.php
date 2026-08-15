@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Instructor;
 
 use App\Models\Assessment;
+use App\Models\AssessmentItem;
 use App\Models\ClassAssessment;
 use App\Models\Submission;
 use Illuminate\Http\JsonResponse;
@@ -108,6 +109,9 @@ class AssessmentController extends BaseController
         return view('instructor.assessments.show', $this->sharedData($user, 'assessments') + [
             'assessment' => $ownedAssessment,
             'publishableClasses' => $publishableClasses,
+            'hasStudentSubmissions' => $ownedAssessment->classAssessments()
+                ->whereHas('submissions')
+                ->exists(),
             'assessmentTypes' => $this->assessmentTypes(),
             'itemTypes' => $this->itemTypes(),
             'reportCategories' => $this->reportCategories(),
@@ -326,5 +330,171 @@ class AssessmentController extends BaseController
         return redirect()
             ->route('instructor.assessments.show', $ownedAssessment)
             ->with('status', count($validated['items']).' question'.(count($validated['items']) === 1 ? '' : 's').' added.');
+    }
+
+    public function updateAssessmentItem(Request $request, Assessment $assessment, AssessmentItem $item): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
+        $ownedItem = $this->ownedAssessmentItem($ownedAssessment, $item);
+
+        $this->ensureAssessmentHasNoSubmissions($ownedAssessment, 'Questions cannot be edited after students have submitted attempts.');
+
+        $validated = $this->validateAssessmentItemUpdate($request, $ownedItem);
+
+        DB::transaction(function () use ($ownedItem, $validated): void {
+            $ownedItem->update([
+                'question_text' => $validated['question_text'],
+                'points' => $validated['points'],
+            ]);
+
+            $this->syncItemChoices($ownedItem, $validated);
+        });
+
+        Log::info('Assessment item updated by instructor.', [
+            'actor_id' => $user->id,
+            'assessment_id' => $ownedAssessment->assessment_id,
+            'assessment_item_id' => $ownedItem->assessment_item_id,
+        ]);
+
+        return redirect()
+            ->route('instructor.assessments.show', $ownedAssessment)
+            ->with('status', 'Question updated successfully.');
+    }
+
+    public function destroyAssessmentItem(Request $request, Assessment $assessment, AssessmentItem $item): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
+        $ownedItem = $this->ownedAssessmentItem($ownedAssessment, $item);
+
+        $this->ensureAssessmentHasNoSubmissions($ownedAssessment, 'Questions cannot be deleted after students have submitted attempts.');
+
+        DB::transaction(function () use ($ownedAssessment, $ownedItem): void {
+            $ownedItem->delete();
+
+            $ownedAssessment->items()
+                ->orderBy('sort_order')
+                ->get()
+                ->values()
+                ->each(function (AssessmentItem $item, int $index): void {
+                    $item->update(['sort_order' => $index + 1]);
+                });
+        });
+
+        Log::warning('Assessment item deleted by instructor.', [
+            'actor_id' => $user->id,
+            'assessment_id' => $ownedAssessment->assessment_id,
+            'assessment_item_id' => $ownedItem->assessment_item_id,
+        ]);
+
+        return redirect()
+            ->route('instructor.assessments.show', $ownedAssessment)
+            ->with('status', 'Question deleted successfully.');
+    }
+
+    private function ownedAssessmentItem(Assessment $assessment, AssessmentItem $item): AssessmentItem
+    {
+        abort_unless(
+            $item->assessment_id === $assessment->assessment_id,
+            404,
+            'Question not found under this assessment.'
+        );
+
+        return $item->loadMissing('choices');
+    }
+
+    private function ensureAssessmentHasNoSubmissions(Assessment $assessment, string $message): void
+    {
+        if ($assessment->classAssessments()->whereHas('submissions')->exists()) {
+            throw ValidationException::withMessages([
+                'assessment' => $message,
+            ]);
+        }
+    }
+
+    private function validateAssessmentItemUpdate(Request $request, AssessmentItem $item): array
+    {
+        $validated = $request->validate([
+            'question_text' => ['required', 'string', 'max:4000'],
+            'points' => ['required', 'numeric', 'min:0.01', 'max:999.99'],
+            'choices' => ['nullable', 'array', 'max:6'],
+            'choices.*' => ['nullable', 'string', 'max:1000'],
+            'correct_choice' => ['nullable', 'integer', 'min:0', 'max:5'],
+            'true_false_answer' => ['nullable', Rule::in(['true', 'false'])],
+            'accepted_answer' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $choices = collect($validated['choices'] ?? [])
+            ->map(fn ($choice) => trim((string) $choice))
+            ->filter()
+            ->values();
+
+        if ($item->item_type === 'multiple_choice' && $choices->count() < 2) {
+            throw ValidationException::withMessages([
+                'choices' => 'Multiple choice items need at least two choices.',
+            ]);
+        }
+
+        if ($item->item_type === 'multiple_choice' && ! $choices->has((int) ($validated['correct_choice'] ?? -1))) {
+            throw ValidationException::withMessages([
+                'correct_choice' => 'Please select the correct choice.',
+            ]);
+        }
+
+        if ($item->item_type === 'true_false' && empty($validated['true_false_answer'])) {
+            throw ValidationException::withMessages([
+                'true_false_answer' => 'Please select True or False as the correct answer.',
+            ]);
+        }
+
+        if ($item->item_type === 'identification' && blank($validated['accepted_answer'] ?? null)) {
+            throw ValidationException::withMessages([
+                'accepted_answer' => 'Please enter the accepted answer for identification.',
+            ]);
+        }
+
+        $validated['choices'] = $choices->all();
+
+        return $validated;
+    }
+
+    private function syncItemChoices(AssessmentItem $item, array $validated): void
+    {
+        $item->choices()->delete();
+
+        if ($item->item_type === 'multiple_choice') {
+            foreach ($validated['choices'] as $index => $choiceText) {
+                $item->choices()->create([
+                    'choice_text' => $choiceText,
+                    'is_correct' => $index === (int) $validated['correct_choice'],
+                    'sort_order' => $index + 1,
+                ]);
+            }
+
+            return;
+        }
+
+        if ($item->item_type === 'true_false') {
+            foreach (['true' => 'True', 'false' => 'False'] as $value => $label) {
+                $item->choices()->create([
+                    'choice_text' => $label,
+                    'is_correct' => ($validated['true_false_answer'] ?? null) === $value,
+                    'sort_order' => $value === 'true' ? 1 : 2,
+                ]);
+            }
+
+            return;
+        }
+
+        if ($item->item_type === 'identification') {
+            $item->choices()->create([
+                'choice_text' => trim((string) $validated['accepted_answer']),
+                'is_correct' => true,
+                'sort_order' => 1,
+            ]);
+        }
     }
 }
