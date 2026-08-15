@@ -401,6 +401,32 @@
             }
         };
 
+        const cleanupBootstrapOverlays = () => {
+            document.querySelectorAll('.modal.show').forEach((modal) => {
+                bootstrap.Modal.getInstance(modal)?.hide();
+                modal.classList.remove('show');
+                modal.setAttribute('aria-hidden', 'true');
+                modal.removeAttribute('aria-modal');
+                modal.style.display = 'none';
+            });
+
+            document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+        };
+
+        const cleanupStaleBootstrapBackdrops = () => {
+            if (document.querySelector('.modal.show')) {
+                return;
+            }
+
+            document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+        };
+
         const renderGlobalSearchResults = (results, query) => {
             const box = globalSearchBox();
 
@@ -582,6 +608,10 @@
                         return;
                     }
 
+                    if (document.querySelector('.modal.show')) {
+                        return;
+                    }
+
                     if (isLoading || document.hidden || isUserTypingInside() || section.querySelector('.modal.show')) {
                         if (! force) {
                             return;
@@ -606,6 +636,7 @@
                             const html = await response.text();
 
                             if (html.trim()) {
+                                cleanupStaleBootstrapBackdrops();
                                 section.innerHTML = html;
                                 applyPageSearch();
                             }
@@ -786,6 +817,8 @@
 
         const loadPortalPage = async (url, pushHistory = true) => {
             try {
+                cleanupBootstrapOverlays();
+
                 const response = await fetch(url, {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
@@ -831,6 +864,7 @@
                 window.initializeDashboardPage?.();
                 applyPageSearch();
                 movePageFlashAlertsToToast();
+                cleanupStaleBootstrapBackdrops();
                 window.scrollTo(0, 0);
 
                 if (pushHistory) {
@@ -997,6 +1031,7 @@
                     localStorage.setItem('portal-refresh-sections', String(Date.now()));
                     window.refreshPortalSections?.();
                     showPortalMessage(data.message || 'Saved successfully.');
+                    cleanupStaleBootstrapBackdrops();
 
                     if (form.dataset.reloadPageOnSuccess === 'true') {
                         loadPortalPage(window.location.href, false);
@@ -1011,6 +1046,7 @@
                 if (modalElement?.classList.contains('show')) {
                     modalElement.addEventListener('hidden.bs.modal', finishSuccess, { once: true });
                     bootstrap.Modal.getOrCreateInstance(modalElement).hide();
+                    window.setTimeout(cleanupStaleBootstrapBackdrops, 350);
                 } else {
                     finishSuccess();
                 }
