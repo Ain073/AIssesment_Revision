@@ -22,6 +22,8 @@ class SubmissionSecurityEvent extends Model
 
     public const TYPE_WINDOW_BLUR = 'window_blur';
 
+    public const TYPE_FLOATING_WINDOW = 'floating_window';
+
     public const TYPE_PRINT_SHORTCUT = 'print_shortcut';
 
     public const TYPE_SCREENSHOT_SHORTCUT = 'screenshot_shortcut';
@@ -63,6 +65,7 @@ class SubmissionSecurityEvent extends Model
             self::TYPE_CONTEXT_MENU => 'Context menu opened',
             self::TYPE_TAB_HIDDEN => 'Assessment tab hidden',
             self::TYPE_WINDOW_BLUR => 'Assessment window lost focus',
+            self::TYPE_FLOATING_WINDOW => 'Floating or split screen detected',
             self::TYPE_PRINT_SHORTCUT => 'Print shortcut attempted',
             self::TYPE_SCREENSHOT_SHORTCUT => 'Screenshot shortcut attempted',
         ];

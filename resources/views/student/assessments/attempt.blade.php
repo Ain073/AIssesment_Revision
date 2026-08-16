@@ -134,7 +134,7 @@
         .option-label {
             display: flex;
             gap: 0.75rem;
-            align-items: center;
+            align-items: flex-start;
             width: 100%;
             border: 1px solid var(--psu-line);
             border-radius: 0.5rem;
@@ -142,6 +142,16 @@
             padding: 0.9rem 1rem;
             cursor: pointer;
             transition: border-color 0.18s ease, background-color 0.18s ease;
+        }
+
+        .option-label .form-check-input {
+            flex: 0 0 auto;
+            margin-top: 0.2rem !important;
+        }
+
+        .option-label span {
+            min-width: 0;
+            overflow-wrap: anywhere;
         }
 
         .option-label:hover,
@@ -350,24 +360,33 @@
             }
 
             .question-card {
-                padding: 0.9rem;
+                padding: 0.85rem;
                 border-radius: 0.45rem;
+                scroll-margin-top: 4.75rem;
+            }
+
+            .question-card .mb-3.d-flex {
+                gap: 0.45rem !important;
+                margin-bottom: 0.85rem !important;
             }
 
             .question-card h2 {
-                font-size: 1.05rem;
+                margin-bottom: 1rem !important;
+                font-size: 1.02rem;
                 line-height: 1.35;
+                overflow-wrap: anywhere;
             }
 
             .question-card .badge {
-                padding: 0.45rem 0.65rem !important;
-                font-size: 0.68rem;
+                padding: 0.35rem 0.55rem !important;
+                font-size: 0.66rem;
                 white-space: normal;
             }
 
             .option-label {
                 gap: 0.6rem;
-                padding: 0.75rem;
+                min-height: 3rem;
+                padding: 0.7rem 0.75rem;
                 line-height: 1.35;
             }
 
@@ -391,7 +410,22 @@
             }
 
             .security-alert {
+                gap: 0.65rem !important;
+                margin-bottom: 1rem !important;
+                padding: 0.8rem !important;
                 font-size: 0.82rem;
+            }
+
+            .security-alert .material-symbols-outlined {
+                font-size: 1.25rem;
+            }
+
+            .security-alert .badge {
+                max-width: 100%;
+                padding: 0.35rem 0.45rem !important;
+                font-size: 0.64rem;
+                line-height: 1.2;
+                white-space: normal;
             }
         }
     </style>
@@ -404,7 +438,7 @@
         $dueIso = $classAssessment->due_at?->toIso8601String();
         $enabledSecurities = collect([
             ['enabled' => $classAssessment->prevent_copy_paste, 'icon' => 'content_paste_off', 'label' => 'No copy / paste'],
-            ['enabled' => $classAssessment->detect_tab_switch, 'icon' => 'tab', 'label' => 'Tab switch monitoring'],
+            ['enabled' => $classAssessment->detect_tab_switch, 'icon' => 'tab', 'label' => 'Tab/floating monitor'],
             ['enabled' => $classAssessment->screenshot_protection, 'icon' => 'screenshot_monitor', 'label' => 'Screenshot deterrent'],
         ])->where('enabled');
     @endphp

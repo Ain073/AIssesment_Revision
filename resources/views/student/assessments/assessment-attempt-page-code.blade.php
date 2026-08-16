@@ -16,6 +16,8 @@
     let isSubmitConfirmOpen = false;
     let isRecordingWarning = false;
     let lastSecurityIncidentAt = 0;
+    const textAnswerSelector = 'input[type="text"], textarea';
+    const isTextAnswerField = (element = document.activeElement) => Boolean(element?.matches?.(textAnswerSelector));
 
     const closeSecurityWarning = () => {
         if (isAutoSubmitting) {
@@ -126,6 +128,7 @@
         context_menu_attempt: 'The context menu is restricted during this assessment.',
         tab_hidden: 'Leaving or hiding the assessment tab was detected.',
         window_blur: 'The assessment window lost focus.',
+        floating_window: 'Floating window or split-screen mode was detected.',
         print_shortcut: 'Printing assessment content is restricted.',
         screenshot_shortcut: 'A screenshot shortcut was detected.',
     };
@@ -243,9 +246,7 @@
             paste: 'paste_attempt',
             contextmenu: 'context_menu_attempt',
         };
-        const isAnswerField = (element) => {
-            return element?.matches?.('input[type="text"], textarea');
-        };
+        const isAnswerField = (element) => isTextAnswerField(element);
 
         Object.entries(restrictedEvents).forEach(([eventName, eventType]) => {
             document.addEventListener(eventName, (event) => {
@@ -309,6 +310,77 @@
                 recordWarning('tab_hidden');
             }
         });
+
+        const getViewportSize = () => ({
+            width: Math.round(window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth || 0),
+            height: Math.round(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight || 0),
+        });
+
+        let viewportBaseline = getViewportSize();
+        let lastFloatingWindowWarningAt = 0;
+        let lastOrientationChangeAt = 0;
+
+        const refreshViewportBaseline = (size = getViewportSize()) => {
+            viewportBaseline = {
+                width: Math.max(viewportBaseline.width, size.width),
+                height: Math.max(viewportBaseline.height, size.height),
+            };
+        };
+
+        const detectFloatingWindowMode = () => {
+            const now = Date.now();
+
+            if (
+                isAutoSubmitting
+                || isFinalSubmitting
+                || isSubmitConfirmOpen
+                || now - lastOrientationChangeAt < 1800
+                || now - lastFloatingWindowWarningAt < 8000
+            ) {
+                return;
+            }
+
+            const currentViewport = getViewportSize();
+
+            if (currentViewport.width >= viewportBaseline.width || currentViewport.height >= viewportBaseline.height) {
+                refreshViewportBaseline(currentViewport);
+                return;
+            }
+
+            if (isTextAnswerField()) {
+                return;
+            }
+
+            const widthRatio = viewportBaseline.width > 0 ? currentViewport.width / viewportBaseline.width : 1;
+            const heightRatio = viewportBaseline.height > 0 ? currentViewport.height / viewportBaseline.height : 1;
+            const baselineArea = viewportBaseline.width * viewportBaseline.height;
+            const currentArea = currentViewport.width * currentViewport.height;
+            const areaRatio = baselineArea > 0 ? currentArea / baselineArea : 1;
+            const suspiciousWidth = viewportBaseline.width >= 330 && widthRatio < 0.82;
+            const suspiciousHeight = viewportBaseline.height >= 520 && heightRatio < 0.72;
+            const suspiciousArea = baselineArea >= 180000 && areaRatio < 0.64;
+
+            if (suspiciousWidth || suspiciousHeight || suspiciousArea) {
+                lastFloatingWindowWarningAt = now;
+                recordWarning('floating_window');
+            }
+        };
+
+        const queueFloatingWindowCheck = () => {
+            window.setTimeout(detectFloatingWindowMode, 350);
+        };
+
+        window.addEventListener('orientationchange', () => {
+            lastOrientationChangeAt = Date.now();
+            window.setTimeout(() => {
+                viewportBaseline = getViewportSize();
+            }, 1200);
+        });
+        window.addEventListener('resize', queueFloatingWindowCheck);
+        window.visualViewport?.addEventListener('resize', queueFloatingWindowCheck);
+        window.setTimeout(() => {
+            viewportBaseline = getViewportSize();
+        }, 700);
     }
 
     if (oneQuestionMode) {

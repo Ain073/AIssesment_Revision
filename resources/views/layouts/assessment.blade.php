@@ -85,10 +85,25 @@
             .assessment-navbar .container-fluid {
                 padding-inline: 0.85rem !important;
                 gap: 0.75rem !important;
+                min-height: 58px;
             }
 
             .assessment-navbar .brand-text {
-                font-size: 1rem;
+                font-size: 0.98rem;
+            }
+
+            .assessment-navbar-title {
+                min-width: 0;
+                gap: 0.5rem !important;
+            }
+
+            .assessment-attempt-label {
+                max-width: 42vw;
+                overflow: hidden;
+                font-size: 0.68rem;
+                letter-spacing: 0;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
 
             .assessment-navbar .btn {
@@ -103,10 +118,10 @@
 <body>
     <nav class="assessment-navbar sticky-top">
         <div class="container-fluid px-4 h-100 d-flex align-items-center justify-content-between gap-3">
-            <div class="d-flex align-items-center gap-3">
+            <div class="assessment-navbar-title d-flex align-items-center gap-3">
                 <span class="brand-text h5 fw-bold mb-0">Assessment</span>
                 <span class="assessment-divider d-none d-sm-block"></span>
-                <span class="small fw-bold text-white-50 text-uppercase">@yield('attempt-label', 'Quiz Attempt')</span>
+                <span class="assessment-attempt-label small fw-bold text-white-50 text-uppercase">@yield('attempt-label', 'Quiz Attempt')</span>
             </div>
             @yield('navbar-actions')
         </div>
