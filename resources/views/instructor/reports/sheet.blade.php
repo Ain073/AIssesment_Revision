@@ -33,6 +33,8 @@
     ];
     $selectedPaper = array_key_exists(request('paper'), $paperOptions) ? request('paper') : 'long';
     $paper = $paperOptions[$selectedPaper];
+    $rowsPerSheet = 2;
+    $reportSheets = $rows->isEmpty() ? collect([collect()]) : $rows->chunk($rowsPerSheet);
 @endphp
 
 @push('styles')
@@ -142,6 +144,10 @@
             background: #fff;
             border: 2px solid #111827;
             box-sizing: border-box;
+        }
+
+        .report-sheet + .report-sheet {
+            margin-top: 0.75rem;
         }
 
         .report-header,
@@ -556,7 +562,7 @@
             }
 
             .report-matrix tbody td {
-                height: {{ max(1.25, min(3.05, 5.7 / max($rows->count(), 1))) }}in;
+                height: auto;
                 break-inside: avoid;
                 page-break-inside: avoid;
             }
@@ -565,9 +571,23 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                min-height: {{ max(1.0, min(2.85, 5.35 / max($rows->count(), 1))) }}in;
+                min-height: 0.65in;
                 padding-top: 0;
                 text-align: center;
+            }
+
+            .report-sheet {
+                break-after: page;
+                page-break-after: always;
+            }
+
+            .report-sheet:last-child {
+                break-after: auto;
+                page-break-after: auto;
+            }
+
+            .report-sheet + .report-sheet {
+                margin-top: 0;
             }
 
             .report-score-stack {
@@ -650,6 +670,7 @@
         @endforeach
 
         <div class="report-sheet-wrap">
+        @foreach ($reportSheets as $sheetRows)
         <section class="report-sheet">
             <table class="report-header">
                 <colgroup>
@@ -720,7 +741,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($rows as $row)
+                    @foreach ($sheetRows as $row)
                         @php
                             $assessment = $row['assessment'];
                             $analytics = $row['analytics'];
@@ -779,6 +800,7 @@
                 </tbody>
             </table>
         </section>
+        @endforeach
         </div>
     </form>
 @endsection
