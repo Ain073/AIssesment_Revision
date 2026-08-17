@@ -33,9 +33,6 @@
     ];
     $selectedPaper = array_key_exists(request('paper'), $paperOptions) ? request('paper') : 'long';
     $paper = $paperOptions[$selectedPaper];
-    $exportPaper = $paperOptions['long'];
-    $rowsPerSheet = 2;
-    $reportSheets = $rows->isEmpty() ? collect([collect()]) : $rows->chunk($rowsPerSheet);
 @endphp
 
 @push('styles')
@@ -145,10 +142,6 @@
             background: #fff;
             border: 2px solid #111827;
             box-sizing: border-box;
-        }
-
-        .report-sheet + .report-sheet {
-            margin-top: 0.75rem;
         }
 
         .report-header,
@@ -424,15 +417,11 @@
 
         @media print {
             @page {
-                size: {{ $exportPaper['width'] }} {{ $exportPaper['height'] }};
-                margin: {{ $exportPaper['margin'] }};
+                size: {{ $paper['width'] }} {{ $paper['height'] }};
+                margin: {{ $paper['margin'] }};
             }
 
-            html,
             body {
-                width: 100% !important;
-                min-width: 0 !important;
-                margin: 0 !important;
                 background: #fff !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
@@ -450,24 +439,16 @@
             }
 
             .main-content {
-                display: block !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                width: 100% !important;
-                min-height: 0 !important;
             }
 
             .page-container {
-                display: block !important;
                 max-width: none !important;
-                width: 100% !important;
                 padding: 0 !important;
             }
 
-            #reportSheetForm,
             .report-sheet-wrap {
-                display: block !important;
-                width: 100% !important;
                 border: 0 !important;
                 box-shadow: none !important;
                 padding: 0 !important;
@@ -476,128 +457,10 @@
 
             .report-sheet {
                 border: 0;
-                width: calc({{ $exportPaper['width'] }} - ({{ $exportPaper['margin'] }} * 2)) !important;
-                max-width: 100% !important;
-                min-width: 0 !important;
+                width: 100%;
+                min-width: 100%;
                 min-height: auto;
                 padding: 0;
-                box-shadow: none !important;
-                break-inside: auto;
-                page-break-inside: auto;
-            }
-
-            .report-header,
-            .report-matrix {
-                table-layout: fixed;
-                width: 100% !important;
-            }
-
-            .report-header {
-                break-after: avoid;
-                page-break-after: avoid;
-            }
-
-            .report-matrix {
-                break-before: avoid;
-                page-break-before: avoid;
-                margin-top: -1px;
-            }
-
-            .report-header th,
-            .report-header td,
-            .report-matrix th,
-            .report-matrix td {
-                padding: 0.045in 0.055in;
-                font-size: 6.15pt;
-                line-height: 1.08;
-            }
-
-            .report-header th {
-                padding-left: 0.06in;
-                padding-right: 0.06in;
-            }
-
-            .report-logo-cell {
-                width: 0.9in !important;
-            }
-
-            .report-logo {
-                width: 0.48in;
-                height: 0.48in;
-            }
-
-            .report-title {
-                font-size: 10.2pt;
-                line-height: 1.05;
-            }
-
-            .report-subtitle {
-                font-size: 5.8pt;
-                line-height: 1.05;
-            }
-
-            .report-period {
-                font-size: 6.7pt !important;
-            }
-
-            .report-note {
-                font-size: 5.65pt !important;
-                line-height: 1.05 !important;
-            }
-
-            .report-matrix thead th {
-                font-size: 5.85pt;
-                line-height: 1.04;
-            }
-
-            .report-matrix thead {
-                display: table-header-group;
-            }
-
-            .report-matrix tbody {
-                display: table-row-group;
-            }
-
-            .report-matrix tbody tr {
-                break-inside: avoid;
-                page-break-inside: avoid;
-            }
-
-            .report-matrix tbody td {
-                height: auto;
-                break-inside: avoid;
-                page-break-inside: avoid;
-            }
-
-            .report-takers-cell {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                min-height: 0.65in;
-                padding-top: 0;
-                text-align: center;
-            }
-
-            .report-sheet {
-                break-after: page;
-                page-break-after: always;
-            }
-
-            .report-sheet:last-child {
-                break-after: auto;
-                page-break-after: auto;
-            }
-
-            .report-sheet + .report-sheet {
-                margin-top: 0;
-            }
-
-            .report-score-stack {
-                gap: 0.02in;
-            }
-
-            .report-score-stack small {
-                font-size: 5.4pt;
             }
 
             .report-edit-textarea {
@@ -606,10 +469,6 @@
 
             .report-print-text {
                 display: block !important;
-                font-size: 5.75pt;
-                line-height: 1.12;
-                white-space: pre-wrap;
-                overflow-wrap: anywhere;
             }
 
             .report-header-input {
@@ -672,7 +531,6 @@
         @endforeach
 
         <div class="report-sheet-wrap">
-        @foreach ($reportSheets as $sheetRows)
         <section class="report-sheet">
             <table class="report-header">
                 <colgroup>
@@ -743,7 +601,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($sheetRows as $row)
+                    @foreach ($rows as $row)
                         @php
                             $assessment = $row['assessment'];
                             $analytics = $row['analytics'];
@@ -802,7 +660,6 @@
                 </tbody>
             </table>
         </section>
-        @endforeach
         </div>
     </form>
 @endsection
