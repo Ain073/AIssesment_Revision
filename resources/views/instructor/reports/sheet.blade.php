@@ -421,7 +421,11 @@
                 margin: {{ $paper['margin'] }};
             }
 
+            html,
             body {
+                width: 100% !important;
+                min-width: 0 !important;
+                margin: 0 !important;
                 background: #fff !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
@@ -429,21 +433,34 @@
 
             .sidebar,
             .topbar,
-            .report-toolbar {
+            .report-toolbar,
+            .portal-toast-stack,
+            .portal-toast,
+            .modal,
+            .modal-backdrop,
+            .alert {
                 display: none !important;
             }
 
             .main-content {
+                display: block !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                width: 100% !important;
+                min-height: 0 !important;
             }
 
             .page-container {
+                display: block !important;
                 max-width: none !important;
+                width: 100% !important;
                 padding: 0 !important;
             }
 
+            #reportSheetForm,
             .report-sheet-wrap {
+                display: block !important;
+                width: 100% !important;
                 border: 0 !important;
                 box-shadow: none !important;
                 padding: 0 !important;
@@ -452,10 +469,113 @@
 
             .report-sheet {
                 border: 0;
-                width: 100%;
-                min-width: 100%;
+                width: 100% !important;
+                min-width: 0 !important;
                 min-height: auto;
                 padding: 0;
+                box-shadow: none !important;
+                break-inside: auto;
+                page-break-inside: auto;
+            }
+
+            .report-header,
+            .report-matrix {
+                table-layout: fixed;
+                width: 100% !important;
+            }
+
+            .report-header {
+                break-after: avoid;
+                page-break-after: avoid;
+            }
+
+            .report-matrix {
+                break-before: avoid;
+                page-break-before: avoid;
+                margin-top: -1px;
+            }
+
+            .report-header th,
+            .report-header td,
+            .report-matrix th,
+            .report-matrix td {
+                padding: 0.045in 0.055in;
+                font-size: 6.15pt;
+                line-height: 1.08;
+            }
+
+            .report-header th {
+                padding-left: 0.06in;
+                padding-right: 0.06in;
+            }
+
+            .report-logo-cell {
+                width: 0.9in !important;
+            }
+
+            .report-logo {
+                width: 0.48in;
+                height: 0.48in;
+            }
+
+            .report-title {
+                font-size: 10.2pt;
+                line-height: 1.05;
+            }
+
+            .report-subtitle {
+                font-size: 5.8pt;
+                line-height: 1.05;
+            }
+
+            .report-period {
+                font-size: 6.7pt !important;
+            }
+
+            .report-note {
+                font-size: 5.65pt !important;
+                line-height: 1.05 !important;
+            }
+
+            .report-matrix thead th {
+                font-size: 5.85pt;
+                line-height: 1.04;
+            }
+
+            .report-matrix thead {
+                display: table-header-group;
+            }
+
+            .report-matrix tbody {
+                display: table-row-group;
+            }
+
+            .report-matrix tbody tr {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .report-matrix tbody td {
+                height: {{ max(1.25, min(3.05, 5.7 / max($rows->count(), 1))) }}in;
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .report-takers-cell {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: {{ max(1.0, min(2.85, 5.35 / max($rows->count(), 1))) }}in;
+                padding-top: 0;
+                text-align: center;
+            }
+
+            .report-score-stack {
+                gap: 0.02in;
+            }
+
+            .report-score-stack small {
+                font-size: 5.4pt;
             }
 
             .report-edit-textarea {
@@ -464,6 +584,10 @@
 
             .report-print-text {
                 display: block !important;
+                font-size: 5.75pt;
+                line-height: 1.12;
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
             }
 
             .report-header-input {
