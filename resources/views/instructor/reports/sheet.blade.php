@@ -33,6 +33,7 @@
     ];
     $selectedPaper = array_key_exists(request('paper'), $paperOptions) ? request('paper') : 'long';
     $paper = $paperOptions[$selectedPaper];
+    $exportPaper = $paperOptions['long'];
     $rowsPerSheet = 2;
     $reportSheets = $rows->isEmpty() ? collect([collect()]) : $rows->chunk($rowsPerSheet);
 @endphp
@@ -423,8 +424,8 @@
 
         @media print {
             @page {
-                size: {{ $paper['width'] }} {{ $paper['height'] }};
-                margin: {{ $paper['margin'] }};
+                size: {{ $exportPaper['width'] }} {{ $exportPaper['height'] }};
+                margin: {{ $exportPaper['margin'] }};
             }
 
             html,
@@ -475,7 +476,8 @@
 
             .report-sheet {
                 border: 0;
-                width: 100% !important;
+                width: calc({{ $exportPaper['width'] }} - ({{ $exportPaper['margin'] }} * 2)) !important;
+                max-width: 100% !important;
                 min-width: 0 !important;
                 min-height: auto;
                 padding: 0;
