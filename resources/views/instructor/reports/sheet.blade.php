@@ -339,82 +339,6 @@
             display: block;
         }
 
-        @media (max-width: 767.98px) {
-            body.report-focus-mode .page-container {
-                padding: 0.5rem;
-            }
-
-            .report-toolbar {
-                align-items: stretch;
-                gap: 0.75rem;
-            }
-
-            .report-toolbar h1 {
-                font-size: 1.35rem;
-            }
-
-            .report-toolbar-actions {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                width: 100%;
-                gap: 0.5rem;
-            }
-
-            .report-toolbar-actions .btn,
-            .report-paper-control {
-                width: 100%;
-                min-height: 38px;
-                justify-content: center;
-                font-size: 0.82rem;
-                padding: 0.42rem 0.55rem;
-            }
-
-            .report-paper-control {
-                grid-column: 1 / -1;
-                justify-content: space-between;
-            }
-
-            .report-paper-control select {
-                min-width: 105px;
-                max-width: 130px;
-                font-size: 0.82rem;
-            }
-
-            .report-paper-caption {
-                min-width: auto;
-                font-size: 0.68rem;
-            }
-
-            .report-sheet-wrap {
-                margin-inline: -0.25rem;
-                padding: 0.45rem;
-                border-radius: 0.35rem;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .report-sheet {
-                width: 1040px;
-                min-width: 1040px;
-                margin: 0;
-            }
-
-            .report-header th,
-            .report-header td,
-            .report-matrix th,
-            .report-matrix td {
-                font-size: 0.66rem;
-                padding: 0.22rem 0.28rem;
-            }
-
-            .report-title {
-                font-size: 1rem;
-            }
-
-            .report-edit-textarea {
-                min-height: 7rem;
-            }
-        }
-
         @media print {
             @page {
                 size: {{ $paper['width'] }} {{ $paper['height'] }};
@@ -429,12 +353,7 @@
 
             .sidebar,
             .topbar,
-            .report-toolbar,
-            .portal-toast-stack,
-            .portal-toast,
-            .modal,
-            .modal-backdrop,
-            .alert {
+            .report-toolbar {
                 display: none !important;
             }
 
@@ -486,6 +405,7 @@
     <div class="report-toolbar">
         <div>
             <h1 class="brand-text mb-1" style="color: var(--psu-navy);">{{ $reportTypeLabel }} Report</h1>
+            <p class="text-secondary mb-0">Calculated details are from completed submissions. AI draft is only for most and least learned concepts.</p>
         </div>
         <div class="report-toolbar-actions">
             <div class="report-paper-control">
