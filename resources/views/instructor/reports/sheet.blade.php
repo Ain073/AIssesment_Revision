@@ -378,8 +378,21 @@
                 border: 0;
                 width: 100%;
                 min-width: 100%;
-                min-height: auto;
+                height: auto !important;
+                min-height: 0 !important;
                 padding: 0;
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .report-header {
+                break-after: avoid;
+                page-break-after: avoid;
+            }
+
+            .report-matrix {
+                break-before: avoid;
+                page-break-before: avoid;
             }
 
             .report-edit-textarea {
