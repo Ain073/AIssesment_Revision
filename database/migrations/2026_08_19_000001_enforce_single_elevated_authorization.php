@@ -14,13 +14,17 @@ return new class extends Migration
             return;
         }
 
+        $departmentChairUserIds = DB::table('user_roles')
+            ->where('role_id', $departmentChairRoleId)
+            ->pluck('user_id');
+
+        if ($departmentChairUserIds->isEmpty()) {
+            return;
+        }
+
         DB::table('user_roles')
             ->where('role_id', $adminDeanRoleId)
-            ->whereIn('user_id', function ($query) use ($departmentChairRoleId) {
-                $query->select('user_id')
-                    ->from('user_roles')
-                    ->where('role_id', $departmentChairRoleId);
-            })
+            ->whereIn('user_id', $departmentChairUserIds)
             ->delete();
     }
 
