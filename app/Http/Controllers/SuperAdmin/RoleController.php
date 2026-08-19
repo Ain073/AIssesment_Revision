@@ -42,8 +42,12 @@ class RoleController extends Controller
             'teachers' => $teachers,
             'adminDeans' => $adminDeans,
             'departmentChairs' => $departmentChairs,
-            'availableAdminDeanTeachers' => $teachers->reject(fn (User $user) => $user->hasRole('admin_dean'))->values(),
-            'availableDepartmentChairTeachers' => $teachers->reject(fn (User $user) => $user->hasRole('department_chair'))->values(),
+            'availableAdminDeanTeachers' => $teachers
+                ->reject(fn (User $user) => $user->hasRole('admin_dean') || $user->hasRole('department_chair'))
+                ->values(),
+            'availableDepartmentChairTeachers' => $teachers
+                ->reject(fn (User $user) => $user->hasRole('admin_dean') || $user->hasRole('department_chair'))
+                ->values(),
         ]);
     }
 
@@ -61,6 +65,16 @@ class RoleController extends Controller
             return redirect()
                 ->route('super-admin.roles')
                 ->withErrors(new MessageBag(['role' => 'Only teacher accounts can receive this authorization.']));
+        }
+
+        $conflictingRole = $validated['role_name'] === 'admin_dean' ? 'department_chair' : 'admin_dean';
+
+        if ($user->hasRole($conflictingRole)) {
+            return redirect()
+                ->route('super-admin.roles')
+                ->withErrors(new MessageBag([
+                    'role' => 'A teacher can only have one elevated authorization. Remove the current authorization first.',
+                ]));
         }
 
         $roleId = Role::where('role_name', $validated['role_name'])->value('role_id');

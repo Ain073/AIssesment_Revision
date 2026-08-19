@@ -203,6 +203,20 @@ class UserController extends Controller
             'user_id' => ['nullable', 'integer'],
         ]);
 
+        $selectedManagedRoles = collect($validated['authorizations'] ?? [])
+            ->intersect(UserAccountService::MANAGED_ROLES)
+            ->unique()
+            ->values();
+
+        if ($selectedManagedRoles->count() > 1) {
+            return redirect()
+                ->route('super-admin.users')
+                ->withInput()
+                ->withErrors(new MessageBag([
+                    'authorizations' => 'Choose only one elevated authorization: Admin/Dean or Department Chair.',
+                ]));
+        }
+
         DB::transaction(function () use ($user, $validated, $accounts) {
             $accounts->updateAccount($user, $validated, $validated['authorizations'] ?? []);
 

@@ -19,6 +19,26 @@
         });
     }
 
+    function syncExclusiveAuthorizations() {
+        document.querySelectorAll('.authorization-checkbox').forEach((checkbox) => {
+            checkbox.addEventListener('change', () => {
+                if (! checkbox.checked) {
+                    return;
+                }
+
+                const target = checkbox.dataset.teacherTarget;
+
+                document
+                    .querySelectorAll(`.authorization-checkbox[data-teacher-target="${target}"]`)
+                    .forEach((relatedCheckbox) => {
+                        if (relatedCheckbox !== checkbox) {
+                            relatedCheckbox.checked = false;
+                        }
+                    });
+            });
+        });
+    }
+
     function syncDepartmentInput(selectId, departmentSelectId) {
         const roleSelect = document.getElementById(selectId);
         const departmentSelect = document.getElementById(departmentSelectId);
@@ -111,6 +131,8 @@
         syncProfileFields(select.id);
         select.addEventListener('change', () => syncProfileFields(select.id));
     });
+
+    syncExclusiveAuthorizations();
 </script>
 
 @if ($errors->any())

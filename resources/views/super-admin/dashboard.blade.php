@@ -88,7 +88,7 @@
         </div>
     </div>
 
-    {{-- Account status and academic setup --}}
+    {{-- Account status and student distribution --}}
     <div class="overview-grid mb-4">
         <section class="dashboard-card p-4">
             <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
@@ -133,83 +133,47 @@
         </section>
 
         <section class="dashboard-card p-4">
-            <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
+            <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
                 <div>
-                    <p class="stat-label mb-2">Academic Setup</p>
-                    <h2 class="h4 mb-0" style="color: var(--psu-navy);">{{ $activeSemester ?? 'No active semester set' }}</h2>
+                    <p class="stat-label mb-2">Students per Program</p>
+                    <h2 class="h4 mb-0" style="color: var(--psu-navy);">Program Distribution</h2>
                 </div>
-                <span class="icon-tile"><span class="material-symbols-outlined">calendar_month</span></span>
+                <div class="program-filter-group">
+                    <label class="program-filter-label" for="programCollegeFilter">College</label>
+                    <select class="form-select form-select-sm program-college-filter" id="programCollegeFilter">
+                        <option value="">All colleges</option>
+                        @foreach ($programStudentColleges as $college)
+                            <option value="{{ $college->college_id }}">{{ $college->college_name }}</option>
+                        @endforeach
+                    </select>
+                    <span class="badge text-bg-light border rounded-1" id="programShownCount">{{ $programStudentRows->count() }} shown</span>
+                </div>
             </div>
 
-            <div class="setup-grid">
-                <div class="setup-item">
-                    <p class="small fw-bold text-secondary text-uppercase mb-2">Colleges</p>
-                    <div class="setup-value">{{ $totalColleges }}</div>
-                </div>
-                <div class="setup-item">
-                    <p class="small fw-bold text-secondary text-uppercase mb-2">Departments</p>
-                    <div class="setup-value">{{ $totalDepartments }}</div>
-                </div>
-                <div class="setup-item">
-                    <p class="small fw-bold text-secondary text-uppercase mb-2">Programs</p>
-                    <div class="setup-value">{{ $activePrograms }} / {{ $totalPrograms }}</div>
-                </div>
-                <div class="setup-item">
-                    <p class="small fw-bold text-secondary text-uppercase mb-2">Subjects</p>
-                    <div class="setup-value">{{ $activeSubjects }} / {{ $totalSubjects }}</div>
-                </div>
-                <div class="setup-item">
-                    <p class="small fw-bold text-secondary text-uppercase mb-2">Active Semester Subjects</p>
-                    <div class="setup-value">{{ $activeSemesterSubjectCount }}</div>
-                </div>
-                <div class="setup-item">
-                    <p class="small fw-bold text-secondary text-uppercase mb-2">Managed Roles</p>
-                    <div class="setup-value">{{ $totalAdminDeans + $totalDepartmentChairs }}</div>
+            <div class="program-list">
+                @forelse ($programStudentRows as $program)
+                    <div class="program-row" data-college-id="{{ $program['college_id'] }}" data-students="{{ $program['students'] }}">
+                        <div>
+                            <div class="fw-bold program-name" style="color: var(--psu-navy);">{{ $program['name'] }}</div>
+                            <div class="small text-secondary">{{ $program['college'] }}</div>
+                        </div>
+                        <div class="program-track" aria-hidden="true">
+                            <div class="program-fill" style="--bar-width: {{ $program['percentage'] }}%;"></div>
+                        </div>
+                        <div class="fw-bold text-end" style="color: var(--psu-navy);">{{ $program['students'] }}</div>
+                    </div>
+                @empty
+                    <div class="text-center text-secondary py-4">
+                        No programs or student accounts yet.
+                    </div>
+                @endforelse
+
+                <div class="text-center text-secondary py-4 d-none" id="programFilterEmpty">
+                    No programs found for this college.
                 </div>
             </div>
         </section>
     </div>
-
-    {{-- Student distribution by program --}}
-    <section class="dashboard-card p-4">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-            <div>
-                <p class="stat-label mb-2">Students per Program</p>
-                <h2 class="h4 mb-0" style="color: var(--psu-navy);">Top Program Distribution</h2>
-            </div>
-            <div class="program-filter-group">
-                <label class="program-filter-label" for="programCollegeFilter">College</label>
-                <select class="form-select form-select-sm program-college-filter" id="programCollegeFilter">
-                    <option value="">All colleges</option>
-                    @foreach ($programStudentColleges as $college)
-                        <option value="{{ $college->college_id }}">{{ $college->college_name }}</option>
-                    @endforeach
-                </select>
-                <span class="badge text-bg-light border rounded-1" id="programShownCount">{{ $programStudentRows->count() }} shown</span>
-            </div>
-        </div>
-
-        @forelse ($programStudentRows as $program)
-            <div class="program-row" data-college-id="{{ $program['college_id'] }}" data-students="{{ $program['students'] }}">
-                <div>
-                    <div class="fw-bold" style="color: var(--psu-navy);">{{ $program['name'] }}</div>
-                    <div class="small text-secondary">{{ $program['college'] }}</div>
-                </div>
-                <div class="program-track" aria-hidden="true">
-                    <div class="program-fill" style="--bar-width: {{ $program['percentage'] }}%;"></div>
-                </div>
-                <div class="fw-bold text-end" style="color: var(--psu-navy);">{{ $program['students'] }}</div>
-            </div>
-        @empty
-            <div class="text-center text-secondary py-4">
-                No programs or student accounts yet.
-            </div>
-        @endforelse
-
-        <div class="text-center text-secondary py-4 d-none" id="programFilterEmpty">
-            No programs found for this college.
-        </div>
-    </section>
 @endsection
 
 @push('scripts')

@@ -35,15 +35,21 @@ class ReportAiService
 
             throw new \RuntimeException('The selected AI provider is not supported.');
         } catch (RequestException $exception) {
+            $status = $exception->response?->status();
+            $apiMessage = $this->apiErrorMessage($exception);
+
             Log::warning('AI report draft request failed.', [
                 'provider' => $provider,
                 'class_assessment_id' => $classAssessment->class_assessment_id,
-                'status' => $exception->response?->status(),
+                'status' => $status,
                 'message' => $exception->getMessage(),
+                'api_message' => $apiMessage,
             ]);
 
             throw new \RuntimeException(
-                'AI draft could not be generated. Please check the API key, billing credits, or internet connection.',
+                "{$this->providerLabel($provider)} request failed"
+                    .($status ? " ({$status})" : '')
+                    .': '.$apiMessage,
                 previous: $exception,
             );
         } catch (\Throwable $exception) {
@@ -89,6 +95,24 @@ class ReportAiService
     private function providerLabel(string $provider): string
     {
         return (string) config("services.ai_report.providers.$provider.label", Str::headline($provider ?: 'AI provider'));
+    }
+
+    private function apiErrorMessage(RequestException $exception): string
+    {
+        $response = $exception->response;
+
+        if (! $response) {
+            return 'Network connection failed. Please check server internet access.';
+        }
+
+        $payload = $response->json();
+        $message = data_get($payload, 'error.message')
+            ?? data_get($payload, 'error.error.message')
+            ?? data_get($payload, 'message')
+            ?? $response->body()
+            ?? 'Please check the API key, billing credits, and model access.';
+
+        return Str::limit(trim((string) $message), 240);
     }
 
     private function openAiDraft(array $data, string $model, string $key): array
