@@ -46,6 +46,48 @@
             margin-top: 1.25rem;
         }
 
+        .report-filter-toolbar {
+            margin-top: 1rem;
+            padding: 1rem;
+            border: 1px solid var(--psu-line);
+            border-radius: 0.5rem;
+            background: #fff;
+        }
+
+        .report-filter-form {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+            gap: 0.75rem;
+            align-items: end;
+        }
+
+        .report-filter-field {
+            min-width: 0;
+        }
+
+        .report-filter-label {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin-bottom: 0.35rem;
+            color: var(--psu-navy);
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .report-filter-field .form-select {
+            width: 100%;
+            min-width: 0;
+            text-overflow: ellipsis;
+        }
+
+        .report-filter-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
         .report-table-header {
             background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 68%, #8f8a73 120%);
             color: #fff;
@@ -91,6 +133,20 @@
             text-align: center;
         }
 
+        @media (max-width: 767.98px) {
+            .reports-hero {
+                padding: 1.25rem;
+            }
+
+            .report-filter-form {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .report-filter-actions {
+                justify-content: flex-end;
+            }
+        }
+
     </style>
 @endpush
 
@@ -98,6 +154,59 @@
     <section class="reports-hero">
         <p class="small fw-bold text-uppercase mb-2" style="color: rgba(255, 245, 191, 0.92);">Department Chair Module</p>
         <h2 class="brand-text h1 mb-3">Finalized Reports</h2>
+    </section>
+
+    <section class="report-filter-toolbar" aria-label="Report filters">
+        <form action="{{ route('department-chair.reports') }}" class="report-filter-form" method="GET">
+            <input data-report-type-input name="type" type="hidden" value="{{ $activeReportType }}">
+
+            <div class="report-filter-field">
+                <label class="report-filter-label" for="reportTeacherFilter">
+                    <span class="material-symbols-outlined fs-6">person</span>
+                    Teacher
+                </label>
+                <select class="form-select" id="reportTeacherFilter" name="teacher" @disabled($teachers->isEmpty())>
+                    <option value="">All teachers</option>
+                    @foreach ($teachers as $teacher)
+                        <option value="{{ $teacher->instructor_profile_id }}" @selected($selectedTeacherId === $teacher->instructor_profile_id)>
+                            {{ $teacher->user?->displayName() ?? 'Unnamed teacher' }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="report-filter-field">
+                <label class="report-filter-label" for="reportSubjectFilter">
+                    <span class="material-symbols-outlined fs-6">menu_book</span>
+                    Subject
+                </label>
+                <select class="form-select" id="reportSubjectFilter" name="subject" @disabled($subjects->isEmpty())>
+                    <option value="">All subjects</option>
+                    @foreach ($subjects as $subject)
+                        <option value="{{ $subject->subject_id }}" @selected($selectedSubjectId === $subject->subject_id)>
+                            {{ $subject->subject_code }} - {{ $subject->subject_name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="report-filter-actions">
+                <button class="btn btn-psu d-inline-flex align-items-center gap-1" type="submit">
+                    <span class="material-symbols-outlined fs-6">filter_alt</span>
+                    Filter
+                </button>
+                @if ($selectedTeacherId || $selectedSubjectId)
+                    <a
+                        aria-label="Clear report filters"
+                        class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center"
+                        href="{{ route('department-chair.reports', ['type' => $activeReportType]) }}"
+                        title="Clear filters"
+                    >
+                        <span class="material-symbols-outlined fs-6">filter_alt_off</span>
+                    </a>
+                @endif
+            </div>
+        </form>
     </section>
 
     <div class="table-switch-tabs mt-3">

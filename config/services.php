@@ -32,6 +32,18 @@ return [
         'provider' => env('AI_PROVIDER', 'mock'),
         'model' => env('AI_MODEL'),
         'key' => env('AI_API_KEY'),
+        'providers' => [
+            'openai' => [
+                'label' => 'ChatGPT-4',
+                'model' => env('OPENAI_MODEL', env('AI_MODEL', 'gpt-4')),
+                'key' => env('OPENAI_API_KEY', env('AI_API_KEY')),
+            ],
+            'claude' => [
+                'label' => 'Claude Sonnet',
+                'model' => env('CLAUDE_MODEL', 'claude-sonnet-4-20250514'),
+                'key' => env('ANTHROPIC_API_KEY', env('CLAUDE_API_KEY')),
+            ],
+        ],
     ],
 
     'slack' => [

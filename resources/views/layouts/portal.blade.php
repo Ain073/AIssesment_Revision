@@ -924,6 +924,10 @@
                 panel.hidden = panel.dataset.reportPanel !== type;
             });
 
+            document.querySelectorAll('[data-report-type-input]').forEach((input) => {
+                input.value = type;
+            });
+
             syncReportSelection(type);
         });
 

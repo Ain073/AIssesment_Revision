@@ -4,20 +4,40 @@ namespace App\Http\Controllers\DepartmentChair;
 
 use App\Models\ClassAssessment;
 use App\Models\Department;
+use App\Models\InstructorProfile;
 use App\Models\Report;
 use App\Models\Submission;
+use App\Models\Subject;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ReportController extends BaseController
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $user = $this->currentUser();
         $department = $this->scopedDepartment($user);
+        $teachers = $this->reportTeachersForDepartment($department);
+        $subjects = $this->reportSubjectsForDepartment($department);
+        $teacherId = $request->integer('teacher');
+        $subjectId = $request->integer('subject');
+        $selectedTeacherId = $teachers->contains('instructor_profile_id', $teacherId) ? $teacherId : null;
+        $selectedSubjectId = $subjects->contains('subject_id', $subjectId) ? $subjectId : null;
+
         $reports = $this->finalizedReportsForDepartment($department)
+            ->when($selectedTeacherId, function (Builder $query, int $instructorProfileId): void {
+                $query->whereHas('classAssessment.assessment', function (Builder $assessmentQuery) use ($instructorProfileId): void {
+                    $assessmentQuery->where('instructor_id', $instructorProfileId);
+                });
+            })
+            ->when($selectedSubjectId, function (Builder $query, int $subjectId): void {
+                $query->whereHas('classAssessment.assessment', function (Builder $assessmentQuery) use ($subjectId): void {
+                    $assessmentQuery->where('subject_id', $subjectId);
+                });
+            })
             ->latest('updated_at')
             ->get();
 
@@ -27,6 +47,10 @@ class ReportController extends BaseController
             'formativeReports' => $reports->where('report_type', Report::TYPE_FORMATIVE)->values(),
             'summativeReports' => $reports->where('report_type', Report::TYPE_SUMMATIVE)->values(),
             'reportTypes' => $this->reportTypes(),
+            'teachers' => $teachers,
+            'subjects' => $subjects,
+            'selectedTeacherId' => $selectedTeacherId,
+            'selectedSubjectId' => $selectedSubjectId,
         ]);
     }
 
@@ -44,6 +68,7 @@ class ReportController extends BaseController
             'assessment.instructorProfile.user',
             'assessment.instructorProfile.department.college',
             'assessment.subject',
+            'class.instructorProfile.department.college',
             'class.students',
             'class.subject',
             'submissions.answers.choice',
@@ -60,6 +85,15 @@ class ReportController extends BaseController
             ->where('report_type', $type)
             ->where('report_status', Report::STATUS_FINALIZED)
             ->firstOrFail();
+        $rows = collect([
+            [
+                'classAssessment' => $classAssessment,
+                'assessment' => $classAssessment->assessment,
+                'class' => $classAssessment->class,
+                'analytics' => $this->reportAnalytics($classAssessment),
+                'report' => $report,
+            ],
+        ]);
 
         return view('department-chair.reports.show', $this->sharedData($user, 'reports') + [
             'department' => $department,
@@ -67,8 +101,11 @@ class ReportController extends BaseController
             'classAssessment' => $classAssessment,
             'assessment' => $classAssessment->assessment,
             'class' => $classAssessment->class,
-            'analytics' => $this->reportAnalytics($classAssessment),
+            'analytics' => $rows->first()['analytics'],
             'reportTypeLabel' => $this->reportTypes()[$type],
+            'reportType' => $type,
+            'rows' => $rows,
+            'reportMeta' => $this->reportSheetMeta(collect([$classAssessment]), $rows),
         ]);
     }
 
@@ -90,6 +127,44 @@ class ReportController extends BaseController
         return $query->whereHas('classAssessment.assessment.instructorProfile', function ($profileQuery) use ($department): void {
             $profileQuery->where('department_id', $department->department_id);
         });
+    }
+
+    private function reportTeachersForDepartment(?Department $department): Collection
+    {
+        if (! $department) {
+            return collect();
+        }
+
+        return InstructorProfile::query()
+            ->with('user')
+            ->where('department_id', $department->department_id)
+            ->whereHas('assessments.classAssessments.reports', function (Builder $query): void {
+                $query->where('report_status', Report::STATUS_FINALIZED);
+            })
+            ->get()
+            ->sortBy(fn (InstructorProfile $profile): string => Str::lower($profile->user?->displayName() ?? ''))
+            ->values();
+    }
+
+    private function reportSubjectsForDepartment(?Department $department): Collection
+    {
+        if (! $department) {
+            return collect();
+        }
+
+        return Subject::query()
+            ->whereHas('assessments', function (Builder $assessmentQuery) use ($department): void {
+                $assessmentQuery
+                    ->whereHas('instructorProfile', function (Builder $profileQuery) use ($department): void {
+                        $profileQuery->where('department_id', $department->department_id);
+                    })
+                    ->whereHas('classAssessments.reports', function (Builder $reportQuery): void {
+                        $reportQuery->where('report_status', Report::STATUS_FINALIZED);
+                    });
+            })
+            ->orderBy('subject_code')
+            ->orderBy('subject_name')
+            ->get();
     }
 
     private function reportTypes(): array
@@ -166,5 +241,40 @@ class ReportController extends BaseController
     private function formatNumber(float $value): string
     {
         return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
+    }
+
+    private function reportSheetMeta(Collection $classAssessments, Collection $rows): array
+    {
+        $first = $classAssessments->first();
+        $assessment = $first?->assessment;
+        $class = $first?->class;
+        $subject = $assessment?->subject ?: $class?->subject;
+        $instructorProfile = $class?->instructorProfile ?: $assessment?->instructorProfile;
+        $department = $instructorProfile?->department;
+        $college = $department?->college;
+        $schoolYears = $classAssessments
+            ->pluck('class.school_year')
+            ->filter()
+            ->unique()
+            ->values();
+        $studentCount = (int) ($rows->first()['analytics']['students_count'] ?? 0);
+        $defaultCourseCodeTitle = trim(($subject?->subject_code ?? 'No code').' / '.($subject?->subject_name ?? 'No subject'), ' /');
+        $savedCourseCodeTitle = $rows
+            ->pluck('report.course_code_title')
+            ->filter()
+            ->first();
+
+        return [
+            'campus' => 'SAN CARLOS',
+            'college' => $college?->college_name ?? 'Not set',
+            'department' => $department?->dept_name ?? 'Not set',
+            'semester' => 'Second Semester',
+            'school_year' => $schoolYears->count() === 1 ? $schoolYears->first() : 'Multiple school years',
+            'course_code_title' => $savedCourseCodeTitle ?: $defaultCourseCodeTitle,
+            'students_count' => $studentCount,
+            'note' => ($assessment?->report_category === Report::TYPE_SUMMATIVE)
+                ? 'Note: Summative Assessments include the unit/chapter tests, midterm and final examination.'
+                : 'Note: Graded Formative Assessments include the short quizzes, pre-class open-ended questions, end-in-class poll, concept map, homework completion, self-assessment, mind mapping, discussion, identifying misconceptions, exit slips, comprehension questions, doodle notes, quiz poll, think-pair-share, word journal.',
+        ];
     }
 }

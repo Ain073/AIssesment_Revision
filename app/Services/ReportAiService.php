@@ -12,15 +12,16 @@ use Illuminate\Support\Str;
 
 class ReportAiService
 {
-    public function generate(ClassAssessment $classAssessment): array
+    public function generate(ClassAssessment $classAssessment, ?string $provider = null): array
     {
         $data = $this->reportData($classAssessment);
-        $provider = (string) config('services.ai_report.provider', 'mock');
-        $model = (string) config('services.ai_report.model', '');
-        $key = (string) config('services.ai_report.key', '');
+        $provider = $provider ?: (string) config('services.ai_report.provider', 'mock');
+        $settings = $this->providerSettings($provider);
+        $model = (string) ($settings['model'] ?? '');
+        $key = (string) ($settings['key'] ?? '');
 
         if ($provider === 'mock' || $model === '' || $key === '') {
-            throw new \RuntimeException('AI is not fully configured. Please check the provider, model, and API key.');
+            throw new \RuntimeException("{$this->providerLabel($provider)} is not fully configured. Please check the model and API key.");
         }
 
         try {
@@ -57,6 +58,37 @@ class ReportAiService
                 previous: $exception,
             );
         }
+    }
+
+    public function candidateOptions(): array
+    {
+        return collect((array) config('services.ai_report.providers', []))
+            ->map(fn (array $settings, string $provider): array => [
+                'value' => $provider,
+                'label' => (string) ($settings['label'] ?? Str::headline($provider)),
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function providerSettings(string $provider): array
+    {
+        $settings = (array) config("services.ai_report.providers.$provider", []);
+
+        if ($settings !== []) {
+            return $settings;
+        }
+
+        return [
+            'label' => $this->providerLabel($provider),
+            'model' => config('services.ai_report.model'),
+            'key' => config('services.ai_report.key'),
+        ];
+    }
+
+    private function providerLabel(string $provider): string
+    {
+        return (string) config("services.ai_report.providers.$provider.label", Str::headline($provider ?: 'AI provider'));
     }
 
     private function openAiDraft(array $data, string $model, string $key): array

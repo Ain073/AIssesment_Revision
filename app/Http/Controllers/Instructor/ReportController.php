@@ -9,17 +9,37 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ReportController extends BaseController
 {
-    public function reports(): View
+    public function reports(Request $request): View
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $completedAssessments = $this->completedReportableAssessments($instructorProfile);
+        $subjects = $completedAssessments
+            ->map(fn ($classAssessment) => $classAssessment->assessment?->subject ?: $classAssessment->class?->subject)
+            ->filter(fn ($subject): bool => (bool) $subject?->subject_id)
+            ->unique('subject_id')
+            ->sortBy(fn ($subject): string => Str::lower(trim($subject->subject_code.' '.$subject->subject_name)))
+            ->values();
+        $subjectId = $request->integer('subject');
+        $selectedSubjectId = $subjects->contains('subject_id', $subjectId) ? $subjectId : null;
+
+        if ($selectedSubjectId) {
+            $completedAssessments = $completedAssessments
+                ->filter(function ($classAssessment) use ($selectedSubjectId): bool {
+                    $subject = $classAssessment->assessment?->subject ?: $classAssessment->class?->subject;
+
+                    return (int) $subject?->subject_id === $selectedSubjectId;
+                })
+                ->values();
+        }
+
         $formativeAssessments = $completedAssessments->where('assessment.report_category', Report::TYPE_FORMATIVE)->values();
         $summativeAssessments = $completedAssessments->where('assessment.report_category', Report::TYPE_SUMMATIVE)->values();
 
@@ -28,6 +48,8 @@ class ReportController extends BaseController
             'formativeAssessments' => $formativeAssessments,
             'summativeAssessments' => $summativeAssessments,
             'reportCategories' => $this->reportCategories(),
+            'subjects' => $subjects,
+            'selectedSubjectId' => $selectedSubjectId,
         ]);
     }
 
@@ -86,7 +108,7 @@ class ReportController extends BaseController
             ->with('status', 'Selected completed assessments are ready for report review.');
     }
 
-    public function showReportSheet(Request $request): View
+    public function showReportSheet(Request $request, ReportAiService $aiService): View
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
@@ -120,6 +142,8 @@ class ReportController extends BaseController
             'classAssessmentKeys' => $classAssessmentKeys,
             'rows' => $rows,
             'reportMeta' => $this->reportSheetMeta($classAssessments, $rows),
+            'aiCandidates' => $aiService->candidateOptions(),
+            'selectedAiProvider' => (string) config('services.ai_report.provider', 'openai'),
         ]);
     }
 
@@ -215,6 +239,7 @@ class ReportController extends BaseController
             'report_type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
             'class_assessment_keys' => ['required', 'array', 'min:1'],
             'class_assessment_keys.*' => ['required', 'uuid'],
+            'ai_provider' => ['required', 'string', Rule::in(['openai', 'claude'])],
         ]);
 
         $classAssessmentKeys = $this->selectedClassAssessmentKeys($validated['class_assessment_keys']);
@@ -232,9 +257,9 @@ class ReportController extends BaseController
 
         try {
             $drafts = $ownedCompletedAssessments
-                ->mapWithKeys(function ($classAssessment) use ($aiService): array {
+                ->mapWithKeys(function ($classAssessment) use ($aiService, $validated): array {
                     return [
-                        $classAssessment->public_id => $aiService->generate($classAssessment),
+                        $classAssessment->public_id => $aiService->generate($classAssessment, $validated['ai_provider']),
                     ];
                 });
         } catch (\Throwable $exception) {
@@ -248,6 +273,7 @@ class ReportController extends BaseController
             'instructor_profile_id' => $instructorProfile->instructor_profile_id,
             'report_type' => $validated['report_type'],
             'class_assessment_ids' => $ownedCompletedAssessments->pluck('class_assessment_id')->all(),
+            'ai_provider' => $validated['ai_provider'],
             'source' => $drafts->pluck('source')->unique()->values()->all(),
         ]);
 

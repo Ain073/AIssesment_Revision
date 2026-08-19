@@ -144,6 +144,7 @@
             box-sizing: border-box;
         }
 
+        .report-table,
         .report-header,
         .report-matrix {
             width: 100%;
@@ -151,6 +152,8 @@
             table-layout: fixed;
         }
 
+        .report-table th,
+        .report-table td,
         .report-header th,
         .report-header td,
         .report-matrix th,
@@ -162,22 +165,29 @@
             line-height: 1.28;
         }
 
+        .report-table tr:first-child th,
+        .report-table tr:first-child td,
         .report-header tr:first-child th,
         .report-header tr:first-child td {
             border-top-width: 2px;
             border-bottom-width: 2px;
         }
 
+        .report-table tr:nth-child(2) th,
+        .report-table tr:nth-child(2) td,
         .report-header tr:nth-child(2) th,
         .report-header tr:nth-child(2) td {
             border-bottom-width: 2px;
         }
 
+        .report-table tr:nth-child(5) th,
+        .report-table tr:nth-child(5) td,
         .report-header tr:nth-child(5) th,
         .report-header tr:nth-child(5) td {
             border-bottom-width: 2px;
         }
 
+        .report-table td,
         .report-header td {
             overflow-wrap: anywhere;
             word-break: normal;
@@ -199,12 +209,14 @@
             background: #f8fbff;
         }
 
+        .report-table tr:nth-child(-n + 5) th,
         .report-header th {
             padding-left: 0.45rem;
             padding-right: 0.45rem;
             white-space: nowrap;
         }
 
+        .report-table th,
         .report-header th,
         .report-matrix th {
             font-weight: 800;
@@ -261,6 +273,11 @@
 
         .report-matrix tbody tr:last-child td {
             border-bottom-width: 2px;
+        }
+
+        .report-matrix-head th {
+            border-top: 0;
+            border-bottom: 2px solid #111827;
         }
 
         .report-col-takers { width: 12%; }
@@ -345,10 +362,35 @@
                 margin: {{ $paper['margin'] }};
             }
 
+            .report-ai-status,
+            #reportAiStatus {
+                display: none !important;
+            }
+
             body {
                 background: #fff !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+            }
+
+            body::before,
+            body::after {
+                content: "";
+                position: fixed;
+                left: 0;
+                right: 0;
+                z-index: 9999;
+                pointer-events: none;
+            }
+
+            body::before {
+                top: 0;
+                border-top: 2px solid #111827;
+            }
+
+            body::after {
+                bottom: 0;
+                border-bottom: 2px solid #111827;
             }
 
             .sidebar,
@@ -385,14 +427,61 @@
                 page-break-inside: avoid;
             }
 
-            .report-header {
-                break-after: avoid;
-                page-break-after: avoid;
+            .report-table {
+                border-collapse: separate !important;
+                border-spacing: 0 !important;
+                -webkit-box-decoration-break: clone;
+                box-decoration-break: clone;
             }
 
-            .report-matrix {
-                break-before: avoid;
-                page-break-before: avoid;
+            .report-table th,
+            .report-table td {
+                border: 0 !important;
+                border-right: 1px solid #111827 !important;
+                border-bottom: 1px solid #111827 !important;
+                -webkit-box-decoration-break: clone;
+                box-decoration-break: clone;
+            }
+
+            .report-table tr > :first-child {
+                border-left: 1px solid #111827 !important;
+            }
+
+            .report-table tr:first-child > * {
+                border-top: 2px solid #111827 !important;
+                border-top-width: 2px !important;
+                border-bottom-width: 2px !important;
+            }
+
+            .report-table tr:nth-child(2) > *,
+            .report-table tr:nth-child(5) > *,
+            .report-matrix-head > * {
+                border-bottom-width: 2px !important;
+            }
+
+            .report-note {
+                border-top-width: 2px !important;
+                border-bottom: 3px double #111827 !important;
+            }
+
+            .report-table tr:last-child > * {
+                border-bottom-width: 2px !important;
+            }
+
+            .report-table {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .report-table tr,
+            .report-table td,
+            .report-table th {
+                break-inside: auto;
+                page-break-inside: auto;
+            }
+
+            .report-takers-cell {
+                min-height: 0.85in;
             }
 
             .report-edit-textarea {
@@ -442,6 +531,14 @@
                 <span class="material-symbols-outlined fs-5">task_alt</span>
                 Finalize
             </button>
+            <div class="report-paper-control">
+                <label for="aiProvider">AI Candidate</label>
+                <select class="form-select form-select-sm" id="aiProvider">
+                    @foreach ($aiCandidates as $candidate)
+                        <option value="{{ $candidate['value'] }}" @selected($selectedAiProvider === $candidate['value'])>{{ $candidate['label'] }}</option>
+                    @endforeach
+                </select>
+            </div>
             <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" id="generateAiDraftsButton" type="button" data-ai-url="{{ route('instructor.reports.ai-drafts') }}">
                 <span class="material-symbols-outlined fs-5">auto_awesome</span>
                 AI Draft
@@ -465,50 +562,7 @@
 
         <div class="report-sheet-wrap">
         <section class="report-sheet">
-            <table class="report-header">
-                <colgroup>
-                    <col style="width: 125px;">
-                    <col style="width: 165px;">
-                    <col>
-                    <col style="width: 170px;">
-                    <col style="width: 30%;">
-                </colgroup>
-                <tr>
-                    <td class="report-logo-cell" rowspan="2">
-                        <img alt="PSU logo" class="report-logo" src="{{ asset('images/psu-logo-transparent.png') }}">
-                    </td>
-                    <th colspan="4">
-                        <div class="report-title">STUDENTS PERFORMANCE MONITORING ({{ strtoupper($reportTypeLabel) }} ASSESSMENTS)</div>
-                        <div class="report-subtitle">PANGASINAN STATE UNIVERSITY</div>
-                    </th>
-                </tr>
-                <tr>
-                    <th class="report-period" colspan="4">{{ $reportMeta['semester'] }} AY {{ $reportMeta['school_year'] }}</th>
-                </tr>
-                <tr>
-                    <th>Campus</th>
-                    <td colspan="4">{{ strtoupper($reportMeta['campus']) }}</td>
-                </tr>
-                <tr>
-                    <th>College</th>
-                    <td colspan="2">{{ strtoupper($reportMeta['college']) }}</td>
-                    <th>Course Code/Title</th>
-                    <td>
-                        <input class="report-header-input" name="course_code_title" type="text" value="{{ old('course_code_title', $reportMeta['course_code_title']) }}">
-                    </td>
-                </tr>
-                <tr>
-                    <th>Department</th>
-                    <td colspan="2">{{ strtoupper($reportMeta['department']) }}</td>
-                    <th>No. of Students</th>
-                    <td>{{ $reportMeta['students_count'] }}</td>
-                </tr>
-                <tr>
-                    <td class="report-note" colspan="5">{{ $reportMeta['note'] }}</td>
-                </tr>
-            </table>
-
-            <table class="report-matrix">
+            <table class="report-table">
                 <colgroup>
                     <col class="report-col-takers">
                     <col class="report-col-items">
@@ -520,8 +574,41 @@
                     <col class="report-col-issues">
                     <col class="report-col-action">
                 </colgroup>
-                <thead>
+                <tbody>
                     <tr>
+                        <td class="report-logo-cell" rowspan="2">
+                            <img alt="PSU logo" class="report-logo" src="{{ asset('images/psu-logo-transparent.png') }}">
+                        </td>
+                        <th colspan="8">
+                            <div class="report-title">STUDENTS PERFORMANCE MONITORING ({{ strtoupper($reportTypeLabel) }} ASSESSMENTS)</div>
+                            <div class="report-subtitle">PANGASINAN STATE UNIVERSITY</div>
+                        </th>
+                    </tr>
+                    <tr>
+                        <th class="report-period" colspan="8">{{ $reportMeta['semester'] }} AY {{ $reportMeta['school_year'] }}</th>
+                    </tr>
+                    <tr>
+                        <th>Campus</th>
+                        <td colspan="8">{{ strtoupper($reportMeta['campus']) }}</td>
+                    </tr>
+                    <tr>
+                        <th>College</th>
+                        <td colspan="4">{{ strtoupper($reportMeta['college']) }}</td>
+                        <th colspan="2">Course Code/Title</th>
+                        <td colspan="2">
+                            <input class="report-header-input" name="course_code_title" type="text" value="{{ old('course_code_title', $reportMeta['course_code_title']) }}">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Department</th>
+                        <td colspan="4">{{ strtoupper($reportMeta['department']) }}</td>
+                        <th colspan="2">No. of Students</th>
+                        <td colspan="2">{{ $reportMeta['students_count'] }}</td>
+                    </tr>
+                    <tr>
+                        <td class="report-note" colspan="9">{{ $reportMeta['note'] }}</td>
+                    </tr>
+                    <tr class="report-matrix-head">
                         <th>Total Number of Students Who Took the Assessment</th>
                         <th>Number of Items</th>
                         <th>Highest Score</th>
@@ -532,8 +619,6 @@
                         <th>Issues / Concerns Encountered</th>
                         <th>{{ $reportType === 'formative' ? 'Interventions Done' : 'Future Plans to Improve the Curriculum' }}</th>
                     </tr>
-                </thead>
-                <tbody>
                     @foreach ($rows as $row)
                         @php
                             $assessment = $row['assessment'];

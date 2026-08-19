@@ -42,6 +42,7 @@
         });
 
         const aiButton = document.getElementById('generateAiDraftsButton');
+        const aiProvider = document.getElementById('aiProvider');
         const aiStatus = document.getElementById('reportAiStatus');
         const reportForm = document.getElementById('reportSheetForm');
 
@@ -78,7 +79,8 @@
             }
 
             aiButton.disabled = true;
-            showAiStatus('Generating AI draft content...', 'info');
+            const selectedAiLabel = aiProvider?.selectedOptions?.[0]?.textContent?.trim() || 'selected AI candidate';
+            showAiStatus(`Generating AI draft content with ${selectedAiLabel}...`, 'info');
 
             try {
                 const response = await fetch(aiButton.dataset.aiUrl, {
@@ -91,6 +93,7 @@
                     body: JSON.stringify({
                         report_type: @json($reportType),
                         class_assessment_keys: classAssessmentKeys,
+                        ai_provider: aiProvider?.value || 'openai',
                     }),
                 });
 
@@ -102,7 +105,7 @@
 
                 fillAiDrafts(data.drafts ?? {});
 
-                showAiStatus('AI draft generated. Review and edit before saving.', 'success');
+                showAiStatus(`AI draft generated with ${selectedAiLabel}. Review and edit before saving.`, 'success');
             } catch (error) {
                 showAiStatus(error.message || 'Unable to generate AI draft. Please try again.', 'danger');
             } finally {

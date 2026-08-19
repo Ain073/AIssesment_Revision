@@ -1,5 +1,10 @@
 {{-- View, edit, and delete user popups --}}
 @foreach ($users as $user)
+    @php
+        $isInstructorAccount = $user->hasRole('instructor');
+        $isStudentAccount = $user->hasRole('student');
+    @endphp
+
     <div class="modal fade" id="viewUserModal{{ $user->id }}" tabindex="-1" aria-labelledby="viewUserModalLabel{{ $user->id }}" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -38,42 +43,48 @@
                                 @endif
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-uppercase small">Elevated Access</label>
-                            <div class="form-control bg-light">
-                                @php
-                                    $elevatedAccess = collect([
-                                        $user->hasRole('admin_dean') ? 'Admin/Dean' : null,
-                                        $user->hasRole('department_chair') ? 'Department Chair' : null,
-                                    ])->filter()->implode(', ');
-                                @endphp
-                                {{ $elevatedAccess !== '' ? $elevatedAccess : 'None' }}
+                        @if (! $isStudentAccount)
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-uppercase small">Elevated Access</label>
+                                <div class="form-control bg-light">
+                                    @php
+                                        $elevatedAccess = collect([
+                                            $user->hasRole('admin_dean') ? 'Admin/Dean' : null,
+                                            $user->hasRole('department_chair') ? 'Department Chair' : null,
+                                        ])->filter()->implode(', ');
+                                    @endphp
+                                    {{ $elevatedAccess !== '' ? $elevatedAccess : 'None' }}
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-uppercase small">Department</label>
-                            <div class="form-control bg-light">
-                                {{ $user->instructorProfile?->department?->dept_name ?? 'Not assigned' }}
+                        @endif
+                        @if ($isInstructorAccount)
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-uppercase small">Department</label>
+                                <div class="form-control bg-light">
+                                    {{ $user->instructorProfile?->department?->dept_name ?? 'Not assigned' }}
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-uppercase small">Employee Number</label>
-                            <div class="form-control bg-light">
-                                {{ $user->instructorProfile?->employee_number ?? 'Not assigned' }}
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-uppercase small">Employee Number</label>
+                                <div class="form-control bg-light">
+                                    {{ $user->instructorProfile?->employee_number ?? 'Not assigned' }}
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-uppercase small">Program</label>
-                            <div class="form-control bg-light">
-                                {{ $user->studentProfile?->program?->program_name ?? 'Not assigned' }}
+                        @endif
+                        @if ($isStudentAccount)
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-uppercase small">Program</label>
+                                <div class="form-control bg-light">
+                                    {{ $user->studentProfile?->program?->program_name ?? 'Not assigned' }}
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-uppercase small">Student Number</label>
-                            <div class="form-control bg-light">
-                                {{ $user->studentProfile?->student_number ?? 'Not assigned' }}
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-uppercase small">Student Number</label>
+                                <div class="form-control bg-light">
+                                    {{ $user->studentProfile?->student_number ?? 'Not assigned' }}
+                                </div>
                             </div>
-                        </div>
+                        @endif
                     </div>
                 </div>
                 <div class="modal-footer">
