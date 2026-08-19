@@ -20,6 +20,7 @@ class AssessmentPublishController extends BaseController
         $assessments = $instructorProfile
             ? $instructorProfile->assessments()
                 ->with('subject')
+                ->where('status', '!=', Assessment::STATUS_ARCHIVED)
                 ->withCount('items')
                 ->orderBy('title')
                 ->get()

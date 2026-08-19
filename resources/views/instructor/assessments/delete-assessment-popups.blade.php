@@ -1,4 +1,4 @@
-@foreach ($assessments->where('submissions_count', 0) as $assessment)
+@foreach ($assessments as $assessment)
     <div class="modal fade" id="deleteAssessmentModal{{ $assessment->assessment_id }}" tabindex="-1" aria-labelledby="deleteAssessmentModalLabel{{ $assessment->assessment_id }}" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form action="{{ route('instructor.assessments.destroy', $assessment) }}" class="modal-content" method="POST" data-ajax-form data-remove-target="#assessmentCard{{ $assessment->assessment_id }}">
@@ -10,7 +10,7 @@
                 </div>
                 <div class="modal-body">
                     <p class="fw-bold mb-2" style="color: var(--psu-navy);">{{ $assessment->title }}</p>
-                    <p class="text-secondary mb-0">This will remove the assessment, its saved questions, and any unpublished class assignment without student submissions.</p>
+                    <p class="text-secondary mb-0">If this assessment has published records, it will only be removed from Draft / Stored and the published assessment data will remain available.</p>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>

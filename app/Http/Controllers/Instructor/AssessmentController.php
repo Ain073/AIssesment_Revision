@@ -26,6 +26,7 @@ class AssessmentController extends BaseController
         $assessments = $instructorProfile
             ? $instructorProfile->assessments()
                 ->with(['subject', 'items.choices', 'classAssessments.class'])
+                ->where('status', '!=', Assessment::STATUS_ARCHIVED)
                 ->withCount([
                     'items',
                     'classAssessments',
@@ -186,21 +187,31 @@ class AssessmentController extends BaseController
         $instructorProfile = $this->instructorProfile($user);
         $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
 
-        $hasSubmissions = $ownedAssessment->classAssessments()
-            ->whereHas('submissions')
-            ->exists();
-
-        if ($hasSubmissions) {
-            throw ValidationException::withMessages([
-                'assessment' => 'Assessments with student submissions cannot be deleted.',
-            ]);
-        }
+        $hasClassAssignments = $ownedAssessment->classAssessments()->exists();
 
         $assessmentId = $ownedAssessment->assessment_id;
         $assessmentTitle = $ownedAssessment->title;
 
+        if ($hasClassAssignments) {
+            $ownedAssessment->update(['status' => Assessment::STATUS_ARCHIVED]);
+
+            Log::info('Assessment archived by instructor.', [
+                'actor_id' => $user->id,
+                'assessment_id' => $assessmentId,
+                'assessment_title' => $assessmentTitle,
+                'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
+            ]);
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Assessment removed from Draft / Stored. Published records remain available.']);
+            }
+
+            return redirect()
+                ->route('instructor.assessments', ['tab' => 'draft'])
+                ->with('status', 'Assessment removed from Draft / Stored. Published records remain available.');
+        }
+
         DB::transaction(function () use ($ownedAssessment) {
-            $ownedAssessment->classAssessments()->delete();
             $ownedAssessment->items()->delete();
             $ownedAssessment->delete();
         });
