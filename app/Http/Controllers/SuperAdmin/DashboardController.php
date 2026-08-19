@@ -26,7 +26,6 @@ class DashboardController extends Controller
             ->withCount('studentProfiles')
             ->orderByDesc('student_profiles_count')
             ->orderBy('program_name')
-            ->take(6)
             ->get();
         $topProgramStudentCount = (int) $programStudentRows->max('student_profiles_count');
 
@@ -59,6 +58,7 @@ class DashboardController extends Controller
 
                 return [
                     'name' => $program->program_name,
+                    'college_id' => $program->college_id,
                     'college' => $program->college?->college_name ?? 'No college',
                     'students' => $studentCount,
                     'percentage' => $topProgramStudentCount > 0
@@ -66,6 +66,9 @@ class DashboardController extends Controller
                         : 0,
                 ];
             }),
+            'programStudentColleges' => College::query()
+                ->orderBy('college_name')
+                ->get(['college_id', 'college_name']),
             'quickActions' => [
                 [
                     'label' => 'Users',

@@ -177,11 +177,20 @@
                 <p class="stat-label mb-2">Students per Program</p>
                 <h2 class="h4 mb-0" style="color: var(--psu-navy);">Top Program Distribution</h2>
             </div>
-            <span class="badge text-bg-light border rounded-1">{{ $programStudentRows->count() }} shown</span>
+            <div class="program-filter-group">
+                <label class="program-filter-label" for="programCollegeFilter">College</label>
+                <select class="form-select form-select-sm program-college-filter" id="programCollegeFilter">
+                    <option value="">All colleges</option>
+                    @foreach ($programStudentColleges as $college)
+                        <option value="{{ $college->college_id }}">{{ $college->college_name }}</option>
+                    @endforeach
+                </select>
+                <span class="badge text-bg-light border rounded-1" id="programShownCount">{{ $programStudentRows->count() }} shown</span>
+            </div>
         </div>
 
         @forelse ($programStudentRows as $program)
-            <div class="program-row">
+            <div class="program-row" data-college-id="{{ $program['college_id'] }}" data-students="{{ $program['students'] }}">
                 <div>
                     <div class="fw-bold" style="color: var(--psu-navy);">{{ $program['name'] }}</div>
                     <div class="small text-secondary">{{ $program['college'] }}</div>
@@ -196,5 +205,13 @@
                 No programs or student accounts yet.
             </div>
         @endforelse
+
+        <div class="text-center text-secondary py-4 d-none" id="programFilterEmpty">
+            No programs found for this college.
+        </div>
     </section>
 @endsection
+
+@push('scripts')
+    @include('super-admin.dashboard-page-code')
+@endpush

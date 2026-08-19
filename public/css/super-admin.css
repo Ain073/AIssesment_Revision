@@ -734,6 +734,30 @@
     border-radius: inherit;
 }
 
+.program-filter-group {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.program-filter-label {
+    margin: 0;
+    color: #667085;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.program-college-filter {
+    width: auto;
+    min-width: 150px;
+    max-width: 220px;
+    font-weight: 700;
+    color: var(--psu-navy);
+}
+
 @media (max-width: 991.98px) {
     .hero-layout {
         grid-template-columns: 1fr;
@@ -749,6 +773,11 @@
         justify-items: center;
     }
 
+    .program-filter-group {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
     .setup-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -761,5 +790,15 @@
 
     .status-pie {
         width: 150px;
+    }
+
+    .program-filter-group {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .program-college-filter {
+        width: 100%;
+        max-width: none;
     }
 }
