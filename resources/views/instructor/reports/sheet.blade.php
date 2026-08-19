@@ -539,7 +539,7 @@
                     @endforeach
                 </select>
             </div>
-            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" id="generateAiDraftsButton" type="button" data-ai-url="{{ route('instructor.reports.ai-drafts') }}">
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#confirmAiDraftModal">
                 <span class="material-symbols-outlined fs-5">auto_awesome</span>
                 AI Draft
             </button>
@@ -551,6 +551,32 @@
     </div>
 
     <div class="alert report-ai-status" id="reportAiStatus"></div>
+
+    <div class="modal fade" id="confirmAiDraftModal" tabindex="-1" aria-labelledby="confirmAiDraftModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="confirmAiDraftModalLabel">Generate AI Draft?</h2>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">
+                        This will call <strong id="confirmAiProviderLabel">the selected AI candidate</strong> and may consume API credits.
+                    </p>
+                    <p class="text-secondary mb-0">
+                        Continue only when you are ready to generate report content for the selected assessment results.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-psu d-inline-flex align-items-center gap-2" id="generateAiDraftsButton" type="button" data-ai-url="{{ route('instructor.reports.ai-drafts') }}">
+                        <span class="material-symbols-outlined fs-5">auto_awesome</span>
+                        Generate AI Draft
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <form action="{{ route('instructor.reports.save') }}" id="reportSheetForm" method="POST">
         @csrf
