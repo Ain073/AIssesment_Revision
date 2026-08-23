@@ -215,7 +215,7 @@ class ReportAiService
         return <<<PROMPT
 You are helping an instructor prepare the narrative cells of a school performance monitoring report.
 
-Use only the assessment data below. Write in the same formal style used in academic monitoring reports.
+Use only the assessment data below. Write in a natural instructor-assisted academic tone, like a teacher preparing a concise performance monitoring report.
 
 Rules:
 - Return valid JSON only.
@@ -227,17 +227,19 @@ Rules:
 - Summarize the item results into broader concepts or skills.
 - For most learned, use the highest-performing item topics and describe demonstrated competencies.
 - For least learned, use the lowest-performing item topics and describe areas that need reinforcement.
-- Use a construction similar to the example, but adapt the wording to the actual subject, assessment title, item topics, and performance results.
-- Do not copy the example wording when the assessment data points to different concepts or skills.
+- Write as a human-readable paragraph, not as a rigid template.
+- Vary the sentence construction naturally based on the results.
+- Use phrases such as "students demonstrated", "students showed", "most students correctly answered", "students need to strengthen", or "difficulty was observed" only when they fit the data.
+- Do not copy the sample wording when the assessment data points to different concepts or skills.
 - If the data set is small, say "Based on the limited responses" instead of overstating the result.
 - Avoid unsupported student counts, names, or invented statistics.
 - Keep each field to 2 to 4 concise sentences suitable for a narrow report table cell.
 - Do not include markdown, bullets, or labels inside the JSON values.
 
-Example style:
+Sample tone only:
 {
-  "concepts_most_learned_skills": "Demonstrated competence in the foundational and definitional aspects of the lesson, including recall of basic concepts, recognition of key terms, and understanding of the general purpose of the topics covered. Many students showed stronger performance on theory-based items that required remembering definitions or basic explanations.",
-  "concepts_least_learned_skills": "Difficulty related to the practical application and contextual use of the lesson concepts. The lower-performing items suggest that students need reinforcement in applying procedures, distinguishing related terms, and connecting the concepts to real situations."
+  "concepts_most_learned_skills": "Students showed stronger understanding of the foundational concepts covered in the assessment. Their responses suggest that they can recall key terms and explain basic ideas when the questions are direct and theory-based.",
+  "concepts_least_learned_skills": "Students need further support in applying the concepts to practical or situational questions. The results suggest difficulty in connecting the lesson terms with actual procedures, examples, or problem scenarios."
 }
 
 Assessment data:
