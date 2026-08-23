@@ -55,6 +55,12 @@ class AssessmentPublishController extends BaseController
         $instructorProfile = $this->instructorProfile($user);
         $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
 
+        if ($ownedAssessment->status === Assessment::STATUS_ARCHIVED) {
+            return redirect()
+                ->route('instructor.assessments', ['tab' => 'draft'])
+                ->withErrors(['publish' => 'Published assessment records cannot be republished. Use the editable draft template instead.']);
+        }
+
         if (! $ownedAssessment->items()->exists()) {
             return redirect()
                 ->route('instructor.assessments.show', $ownedAssessment)
@@ -121,6 +127,7 @@ class AssessmentPublishController extends BaseController
 
         $ownedAssessment = $instructorProfile->assessments()
             ->where('subject_id', $validated['subject_id'])
+            ->where('status', '!=', Assessment::STATUS_ARCHIVED)
             ->where('public_id', $validated['assessment_key'])
             ->first();
 

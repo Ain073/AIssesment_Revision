@@ -92,6 +92,19 @@ class AssessmentController extends BaseController
         $instructorProfile = $this->instructorProfile($user);
         $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
 
+        if ($ownedAssessment->classAssessments()->exists()) {
+            $editableAssessment = DB::transaction(function () use ($ownedAssessment): Assessment {
+                $copy = $this->copyAssessment($ownedAssessment, Assessment::STATUS_DRAFT);
+                $ownedAssessment->update(['status' => Assessment::STATUS_ARCHIVED]);
+
+                return $copy;
+            });
+
+            return redirect()
+                ->route('instructor.assessments.show', $editableAssessment)
+                ->with('status', 'An editable draft copy was created. Published assessment records remain unchanged.');
+        }
+
         $ownedAssessment->load([
             'subject',
             'items.choices',

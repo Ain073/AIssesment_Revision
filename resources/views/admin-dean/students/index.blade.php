@@ -58,7 +58,7 @@
 
         .students-table {
             width: 100%;
-            min-width: 1080px;
+            min-width: 1120px;
             table-layout: fixed;
         }
 
@@ -105,11 +105,12 @@
         </div>
 
         <div class="table-responsive">
-            <table class="table table-hover mb-0 students-table compact-data-table">
+            <table class="table table-hover mb-0 students-table compact-data-table mobile-card-table">
                 <colgroup>
-                    <col style="width: 30%;">
-                    <col style="width: 35%;">
-                    <col style="width: 25%;">
+                    <col style="width: 27%;">
+                    <col style="width: 32%;">
+                    <col style="width: 22%;">
+                    <col style="width: 9%;">
                     <col style="width: 10%;">
                 </colgroup>
                 <thead>
@@ -118,12 +119,13 @@
                         <th>Program</th>
                         <th>Email</th>
                         <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($students as $student)
                         <tr>
-                            <td>
+                            <td class="mobile-primary-cell" data-label="Student">
                                 <div class="d-flex align-items-center gap-3">
                                     <span class="avatar">{{ strtoupper(substr($student->user?->displayName() ?? 'S', 0, 1)) }}</span>
                                     <div style="min-width: 0;">
@@ -132,7 +134,7 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>
+                            <td data-label="Program">
                                 @if ($student->program)
                                     <p class="fw-semibold mb-0">{{ $student->program->program_name }}</p>
                                     <p class="small text-secondary mb-0">{{ $student->program->college?->college_name }}</p>
@@ -140,16 +142,23 @@
                                     <span class="text-secondary fst-italic">No program</span>
                                 @endif
                             </td>
-                            <td>{{ $student->user?->email ?? 'No email' }}</td>
-                            <td>
+                            <td data-label="Email">{{ $student->user?->email ?? 'No email' }}</td>
+                            <td data-label="Status">
                                 <span class="badge {{ $student->user?->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
                                     {{ ucfirst($student->user?->status ?? 'inactive') }}
                                 </span>
                             </td>
+                            <td class="text-center" data-label="Actions">
+                                @if ($student->user)
+                                    @include('partials.account-row-actions', ['accountUser' => $student->user])
+                                @else
+                                    <span class="text-secondary fst-italic">No account</span>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td class="text-center py-5" colspan="4">
+                            <td class="text-center py-5 mobile-empty-cell" colspan="5">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No students found</h4>
                             </td>
@@ -164,6 +173,12 @@
         </div>
     </section>
 
+    @include('partials.account-action-popups', [
+        'accountUsers' => $students->pluck('user')->filter(),
+        'accountRoutePrefix' => 'admin-dean',
+        'accountMode' => 'student',
+        'accountPrograms' => $programs,
+    ])
     @include('admin-dean.students.create-student-form')
     @include('partials.student-account-import', [
         'studentImportPrograms' => $programs,

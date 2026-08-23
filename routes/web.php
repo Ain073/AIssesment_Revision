@@ -149,6 +149,8 @@ Route::middleware(['admin_dean', 'no_cache'])
         Route::post('/students/import-preview', [AdminDeanStudentController::class, 'previewImport'])->middleware('throttle:10,1')->name('students.import.preview');
         Route::post('/students/import-confirm', [AdminDeanStudentController::class, 'confirmImport'])->middleware('throttle:10,1')->name('students.import.confirm');
         Route::post('/users', [AdminDeanUserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [AdminDeanUserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [AdminDeanUserController::class, 'destroy'])->name('users.destroy');
     });
 
 Route::middleware(['department_chair', 'no_cache'])
@@ -162,6 +164,8 @@ Route::middleware(['department_chair', 'no_cache'])
         Route::post('/students/import-preview', [DepartmentChairStudentController::class, 'previewImport'])->middleware('throttle:10,1')->name('students.import.preview');
         Route::post('/students/import-confirm', [DepartmentChairStudentController::class, 'confirmImport'])->middleware('throttle:10,1')->name('students.import.confirm');
         Route::post('/users', [DepartmentChairUserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [DepartmentChairUserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [DepartmentChairUserController::class, 'destroy'])->name('users.destroy');
         Route::get('/reports', [DepartmentChairReportController::class, 'index'])->name('reports');
         Route::get('/reports/{classAssessment}/{type}', [DepartmentChairReportController::class, 'show'])->name('reports.show');
     });

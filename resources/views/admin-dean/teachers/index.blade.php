@@ -48,7 +48,7 @@
 
         .teachers-table {
             width: 100%;
-            min-width: 1040px;
+            min-width: 1120px;
             table-layout: fixed;
         }
 
@@ -109,13 +109,14 @@
         </div>
 
         <div class="table-responsive">
-            <table class="table table-hover mb-0 teachers-table compact-data-table">
+            <table class="table table-hover mb-0 teachers-table compact-data-table mobile-card-table">
                 <colgroup>
-                    <col style="width: 25%;">
-                    <col style="width: 22%;">
-                    <col style="width: 25%;">
-                    <col style="width: 18%;">
-                    <col style="width: 10%;">
+                    <col style="width: 23%;">
+                    <col style="width: 20%;">
+                    <col style="width: 24%;">
+                    <col style="width: 16%;">
+                    <col style="width: 8%;">
+                    <col style="width: 9%;">
                 </colgroup>
                 <thead>
                     <tr>
@@ -124,12 +125,13 @@
                         <th>Department</th>
                         <th>Authorization</th>
                         <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($teachers as $teacher)
                         <tr>
-                            <td>
+                            <td class="mobile-primary-cell" data-label="User">
                                 <div class="d-flex align-items-center gap-3">
                                     <span class="avatar">{{ strtoupper(substr($teacher->displayName(), 0, 1)) }}</span>
                                     <div>
@@ -141,8 +143,8 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>{{ $teacher->email }}</td>
-                            <td>
+                            <td data-label="Email">{{ $teacher->email }}</td>
+                            <td data-label="Department">
                                 @if ($teacher->instructorProfile?->department)
                                     <div>
                                         <p class="fw-semibold mb-0">{{ $teacher->instructorProfile->department->dept_name }}</p>
@@ -152,7 +154,7 @@
                                     <span class="text-secondary fst-italic">Not assigned</span>
                                 @endif
                             </td>
-                            <td>
+                            <td data-label="Authorization">
                                 <div class="d-flex flex-wrap gap-2">
                                     @if ($teacher->hasRole('admin_dean'))
                                         <span class="badge text-bg-primary rounded-1">Admin/Dean</span>
@@ -165,15 +167,18 @@
                                     @endif
                                 </div>
                             </td>
-                            <td>
+                            <td data-label="Status">
                                 <span class="badge {{ $teacher->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
                                     {{ ucfirst($teacher->status) }}
                                 </span>
                             </td>
+                            <td class="text-center" data-label="Actions">
+                                @include('partials.account-row-actions', ['accountUser' => $teacher])
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td class="text-center py-5" colspan="5">
+                            <td class="text-center py-5 mobile-empty-cell" colspan="6">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">badge</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No teachers found</h4>
                             </td>
@@ -188,5 +193,12 @@
         </div>
     </section>
 
+    @include('partials.account-action-popups', [
+        'accountUsers' => $teachers,
+        'accountRoutePrefix' => 'admin-dean',
+        'accountMode' => 'instructor',
+        'accountDepartments' => $departments,
+        'accountAllowDepartmentSelect' => true,
+    ])
     @include('admin-dean.teachers.create-instructor-form')
 @endsection
