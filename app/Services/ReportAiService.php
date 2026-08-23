@@ -235,6 +235,7 @@ Rules:
 - Avoid artificial phrases such as "relative strength", "well-understood grasp", or wording that sounds like an answer explanation.
 - Do not copy the sample wording when the assessment data points to different concepts or skills.
 - Do not start with disclaimers such as "Based on the limited responses" or "Despite the small sample size."
+- Do not start with weak setup phrases such as "Based on the assessment results", "It appears that", or "The data shows that".
 - If the data set is small, keep the wording cautious by using phrases such as "the results suggest" instead of making broad claims.
 - Avoid unsupported student counts, names, or invented statistics.
 - Keep each field to 2 to 4 concise sentences suitable for a narrow report table cell.
