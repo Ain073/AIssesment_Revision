@@ -230,16 +230,19 @@ Rules:
 - Write as a human-readable paragraph, not as a rigid template.
 - Vary the sentence construction naturally based on the results.
 - Use phrases such as "students demonstrated", "students showed", "most students correctly answered", "students need to strengthen", or "difficulty was observed" only when they fit the data.
+- For most learned, prefer natural wording such as "students correctly answered questions related to..." or "students demonstrated understanding of..." when the results point to mastered topics.
 - For least learned, prefer natural wording such as "students showed difficulty in applying concepts to questions about..." when the results point to application or situational weaknesses.
+- Avoid artificial phrases such as "relative strength", "well-understood grasp", or wording that sounds like an answer explanation.
 - Do not copy the sample wording when the assessment data points to different concepts or skills.
-- If the data set is small, say "Based on the limited responses" instead of overstating the result.
+- Do not start with disclaimers such as "Based on the limited responses" or "Despite the small sample size."
+- If the data set is small, keep the wording cautious by using phrases such as "the results suggest" instead of making broad claims.
 - Avoid unsupported student counts, names, or invented statistics.
 - Keep each field to 2 to 4 concise sentences suitable for a narrow report table cell.
 - Do not include markdown, bullets, or labels inside the JSON values.
 
 Sample tone only:
 {
-  "concepts_most_learned_skills": "Students showed stronger understanding of the foundational concepts covered in the assessment. Their responses suggest that they can recall key terms and explain basic ideas when the questions are direct and theory-based.",
+  "concepts_most_learned_skills": "Students correctly answered questions related to the foundational concepts covered in the assessment. This shows that they can recall key terms and explain basic ideas when the questions are direct and theory-based.",
   "concepts_least_learned_skills": "Students showed difficulty in applying concepts to questions about practical or situational parts of the lesson. The results suggest that they need further support in connecting lesson terms with actual procedures, examples, or problem scenarios."
 }
 
