@@ -255,6 +255,7 @@ class AssessmentController extends BaseController
             'item_type' => ['required', 'string', Rule::in(array_keys($this->itemTypes()))],
             'points' => ['required', 'numeric', 'min:0.01', 'max:999.99'],
             'items' => ['required', 'array', 'min:1', 'max:50'],
+            'items.*.item_type' => ['required', 'string', Rule::in(array_keys($this->itemTypes()))],
             'items.*.question_text' => ['required', 'string', 'max:4000'],
             'items.*.choices' => ['nullable', 'array', 'max:6'],
             'items.*.choices.*' => ['nullable', 'string', 'max:1000'],
@@ -264,30 +265,31 @@ class AssessmentController extends BaseController
         ]);
 
         foreach ($validated['items'] as $index => $itemData) {
+            $itemType = $itemData['item_type'];
             $choices = collect($itemData['choices'] ?? [])
                 ->map(fn ($choice) => trim((string) $choice))
                 ->filter()
                 ->values();
 
-            if ($validated['item_type'] === 'multiple_choice' && $choices->count() < 2) {
+            if ($itemType === 'multiple_choice' && $choices->count() < 2) {
                 throw ValidationException::withMessages([
                     "items.{$index}.choices" => 'Multiple choice items need at least two choices.',
                 ]);
             }
 
-            if ($validated['item_type'] === 'multiple_choice' && ! $choices->has((int) ($itemData['correct_choice'] ?? -1))) {
+            if ($itemType === 'multiple_choice' && ! $choices->has((int) ($itemData['correct_choice'] ?? -1))) {
                 throw ValidationException::withMessages([
                     "items.{$index}.correct_choice" => 'Please select the correct choice.',
                 ]);
             }
 
-            if ($validated['item_type'] === 'true_false' && empty($itemData['true_false_answer'])) {
+            if ($itemType === 'true_false' && empty($itemData['true_false_answer'])) {
                 throw ValidationException::withMessages([
                     "items.{$index}.true_false_answer" => 'Please select True or False as the correct answer.',
                 ]);
             }
 
-            if ($validated['item_type'] === 'identification' && blank($itemData['accepted_answer'] ?? null)) {
+            if ($itemType === 'identification' && blank($itemData['accepted_answer'] ?? null)) {
                 throw ValidationException::withMessages([
                     "items.{$index}.accepted_answer" => 'Please enter the accepted answer for identification.',
                 ]);
@@ -298,9 +300,11 @@ class AssessmentController extends BaseController
             $nextOrder = ((int) $ownedAssessment->items()->max('sort_order')) + 1;
 
             foreach ($validated['items'] as $itemData) {
+                $itemType = $itemData['item_type'];
+
                 $item = $ownedAssessment->items()->create([
                     'question_text' => $itemData['question_text'],
-                    'item_type' => $validated['item_type'],
+                    'item_type' => $itemType,
                     'points' => $validated['points'],
                     'is_required' => true,
                     'sort_order' => $nextOrder,
@@ -308,7 +312,7 @@ class AssessmentController extends BaseController
 
                 $nextOrder++;
 
-                if ($validated['item_type'] === 'multiple_choice') {
+                if ($itemType === 'multiple_choice') {
                     $choices = collect($itemData['choices'] ?? [])
                         ->map(fn ($choice) => trim((string) $choice))
                         ->filter()
@@ -324,7 +328,7 @@ class AssessmentController extends BaseController
                     }
                 }
 
-                if ($validated['item_type'] === 'true_false') {
+                if ($itemType === 'true_false') {
                     foreach (['true' => 'True', 'false' => 'False'] as $value => $label) {
                         $item->choices()->create([
                             'choice_text' => $label,
@@ -334,7 +338,7 @@ class AssessmentController extends BaseController
                     }
                 }
 
-                if ($validated['item_type'] === 'identification') {
+                if ($itemType === 'identification') {
                     $item->choices()->create([
                         'choice_text' => trim((string) $itemData['accepted_answer']),
                         'is_correct' => true,
@@ -347,7 +351,7 @@ class AssessmentController extends BaseController
         Log::info('Assessment items added by instructor.', [
             'actor_id' => $user->id,
             'assessment_id' => $ownedAssessment->assessment_id,
-            'item_type' => $validated['item_type'],
+            'item_types' => collect($validated['items'])->pluck('item_type')->unique()->values()->all(),
             'item_count' => count($validated['items']),
         ]);
 

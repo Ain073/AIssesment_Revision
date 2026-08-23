@@ -97,7 +97,7 @@
         };
 
         const addQuestion = (oldItem = null) => {
-            const type = typeSelect.value;
+            const type = oldItem?.item_type ?? typeSelect.value;
             const index = questionIndex;
             questionIndex++;
 
@@ -116,6 +116,7 @@
                     </button>
                 </div>
                 <div class="question-block-body">
+                    <input name="${inputName(index, 'item_type')}" type="hidden" value="${escapeHtml(type)}">
                     <div class="mb-3">
                         <label class="form-label fw-bold text-uppercase small" for="question_${index}">Question</label>
                         <textarea class="form-control" id="question_${index}" name="${inputName(index, 'question_text')}" required rows="3">${escapeHtml(oldItem?.question_text ?? '')}</textarea>

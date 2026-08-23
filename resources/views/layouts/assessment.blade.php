@@ -51,10 +51,32 @@
             box-shadow: 0 10px 24px rgba(0, 26, 112, 0.14);
         }
 
+        .assessment-navbar-title {
+            min-width: 0;
+        }
+
+        .assessment-navbar-title .brand-text {
+            flex: 0 0 auto;
+            line-height: 1;
+        }
+
         .assessment-divider {
             width: 1px;
             height: 24px;
             background: rgba(255, 255, 255, 0.28);
+        }
+
+        .assessment-attempt-label {
+            max-width: min(58vw, 30rem);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.88) !important;
+            line-height: 1.15;
+            padding: 0.35rem 0.7rem;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .assessment-container {
@@ -93,17 +115,14 @@
             }
 
             .assessment-navbar-title {
-                min-width: 0;
                 gap: 0.5rem !important;
             }
 
             .assessment-attempt-label {
-                max-width: 42vw;
-                overflow: hidden;
                 font-size: 0.68rem;
                 letter-spacing: 0;
-                text-overflow: ellipsis;
-                white-space: nowrap;
+                max-width: 50vw;
+                padding: 0.32rem 0.55rem;
             }
 
             .assessment-navbar .btn {

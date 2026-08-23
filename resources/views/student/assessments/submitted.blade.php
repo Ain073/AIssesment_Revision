@@ -49,6 +49,52 @@
             border-radius: 0.5rem;
             box-shadow: 0 24px 60px rgba(0, 26, 112, 0.24);
         }
+
+        .submitted-results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 58%, rgba(117, 125, 145, 0.92) 100%);
+            color: #fff;
+            padding: 1rem 1.5rem;
+        }
+
+        .submitted-results-title {
+            min-width: 0;
+        }
+
+        .submitted-results-title h2 {
+            line-height: 1.1;
+        }
+
+        .submitted-results-meta {
+            overflow-wrap: anywhere;
+        }
+
+        .submitted-results-actions {
+            flex: 0 0 auto;
+        }
+
+        @media (max-width: 575.98px) {
+            .submitted-results-header {
+                align-items: flex-start;
+                padding: 0.85rem 1rem;
+            }
+
+            .submitted-results-title h2 {
+                font-size: 1.35rem;
+            }
+
+            .submitted-results-meta {
+                font-size: 0.78rem;
+            }
+
+            .submitted-results-actions .badge {
+                padding: 0.45rem 0.6rem !important;
+                font-size: 0.72rem;
+            }
+        }
     </style>
 @endpush
 
@@ -99,12 +145,12 @@
         <div class="modal fade submitted-results-modal" id="submissionResultModal" tabindex="-1" aria-labelledby="submissionResultTitle" aria-hidden="true">
             <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content overflow-hidden">
-                    <div class="directory-header px-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-                        <div>
+                    <div class="submitted-results-header">
+                        <div class="submitted-results-title">
                             <h2 class="h3 brand-text mb-1" id="submissionResultTitle">Submission Results</h2>
-                            <p class="text-white-50 mb-0">{{ $class?->class_name ?? 'Class' }} - {{ $assessment?->subject?->subject_code ?? 'No subject' }}</p>
+                            <p class="submitted-results-meta text-white-50 mb-0">{{ $class?->class_name ?? 'Class' }} - {{ $assessment?->subject?->subject_code ?? 'No subject' }}</p>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="submitted-results-actions d-flex align-items-center gap-2">
                             @if ($showScore)
                                 <span class="badge {{ $resultBadge }} rounded-1 px-3 py-2">{{ $passed ? 'Passed' : 'Failed' }}</span>
                             @endif
