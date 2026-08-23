@@ -230,6 +230,7 @@ Rules:
 - Write as a human-readable paragraph, not as a rigid template.
 - Vary the sentence construction naturally based on the results.
 - Use phrases such as "students demonstrated", "students showed", "most students correctly answered", "students need to strengthen", or "difficulty was observed" only when they fit the data.
+- For least learned, prefer natural wording such as "students showed difficulty in applying concepts to questions about..." when the results point to application or situational weaknesses.
 - Do not copy the sample wording when the assessment data points to different concepts or skills.
 - If the data set is small, say "Based on the limited responses" instead of overstating the result.
 - Avoid unsupported student counts, names, or invented statistics.
@@ -239,7 +240,7 @@ Rules:
 Sample tone only:
 {
   "concepts_most_learned_skills": "Students showed stronger understanding of the foundational concepts covered in the assessment. Their responses suggest that they can recall key terms and explain basic ideas when the questions are direct and theory-based.",
-  "concepts_least_learned_skills": "Students need further support in applying the concepts to practical or situational questions. The results suggest difficulty in connecting the lesson terms with actual procedures, examples, or problem scenarios."
+  "concepts_least_learned_skills": "Students showed difficulty in applying concepts to questions about practical or situational parts of the lesson. The results suggest that they need further support in connecting lesson terms with actual procedures, examples, or problem scenarios."
 }
 
 Assessment data:
