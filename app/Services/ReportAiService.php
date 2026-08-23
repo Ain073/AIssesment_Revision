@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ClassAssessment;
 use App\Models\Submission;
+use App\Support\AssessmentScoring;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
@@ -193,7 +194,7 @@ class ReportAiService
             $correctCount = $submissions->filter(function (Submission $submission) use ($item): bool {
                 $answer = $submission->answers->firstWhere('assessment_item_id', $item->assessment_item_id);
 
-                return $answer ? $this->isCorrect($item, $answer) : false;
+                return $answer ? AssessmentScoring::isCorrect($item, $answer) : false;
             })->count();
             $total = $submissions->count();
 
@@ -273,26 +274,6 @@ PROMPT;
 
     private function submissionScore(Submission $submission, Collection $items): float
     {
-        return (float) $items->sum(function ($item) use ($submission): float {
-            $answer = $submission->answers->firstWhere('assessment_item_id', $item->assessment_item_id);
-
-            return $answer && $this->isCorrect($item, $answer) ? (float) $item->points : 0.0;
-        });
-    }
-
-    private function isCorrect($item, $answer): bool
-    {
-        if ($answer->choice) {
-            return (bool) $answer->choice->is_correct;
-        }
-
-        $correctAnswers = $item->choices
-            ->where('is_correct', true)
-            ->pluck('choice_text')
-            ->map(fn ($choice): string => Str::lower(trim((string) $choice)))
-            ->filter();
-        $studentAnswer = Str::lower(trim((string) $answer->answer_text));
-
-        return $studentAnswer !== '' && $correctAnswers->contains($studentAnswer);
+        return AssessmentScoring::scoreSubmission($submission, $items);
     }
 }

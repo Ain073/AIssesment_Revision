@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Student;
 
 use App\Models\Submission;
+use App\Support\AssessmentScoring;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ResultController extends BaseController
@@ -129,31 +129,7 @@ class ResultController extends BaseController
 
     private function submissionScore(Submission $submission, Collection $items): float
     {
-        $answers = $submission->answers->keyBy('assessment_item_id');
-
-        return (float) $items->sum(function ($item) use ($answers): float {
-            $answer = $answers->get($item->assessment_item_id);
-
-            return $answer && $this->isCorrectAnswer($item, $answer)
-                ? (float) $item->points
-                : 0.0;
-        });
-    }
-
-    private function isCorrectAnswer($item, $answer): bool
-    {
-        if ($answer->choice) {
-            return (bool) $answer->choice->is_correct;
-        }
-
-        $correctAnswers = $item->choices
-            ->where('is_correct', true)
-            ->pluck('choice_text')
-            ->map(fn ($choice): string => Str::lower(trim((string) $choice)))
-            ->filter();
-        $studentAnswer = Str::lower(trim((string) $answer->answer_text));
-
-        return $studentAnswer !== '' && $correctAnswers->contains($studentAnswer);
+        return AssessmentScoring::scoreSubmission($submission, $items);
     }
 
     private function formatNumber(float $value): string

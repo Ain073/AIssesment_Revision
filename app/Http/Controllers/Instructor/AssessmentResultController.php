@@ -5,8 +5,12 @@ namespace App\Http\Controllers\Instructor;
 use App\Models\ClassAssessment;
 use App\Models\StudentProfile;
 use App\Models\Submission;
+use App\Support\AssessmentScoring;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AssessmentResultController extends BaseController
@@ -52,6 +56,7 @@ class AssessmentResultController extends BaseController
                         $score = $isSubmitted ? $this->submissionScore($submission, $items) : null;
 
                         return [
+                            'submission_id' => $submission->submission_id,
                             'status' => $submission->status,
                             'score' => $score !== null ? $this->formatReportNumber($score) : null,
                             'score_value' => $score,
@@ -59,6 +64,7 @@ class AssessmentResultController extends BaseController
                             'submitted_at' => $submission->submitted_at,
                             'warning_count' => $submission->warning_count,
                             'completion_reason' => $submission->completion_reason,
+                            'pending_essay_count' => AssessmentScoring::essayPendingCount($submission, $items),
                             'security_events' => $submission->securityEvents
                                 ->map(fn ($event): array => [
                                     'label' => $event->displayLabel(),
@@ -75,11 +81,16 @@ class AssessmentResultController extends BaseController
                 $submittedAttemptsCount = $attempts
                     ->where('status', Submission::STATUS_SUBMITTED)
                     ->count();
+                $latestSubmittedAttempt = $attempts
+                    ->where('status', Submission::STATUS_SUBMITTED)
+                    ->sortByDesc(fn (array $attempt): int => $attempt['submitted_at']?->timestamp ?? 0)
+                    ->first();
 
                 return [
                     'student' => $student,
                     'attempts' => $attempts,
                     'best_attempt' => $bestAttempt,
+                    'latest_submitted_attempt' => $latestSubmittedAttempt,
                     'submitted_attempts_count' => $submittedAttemptsCount,
                 ];
             })
@@ -104,5 +115,118 @@ class AssessmentResultController extends BaseController
             'analytics' => $analytics,
             'autoSubmittedCount' => $autoSubmittedCount,
         ]);
+    }
+
+    public function gradeSubmission(Submission $submission): View
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+
+        $submission->load([
+            'studentProfile.user',
+            'classAssessment.assessment.items.choices',
+            'classAssessment.class.subject',
+            'answers.choice',
+            'answers.item.choices',
+            'answers.checker',
+        ]);
+
+        $ownedClassAssessment = $this->ownedClassAssessment($submission->classAssessment, $instructorProfile);
+
+        abort_unless($submission->status === Submission::STATUS_SUBMITTED, 404, 'Only submitted attempts can be checked.');
+
+        $items = $ownedClassAssessment->assessment?->items ?? collect();
+        $answers = $submission->answers->keyBy('assessment_item_id');
+        $rows = $items->map(function ($item) use ($answers): array {
+            $answer = $answers->get($item->assessment_item_id);
+
+            return [
+                'item' => $item,
+                'answer' => $answer,
+                'earned_points' => AssessmentScoring::earnedPoints($item, $answer),
+                'is_correct' => AssessmentScoring::isCorrect($item, $answer),
+            ];
+        });
+        $maxScore = (float) $items->sum(fn ($item): float => (float) $item->points);
+        $score = AssessmentScoring::scoreSubmission($submission, $items);
+
+        return view('instructor.assessments.grade-submission', $this->sharedData($user, 'assessments') + [
+            'submission' => $submission,
+            'classAssessment' => $ownedClassAssessment,
+            'assessment' => $ownedClassAssessment->assessment,
+            'class' => $ownedClassAssessment->class,
+            'student' => $submission->studentProfile,
+            'rows' => $rows,
+            'scoreText' => $this->formatReportNumber($score),
+            'maxScoreText' => $this->formatReportNumber($maxScore),
+            'pendingEssayCount' => AssessmentScoring::essayPendingCount($submission, $items),
+        ]);
+    }
+
+    public function updateSubmissionGrade(Request $request, Submission $submission): RedirectResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+
+        $submission->load([
+            'classAssessment.assessment.items',
+            'answers.item',
+        ]);
+
+        $ownedClassAssessment = $this->ownedClassAssessment($submission->classAssessment, $instructorProfile);
+
+        abort_unless($submission->status === Submission::STATUS_SUBMITTED, 404, 'Only submitted attempts can be checked.');
+
+        $validated = $request->validate([
+            'essay_scores' => ['nullable', 'array'],
+            'essay_scores.*' => ['nullable', 'numeric', 'min:0'],
+            'essay_feedback' => ['nullable', 'array'],
+            'essay_feedback.*' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $scores = collect($validated['essay_scores'] ?? []);
+        $feedback = collect($validated['essay_feedback'] ?? []);
+        $essayAnswers = $submission->answers
+            ->filter(fn ($answer): bool => $answer->item?->item_type === 'essay')
+            ->keyBy('submission_answer_id');
+        $errors = [];
+
+        foreach ($essayAnswers as $answerId => $answer) {
+            $rawScore = $scores->get((string) $answerId);
+            $maxPoints = (float) $answer->item->points;
+
+            if ($rawScore === null || $rawScore === '') {
+                $errors["essay_scores.{$answerId}"] = 'Please enter a score for this essay answer.';
+                continue;
+            }
+
+            $score = (float) $rawScore;
+
+            if ($score > $maxPoints) {
+                $errors["essay_scores.{$answerId}"] = 'The score cannot exceed '.$this->formatReportNumber($maxPoints).' points.';
+                continue;
+            }
+
+            $answer->update([
+                'earned_points' => AssessmentScoring::clampPoints($score, $maxPoints),
+                'feedback' => $feedback->get((string) $answerId),
+                'checked_by' => $user->id,
+                'checked_at' => now(),
+            ]);
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        Log::info('Instructor manually checked essay answers.', [
+            'actor_id' => $user->id,
+            'submission_id' => $submission->submission_id,
+            'class_assessment_id' => $ownedClassAssessment->class_assessment_id,
+        ]);
+
+        return redirect()
+            ->route('instructor.assessments.submissions.grade', $submission)
+            ->with('status', 'Essay scores saved.');
     }
 }

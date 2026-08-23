@@ -139,6 +139,7 @@
                             <th>Status</th>
                             <th>Submitted At</th>
                             <th>Security</th>
+                            <th>Checking</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -146,6 +147,7 @@
                             @php
                                 $student = $result['student'];
                                 $bestAttempt = $result['best_attempt'];
+                                $latestSubmittedAttempt = $result['latest_submitted_attempt'];
                                 $displayName = $student->user?->displayName() ?? 'Student account';
                                 $submittedAttemptsCount = $result['submitted_attempts_count'];
                             @endphp
@@ -204,6 +206,21 @@
                                         </details>
                                     @else
                                         <span class="small text-secondary d-block">No recorded events</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($latestSubmittedAttempt)
+                                        <a class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" href="{{ route('instructor.assessments.submissions.grade', $latestSubmittedAttempt['submission_id']) }}">
+                                            <span class="material-symbols-outlined fs-6">rate_review</span>
+                                            Check
+                                        </a>
+                                        @if ($latestSubmittedAttempt['pending_essay_count'] > 0)
+                                            <span class="badge text-bg-warning rounded-1 mt-2 d-block">
+                                                {{ $latestSubmittedAttempt['pending_essay_count'] }} essay pending
+                                            </span>
+                                        @endif
+                                    @else
+                                        <span class="text-secondary">-</span>
                                     @endif
                                 </td>
                             </tr>

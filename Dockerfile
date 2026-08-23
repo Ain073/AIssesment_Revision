@@ -9,9 +9,14 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    COMPOSER_PROCESS_TIMEOUT=2000
+
 COPY . .
 
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader \
+    || composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader \
+    || composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
 RUN npm install
 RUN npm run build
 

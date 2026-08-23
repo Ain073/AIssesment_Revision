@@ -8,6 +8,7 @@ use App\Models\InstructorProfile;
 use App\Models\Report;
 use App\Models\StudentProfile;
 use App\Models\Submission;
+use App\Support\AssessmentScoring;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -195,31 +196,12 @@ trait InstructorReportHelper
 
     protected function submissionScore(Submission $submission, Collection $items): float
     {
-        $answers = $submission->answers->keyBy('assessment_item_id');
-
-        return (float) $items->sum(function ($item) use ($answers): float {
-            $answer = $answers->get($item->assessment_item_id);
-
-            return $answer && $this->isSubmissionAnswerCorrect($item, $answer)
-                ? (float) $item->points
-                : 0.0;
-        });
+        return AssessmentScoring::scoreSubmission($submission, $items);
     }
 
     protected function isSubmissionAnswerCorrect($item, $answer): bool
     {
-        if ($answer->choice) {
-            return (bool) $answer->choice->is_correct;
-        }
-
-        $correctAnswers = $item->choices
-            ->where('is_correct', true)
-            ->pluck('choice_text')
-            ->map(fn ($choice): string => Str::lower(trim((string) $choice)))
-            ->filter();
-        $studentAnswer = Str::lower(trim((string) $answer->answer_text));
-
-        return $studentAnswer !== '' && $correctAnswers->contains($studentAnswer);
+        return AssessmentScoring::isCorrect($item, $answer);
     }
 
     protected function formatReportNumber(float $value): string

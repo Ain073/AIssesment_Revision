@@ -185,6 +185,8 @@
                                 @foreach ($answerRows as $row)
                                     @php
                                         $item = $row['item'];
+                                        $answer = $row['answer'];
+                                        $isEssay = $item->item_type === 'essay';
                                     @endphp
 
                                     <article class="answer-review-card p-4">
@@ -198,9 +200,15 @@
                                                     </span>
                                                 @endif
                                             </div>
-                                            <span class="badge {{ $row['is_correct'] ? 'text-bg-success' : 'text-bg-danger' }} rounded-1 px-3 py-2">
-                                                {{ $row['is_correct'] ? 'Correct' : 'Incorrect' }}
-                                            </span>
+                                            @if ($isEssay && $answer?->earned_points === null)
+                                                <span class="badge text-bg-warning rounded-1 px-3 py-2">Pending check</span>
+                                            @elseif ($isEssay)
+                                                <span class="badge text-bg-success rounded-1 px-3 py-2">Checked</span>
+                                            @else
+                                                <span class="badge {{ $row['is_correct'] ? 'text-bg-success' : 'text-bg-danger' }} rounded-1 px-3 py-2">
+                                                    {{ $row['is_correct'] ? 'Correct' : 'Incorrect' }}
+                                                </span>
+                                            @endif
                                         </div>
 
                                         <h3 class="h5 fw-bold mb-3" style="color: var(--psu-navy);">{{ $item->question_text }}</h3>
