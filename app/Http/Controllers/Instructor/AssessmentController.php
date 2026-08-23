@@ -304,6 +304,7 @@ class AssessmentController extends BaseController
             'items' => ['required', 'array', 'min:1', 'max:50'],
             'items.*.item_type' => ['required', 'string', Rule::in(array_keys($this->itemTypes()))],
             'items.*.question_text' => ['required', 'string', 'max:4000'],
+            'items.*.points' => ['required', 'numeric', 'min:0.01', 'max:999.99'],
             'items.*.choices' => ['nullable', 'array', 'max:6'],
             'items.*.choices.*' => ['nullable', 'string', 'max:1000'],
             'items.*.correct_choice' => ['nullable', 'integer', 'min:0', 'max:5'],
@@ -352,7 +353,7 @@ class AssessmentController extends BaseController
                 $item = $ownedAssessment->items()->create([
                     'question_text' => $itemData['question_text'],
                     'item_type' => $itemType,
-                    'points' => $validated['points'],
+                    'points' => $itemData['points'],
                     'is_required' => true,
                     'sort_order' => $nextOrder,
                 ]);

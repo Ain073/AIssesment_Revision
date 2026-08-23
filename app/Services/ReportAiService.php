@@ -123,6 +123,7 @@ class ReportAiService
             ->post('https://api.openai.com/v1/responses', [
                 'model' => $model,
                 'input' => $this->prompt($data),
+                'max_output_tokens' => 500,
             ])
             ->throw()
             ->json();
@@ -200,6 +201,8 @@ class ReportAiService
 
             return [
                 'question' => Str::limit((string) $item->question_text, 120),
+                'correct_count' => $correctCount,
+                'response_count' => $total,
                 'correct_rate' => $total > 0 ? round(($correctCount / $total) * 100, 2) : 0,
             ];
         })->values()->all();
@@ -210,17 +213,31 @@ class ReportAiService
         $json = json_encode($data, JSON_PRETTY_PRINT);
 
         return <<<PROMPT
-You are helping an instructor prepare a school performance monitoring report.
+You are helping an instructor prepare the narrative cells of a school performance monitoring report.
 
-Use only the assessment data below. Do not invent scores, student names, or unsupported facts.
-Write concise academic report content for these two fields only:
-1. concepts_most_learned_skills
-2. concepts_least_learned_skills
+Use only the assessment data below. Write in the same formal style used in academic monitoring reports.
 
-Return valid JSON only with these exact keys:
+Rules:
+- Return valid JSON only.
+- Write only these two fields:
+  1. concepts_most_learned_skills
+  2. concepts_least_learned_skills
+- Do not write like an answer key or quiz explanation.
+- Do not focus on only one exact answer phrase unless the data only supports that topic.
+- Summarize the item results into broader concepts or skills.
+- For most learned, use the highest-performing item topics and describe demonstrated competencies.
+- For least learned, use the lowest-performing item topics and describe areas that need reinforcement.
+- Use a construction similar to the example, but adapt the wording to the actual subject, assessment title, item topics, and performance results.
+- Do not copy the example wording when the assessment data points to different concepts or skills.
+- If the data set is small, say "Based on the limited responses" instead of overstating the result.
+- Avoid unsupported student counts, names, or invented statistics.
+- Keep each field to 2 to 4 concise sentences suitable for a narrow report table cell.
+- Do not include markdown, bullets, or labels inside the JSON values.
+
+Example style:
 {
-  "concepts_most_learned_skills": "...",
-  "concepts_least_learned_skills": "..."
+  "concepts_most_learned_skills": "Demonstrated competence in the foundational and definitional aspects of the lesson, including recall of basic concepts, recognition of key terms, and understanding of the general purpose of the topics covered. Many students showed stronger performance on theory-based items that required remembering definitions or basic explanations.",
+  "concepts_least_learned_skills": "Difficulty related to the practical application and contextual use of the lesson concepts. The lower-performing items suggest that students need reinforcement in applying procedures, distinguishing related terms, and connecting the concepts to real situations."
 }
 
 Assessment data:

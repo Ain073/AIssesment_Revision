@@ -6,6 +6,7 @@
         const stepTriggers = document.querySelectorAll('[data-step-target]');
         const stepPanels = document.querySelectorAll('[data-step-panel]');
         const typeSelect = document.getElementById('item_type');
+        const pointsInput = document.getElementById('points');
         const addButton = document.getElementById('addQuestionButton');
         const questionBlocks = document.getElementById('questionBlocks');
         const emptyState = document.getElementById('emptyBuilderState');
@@ -98,6 +99,7 @@
 
         const addQuestion = (oldItem = null) => {
             const type = oldItem?.item_type ?? typeSelect.value;
+            const points = oldItem?.points ?? pointsInput.value;
             const index = questionIndex;
             questionIndex++;
 
@@ -117,9 +119,15 @@
                 </div>
                 <div class="question-block-body">
                     <input name="${inputName(index, 'item_type')}" type="hidden" value="${escapeHtml(type)}">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-uppercase small" for="question_${index}">Question</label>
-                        <textarea class="form-control" id="question_${index}" name="${inputName(index, 'question_text')}" required rows="3">${escapeHtml(oldItem?.question_text ?? '')}</textarea>
+                    <div class="row g-3 mb-3">
+                        <div class="col-lg-9">
+                            <label class="form-label fw-bold text-uppercase small" for="question_${index}">Question</label>
+                            <textarea class="form-control" id="question_${index}" name="${inputName(index, 'question_text')}" required rows="3">${escapeHtml(oldItem?.question_text ?? '')}</textarea>
+                        </div>
+                        <div class="col-lg-3">
+                            <label class="form-label fw-bold text-uppercase small" for="points_${index}">Points</label>
+                            <input class="form-control" id="points_${index}" min="0.01" max="999.99" name="${inputName(index, 'points')}" required step="0.01" type="number" value="${escapeHtml(points)}">
+                        </div>
                     </div>
                     ${typeSpecificFields(index, type, oldItem ?? {})}
                 </div>

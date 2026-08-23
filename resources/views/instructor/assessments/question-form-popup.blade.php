@@ -20,7 +20,7 @@
                             </select>
                         </div>
                         <div>
-                            <label class="form-label fw-bold text-uppercase small" for="points">Points</label>
+                            <label class="form-label fw-bold text-uppercase small" for="points">Default Points</label>
                             <input class="form-control form-control-lg" id="points" min="0.01" max="999.99" name="points" required step="0.01" type="number" value="{{ old('points', 1) }}">
                         </div>
                         <div>
