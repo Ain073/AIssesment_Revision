@@ -111,12 +111,11 @@
         <div class="table-responsive">
             <table class="table table-hover mb-0 teachers-table compact-data-table mobile-card-table">
                 <colgroup>
-                    <col style="width: 23%;">
-                    <col style="width: 20%;">
                     <col style="width: 24%;">
-                    <col style="width: 16%;">
-                    <col style="width: 8%;">
-                    <col style="width: 9%;">
+                    <col style="width: 23%;">
+                    <col style="width: 24%;">
+                    <col style="width: 18%;">
+                    <col style="width: 11%;">
                 </colgroup>
                 <thead>
                     <tr>
@@ -124,7 +123,6 @@
                         <th>Email</th>
                         <th>Department</th>
                         <th>Authorization</th>
-                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -167,18 +165,13 @@
                                     @endif
                                 </div>
                             </td>
-                            <td data-label="Status">
-                                <span class="badge {{ $teacher->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
-                                    {{ ucfirst($teacher->status) }}
-                                </span>
-                            </td>
                             <td class="text-center" data-label="Actions">
                                 @include('partials.account-row-actions', ['accountUser' => $teacher])
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td class="text-center py-5 mobile-empty-cell" colspan="6">
+                            <td class="text-center py-5 mobile-empty-cell" colspan="5">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">badge</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No teachers found</h4>
                             </td>

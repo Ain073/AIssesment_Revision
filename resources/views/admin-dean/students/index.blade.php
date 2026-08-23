@@ -107,18 +107,16 @@
         <div class="table-responsive">
             <table class="table table-hover mb-0 students-table compact-data-table mobile-card-table">
                 <colgroup>
+                    <col style="width: 28%;">
+                    <col style="width: 34%;">
                     <col style="width: 27%;">
-                    <col style="width: 32%;">
-                    <col style="width: 22%;">
-                    <col style="width: 9%;">
-                    <col style="width: 10%;">
+                    <col style="width: 11%;">
                 </colgroup>
                 <thead>
                     <tr>
                         <th>Student</th>
                         <th>Program</th>
                         <th>Email</th>
-                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -143,11 +141,6 @@
                                 @endif
                             </td>
                             <td data-label="Email">{{ $student->user?->email ?? 'No email' }}</td>
-                            <td data-label="Status">
-                                <span class="badge {{ $student->user?->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
-                                    {{ ucfirst($student->user?->status ?? 'inactive') }}
-                                </span>
-                            </td>
                             <td class="text-center" data-label="Actions">
                                 @if ($student->user)
                                     @include('partials.account-row-actions', ['accountUser' => $student->user])
@@ -158,7 +151,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="text-center py-5 mobile-empty-cell" colspan="5">
+                            <td class="text-center py-5 mobile-empty-cell" colspan="4">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No students found</h4>
                             </td>
