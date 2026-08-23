@@ -16,7 +16,7 @@ COPY . .
 
 RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader \
     || composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader \
-    || composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+    || composer install --no-dev --prefer-source --no-interaction --no-progress --optimize-autoloader
 RUN npm install
 RUN npm run build
 
