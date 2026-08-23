@@ -41,7 +41,7 @@
         }
 
         .assessment-navbar {
-            min-height: 64px;
+            min-height: 60px;
             background:
                 linear-gradient(118deg, rgba(5, 33, 171, 0.98) 0%, rgba(13, 49, 221, 0.96) 54%, rgba(226, 196, 48, 0.9) 145%),
                 radial-gradient(circle at 100% 0%, rgba(255, 226, 76, 0.46) 0%, rgba(255, 226, 76, 0) 36%),
@@ -51,18 +51,33 @@
             box-shadow: 0 10px 24px rgba(0, 26, 112, 0.14);
         }
 
+        .assessment-navbar-inner {
+            width: min(100%, 1180px);
+            min-height: 60px;
+            margin: 0 auto;
+            padding: 0.65rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
         .assessment-navbar-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
             min-width: 0;
         }
 
         .assessment-navbar-title .brand-text {
             flex: 0 0 auto;
             line-height: 1;
+            font-size: 1.15rem;
         }
 
         .assessment-divider {
             width: 1px;
-            height: 24px;
+            height: 22px;
             background: rgba(255, 255, 255, 0.28);
         }
 
@@ -77,6 +92,20 @@
             padding: 0.35rem 0.7rem;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        .assessment-navbar .btn {
+            flex: 0 0 auto;
+            min-height: 2.25rem;
+            border-color: rgba(255, 255, 255, 0.72);
+            background: rgba(255, 255, 255, 0.08);
+            font-weight: 700;
+        }
+
+        .assessment-navbar .btn:hover,
+        .assessment-navbar .btn:focus {
+            background: rgba(255, 255, 255, 0.18);
+            color: #fff;
         }
 
         .assessment-container {
@@ -104,13 +133,17 @@
                 padding: 1rem 0.75rem;
             }
 
-            .assessment-navbar .container-fluid {
-                padding-inline: 0.85rem !important;
-                gap: 0.75rem !important;
-                min-height: 58px;
+            .assessment-navbar {
+                min-height: 54px;
             }
 
-            .assessment-navbar .brand-text {
+            .assessment-navbar-inner {
+                min-height: 54px;
+                padding: 0.55rem 0.75rem;
+                gap: 0.6rem;
+            }
+
+            .assessment-navbar-title .brand-text {
                 font-size: 0.98rem;
             }
 
@@ -128,6 +161,11 @@
             .assessment-navbar .btn {
                 padding: 0.35rem 0.55rem;
                 font-size: 0.78rem;
+                min-height: 2rem;
+            }
+
+            .assessment-navbar .btn .material-symbols-outlined {
+                font-size: 1rem !important;
             }
         }
     </style>
@@ -136,8 +174,8 @@
 </head>
 <body>
     <nav class="assessment-navbar sticky-top">
-        <div class="container-fluid px-4 h-100 d-flex align-items-center justify-content-between gap-3">
-            <div class="assessment-navbar-title d-flex align-items-center gap-3">
+        <div class="assessment-navbar-inner">
+            <div class="assessment-navbar-title">
                 <span class="brand-text h5 fw-bold mb-0">Assessment</span>
                 <span class="assessment-divider d-none d-sm-block"></span>
                 <span class="assessment-attempt-label small fw-bold text-white-50 text-uppercase">@yield('attempt-label', 'Quiz Attempt')</span>

@@ -15,7 +15,14 @@
 
         .result-card {
             height: 100%;
-            padding: 1.25rem;
+            min-width: 0;
+            padding: 1.1rem;
+        }
+
+        .results-summary-grid {
+            display: grid;
+            gap: 0.85rem;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
         .result-label {
@@ -45,45 +52,107 @@
         }
 
         .results-panel {
+            background: transparent;
+            border: 0;
+            box-shadow: none;
             overflow: hidden;
         }
 
-        .results-header {
-            background: linear-gradient(90deg, var(--psu-navy), var(--psu-navy-2));
-            color: #fff;
-            padding: 1.25rem 1.5rem;
+        .result-list {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
         }
 
-        .results-table {
-            min-width: 980px;
-        }
-
-        .results-table thead th {
-            background: #edf2ff;
-            color: #53627a;
-            font-size: 0.76rem;
-            font-weight: 800;
-            padding: 0.95rem 1rem;
-            text-transform: uppercase;
-            vertical-align: middle;
-        }
-
-        .results-table tbody td {
+        .assessment-result-card {
+            background: #fff;
+            border: 1px solid #d8e1f4;
+            border-radius: 0.5rem;
+            box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
+            display: flex;
+            flex-direction: column;
+            min-height: 245px;
             padding: 1rem;
-            vertical-align: middle;
         }
 
-        .score-meter {
-            background: #e5e7eb;
-            border-radius: 999px;
-            height: 0.55rem;
-            overflow: hidden;
-            width: 150px;
+        .result-card-top,
+        .result-card-actions {
+            align-items: flex-start;
+            display: flex;
+            gap: 0.75rem;
+            justify-content: space-between;
         }
 
-        .score-meter-fill {
-            border-radius: inherit;
-            height: 100%;
+        .result-card-title {
+            color: var(--psu-navy);
+            font-family: var(--psu-heading-font);
+            font-size: clamp(1.35rem, 2vw, 1.75rem);
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 0.2rem;
+            overflow-wrap: anywhere;
+        }
+
+        .result-card-code {
+            color: #5f6f87;
+            font-size: 0.86rem;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
+        }
+
+        .result-card-meta {
+            color: #66758b;
+            display: flex;
+            flex-wrap: wrap;
+            font-size: 0.9rem;
+            gap: 0.4rem 0.6rem;
+        }
+
+        .result-detail-list {
+            display: grid;
+            gap: 0.75rem 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+            margin-top: 1rem;
+            padding-block: 0.3rem 0.85rem;
+        }
+
+        .result-detail-pill {
+            min-width: 0;
+        }
+
+        .result-detail-label {
+            color: #6b7689;
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            margin-bottom: 0.2rem;
+            text-transform: uppercase;
+        }
+
+        .result-detail-value {
+            color: var(--psu-navy);
+            display: block;
+            font-size: 0.98rem;
+            font-weight: 800;
+            line-height: 1.2;
+            overflow-wrap: anywhere;
+        }
+
+        .result-card-actions {
+            align-items: center;
+            border-top: 1px solid #e6edf8;
+            gap: 0.75rem;
+            margin-top: auto;
+            padding-top: 0.9rem;
+        }
+
+        .result-release-note {
+            color: #6b7689;
+            font-size: 0.86rem;
+            margin-bottom: 0;
         }
 
         .empty-icon {
@@ -98,9 +167,76 @@
         }
 
         @media (max-width: 767.98px) {
-            .result-value {
-                font-size: 1.7rem;
+            .results-summary-grid {
+                gap: 0.5rem;
             }
+
+            .result-card {
+                min-height: 86px;
+                padding: 0.75rem 0.65rem;
+            }
+
+            .result-label {
+                font-size: 0.62rem;
+                line-height: 1.2;
+                margin-bottom: 0.35rem;
+            }
+
+            .result-value {
+                font-size: 1.45rem;
+            }
+
+            .class-filter-button {
+                min-width: 0;
+                width: 100%;
+            }
+
+            .class-filter-menu {
+                width: 100%;
+            }
+
+            .assessment-result-card {
+                min-height: 0;
+                padding: 1rem;
+            }
+
+            .result-card-top {
+                align-items: flex-start;
+            }
+
+            .result-card-meta {
+                font-size: 0.9rem;
+            }
+
+            .result-detail-list {
+                gap: 0.45rem;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .result-card-actions {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .result-card-actions .btn {
+                justify-content: center;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .result-card {
+                padding-inline: 0.5rem;
+            }
+
+            .result-label {
+                font-size: 0.58rem;
+            }
+
+            .result-value {
+                font-size: 1.35rem;
+            }
+
         }
     </style>
 @endpush
@@ -138,112 +274,99 @@
         </div>
     </div>
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <section class="result-card">
-                <p class="result-label">Submitted Assessments</p>
-                <div class="result-value">{{ $summary['submitted_assessments'] }}</div>
-            </section>
-        </div>
-        <div class="col-md-4">
-            <section class="result-card">
-                <p class="result-label">Passed</p>
-                <div class="result-value">{{ $summary['passed_count'] }}</div>
-            </section>
-        </div>
-        <div class="col-md-4">
-            <section class="result-card">
-                <p class="result-label">Failed</p>
-                <div class="result-value">{{ $summary['failed_count'] }}</div>
-            </section>
-        </div>
+    <div class="results-summary-grid mb-4">
+        <section class="result-card">
+            <p class="result-label">Submitted</p>
+            <div class="result-value">{{ $summary['submitted_assessments'] }}</div>
+        </section>
+        <section class="result-card">
+            <p class="result-label">Passed</p>
+            <div class="result-value">{{ $summary['passed_count'] }}</div>
+        </section>
+        <section class="result-card">
+            <p class="result-label">Failed</p>
+            <div class="result-value">{{ $summary['failed_count'] }}</div>
+        </section>
     </div>
 
     <section class="results-panel">
-        <div class="results-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <div>
-                <h2 class="brand-text h4 mb-1">Assessment Results</h2>
-            </div>
-            <span class="badge text-bg-light border">{{ $results->count() }} record{{ $results->count() === 1 ? '' : 's' }}</span>
-        </div>
-
         @if ($results->isNotEmpty())
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 results-table mobile-result-table assessment-result-table">
-                    <thead>
-                        <tr>
-                            <th>Assessment</th>
-                            <th>Class</th>
-                            <th>Best Score</th>
-                            <th>Result</th>
-                            <th>Attempts</th>
-                            <th>Submitted</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($results as $result)
-                            @php
-                                $assessment = $result['assessment'];
-                                $class = $result['class'];
-                                $bestAttempt = $result['best_attempt'];
-                                $scoreVisible = $result['score_visible'];
-                                $percentage = (float) $result['percentage'];
-                                $barColor = $percentage >= 75 ? '#198754' : '#dc3545';
-                            @endphp
-                            <tr>
-                                <td>
-                                    <div class="fw-bold" style="color: var(--psu-navy);">{{ $assessment?->title ?? 'Untitled Assessment' }}</div>
-                                    <div class="small text-secondary">{{ $assessment?->subject?->subject_code ?? $class?->subject?->subject_code ?? 'No subject' }}</div>
-                                </td>
-                                <td>
-                                    <div class="fw-semibold">{{ $class?->class_name ?? 'Class removed' }}</div>
-                                    <div class="small text-secondary">{{ $class?->instructorProfile?->user?->displayName() ?? 'No instructor' }}</div>
-                                </td>
-                                <td>
-                                    @if ($scoreVisible && $bestAttempt)
-                                        <div class="fw-bold" style="color: var(--psu-navy);">
-                                            {{ $bestAttempt['score_text'] }} / {{ $result['max_score_text'] }}
-                                        </div>
-                                        <div class="d-flex align-items-center gap-2 mt-2">
-                                            <div class="score-meter" aria-hidden="true">
-                                                <div class="score-meter-fill" style="width: {{ min($percentage, 100) }}%; background: {{ $barColor }};"></div>
-                                            </div>
-                                            <span class="small fw-bold" style="color: {{ $barColor }};">{{ $percentage }}%</span>
-                                        </div>
-                                    @else
-                                        <span class="badge text-bg-secondary rounded-1">Waiting for release</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if (! $scoreVisible || ! $bestAttempt)
-                                        <span class="badge text-bg-secondary rounded-1">Pending</span>
-                                    @elseif ($result['passed'])
-                                        <span class="badge text-bg-success rounded-1">Passed</span>
-                                    @else
-                                        <span class="badge text-bg-danger rounded-1">Failed</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <span class="fw-bold">{{ $result['attempt_count'] }}</span>
-                                    @if ($bestAttempt && $bestAttempt['completion_reason'] === \App\Models\Submission::COMPLETION_WARNING_LIMIT)
-                                        <span class="badge text-bg-warning rounded-1 d-block mt-1">Auto-submitted</span>
-                                    @endif
-                                    @if ($bestAttempt && $bestAttempt['warning_count'] > 0)
-                                        <span class="small text-secondary d-block mt-1">{{ $bestAttempt['warning_count'] }} warning{{ $bestAttempt['warning_count'] === 1 ? '' : 's' }}</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if ($bestAttempt && $bestAttempt['submitted_at'])
-                                        <span class="small d-block">{{ $bestAttempt['submitted_at']->format('M d, Y') }}</span>
-                                        <span class="small text-secondary d-block">{{ $bestAttempt['submitted_at']->format('h:i A') }}</span>
-                                    @else
-                                        <span class="text-secondary">-</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+            <div class="result-list">
+                @foreach ($results as $result)
+                    @php
+                        $assessment = $result['assessment'];
+                        $class = $result['class'];
+                        $classAssessment = $result['class_assessment'];
+                        $bestAttempt = $result['best_attempt'];
+                        $scoreVisible = $result['score_visible'];
+                        $canViewResult = $scoreVisible || $result['answer_visible'];
+                    @endphp
+                    <article class="assessment-result-card">
+                        <div class="result-card-top">
+                            <div>
+                                <p class="result-card-code">{{ $assessment?->subject?->subject_code ?? $class?->subject?->subject_code ?? 'No subject' }}</p>
+                                <h3 class="result-card-title">{{ $assessment?->title ?? 'Untitled Assessment' }}</h3>
+                                <div class="result-card-meta">
+                                    <span>{{ $class?->class_name ?? 'Class removed' }}</span>
+                                    <span aria-hidden="true">|</span>
+                                    <span>{{ $class?->instructorProfile?->user?->displayName() ?? 'No instructor' }}</span>
+                                </div>
+                            </div>
+                            <div class="text-end flex-shrink-0">
+                                @if (! $scoreVisible || ! $bestAttempt)
+                                    <span class="badge text-bg-secondary rounded-1 d-block">Hidden</span>
+                                @elseif ($result['passed'])
+                                    <span class="badge text-bg-success rounded-1 d-block">Passed</span>
+                                @else
+                                    <span class="badge text-bg-danger rounded-1 d-block">Failed</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="result-detail-list">
+                            <div class="result-detail-pill">
+                                <span class="result-detail-label">Best Score</span>
+                                @if ($scoreVisible && $bestAttempt)
+                                    <span class="result-detail-value">{{ $bestAttempt['score_text'] }} / {{ $result['max_score_text'] }}</span>
+                                @else
+                                    <span class="result-detail-value text-secondary">Not released</span>
+                                @endif
+                            </div>
+                            <div class="result-detail-pill">
+                                <span class="result-detail-label">Attempts</span>
+                                <span class="result-detail-value">{{ $result['attempt_count'] }}</span>
+                            </div>
+                            <div class="result-detail-pill">
+                                <span class="result-detail-label">Submitted</span>
+                                @if ($bestAttempt && $bestAttempt['submitted_at'])
+                                    <span class="result-detail-value">{{ $bestAttempt['submitted_at']->format('M d, Y') }}</span>
+                                @else
+                                    <span class="result-detail-value text-secondary">-</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="result-card-actions">
+                            <p class="result-release-note">
+                                @if ($scoreVisible && $bestAttempt)
+                                    {{ $bestAttempt['warning_count'] }} warning{{ $bestAttempt['warning_count'] === 1 ? '' : 's' }} recorded
+                                @else
+                                    Results will appear when your instructor releases them.
+                                @endif
+                            </p>
+                            @if ($canViewResult && $classAssessment)
+                                <a
+                                    class="btn btn-outline-primary d-inline-flex align-items-center gap-2"
+                                    href="{{ route('student.assessments.submitted', ['classAssessment' => $classAssessment, 'show_results' => 1]) }}"
+                                    data-no-ajax="true"
+                                >
+                                    <span class="material-symbols-outlined fs-5">visibility</span>
+                                    View Results
+                                </a>
+                            @endif
+                        </div>
+                    </article>
+                @endforeach
             </div>
         @else
             <div class="p-5 text-center">

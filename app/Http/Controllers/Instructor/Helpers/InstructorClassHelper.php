@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Instructor\Helpers;
 
 use App\Models\AcademicClass;
+use App\Models\ClassJoinRequest;
 use App\Models\InstructorProfile;
 use App\Models\Subject;
 use App\Models\User;
@@ -16,7 +17,13 @@ trait InstructorClassHelper
         $instructorProfile = $this->instructorProfile($user);
         $baseClassesQuery = $instructorProfile
             ? $instructorProfile->classes()
-                ->with('subject')
+                ->with([
+                    'subject',
+                    'joinRequests' => fn ($query) => $query
+                        ->where('status', ClassJoinRequest::STATUS_PENDING)
+                        ->with(['studentProfile.user.roles', 'studentProfile.program.college'])
+                        ->latest('requested_at'),
+                ])
                 ->withCount('students')
             : null;
         $classes = $baseClassesQuery

@@ -287,24 +287,44 @@
         });
     }
 
-    document.addEventListener('keydown', (event) => {
-        const key = event.key.toLowerCase();
-        const printShortcut = (event.ctrlKey || event.metaKey) && key === 'p';
-        const snippingShortcut = event.shiftKey && (event.ctrlKey || event.metaKey) && key === 's';
-        const screenshotCombo = screenshotProtection && (
-            event.key === 'PrintScreen'
-            || printShortcut
-            || snippingShortcut
-        );
+    if (screenshotProtection) {
+        const screenshotKeys = new Set(['printscreen', 'printscrn', 'prtsc']);
 
-        if (screenshotCombo) {
+        const screenshotShortcutType = (event) => {
+            const key = String(event.key || '').toLowerCase();
+            const code = String(event.code || '').toLowerCase();
+            const printShortcut = (event.ctrlKey || event.metaKey) && key === 'p';
+            const snippingShortcut = event.shiftKey && (event.ctrlKey || event.metaKey) && key === 's';
+            const printScreenShortcut = screenshotKeys.has(key) || screenshotKeys.has(code);
+
+            if (printShortcut) {
+                return 'print_shortcut';
+            }
+
+            if (printScreenShortcut || snippingShortcut) {
+                return 'screenshot_shortcut';
+            }
+
+            return null;
+        };
+
+        const handleScreenshotShortcut = (event) => {
+            const eventType = screenshotShortcutType(event);
+
+            if (! eventType) {
+                return;
+            }
+
             event.preventDefault();
-            recordWarning(printShortcut ? 'print_shortcut' : 'screenshot_shortcut');
-        }
-    });
+            recordWarning(eventType);
+        };
+
+        document.addEventListener('keydown', handleScreenshotShortcut);
+        document.addEventListener('keyup', handleScreenshotShortcut);
+        window.addEventListener('beforeprint', () => recordWarning('print_shortcut'));
+    }
 
     if (detectTabSwitch) {
-        window.addEventListener('blur', () => recordWarning('window_blur'));
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 recordWarning('tab_hidden');

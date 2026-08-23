@@ -64,11 +64,12 @@
 
         .toggle-row {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 0.75rem;
         }
 
         .toggle-box {
+            min-width: 0;
             border: 1px solid var(--psu-line);
             border-radius: 0.5rem;
             padding: 0.75rem 0.85rem;
@@ -77,7 +78,8 @@
 
         .toggle-box .fw-semibold {
             font-size: 0.95rem;
-            white-space: nowrap;
+            line-height: 1.2;
+            white-space: normal;
         }
 
         .security-box {
@@ -159,12 +161,6 @@
             color: #9a7500;
         }
 
-        @media (max-width: 1199.98px) {
-            .toggle-row {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-        }
-
         @media (max-width: 991.98px) {
             .setting-grid {
                 grid-template-columns: 1fr;
@@ -173,7 +169,7 @@
 
         @media (max-width: 575.98px) {
             .toggle-row {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
             }
         }
     </style>
@@ -292,13 +288,6 @@
                                 </div>
                             </div>
 
-                            <div class="publish-note mt-3">
-                                <span class="material-symbols-outlined fs-5">info</span>
-                                <div>
-                                    Publishing the same assessment to the same class again updates the existing published schedule and settings.
-                                    It will not create a duplicate copy.
-                                </div>
-                            </div>
                         </div>
                     </div>
 

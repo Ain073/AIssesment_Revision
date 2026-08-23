@@ -207,6 +207,11 @@
                     <span class="material-symbols-outlined fs-5">link</span>
                     Join Code
                 </button>
+                <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" data-bs-target="#joinRequestsModal" data-bs-toggle="modal" type="button">
+                    <span class="material-symbols-outlined fs-5">person_add</span>
+                    Requests
+                    <span class="badge rounded-pill text-bg-primary">{{ $pendingJoinRequests->count() }}</span>
+                </button>
                 <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#addStudentModal" data-bs-toggle="modal" type="button">
                     <span class="material-symbols-outlined fs-5">person_add</span>
                     Add Student
@@ -311,71 +316,6 @@
             </section>
         @endif
     @else
-        @if (! $class->archived_at && $pendingJoinRequests->isNotEmpty())
-            <section class="directory-card shadow-sm mb-4">
-                <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
-                    <h3 class="h4 mb-0">Pending Join Requests</h3>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0 students-table compact-data-table">
-                        <thead>
-                            <tr>
-                                <th>Student</th>
-                                <th>Student Number</th>
-                                <th>Program</th>
-                                <th>Requested</th>
-                                <th class="text-end">Decision</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($pendingJoinRequests as $joinRequest)
-                                @php($student = $joinRequest->studentProfile)
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-3">
-                                            <span class="avatar">{{ strtoupper(substr($student?->user?->displayName() ?? 'S', 0, 1)) }}</span>
-                                            <div>
-                                                <div class="fw-bold" style="color: var(--psu-navy);">{{ $student?->user?->displayName() ?? 'Unknown student' }}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>{{ $student?->student_number ?? 'Unavailable' }}</td>
-                                    <td>
-                                        @if ($student?->program)
-                                            <div class="fw-semibold">{{ $student->program->program_name }}</div>
-                                            <div class="small text-secondary">{{ $student->program->college?->college_name }}</div>
-                                        @else
-                                            <span class="text-secondary">Not assigned</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ $joinRequest->requested_at?->format('M d, Y g:i A') ?? 'Recently' }}</td>
-                                    <td class="text-end">
-                                        <div class="d-flex justify-content-end gap-2">
-                                            <form action="{{ route('instructor.classes.join-requests.approve', ['class' => $class, 'joinRequest' => $joinRequest]) }}" method="POST" data-ajax-form data-reload-page-on-success="true">
-                                                @csrf
-                                                <button class="btn btn-success btn-sm d-inline-flex align-items-center gap-1" type="submit">
-                                                    <span class="material-symbols-outlined fs-6">check</span>
-                                                    Approve
-                                                </button>
-                                            </form>
-                                            <form action="{{ route('instructor.classes.join-requests.reject', ['class' => $class, 'joinRequest' => $joinRequest]) }}" method="POST" onsubmit="return confirm('Reject this join request?');" data-ajax-form data-reload-page-on-success="true">
-                                                @csrf
-                                                <button class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1" type="submit">
-                                                    <span class="material-symbols-outlined fs-6">close</span>
-                                                    Reject
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        @endif
-
         <section class="directory-card shadow-sm">
             <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
                 <h3 class="h4 mb-0">Students in Class</h3>
@@ -475,6 +415,84 @@
 
         @if (! $class->archived_at)
             @include('instructor.classes.join-link-popup')
+            <div class="modal fade" id="joinRequestsModal" tabindex="-1" aria-labelledby="joinRequestsModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <div>
+                                <h3 class="modal-title h4 mb-1" id="joinRequestsModalLabel">Join Requests</h3>
+                                <p class="small text-white-50 mb-0">{{ $class->class_name }}{{ $class->join_code ? ' - ' . $class->join_code : '' }}</p>
+                            </div>
+                            <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-0">
+                            @if ($pendingJoinRequests->isNotEmpty())
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0 compact-data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Student</th>
+                                                <th>Program</th>
+                                                <th>Requested</th>
+                                                <th class="text-end">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($pendingJoinRequests as $joinRequest)
+                                                @php($student = $joinRequest->studentProfile)
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center gap-3">
+                                                            <span class="avatar">{{ strtoupper(substr($student?->user?->displayName() ?? 'S', 0, 1)) }}</span>
+                                                            <div>
+                                                                <div class="fw-bold" style="color: var(--psu-navy);">{{ $student?->user?->displayName() ?? 'Unknown student' }}</div>
+                                                                <div class="small text-secondary">{{ $student?->student_number ?? 'No student number' }}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        @if ($student?->program)
+                                                            <div class="fw-semibold">{{ $student->program->program_name }}</div>
+                                                            <div class="small text-secondary">{{ $student->program->college?->college_name }}</div>
+                                                        @else
+                                                            <span class="text-secondary">Not assigned</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>{{ $joinRequest->requested_at?->format('M d, Y g:i A') ?? 'Recently' }}</td>
+                                                    <td class="text-end">
+                                                        <div class="d-inline-flex align-items-center justify-content-end gap-2">
+                                                            <form action="{{ route('instructor.classes.join-requests.approve', ['class' => $class, 'joinRequest' => $joinRequest]) }}" method="POST" data-ajax-form data-reload-page-on-success="true">
+                                                                @csrf
+                                                                <button class="btn btn-success btn-sm d-inline-flex align-items-center gap-1" type="submit">
+                                                                    <span class="material-symbols-outlined fs-6">check</span>
+                                                                    Approve
+                                                                </button>
+                                                            </form>
+                                                            <form action="{{ route('instructor.classes.join-requests.reject', ['class' => $class, 'joinRequest' => $joinRequest]) }}" method="POST" onsubmit="return confirm('Reject this join request?');" data-ajax-form data-reload-page-on-success="true">
+                                                                @csrf
+                                                                <button class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1" type="submit">
+                                                                    <span class="material-symbols-outlined fs-6">close</span>
+                                                                    Reject
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @else
+                                <div class="p-5 text-center">
+                                    <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">person_add_disabled</span></div>
+                                    <h4 class="h5 mb-1" style="color: var(--psu-navy);">No pending requests</h4>
+                                    <p class="text-secondary mb-0">Students who request to join this class will appear here.</p>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
             @include('instructor.classes.add-student-form')
             @include('instructor.classes.import-preview-popup')
         @endif

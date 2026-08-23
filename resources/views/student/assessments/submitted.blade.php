@@ -240,3 +240,19 @@
         </section>
     @endif
 @endsection
+
+@if (($showScore || $showAnswers) && request()->boolean('show_results'))
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const modalElement = document.getElementById('submissionResultModal');
+
+                if (! modalElement || ! window.bootstrap?.Modal) {
+                    return;
+                }
+
+                window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
+            });
+        </script>
+    @endpush
+@endif

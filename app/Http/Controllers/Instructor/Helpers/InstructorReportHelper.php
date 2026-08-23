@@ -229,8 +229,9 @@ trait InstructorReportHelper
                             ->where('due_at', '<=', now());
                     });
             })
-            ->latest('due_at')
-            ->latest('class_assessment_id')
+            ->orderBy('assessment_id')
+            ->orderBy('due_at')
+            ->orderBy('class_assessment_id')
             ->get();
     }
 }

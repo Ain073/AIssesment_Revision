@@ -71,11 +71,22 @@
                         </td>
                         <td class="text-center">{{ $class->students_count }}</td>
                         <td class="text-center">
-                            @if ($class->join_code)
-                                <span class="badge text-bg-light border rounded-1 px-3 py-2 join-code-pill">{{ $class->join_code }}</span>
-                            @else
-                                <span class="text-secondary">Open class to generate</span>
-                            @endif
+                            <div class="d-inline-flex align-items-center justify-content-center gap-2 join-code-actions">
+                                @if ($class->join_code)
+                                    <span class="badge text-bg-light border rounded-1 px-3 py-2 join-code-pill">{{ $class->join_code }}</span>
+                                @else
+                                    <span class="text-secondary small">Open class to generate</span>
+                                @endif
+
+                                @if ($activeClassTab === 'active')
+                                    @php($pendingRequestCount = $class->joinRequests->count())
+                                    <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 join-request-btn" data-bs-target="#joinRequestsModal{{ $class->class_id }}" data-bs-toggle="modal" type="button">
+                                        <span class="material-symbols-outlined fs-6">person_add</span>
+                                        Requests
+                                        <span class="badge rounded-pill text-bg-primary">{{ $pendingRequestCount }}</span>
+                                    </button>
+                                @endif
+                            </div>
                         </td>
                         <td>{{ $class->school_year }}</td>
                         <td class="text-center text-nowrap">

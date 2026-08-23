@@ -415,7 +415,7 @@
             </div>
             <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" onclick="window.print()" type="button">
                 <span class="material-symbols-outlined fs-5">print</span>
-                Print
+                Export
             </button>
         </div>
     </div>

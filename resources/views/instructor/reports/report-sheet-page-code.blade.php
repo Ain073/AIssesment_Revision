@@ -4,8 +4,16 @@
         const paperSize = document.getElementById('paperSize');
         const paperSizeInput = document.getElementById('paperSizeInput');
         const paperSizeCaption = document.getElementById('paperSizeCaption');
+        const reportContentFontFamily = document.getElementById('reportContentFontFamily');
+        const reportContentFontSize = document.getElementById('reportContentFontSize');
         const reportForm = document.getElementById('reportSheetForm');
         const draftFieldSelector = '.report-edit-textarea, .report-header-input';
+        const contentFontFamilies = {
+            arial: 'Arial, Helvetica, sans-serif',
+            calibri: 'Calibri, Arial, sans-serif',
+            times: '"Times New Roman", Times, serif',
+        };
+        const contentFontStorageKey = `aissessment:report-content-style:${@json($reportType)}`;
         const reportDraftAssessmentKeys = reportForm
             ? [...reportForm.querySelectorAll('input[name="class_assessment_keys[]"]')]
                 .map((input) => input.value.trim())
@@ -22,6 +30,49 @@
         const reportDraftFields = () => reportForm
             ? [...reportForm.querySelectorAll(draftFieldSelector)]
             : [];
+
+        const applyReportContentStyle = () => {
+            const fontKey = reportContentFontFamily?.value || 'arial';
+            const fontSize = reportContentFontSize?.value || '9';
+
+            document.documentElement.style.setProperty(
+                '--report-content-font-family',
+                contentFontFamilies[fontKey] || contentFontFamilies.arial
+            );
+            document.documentElement.style.setProperty('--report-content-font-size', `${fontSize}pt`);
+
+            try {
+                localStorage.setItem(contentFontStorageKey, JSON.stringify({
+                    fontFamily: fontKey,
+                    fontSize,
+                }));
+            } catch (error) {
+                // Ignore storage failures.
+            }
+
+            document.querySelectorAll('.report-edit-textarea').forEach((textarea) => {
+                textarea.style.height = 'auto';
+                textarea.style.height = `${Math.max(textarea.scrollHeight, 136)}px`;
+            });
+        };
+
+        const restoreReportContentStyle = () => {
+            try {
+                const savedStyle = JSON.parse(localStorage.getItem(contentFontStorageKey));
+
+                if (savedStyle?.fontFamily && reportContentFontFamily) {
+                    reportContentFontFamily.value = savedStyle.fontFamily;
+                }
+
+                if (savedStyle?.fontSize && reportContentFontSize) {
+                    reportContentFontSize.value = savedStyle.fontSize;
+                }
+            } catch (error) {
+                // Keep defaults when style storage is unavailable.
+            }
+
+            applyReportContentStyle();
+        };
 
         const saveReportDraft = () => {
             if (! reportDraftStorageKey) {
@@ -94,11 +145,22 @@
             window.location.href = url.toString();
         });
 
-        const syncPrintText = (textarea) => {
-            const printText = textarea.nextElementSibling;
+        reportContentFontFamily?.addEventListener('change', applyReportContentStyle);
+        reportContentFontSize?.addEventListener('change', applyReportContentStyle);
+
+        const syncPrintText = (field) => {
+            const printText = field.nextElementSibling;
 
             if (printText?.classList.contains('report-print-text')) {
-                printText.textContent = textarea.value;
+                printText.textContent = field.value;
+            }
+
+            if (field.name) {
+                document
+                    .querySelectorAll(`.report-print-mirror[data-print-field-name="${CSS.escape(field.name)}"]`)
+                    .forEach((printMirror) => {
+                        printMirror.textContent = field.value;
+                    });
             }
         };
 
@@ -108,6 +170,7 @@
             syncPrintText(textarea);
         };
 
+        restoreReportContentStyle();
         restoreReportDraft();
 
         document.querySelectorAll('.report-edit-textarea').forEach((textarea) => {
@@ -123,15 +186,25 @@
         });
 
         document.querySelectorAll('.report-header-input').forEach((input) => {
-            input.addEventListener('input', queueReportDraftSave);
-            input.addEventListener('change', queueReportDraftSave);
+            syncPrintText(input);
+            input.addEventListener('input', () => {
+                syncPrintText(input);
+                queueReportDraftSave();
+            });
+            input.addEventListener('change', () => {
+                syncPrintText(input);
+                queueReportDraftSave();
+            });
         });
 
         window.addEventListener('beforeprint', () => {
+            applyReportContentStyle();
             document.querySelectorAll('.report-edit-textarea').forEach(autosize);
+            reportDraftFields().forEach(syncPrintText);
         });
 
         window.addEventListener('load', () => {
+            applyReportContentStyle();
             document.querySelectorAll('.report-edit-textarea').forEach(autosize);
         });
 
