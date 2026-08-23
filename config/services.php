@@ -39,8 +39,8 @@ return [
                 'key' => env('OPENAI_API_KEY', env('AI_API_KEY')),
             ],
             'claude' => [
-                'label' => 'Claude 3',
-                'model' => env('CLAUDE_MODEL', 'claude-3-sonnet-20240229'),
+                'label' => 'Claude Sonnet 4.6',
+                'model' => env('CLAUDE_MODEL', 'claude-sonnet-4-6'),
                 'key' => env('ANTHROPIC_API_KEY', env('CLAUDE_API_KEY')),
             ],
         ],
