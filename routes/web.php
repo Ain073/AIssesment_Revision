@@ -119,6 +119,7 @@ Route::middleware(['instructor', 'no_cache'])
         Route::get('/assessments/publish', [InstructorAssessmentPublishController::class, 'publishAssessmentForm'])->name('assessments.publish.form');
         Route::post('/assessments/publish', [InstructorAssessmentPublishController::class, 'publishSelectedAssessment'])->name('assessments.publish.selected');
         Route::post('/assessments', [InstructorAssessmentController::class, 'storeAssessment'])->name('assessments.store');
+        Route::delete('/class-assessments/{classAssessment}', [InstructorAssessmentController::class, 'destroyPublishedAssessment'])->name('assessments.published.destroy');
         Route::get('/class-assessments/{classAssessment}/results', [InstructorAssessmentResultController::class, 'assessmentResults'])->name('assessments.results');
         Route::get('/assessments/{assessment}', [InstructorAssessmentController::class, 'showAssessment'])->name('assessments.show');
         Route::put('/assessments/{assessment}', [InstructorAssessmentController::class, 'updateAssessment'])->name('assessments.update');

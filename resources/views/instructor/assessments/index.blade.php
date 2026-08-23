@@ -125,7 +125,7 @@
             <div class="row g-4">
                 @foreach ($publishedAssessments as $classAssessment)
                     <div class="col-xl-6">
-                        <section class="assessment-card h-100">
+                        <section class="assessment-card h-100" id="publishedAssessmentCard{{ $classAssessment->class_assessment_id }}">
                             <div class="directory-header px-4 py-3 d-flex justify-content-between gap-3">
                                 <div>
                                     <h2 class="h4 mb-1">{{ $classAssessment->assessment?->title ?? 'Untitled Assessment' }}</h2>
@@ -169,6 +169,10 @@
                                         <span class="material-symbols-outlined fs-5">school</span>
                                         View Class
                                     </a>
+                                    <button class="btn btn-outline-danger d-inline-flex align-items-center gap-2" data-bs-target="#deletePublishedAssessmentModal{{ $classAssessment->class_assessment_id }}" data-bs-toggle="modal" type="button">
+                                        <span class="material-symbols-outlined fs-5">delete</span>
+                                        Delete
+                                    </button>
                                 </div>
                             </div>
                         </section>
@@ -188,4 +192,5 @@
     @endif
 
     @include('instructor.assessments.delete-assessment-popups')
+    @include('instructor.assessments.delete-published-assessment-popups')
 @endsection

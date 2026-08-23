@@ -245,6 +245,53 @@ class AssessmentController extends BaseController
             ->with('status', 'Assessment deleted successfully.');
     }
 
+    public function destroyPublishedAssessment(Request $request, ClassAssessment $classAssessment): RedirectResponse|JsonResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedClassAssessment = $this->ownedClassAssessment($classAssessment, $instructorProfile);
+
+        $ownedClassAssessment->loadMissing(['assessment', 'class']);
+
+        $assessment = $ownedClassAssessment->assessment;
+        $assessmentId = $assessment?->assessment_id;
+        $assessmentTitle = $assessment?->title ?? 'Untitled Assessment';
+        $className = $ownedClassAssessment->class?->class_name ?? 'class';
+        $classAssessmentId = $ownedClassAssessment->class_assessment_id;
+        $submissionCount = $ownedClassAssessment->submissions()->count();
+
+        DB::transaction(function () use ($ownedClassAssessment, $assessment): void {
+            $ownedClassAssessment->delete();
+
+            if (
+                $assessment
+                && $assessment->status === Assessment::STATUS_ARCHIVED
+                && ! $assessment->classAssessments()->exists()
+            ) {
+                $assessment->items()->delete();
+                $assessment->delete();
+            }
+        });
+
+        Log::warning('Published assessment deleted by instructor.', [
+            'actor_id' => $user->id,
+            'assessment_id' => $assessmentId,
+            'assessment_title' => $assessmentTitle,
+            'class_assessment_id' => $classAssessmentId,
+            'class_name' => $className,
+            'submission_count' => $submissionCount,
+            'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Published assessment deleted. You can publish the stored assessment again.']);
+        }
+
+        return redirect()
+            ->route('instructor.assessments', ['tab' => 'published'])
+            ->with('status', 'Published assessment deleted. You can publish the stored assessment again.');
+    }
+
     public function storeAssessmentItem(Request $request, Assessment $assessment): RedirectResponse
     {
         $user = $this->currentUser();
