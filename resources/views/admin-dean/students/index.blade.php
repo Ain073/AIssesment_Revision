@@ -58,7 +58,7 @@
 
         .students-table {
             width: 100%;
-            min-width: 1120px;
+            min-width: 0;
             table-layout: fixed;
         }
 

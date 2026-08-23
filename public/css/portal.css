@@ -340,10 +340,10 @@ h1, h2, h3, .brand-text {
 }
 
 .action-icon-btn {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    min-height: 36px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
     padding: 0;
     border-radius: 0.35rem;
 }
@@ -354,6 +354,12 @@ h1, h2, h3, .brand-text {
 
 .account-row-actions {
     white-space: nowrap;
+}
+
+.compact-data-table tbody td:last-child .account-row-actions {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 .profile-menu-shell {
