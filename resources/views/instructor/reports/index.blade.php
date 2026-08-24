@@ -1,7 +1,10 @@
 @extends('layouts.portal')
 
 @section('title', 'Reports | AIssessment Instructor')
-@section('header', 'Reports')
+
+@section('topbar-leading')
+    @include('partials.reports-view-selector')
+@endsection
 
 @php
     $activeReportType = request()->query('type') === 'summative' ? 'summative' : 'formative';
@@ -236,7 +239,7 @@
                     <span class="material-symbols-outlined fs-6">menu_book</span>
                     Subject
                 </label>
-                <select class="form-select" id="instructorReportSubjectFilter" name="subject" @disabled($subjects->isEmpty())>
+                <select class="form-select" id="instructorReportSubjectFilter" name="subject" onchange="this.form.submit()" @disabled($subjects->isEmpty())>
                     <option value="">All subjects</option>
                     @foreach ($subjects as $subject)
                         <option value="{{ $subject->subject_id }}" @selected($selectedSubjectId === (int) $subject->subject_id)>
@@ -246,12 +249,8 @@
                 </select>
             </div>
 
-            <div class="instructor-report-filter-actions">
-                <button class="btn btn-psu d-inline-flex align-items-center gap-1" type="submit">
-                    <span class="material-symbols-outlined fs-6">filter_alt</span>
-                    Filter
-                </button>
-                @if ($selectedSubjectId)
+            @if ($selectedSubjectId)
+                <div class="instructor-report-filter-actions">
                     <a
                         aria-label="Clear subject filter"
                         class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center"
@@ -260,8 +259,8 @@
                     >
                         <span class="material-symbols-outlined fs-6">filter_alt_off</span>
                     </a>
-                @endif
-            </div>
+                </div>
+            @endif
         </form>
     </section>
 

@@ -62,15 +62,6 @@
             letter-spacing: 0.1em;
         }
 
-        .join-code-actions {
-            white-space: nowrap;
-        }
-
-        .join-request-btn {
-            min-height: 34px;
-            font-weight: 700;
-        }
-
         .btn-outline-psu {
             border-color: var(--psu-navy-2);
             color: var(--psu-navy-2);

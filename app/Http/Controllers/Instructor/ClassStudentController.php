@@ -31,7 +31,7 @@ class ClassStudentController extends BaseController
         $studentNumber = trim($validated['student_number']);
 
         $studentProfile = StudentProfile::query()
-            ->with(['user.roles', 'program.college'])
+            ->with(['user.roles', 'program.department.college'])
             ->where('student_number', $studentNumber)
             ->first();
 

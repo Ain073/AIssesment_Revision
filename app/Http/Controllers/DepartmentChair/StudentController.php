@@ -20,7 +20,7 @@ class StudentController extends BaseController
         $scopedProgramIds = $scopedPrograms->pluck('program_id');
         $students = $scopedProgramIds->isNotEmpty()
             ? StudentProfile::query()
-                ->with(['user.roles', 'program.college'])
+                ->with(['user.roles', 'program.department.college'])
                 ->whereIn('program_id', $scopedProgramIds)
                 ->get()
                 ->sortBy(fn (StudentProfile $student) => strtolower($student->user?->displayName() ?? ''))
@@ -79,8 +79,8 @@ class StudentController extends BaseController
             ->route('department-chair.students')
             ->with('status', $result['created_count'].' student accounts created successfully.');
 
-        if ($result['setup_links_sent'] < $result['created_count']) {
-            $redirect->with('mail_warning', 'Some password setup emails were not delivered. Those students can request a new link through Forgot Password.');
+        if ($result['initial_password_emails_sent'] < $result['created_count']) {
+            $redirect->with('mail_warning', 'Some initial password emails were not delivered.');
         }
 
         return $redirect;

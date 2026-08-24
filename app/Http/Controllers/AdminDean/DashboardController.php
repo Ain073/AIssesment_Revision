@@ -4,7 +4,6 @@ namespace App\Http\Controllers\AdminDean;
 
 use App\Models\Department;
 use App\Models\Program;
-use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\View\View;
 
@@ -29,7 +28,7 @@ class DashboardController extends BaseController
                 [
                     'label' => 'Programs',
                     'value' => Program::query()
-                        ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
+                        ->when($scopedCollegeId, fn ($query) => $query->whereHas('department', fn ($departmentQuery) => $departmentQuery->where('college_id', $scopedCollegeId)), fn ($query) => $query->whereRaw('1 = 0'))
                         ->count(),
                     'icon' => 'school',
                 ],
@@ -44,24 +43,12 @@ class DashboardController extends BaseController
                         ->count(),
                     'icon' => 'badge',
                 ],
-                [
-                    'label' => 'Students',
-                    'value' => StudentProfile::query()
-                        ->whereHas('program', fn ($query) => $query->when($scopedCollegeId, fn ($inner) => $inner->where('college_id', $scopedCollegeId), fn ($inner) => $inner->whereRaw('1 = 0')))
-                        ->count(),
-                    'icon' => 'groups',
-                ],
             ],
             'quickActions' => [
                 [
                     'label' => 'Open Departments',
                     'href' => route('admin-dean.departments'),
                     'icon' => 'apartment',
-                ],
-                [
-                    'label' => 'Manage Programs',
-                    'href' => route('admin-dean.programs'),
-                    'icon' => 'school',
                 ],
                 [
                     'label' => 'View Teachers',

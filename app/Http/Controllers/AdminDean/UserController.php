@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\MessageBag;
 use Illuminate\Validation\Rule;
 
 class UserController extends BaseController
@@ -19,14 +20,14 @@ class UserController extends BaseController
         $user = $this->currentUser();
         $scopedCollege = $this->scopedCollege($user);
 
-        abort_unless($scopedCollege, 403, 'Admin/Dean account needs an assigned college before creating users.');
+        abort_unless($scopedCollege, 403, 'Dean account needs an assigned college before creating users.');
 
         $departmentIds = Department::query()
             ->where('college_id', $scopedCollege->college_id)
             ->pluck('department_id')
             ->all();
         $programIds = Program::query()
-            ->where('college_id', $scopedCollege->college_id)
+            ->whereHas('department', fn ($query) => $query->where('college_id', $scopedCollege->college_id))
             ->pluck('program_id')
             ->all();
 
@@ -35,7 +36,6 @@ class UserController extends BaseController
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
             'base_role' => ['required', Rule::in(UserAccountService::BASE_ROLES)],
             'department_id' => [
@@ -49,6 +49,7 @@ class UserController extends BaseController
                 'nullable',
                 'string',
                 'max:255',
+                UserAccountService::identifierPasswordDigitsRule(),
                 'unique:instructor_profiles,employee_number',
             ],
             'program_id' => [
@@ -62,17 +63,38 @@ class UserController extends BaseController
                 'nullable',
                 'string',
                 'max:255',
+                UserAccountService::identifierPasswordDigitsRule(),
                 'unique:student_profiles,student_number',
             ],
+            'authorizations' => ['nullable', 'array'],
+            'authorizations.*' => [Rule::in(['department_chair'])],
         ]);
 
-        $createdUser = DB::transaction(function () use ($validated, $user, $scopedCollege, $accounts) {
-            $createdUser = $accounts->createAccount($validated);
+        $managedRoles = collect($validated['authorizations'] ?? [])
+            ->intersect(['department_chair'])
+            ->unique()
+            ->values();
+
+        if ($managedRoles->isNotEmpty() && $validated['base_role'] !== 'instructor') {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(new MessageBag([
+                    'authorizations' => 'Only teacher accounts can receive a designation.',
+                ]));
+        }
+
+        $initialPassword = $accounts->initialPasswordFor($validated);
+        $validated['password'] = $initialPassword;
+
+        $createdUser = DB::transaction(function () use ($validated, $user, $scopedCollege, $accounts, $managedRoles) {
+            $createdUser = $accounts->createAccount($validated, $managedRoles->all());
 
             Log::info('User account created by admin/dean.', [
                 'actor_id' => $user->id,
                 'user_id' => $createdUser->id,
                 'base_role' => $validated['base_role'],
+                'authorizations' => $managedRoles->all(),
                 'college_id' => $scopedCollege->college_id,
                 'department_id' => $validated['department_id'] ?? null,
                 'program_id' => $validated['program_id'] ?? null,
@@ -82,10 +104,17 @@ class UserController extends BaseController
         });
 
         $accounts->sendAccountCreatedNotification($createdUser);
+        $passwordEmailSent = $accounts->sendInitialPasswordEmail($createdUser, $initialPassword);
 
-        return redirect()
+        $redirect = redirect()
             ->back()
             ->with('status', 'User account created successfully.');
+
+        if (! $passwordEmailSent) {
+            $redirect->with('mail_warning', 'Account was created, but the initial password email was not delivered.');
+        }
+
+        return $redirect;
     }
 
     public function update(Request $request, User $user, UserAccountService $accounts): RedirectResponse
@@ -93,7 +122,7 @@ class UserController extends BaseController
         $actor = $this->currentUser();
         $scopedCollege = $this->scopedCollege($actor);
 
-        abort_unless($scopedCollege, 403, 'Admin/Dean account needs an assigned college before updating users.');
+        abort_unless($scopedCollege, 403, 'Dean account needs an assigned college before updating users.');
 
         $targetUser = $this->scopedUser($user, $scopedCollege->college_id);
         $targetBaseRole = $this->baseRoleFor($targetUser);
@@ -105,7 +134,7 @@ class UserController extends BaseController
             ->pluck('department_id')
             ->all();
         $programIds = Program::query()
-            ->where('college_id', $scopedCollege->college_id)
+            ->whereHas('department', fn ($query) => $query->where('college_id', $scopedCollege->college_id))
             ->pluck('program_id')
             ->all();
 
@@ -181,7 +210,7 @@ class UserController extends BaseController
         $actor = $this->currentUser();
         $scopedCollege = $this->scopedCollege($actor);
 
-        abort_unless($scopedCollege, 403, 'Admin/Dean account needs an assigned college before deleting users.');
+        abort_unless($scopedCollege, 403, 'Dean account needs an assigned college before deleting users.');
 
         $targetUser = $this->scopedUser($user, $scopedCollege->college_id);
 
@@ -208,12 +237,12 @@ class UserController extends BaseController
 
     private function scopedUser(User $user, int $collegeId): User
     {
-        $user->loadMissing(['roles', 'instructorProfile.department', 'studentProfile.program']);
+        $user->loadMissing(['roles', 'instructorProfile.department', 'studentProfile.program.department']);
 
         $isCollegeInstructor = $user->hasRole('instructor')
             && (int) $user->instructorProfile?->department?->college_id === $collegeId;
         $isCollegeStudent = $user->hasRole('student')
-            && (int) $user->studentProfile?->program?->college_id === $collegeId;
+            && (int) $user->studentProfile?->program?->department?->college_id === $collegeId;
 
         abort_unless($isCollegeInstructor || $isCollegeStudent, 403);
 

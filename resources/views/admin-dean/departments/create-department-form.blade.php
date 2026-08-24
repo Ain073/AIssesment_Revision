@@ -1,7 +1,7 @@
 {{-- Create department form --}}
 <div class="modal fade" id="departmentModal" tabindex="-1" aria-labelledby="departmentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <form action="{{ route('admin-dean.departments.store') }}" class="modal-content" method="POST">
+        <form action="{{ route('admin-dean.departments.store') }}" class="modal-content" method="POST" data-ajax-form data-reset-on-success="true" data-reload-page-on-success="true">
             @csrf
             <div class="modal-header">
                 <h3 class="modal-title h4" id="departmentModalLabel">New Department</h3>
@@ -26,6 +26,7 @@
                         </select>
                     </div>
                 @endif
+
                 <div>
                     <label class="form-label fw-bold text-uppercase small" for="dept_name">Department Name</label>
                     <input class="form-control form-control-lg" id="dept_name" name="dept_name" placeholder="e.g. Department of Information Technology" required type="text" value="{{ old('dept_name') }}">

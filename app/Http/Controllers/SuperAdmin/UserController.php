@@ -22,7 +22,7 @@ class UserController extends Controller
 {
     public function index(Request $request, StudentAccountImportService $importer): View
     {
-        $users = User::with(['roles', 'instructorProfile.department.college', 'studentProfile.program.college'])
+        $users = User::with(['roles', 'instructorProfile.department.college', 'studentProfile.program.department.college'])
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->orderBy('name')
@@ -33,8 +33,9 @@ class UserController extends Controller
             ->orderBy('dept_name')
             ->get();
 
-        $programs = Program::with('college')
+        $programs = Program::with('department.college')
             ->orderBy('college_id')
+            ->orderBy('department_id')
             ->orderBy('program_name')
             ->get();
 
@@ -86,8 +87,8 @@ class UserController extends Controller
             ->route('super-admin.users')
             ->with('status', $result['created_count'].' student accounts created successfully.');
 
-        if ($result['setup_links_sent'] < $result['created_count']) {
-            $redirect->with('mail_warning', 'Some password setup emails were not delivered. Those students can request a new link through Forgot Password.');
+        if ($result['initial_password_emails_sent'] < $result['created_count']) {
+            $redirect->with('mail_warning', 'Some initial password emails were not delivered.');
         }
 
         return $redirect;
@@ -100,7 +101,6 @@ class UserController extends Controller
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
             'base_role' => ['required', Rule::in(UserAccountService::BASE_ROLES)],
             'department_id' => [
@@ -114,6 +114,7 @@ class UserController extends Controller
                 'nullable',
                 'string',
                 'max:255',
+                UserAccountService::identifierPasswordDigitsRule(),
                 'unique:instructor_profiles,employee_number',
             ],
             'program_id' => [
@@ -127,19 +128,40 @@ class UserController extends Controller
                 'nullable',
                 'string',
                 'max:255',
+                UserAccountService::identifierPasswordDigitsRule(),
                 'unique:student_profiles,student_number',
             ],
+            'authorizations' => ['nullable', 'array'],
+            'authorizations.*' => [Rule::in(['admin_dean'])],
             'form_mode' => ['nullable', 'string'],
         ]);
 
-        $createdUser = DB::transaction(function () use ($validated, $accounts) {
-            $user = $accounts->createAccount($validated);
+        $managedRoles = collect($validated['authorizations'] ?? [])
+            ->intersect(['admin_dean'])
+            ->unique()
+            ->values();
+
+        if ($managedRoles->isNotEmpty() && $validated['base_role'] !== 'instructor') {
+            return redirect()
+                ->route('super-admin.users')
+                ->withInput()
+                ->withErrors(new MessageBag([
+                    'authorizations' => 'Only teacher accounts can receive a designation.',
+                ]));
+        }
+
+        $initialPassword = $accounts->initialPasswordFor($validated);
+        $validated['password'] = $initialPassword;
+
+        $createdUser = DB::transaction(function () use ($validated, $accounts, $managedRoles) {
+            $user = $accounts->createAccount($validated, $managedRoles->all());
 
             Log::info('User account created by super admin.', [
                 'actor_id' => Auth::id(),
                 'user_id' => $user->id,
                 'email' => $user->email,
                 'base_role' => $validated['base_role'],
+                'authorizations' => $managedRoles->all(),
                 'department_id' => $validated['department_id'] ?? null,
                 'employee_number' => $validated['employee_number'] ?? null,
                 'program_id' => $validated['program_id'] ?? null,
@@ -150,10 +172,17 @@ class UserController extends Controller
         });
 
         $accounts->sendAccountCreatedNotification($createdUser);
+        $passwordEmailSent = $accounts->sendInitialPasswordEmail($createdUser, $initialPassword);
 
-        return redirect()
+        $redirect = redirect()
             ->route('super-admin.users')
             ->with('status', 'User account created successfully.');
+
+        if (! $passwordEmailSent) {
+            $redirect->with('mail_warning', 'Account was created, but the initial password email was not delivered.');
+        }
+
+        return $redirect;
     }
 
     public function update(Request $request, User $user, UserAccountService $accounts): RedirectResponse
@@ -161,7 +190,7 @@ class UserController extends Controller
         if ($user->hasRole('super_admin')) {
             return redirect()
                 ->route('super-admin.users')
-                ->withErrors(new MessageBag(['user' => 'Super Admin account cannot be edited here.']));
+                ->withErrors(new MessageBag(['user' => 'Admin account cannot be edited here.']));
         }
 
         $validated = $request->validate([
@@ -198,27 +227,33 @@ class UserController extends Controller
                 Rule::unique('student_profiles', 'student_number')->ignore($user->studentProfile?->student_profile_id, 'student_profile_id'),
             ],
             'authorizations' => ['nullable', 'array'],
-            'authorizations.*' => [Rule::in(UserAccountService::MANAGED_ROLES)],
+            'authorizations.*' => [Rule::in(['admin_dean'])],
             'form_mode' => ['nullable', 'string'],
             'user_id' => ['nullable', 'integer'],
         ]);
 
         $selectedManagedRoles = collect($validated['authorizations'] ?? [])
-            ->intersect(UserAccountService::MANAGED_ROLES)
+            ->intersect(['admin_dean'])
             ->unique()
             ->values();
 
-        if ($selectedManagedRoles->count() > 1) {
+        if ($selectedManagedRoles->contains('admin_dean') && $user->hasRole('department_chair')) {
             return redirect()
                 ->route('super-admin.users')
                 ->withInput()
                 ->withErrors(new MessageBag([
-                    'authorizations' => 'Choose only one elevated authorization: Admin/Dean or Department Chair.',
+                    'authorizations' => 'This teacher already has a Department Chair designation. Ask the Dean to remove it before assigning Dean designation.',
                 ]));
         }
 
-        DB::transaction(function () use ($user, $validated, $accounts) {
-            $accounts->updateAccount($user, $validated, $validated['authorizations'] ?? []);
+        $managedRoles = $selectedManagedRoles;
+
+        if ($user->hasRole('department_chair')) {
+            $managedRoles = $managedRoles->push('department_chair');
+        }
+
+        DB::transaction(function () use ($user, $validated, $accounts, $managedRoles) {
+            $accounts->updateAccount($user, $validated, $managedRoles->all());
 
             Log::info('User account updated by super admin.', [
                 'actor_id' => Auth::id(),
@@ -244,7 +279,7 @@ class UserController extends Controller
         if ($user->hasRole('super_admin')) {
             return redirect()
                 ->route('super-admin.users')
-                ->withErrors(new MessageBag(['user' => 'Super Admin account cannot be deleted.']));
+                ->withErrors(new MessageBag(['user' => 'Admin account cannot be deleted.']));
         }
 
         Log::warning('User account deleted by super admin.', [

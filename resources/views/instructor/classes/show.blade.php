@@ -347,7 +347,7 @@
                                 <td>
                                     @if ($student->program)
                                         <div class="fw-semibold">{{ $student->program->program_name }}</div>
-                                        <div class="small text-secondary">{{ $student->program->college?->college_name }}</div>
+                                        <div class="small text-secondary">{{ collect([$student->program->department?->dept_name, $student->program->department?->college?->college_name])->filter()->join(' - ') }}</div>
                                     @else
                                         <span class="text-secondary">Not assigned</span>
                                     @endif
@@ -453,7 +453,7 @@
                                                     <td>
                                                         @if ($student?->program)
                                                             <div class="fw-semibold">{{ $student->program->program_name }}</div>
-                                                            <div class="small text-secondary">{{ $student->program->college?->college_name }}</div>
+                                                            <div class="small text-secondary">{{ collect([$student->program->department?->dept_name, $student->program->department?->college?->college_name])->filter()->join(' - ') }}</div>
                                                         @else
                                                             <span class="text-secondary">Not assigned</span>
                                                         @endif

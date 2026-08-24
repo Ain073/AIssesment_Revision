@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureAdminDean
 {
     /**
-     * Ensure the request comes from an active Admin/Dean account.
+     * Ensure the request comes from an active Dean account.
      *
      * @param  Closure(Request): Response  $next
      */

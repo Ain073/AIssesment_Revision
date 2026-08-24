@@ -14,8 +14,12 @@
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
+                            <div class="program-detail-label mb-1">Department</div>
+                            <div>{{ $program->department?->dept_name ?? 'Not assigned' }}</div>
+                        </div>
+                        <div class="col-md-6">
                             <div class="program-detail-label mb-1">College</div>
-                            <div>{{ $program->college?->college_name ?? 'Not assigned' }}</div>
+                            <div>{{ $program->department?->college?->college_name ?? 'Not assigned' }}</div>
                         </div>
                         <div class="col-md-6">
                             <div class="program-detail-label mb-1">Status</div>
@@ -54,10 +58,12 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-uppercase small" for="edit_college_id_{{ $program->program_id }}">College</label>
-                        <select class="form-select form-select-lg" id="edit_college_id_{{ $program->program_id }}" name="college_id" required>
-                            @foreach ($colleges as $college)
-                                <option value="{{ $college->college_id }}" @selected(old('college_id', $program->college_id) == $college->college_id)>{{ $college->college_name }}</option>
+                        <label class="form-label fw-bold text-uppercase small" for="edit_department_id_{{ $program->program_id }}">Department</label>
+                        <select class="form-select form-select-lg" id="edit_department_id_{{ $program->program_id }}" name="department_id" required>
+                            @foreach ($departments as $department)
+                                <option value="{{ $department->department_id }}" @selected(old('department_id', $program->department_id) == $department->department_id)>
+                                    {{ $department->dept_name }} - {{ $department->college?->college_name }}
+                                </option>
                             @endforeach
                         </select>
                     </div>

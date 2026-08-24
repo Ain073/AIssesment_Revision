@@ -1,23 +1,22 @@
 @extends('layouts.portal')
 
 @php
-    $portalSubtitle = 'Super Admin Panel';
-    $profileInitials = 'SA';
-    $profileName = 'Super Admin';
-    $profileMeta = 'System Controller';
+    $portalSubtitle = 'Admin Panel';
+    $profileInitials = 'A';
+    $profileName = 'Admin';
+    $profileMeta = 'Admin Account';
     $showTopbarSearch = true;
     $topbarSearchPlaceholder = 'Search accounts...';
     $navItems = [
         ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('super-admin.dashboard'), 'active' => request()->routeIs('super-admin.dashboard')],
         ['label' => 'Colleges & Departments', 'icon' => 'account_balance', 'href' => route('super-admin.colleges'), 'active' => request()->routeIs('super-admin.colleges')],
         ['label' => 'Programs', 'icon' => 'school', 'href' => route('super-admin.programs'), 'active' => request()->routeIs('super-admin.programs')],
-        ['label' => 'Subjects', 'icon' => 'menu_book', 'href' => route('super-admin.subjects'), 'active' => request()->routeIs('super-admin.subjects')],
-        ['label' => 'Deans & Department Chairs', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active' => request()->routeIs('super-admin.roles')],
+        ['label' => 'Dean Designation', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active' => request()->routeIs('super-admin.roles')],
         ['label' => 'Users', 'icon' => 'person_search', 'href' => route('super-admin.users'), 'active' => request()->routeIs('super-admin.users')],
     ];
 @endphp
 
-@section('title', 'Users | AIssessment Super Admin')
+@section('title', 'Users | AIssessment Admin')
 @section('header', 'Users')
 
 
@@ -88,7 +87,7 @@
                                     <th>User</th>
                                     <th>Email</th>
                                     <th>Department</th>
-                                    <th class="text-center">Elevated Access</th>
+                                    <th class="text-center">Designation</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center">Actions</th>
                                 </tr>
@@ -119,16 +118,16 @@
                                                 <span class="text-secondary fst-italic">Not assigned</span>
                                             @endif
                                         </td>
-                                        <td class="text-center" data-label="Elevated Access">
+                                        <td class="text-center" data-label="Designation">
                                             <div class="d-flex flex-wrap justify-content-center gap-2">
                                                 @if ($user->hasRole('admin_dean'))
-                                                    <span class="badge text-bg-primary rounded-1">Admin/Dean</span>
+                                                    <span class="badge text-bg-primary rounded-1">Dean</span>
                                                 @endif
                                                 @if ($user->hasRole('department_chair'))
                                                     <span class="badge text-bg-info rounded-1">Department Chair</span>
                                                 @endif
                                                 @if (! $user->hasRole('admin_dean') && ! $user->hasRole('department_chair'))
-                                                    <span class="text-secondary fst-italic">No elevated access</span>
+                                                    <span class="text-secondary fst-italic">No designation</span>
                                                 @endif
                                             </div>
                                         </td>
@@ -209,7 +208,9 @@
                                             @if ($user->studentProfile?->program)
                                                 <div>
                                                     <p class="fw-semibold mb-0">{{ $user->studentProfile->program->program_name }}</p>
-                                                    <p class="small text-secondary mb-0">{{ $user->studentProfile->program->college?->college_name }}</p>
+                                                    <p class="small text-secondary mb-0">
+                                                        {{ collect([$user->studentProfile->program->department?->dept_name, $user->studentProfile->program->department?->college?->college_name])->filter()->join(' - ') }}
+                                                    </p>
                                                 </div>
                                             @else
                                                 <span class="text-secondary fst-italic">Not assigned</span>

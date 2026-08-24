@@ -27,12 +27,11 @@ trait StudentLayoutHelper
     {
         return [
             'user' => $user,
-            'portalSubtitle' => 'Student Portal',
+            'portalSubtitle' => 'Student',
             'profileInitials' => strtoupper(Str::substr($user->first_name ?? $user->displayName(), 0, 1)),
             'profileName' => $user->displayName(),
             'profileMeta' => 'Student Account',
             'navItems' => $this->navItems($activeNav),
-            'viewSwitches' => [],
             'showTopbarSearch' => true,
             'topbarSearchPlaceholder' => 'Search classes or assessments...',
         ];
@@ -56,7 +55,7 @@ trait StudentLayoutHelper
     protected function currentUser(): User
     {
         /** @var User $user */
-        $user = Auth::user()->loadMissing('roles', 'studentProfile.program.college');
+        $user = Auth::user()->loadMissing('roles', 'studentProfile.program.department.college');
 
         return $user;
     }

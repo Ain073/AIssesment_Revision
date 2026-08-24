@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'department_chair' => \App\Http\Middleware\EnsureDepartmentChair::class,
             'instructor' => \App\Http\Middleware\EnsureInstructor::class,
             'no_cache' => \App\Http\Middleware\PreventBrowserCache::class,
+            'password_changed' => \App\Http\Middleware\EnsurePasswordIsChanged::class,
             'student' => \App\Http\Middleware\EnsureStudent::class,
             'super_admin' => \App\Http\Middleware\EnsureSuperAdmin::class,
         ]);

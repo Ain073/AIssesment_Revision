@@ -33,7 +33,7 @@
                             <label class="form-label fw-bold text-uppercase small">Account Type</label>
                             <div class="form-control bg-light">
                                 @if ($user->hasRole('super_admin'))
-                                    Super Admin
+                                    Admin
                                 @elseif ($user->hasRole('instructor'))
                                     Teacher
                                 @elseif ($user->hasRole('student'))
@@ -45,11 +45,11 @@
                         </div>
                         @if (! $isStudentAccount)
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-uppercase small">Elevated Access</label>
+                                <label class="form-label fw-bold text-uppercase small">Designation</label>
                                 <div class="form-control bg-light">
                                     @php
                                         $elevatedAccess = collect([
-                                            $user->hasRole('admin_dean') ? 'Admin/Dean' : null,
+                                            $user->hasRole('admin_dean') ? 'Dean' : null,
                                             $user->hasRole('department_chair') ? 'Department Chair' : null,
                                         ])->filter()->implode(', ');
                                     @endphp
@@ -88,8 +88,10 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Close</button>
                     @if (! $user->hasRole('super_admin'))
+                        @if ($user->hasRole('admin_dean'))
+                            <button class="btn btn-warning px-4" data-bs-target="#removeUserDeanDesignationModal{{ $user->id }}" data-bs-toggle="modal" type="button">Remove Designation</button>
+                        @endif
                         <button class="btn btn-outline-psu px-4" data-bs-target="#editUserModal{{ $user->id }}" data-bs-toggle="modal" type="button">Edit</button>
                         <button class="btn btn-danger px-4" data-bs-target="#deleteUserModal{{ $user->id }}" data-bs-toggle="modal" type="button">Delete</button>
                     @endif
@@ -99,6 +101,34 @@
     </div>
 
     @if (! $user->hasRole('super_admin'))
+        @if ($user->hasRole('admin_dean'))
+            <div class="modal fade" id="removeUserDeanDesignationModal{{ $user->id }}" tabindex="-1" aria-labelledby="removeUserDeanDesignationModalLabel{{ $user->id }}" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <form action="{{ route('super-admin.roles.revoke') }}" class="modal-content" method="POST">
+                        @csrf
+                        @method('DELETE')
+                        <input name="user_id" type="hidden" value="{{ $user->id }}">
+                        <input name="role_name" type="hidden" value="admin_dean">
+                        <div class="modal-header">
+                            <h3 class="modal-title h4" id="removeUserDeanDesignationModalLabel{{ $user->id }}">Remove Designation</h3>
+                            <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-2">Remove Dean designation from this teacher?</p>
+                            <div class="border rounded p-3" style="background: #eff4ff;">
+                                <p class="fw-bold mb-1" style="color: var(--psu-navy);">{{ $user->displayName() }}</p>
+                                <p class="small text-secondary mb-0">{{ $user->email }}</p>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>
+                            <button class="btn btn-danger px-4" type="submit">Confirm Remove</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endif
+
         @php
             $isEditTarget = old('form_mode') === 'edit' && (int) old('user_id') === $user->id;
             $userBaseRole = $user->hasRole('instructor') ? 'instructor' : 'student';
@@ -108,7 +138,6 @@
             $editProgramId = $isEditTarget ? old('program_id') : $user->studentProfile?->program_id;
             $selectedAuthorizations = collect($isEditTarget ? old('authorizations', []) : [
                 $user->hasRole('admin_dean') ? 'admin_dean' : null,
-                $user->hasRole('department_chair') ? 'department_chair' : null,
             ])->filter()->values();
         @endphp
 
@@ -178,7 +207,7 @@
                                     <option value="">Select program</option>
                                     @forelse ($programs as $program)
                                         <option value="{{ $program->program_id }}" @selected((string) $editProgramId === (string) $program->program_id)>
-                                            {{ $program->program_name }} - {{ $program->college?->college_name }}
+                                            {{ $program->program_name }} - {{ $program->department?->dept_name }} - {{ $program->department?->college?->college_name }}
                                         </option>
                                     @empty
                                         <option value="">No programs available yet</option>
@@ -193,7 +222,7 @@
                                 <div class="border rounded p-3" style="background: #eff4ff;">
                                     <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
                                         <div>
-                                            <p class="small fw-bold text-uppercase text-secondary mb-1">Authorization</p>
+                                            <p class="small fw-bold text-uppercase text-secondary mb-1">Designation</p>
                                         </div>
                                         <span class="badge text-bg-light border">Teachers only</span>
                                     </div>
@@ -201,15 +230,12 @@
                                         <label class="border rounded p-3 d-flex align-items-start gap-3 bg-white">
                                             <input class="form-check-input mt-1 authorization-checkbox" data-teacher-target="edit_base_role_{{ $user->id }}" name="authorizations[]" type="checkbox" value="admin_dean" @checked($selectedAuthorizations->contains('admin_dean'))>
                                             <span>
-                                                <span class="fw-bold d-block" style="color: var(--psu-navy);">Admin/Dean</span>
+                                                <span class="fw-bold d-block" style="color: var(--psu-navy);">Dean</span>
                                             </span>
                                         </label>
-                                        <label class="border rounded p-3 d-flex align-items-start gap-3 bg-white">
-                                            <input class="form-check-input mt-1 authorization-checkbox" data-teacher-target="edit_base_role_{{ $user->id }}" name="authorizations[]" type="checkbox" value="department_chair" @checked($selectedAuthorizations->contains('department_chair'))>
-                                            <span>
-                                                <span class="fw-bold d-block" style="color: var(--psu-navy);">Department Chair</span>
-                                            </span>
-                                        </label>
+                                        @if ($user->hasRole('department_chair'))
+                                            <div class="small text-secondary">Department Chair designation is managed by the Dean.</div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>

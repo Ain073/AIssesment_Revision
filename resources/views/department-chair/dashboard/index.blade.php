@@ -1,7 +1,10 @@
 @extends('layouts.portal')
 
 @section('title', 'Dashboard | AIssessment Department Chair')
-@section('header', 'Department Chair Dashboard')
+
+@section('topbar-leading')
+    @include('partials.dashboard-view-selector')
+@endsection
 
 @push('styles')
     <style>

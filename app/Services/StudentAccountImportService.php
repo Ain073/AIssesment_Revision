@@ -10,15 +10,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Throwable;
 
 class StudentAccountImportService
 {
-    public function __construct(private readonly TabularFileReader $fileReader) {}
+    public function __construct(
+        private readonly TabularFileReader $fileReader,
+        private readonly UserAccountService $accounts,
+    ) {}
 
     /**
      * @param  Collection<int, Program>  $programs
@@ -89,7 +90,7 @@ class StudentAccountImportService
 
     /**
      * @param  Collection<int, Program>  $programs
-     * @return array{created_count: int, setup_links_sent: int}
+     * @return array{created_count: int, initial_password_emails_sent: int}
      */
     public function confirm(Request $request, Collection $programs, string $scope): array
     {
@@ -126,17 +127,26 @@ class StudentAccountImportService
         }
 
         $studentRole = Role::query()->where('role_name', 'student')->firstOrFail();
-        $createdEmails = DB::transaction(function () use ($rows, $studentRole): array {
-            $emails = [];
+        $createdAccounts = DB::transaction(function () use ($rows, $studentRole): array {
+            $accounts = [];
 
             foreach ($rows as $row) {
+                $accountData = [
+                    'base_role' => 'student',
+                    'first_name' => $row['first_name'],
+                    'middle_name' => $row['middle_name'],
+                    'last_name' => $row['last_name'],
+                    'student_number' => $row['student_number'],
+                ];
+                $initialPassword = $this->accounts->initialPasswordFor($accountData);
                 $createdUser = User::create([
                     'name' => collect([$row['first_name'], $row['middle_name'], $row['last_name']])->filter()->implode(' '),
                     'first_name' => $row['first_name'],
                     'middle_name' => $row['middle_name'] ?: null,
                     'last_name' => $row['last_name'],
                     'email' => $row['email'],
-                    'password' => Str::random(40),
+                    'password' => $initialPassword,
+                    'must_change_password' => true,
                     'status' => $row['status'],
                 ]);
 
@@ -146,38 +156,34 @@ class StudentAccountImportService
                     'program_id' => $row['program_id'],
                     'student_number' => $row['student_number'],
                 ]);
-                $emails[] = $createdUser->email;
+                $accounts[] = [
+                    'user' => $createdUser,
+                    'initial_password' => $initialPassword,
+                ];
             }
 
-            return $emails;
+            return $accounts;
         });
 
         $request->session()->forget($sessionKey);
-        $sentLinks = 0;
+        $sentInitialPasswordEmails = 0;
 
-        foreach ($createdEmails as $email) {
-            try {
-                if (Password::sendResetLink(['email' => $email]) === Password::RESET_LINK_SENT) {
-                    $sentLinks++;
-                }
-            } catch (Throwable $exception) {
-                Log::warning('Student account setup email could not be sent.', [
-                    'email' => $email,
-                    'error' => $exception->getMessage(),
-                ]);
+        foreach ($createdAccounts as $account) {
+            if ($this->accounts->sendInitialPasswordEmail($account['user'], $account['initial_password'])) {
+                $sentInitialPasswordEmails++;
             }
         }
 
         Log::info('Student accounts imported.', [
             'actor_id' => $request->user()->id,
             'scope' => $scope,
-            'created_count' => count($createdEmails),
-            'setup_links_sent' => $sentLinks,
+            'created_count' => count($createdAccounts),
+            'initial_password_emails_sent' => $sentInitialPasswordEmails,
         ]);
 
         return [
-            'created_count' => count($createdEmails),
-            'setup_links_sent' => $sentLinks,
+            'created_count' => count($createdAccounts),
+            'initial_password_emails_sent' => $sentInitialPasswordEmails,
         ];
     }
 
@@ -288,6 +294,10 @@ class StudentAccountImportService
             if ($normalizedNumber !== '' && ($numberCounts->get($normalizedNumber, 0) > 1 || $existingNumbers->has($normalizedNumber))) {
                 $errors[] = 'Student number is duplicated in the file or already exists.';
                 $isDuplicate = true;
+            }
+
+            if ($normalizedNumber !== '' && strlen(preg_replace('/\D+/', '', $normalizedNumber) ?? '') < 3) {
+                $errors[] = 'Student number must contain at least 3 digits for the generated initial password.';
             }
 
             if (empty($errors) && $program) {

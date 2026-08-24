@@ -1,7 +1,7 @@
 @extends('layouts.portal')
 
-@section('title', 'Teachers | AIssessment Admin/Dean')
-@section('header', 'Teachers')
+@section('title', 'Users | AIssessment Dean')
+@section('header', 'Users')
 
 @push('styles')
     <style>
@@ -86,6 +86,10 @@
         <div class="alert alert-success">{{ session('status') }}</div>
     @endif
 
+    @if (session('mail_warning'))
+        <div class="alert alert-warning">{{ session('mail_warning') }}</div>
+    @endif
+
     @if ($errors->any())
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
@@ -96,7 +100,19 @@
         </div>
     @endif
 
-    <div class="d-flex justify-content-end mb-4">
+    <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+        <form action="{{ route('admin-dean.teachers') }}" class="d-flex flex-column gap-2" method="GET" data-ajax-page-form>
+            <label class="form-label fw-bold text-uppercase small mb-0" for="department_filter">Department</label>
+            <select class="form-select" id="department_filter" name="department" data-submit-on-change style="min-width: min(100%, 320px);">
+                <option value="">All Departments</option>
+                @foreach ($departments as $department)
+                    <option value="{{ $department->public_id }}" @selected($selectedDepartmentKey === $department->public_id)>
+                        {{ $department->dept_name }}
+                    </option>
+                @endforeach
+            </select>
+        </form>
+
         <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button" @disabled($departments->isEmpty())>
             <span class="material-symbols-outlined fs-5">person_add</span>
             Create Instructor
@@ -122,7 +138,7 @@
                         <th>User</th>
                         <th>Email</th>
                         <th>Department</th>
-                        <th>Authorization</th>
+                        <th>Designation</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -152,10 +168,10 @@
                                     <span class="text-secondary fst-italic">Not assigned</span>
                                 @endif
                             </td>
-                            <td data-label="Authorization">
+                            <td data-label="Designation">
                                 <div class="d-flex flex-wrap gap-2">
                                     @if ($teacher->hasRole('admin_dean'))
-                                        <span class="badge text-bg-primary rounded-1">Admin/Dean</span>
+                                        <span class="badge text-bg-primary rounded-1">Dean</span>
                                     @endif
                                     @if ($teacher->hasRole('department_chair'))
                                         <span class="badge text-bg-info rounded-1">Department Chair</span>
@@ -166,7 +182,9 @@
                                 </div>
                             </td>
                             <td class="text-center" data-label="Actions">
-                                @include('partials.account-row-actions', ['accountUser' => $teacher])
+                                <div class="d-inline-flex flex-nowrap align-items-center justify-content-center gap-1">
+                                    @include('partials.account-row-actions', ['accountUser' => $teacher])
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -182,7 +200,12 @@
         </div>
 
         <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #edf2ff;">
-            <span class="small text-secondary">Showing {{ $teachers->count() }} {{ $teachers->count() === 1 ? 'entry' : 'entries' }}</span>
+            <span class="small text-secondary">
+                Showing {{ $teachers->count() }} {{ $teachers->count() === 1 ? 'entry' : 'entries' }}
+                @if ($selectedDepartment)
+                    in {{ $selectedDepartment->dept_name }}
+                @endif
+            </span>
         </div>
     </section>
 
@@ -192,6 +215,8 @@
         'accountMode' => 'instructor',
         'accountDepartments' => $departments,
         'accountAllowDepartmentSelect' => true,
+        'accountAllowDepartmentChairDesignation' => true,
     ])
+    @include('admin-dean.teachers.designation-popups', ['teachers' => $teachers])
     @include('admin-dean.teachers.create-instructor-form')
 @endsection

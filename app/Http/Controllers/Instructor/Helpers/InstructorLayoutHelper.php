@@ -13,64 +13,83 @@ trait InstructorLayoutHelper
     {
         return [
             'user' => $user,
-            'portalSubtitle' => 'Instructor Portal',
+            'portalSubtitle' => 'Instructor',
             'profileInitials' => strtoupper(Str::substr($user->first_name ?? $user->displayName(), 0, 1)),
             'profileName' => $user->displayName(),
             'profileMeta' => 'Instructor Account',
-            'navItems' => $this->navItems($activeNav),
-            'viewSwitches' => $this->viewSwitches($user, 'instructor'),
+            'navItems' => $this->navItems($user),
             'showTopbarSearch' => true,
             'topbarSearchPlaceholder' => 'Search records...',
         ];
     }
 
-    protected function navItems(string $activeNav): array
+    protected function navItems(User $user): array
     {
-        $items = [
-            ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('instructor.dashboard')],
-            ['key' => 'classes', 'label' => 'Classes', 'icon' => 'school', 'href' => route('instructor.classes')],
-            ['key' => 'assessments', 'label' => 'Assessments', 'icon' => 'assignment', 'href' => route('instructor.assessments')],
-            ['key' => 'reports', 'label' => 'Reports', 'icon' => 'summarize', 'href' => route('instructor.reports')],
-        ];
-
-        return array_map(
-            fn (array $item) => $item + ['active' => $item['key'] === $activeNav],
-            $items,
-        );
-    }
-
-    protected function viewSwitches(User $user, string $activeMode): array
-    {
-        $switches = [];
+        $items = [];
 
         if ($user->hasRole('instructor') || $user->hasRole('department_chair')) {
-            $switches[] = [
-                'label' => 'Instructor',
-                'icon' => 'co_present',
-                'href' => route('instructor.dashboard'),
-                'active' => $activeMode === 'instructor',
-            ];
+            $items = array_merge($items, [
+                ['label' => 'Classes', 'icon' => 'school', 'href' => route('instructor.classes'), 'active_route' => 'instructor.classes*'],
+                ['label' => 'Assessments', 'icon' => 'assignment', 'href' => route('instructor.assessments'), 'active_route' => 'instructor.assessments*'],
+                ['label' => 'Reports', 'icon' => 'summarize', 'href' => route('instructor.reports'), 'active_route' => 'instructor.reports*'],
+            ]);
         }
 
         if ($user->hasRole('admin_dean')) {
-            $switches[] = [
-                'label' => 'Admin/Dean',
-                'icon' => 'supervisor_account',
-                'href' => route('admin-dean.dashboard'),
-                'active' => $activeMode === 'admin_dean',
-            ];
+            $items = array_merge($items, [
+                ['label' => 'Departments', 'icon' => 'apartment', 'href' => route('admin-dean.departments'), 'active_route' => 'admin-dean.departments'],
+                ['label' => 'Users', 'icon' => 'groups', 'href' => route('admin-dean.teachers'), 'active_route' => 'admin-dean.teachers'],
+            ]);
         }
 
         if ($user->hasRole('department_chair')) {
-            $switches[] = [
-                'label' => 'Dept Chair',
-                'icon' => 'assignment_ind',
-                'href' => route('department-chair.dashboard'),
-                'active' => $activeMode === 'department_chair',
-            ];
+            $items = array_merge($items, [
+                ['label' => 'Users', 'icon' => 'groups', 'href' => route('department-chair.teachers'), 'active_route' => ['department-chair.teachers', 'department-chair.students*']],
+                ['label' => 'Subjects', 'icon' => 'menu_book', 'href' => route('department-chair.subjects'), 'active_route' => 'department-chair.subjects*'],
+            ]);
         }
 
-        return $switches;
+        if (! empty($items)) {
+            array_unshift($items, $this->dashboardNavItem($user));
+        }
+
+        return array_map(function (array $item): array {
+            $activeRoute = (array) $item['active_route'];
+            unset($item['active_route']);
+
+            return $item + ['active' => request()->routeIs(...$activeRoute)];
+        }, $items);
+    }
+
+    private function dashboardNavItem(User $user): array
+    {
+        $href = route('instructor.dashboard');
+        $activeRoutes = [];
+
+        if ($user->hasRole('instructor') || $user->hasRole('department_chair')) {
+            $activeRoutes[] = 'instructor.dashboard';
+        }
+
+        if ($user->hasRole('admin_dean')) {
+            $activeRoutes[] = 'admin-dean.dashboard';
+        }
+
+        if ($user->hasRole('department_chair')) {
+            $activeRoutes[] = 'department-chair.dashboard';
+        }
+
+        if (request()->routeIs('admin-dean.*') && $user->hasRole('admin_dean')) {
+            $href = route('admin-dean.dashboard');
+        } elseif (request()->routeIs('department-chair.*') && $user->hasRole('department_chair')) {
+            $href = route('department-chair.dashboard');
+        }
+
+        return [
+            'label' => 'Dashboard',
+            'icon' => 'dashboard',
+            'href' => $href,
+            'active_route' => $activeRoutes ?: 'instructor.dashboard',
+        ];
     }
 
     protected function currentUser(): User

@@ -1,7 +1,7 @@
 @extends('layouts.portal')
 
-@section('title', 'Students | AIssessment Department Chair')
-@section('header', 'Students')
+@section('title', 'Users | AIssessment Department Chair')
+@section('header', 'Users')
 
 @push('styles')
     <style>
@@ -93,25 +93,31 @@
         </div>
     @endif
 
+    @include('partials.user-directory-tabs', [
+        'userDirectoryTabs' => [
+            [
+                'label' => 'Teachers',
+                'icon' => 'badge',
+                'href' => route('department-chair.teachers'),
+                'count' => $teachersCount,
+                'active' => request()->routeIs('department-chair.teachers'),
+            ],
+            [
+                'label' => 'Students',
+                'icon' => 'groups',
+                'href' => route('department-chair.students'),
+                'count' => $students->count(),
+                'active' => request()->routeIs('department-chair.students*'),
+            ],
+        ],
+    ])
+
     <div class="d-flex flex-wrap justify-content-end gap-2 mb-4">
         <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createStudentModal" data-bs-toggle="modal" type="button" @disabled($scopedPrograms->isEmpty())>
             <span class="material-symbols-outlined fs-5">person_add</span>
             Create Student
         </button>
     </div>
-
-    <nav class="table-switch-tabs" aria-label="Department account views">
-        <a class="btn btn-outline-primary table-switch-button d-inline-flex align-items-center gap-2" href="{{ route('department-chair.teachers') }}">
-            <span class="material-symbols-outlined fs-5">badge</span>
-            Teachers
-            <span class="table-switch-count">{{ $teachersCount }}</span>
-        </a>
-        <a class="btn btn-outline-primary table-switch-button active d-inline-flex align-items-center gap-2" href="{{ route('department-chair.students') }}" aria-current="page">
-            <span class="material-symbols-outlined fs-5">groups</span>
-            Students
-            <span class="table-switch-count">{{ $students->count() }}</span>
-        </a>
-    </nav>
 
     <section class="directory-card shadow-sm">
         <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
@@ -149,7 +155,9 @@
                             <td data-label="Program">
                                 @if ($student->program)
                                     <p class="fw-semibold mb-0">{{ $student->program->program_name }}</p>
-                                    <p class="small text-secondary mb-0">{{ $student->program->college?->college_name }}</p>
+                                    <p class="small text-secondary mb-0">
+                                        {{ collect([$student->program->department?->dept_name, $student->program->department?->college?->college_name])->filter()->join(' - ') }}
+                                    </p>
                                 @else
                                     <span class="text-secondary fst-italic">No program</span>
                                 @endif

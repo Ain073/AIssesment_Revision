@@ -1,23 +1,22 @@
 @extends('layouts.portal')
 
 @php
-    $portalSubtitle = 'Super Admin Panel';
-    $profileInitials = 'SA';
-    $profileName = 'Super Admin';
-    $profileMeta = 'System Controller';
+    $portalSubtitle = 'Admin Panel';
+    $profileInitials = 'A';
+    $profileName = 'Admin';
+    $profileMeta = 'Admin Account';
     $showTopbarSearch = true;
     $topbarSearchPlaceholder = 'Search records...';
     $navItems = [
         ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('super-admin.dashboard'), 'active' => request()->routeIs('super-admin.dashboard')],
         ['label' => 'Colleges & Departments', 'icon' => 'account_balance', 'href' => route('super-admin.colleges'), 'active' => request()->routeIs('super-admin.colleges')],
         ['label' => 'Programs', 'icon' => 'school', 'href' => route('super-admin.programs'), 'active' => request()->routeIs('super-admin.programs')],
-        ['label' => 'Subjects', 'icon' => 'menu_book', 'href' => route('super-admin.subjects'), 'active' => request()->routeIs('super-admin.subjects')],
-        ['label' => 'Deans & Department Chairs', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active' => request()->routeIs('super-admin.roles')],
+        ['label' => 'Dean Designation', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active' => request()->routeIs('super-admin.roles')],
         ['label' => 'Users', 'icon' => 'person_search', 'href' => route('super-admin.users'), 'active' => request()->routeIs('super-admin.users')],
     ];
 @endphp
 
-@section('title', 'Colleges & Departments | AIssessment Super Admin')
+@section('title', 'Colleges & Departments | AIssessment Admin')
 @section('header', 'Colleges & Departments')
 
 

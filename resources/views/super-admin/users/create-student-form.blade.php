@@ -51,7 +51,7 @@
                             <option value="">Select program</option>
                             @forelse ($programs as $program)
                                 <option value="{{ $program->program_id }}" @selected((string) old('program_id') === (string) $program->program_id)>
-                                    {{ $program->program_name }} - {{ $program->college?->college_name }}
+                                    {{ $program->program_name }} - {{ $program->department?->dept_name }} - {{ $program->department?->college?->college_name }}
                                 </option>
                             @empty
                                 <option value="">No programs available yet</option>
@@ -61,14 +61,6 @@
                     <div class="col-md-6">
                         <label class="form-label fw-bold text-uppercase small" for="student_number">Student Number</label>
                         <input class="form-control student-profile-field" id="student_number" name="student_number" required type="text" value="{{ old('base_role') === 'student' ? old('student_number') : '' }}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-uppercase small" for="student_password">Password</label>
-                        <input class="form-control" id="student_password" name="password" required type="password">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-uppercase small" for="student_password_confirmation">Confirm Password</label>
-                        <input class="form-control" id="student_password_confirmation" name="password_confirmation" required type="password">
                     </div>
                 </div>
             </div>

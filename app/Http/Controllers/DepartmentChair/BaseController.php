@@ -37,8 +37,8 @@ abstract class BaseController extends Controller
         }
 
         return Program::query()
-            ->with('college')
-            ->where('college_id', $department->college_id)
+            ->with('department.college')
+            ->where('department_id', $department->department_id)
             ->withCount('studentProfiles')
             ->orderBy('program_name')
             ->get();

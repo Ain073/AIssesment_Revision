@@ -52,7 +52,7 @@
                             <option value="">Select program</option>
                             @foreach ($scopedPrograms as $program)
                                 <option value="{{ $program->program_id }}" @selected((string) old('program_id') === (string) $program->program_id)>
-                                    {{ $program->program_name }}
+                                    {{ $program->program_name }} - {{ $program->department?->dept_name }}
                                 </option>
                             @endforeach
                         </select>
@@ -60,14 +60,6 @@
                     <div class="col-md-6">
                         <label class="form-label fw-bold text-uppercase small" for="student_number">Student Number</label>
                         <input class="form-control" id="student_number" name="student_number" required type="text" value="{{ old('base_role') === 'student' ? old('student_number') : '' }}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-uppercase small" for="student_password">Password</label>
-                        <input class="form-control" id="student_password" name="password" required type="password" autocomplete="new-password">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-uppercase small" for="student_password_confirmation">Confirm Password</label>
-                        <input class="form-control" id="student_password_confirmation" name="password_confirmation" required type="password" autocomplete="new-password">
                     </div>
                 </div>
             </div>

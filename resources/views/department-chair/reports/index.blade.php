@@ -1,7 +1,10 @@
 @extends('layouts.portal')
 
 @section('title', 'Reports | AIssessment Department Chair')
-@section('header', 'Reports')
+
+@section('topbar-leading')
+    @include('partials.reports-view-selector')
+@endsection
 
 @php
     $activeReportType = request()->query('type') === 'summative' ? 'summative' : 'formative';
@@ -165,7 +168,7 @@
                     <span class="material-symbols-outlined fs-6">person</span>
                     Teacher
                 </label>
-                <select class="form-select" id="reportTeacherFilter" name="teacher" @disabled($teachers->isEmpty())>
+                <select class="form-select" id="reportTeacherFilter" name="teacher" onchange="this.form.submit()" @disabled($teachers->isEmpty())>
                     <option value="">All teachers</option>
                     @foreach ($teachers as $teacher)
                         <option value="{{ $teacher->instructor_profile_id }}" @selected($selectedTeacherId === $teacher->instructor_profile_id)>
@@ -180,7 +183,7 @@
                     <span class="material-symbols-outlined fs-6">menu_book</span>
                     Subject
                 </label>
-                <select class="form-select" id="reportSubjectFilter" name="subject" @disabled($subjects->isEmpty())>
+                <select class="form-select" id="reportSubjectFilter" name="subject" onchange="this.form.submit()" @disabled($subjects->isEmpty())>
                     <option value="">All subjects</option>
                     @foreach ($subjects as $subject)
                         <option value="{{ $subject->subject_id }}" @selected($selectedSubjectId === $subject->subject_id)>
@@ -190,12 +193,8 @@
                 </select>
             </div>
 
-            <div class="report-filter-actions">
-                <button class="btn btn-psu d-inline-flex align-items-center gap-1" type="submit">
-                    <span class="material-symbols-outlined fs-6">filter_alt</span>
-                    Filter
-                </button>
-                @if ($selectedTeacherId || $selectedSubjectId)
+            @if ($selectedTeacherId || $selectedSubjectId)
+                <div class="report-filter-actions">
                     <a
                         aria-label="Clear report filters"
                         class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center"
@@ -204,8 +203,8 @@
                     >
                         <span class="material-symbols-outlined fs-6">filter_alt_off</span>
                     </a>
-                @endif
-            </div>
+                </div>
+            @endif
         </form>
     </section>
 

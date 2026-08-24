@@ -1,6 +1,6 @@
 @extends('layouts.portal')
 
-@section('title', 'Departments | AIssessment Admin/Dean')
+@section('title', 'Departments | AIssessment Dean')
 @section('header', 'Departments')
 
 @push('styles')
@@ -40,19 +40,6 @@
             background: var(--psu-gold-soft);
             color: var(--psu-navy-2);
             border-radius: 0.25rem;
-        }
-
-        .btn-outline-psu {
-            border-color: var(--psu-navy);
-            color: var(--psu-navy);
-            font-weight: 700;
-        }
-
-        .btn-outline-psu:hover,
-        .btn-outline-psu:focus {
-            background: #edf2ff;
-            border-color: var(--psu-navy);
-            color: var(--psu-navy);
         }
 
         .empty-icon {

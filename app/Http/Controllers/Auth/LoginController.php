@@ -20,6 +20,10 @@ class LoginController extends Controller
     public function show(Request $request): View|RedirectResponse
     {
         if (Auth::check()) {
+            if (Auth::user()->must_change_password) {
+                return redirect()->route('password.setup');
+            }
+
             $redirectPath = $this->redirectPath();
 
             if ($redirectPath !== null) {
@@ -119,6 +123,10 @@ class LoginController extends Controller
             return back()
                 ->withErrors(['email' => 'This account does not have an assigned portal yet.'])
                 ->onlyInput('email');
+        }
+
+        if (Auth::user()->must_change_password) {
+            return redirect()->route('password.setup');
         }
 
         return redirect()->intended($redirectPath);

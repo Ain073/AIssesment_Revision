@@ -90,7 +90,7 @@ trait InstructorClassAccessHelper
     protected function buildImportPreview(AcademicClass $class, array $studentNumbers): array
     {
         $studentProfiles = StudentProfile::query()
-            ->with(['user.roles', 'program.college'])
+            ->with(['user.roles', 'program.department.college'])
             ->whereIn('student_number', $studentNumbers)
             ->get()
             ->keyBy('student_number');

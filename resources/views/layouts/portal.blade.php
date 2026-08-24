@@ -26,21 +26,6 @@
         $sidebarPhotoUrl = $sidebarUser?->profile_photo_path
             ? asset('storage/'.$sidebarUser->profile_photo_path)
             : null;
-        $roleSwitches = collect($viewSwitches ?? []);
-        $currentRoleSwitch = $roleSwitches->firstWhere('active', true);
-        $availableRoleSwitches = $roleSwitches
-            ->filter(fn (array $switch): bool => empty($switch['active']))
-            ->values();
-        $roleSwitchTarget = null;
-
-        if ($currentRoleSwitch && ($currentRoleSwitch['label'] ?? '') === 'Instructor') {
-            $roleSwitchTarget = $availableRoleSwitches->firstWhere('label', 'Dept Chair')
-                ?? $availableRoleSwitches->firstWhere('label', 'Admin/Dean')
-                ?? $availableRoleSwitches->first();
-        } else {
-            $roleSwitchTarget = $availableRoleSwitches->firstWhere('label', 'Instructor')
-                ?? $availableRoleSwitches->first();
-        }
     @endphp
 
     <aside class="sidebar d-flex flex-column">
@@ -85,13 +70,6 @@
                         <span class="material-symbols-outlined">account_circle</span>
                         <span class="sidebar-text">Profile</span>
                     </a>
-                    @if ($roleSwitchTarget)
-                        <button class="profile-menu-link" data-bs-target="#roleSwitchModal" data-bs-toggle="modal" type="button">
-                            <span class="material-symbols-outlined">{{ $roleSwitchTarget['icon'] }}</span>
-                            <span class="sidebar-text">{{ $roleSwitchTarget['label'] }}</span>
-                            <span class="material-symbols-outlined ms-auto">sync_alt</span>
-                        </button>
-                    @endif
                     <form action="{{ route('logout') }}" class="profile-menu-form" method="POST">
                         @csrf
                         <button class="profile-logout-btn" type="submit">
@@ -104,57 +82,16 @@
         </div>
     </aside>
 
-    @if ($roleSwitchTarget)
-        <div class="modal fade" id="roleSwitchModal" tabindex="-1" aria-labelledby="roleSwitchModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3 class="modal-title h4" id="roleSwitchModalLabel">Switch to {{ $roleSwitchTarget['label'] }}</h3>
-                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        @if ($currentRoleSwitch)
-                            <div class="mb-3">
-                                <p class="small fw-bold text-uppercase text-secondary mb-2">Current Role</p>
-                                <div class="role-switch-current">
-                                    <span class="material-symbols-outlined">{{ $currentRoleSwitch['icon'] }}</span>
-                                    <span>{{ $currentRoleSwitch['label'] }}</span>
-                                </div>
-                            </div>
-                        @endif
-
-                        <div class="role-switch-card">
-                            <p class="small fw-bold text-uppercase text-secondary mb-2">Switch To</p>
-                            <div class="role-switch-target">
-                                <span class="material-symbols-outlined">{{ $roleSwitchTarget['icon'] }}</span>
-                                <span>{{ $roleSwitchTarget['label'] }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>
-                        <button
-                            class="btn btn-psu px-4 d-inline-flex align-items-center gap-2"
-                            data-role-switch-confirm
-                            data-role-href="{{ $roleSwitchTarget['href'] }}"
-                            type="button"
-                        >
-                            <span class="material-symbols-outlined fs-5">switch_account</span>
-                            Switch Role
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
-
     <header class="topbar d-flex align-items-center justify-content-between px-4">
         <div class="d-flex align-items-center gap-4">
-            <h2 class="brand-text h4 fw-semibold mb-0" style="color: var(--psu-navy);">@yield('header')</h2>
+            @hasSection('topbar-leading')
+                @yield('topbar-leading')
+            @else
+                <h2 class="brand-text h4 fw-semibold mb-0" style="color: var(--psu-navy);">@yield('header')</h2>
+            @endif
         </div>
 
         <div class="d-flex align-items-center gap-3">
-            @yield('topbar-actions')
             @if (! empty($showTopbarSearch))
                 <div class="global-search">
                     <button class="btn btn-link text-secondary p-1 mobile-search-toggle d-lg-none" data-mobile-search-toggle type="button" aria-expanded="false" aria-controls="topbarSearchPanel" aria-label="Search">
@@ -289,6 +226,20 @@
                 }
 
                 alert.remove();
+            });
+        };
+
+        const autoDismissPageInfoAlerts = () => {
+            document.querySelectorAll('.page-container > .alert-primary:not([data-sticky-alert])').forEach((alert) => {
+                if (alert.dataset.autoDismissReady === 'true') {
+                    return;
+                }
+
+                alert.dataset.autoDismissReady = 'true';
+                window.setTimeout(() => {
+                    alert.classList.add('page-info-alert-hiding');
+                    window.setTimeout(() => alert.remove(), 260);
+                }, 3500);
             });
         };
 
@@ -580,6 +531,22 @@
             }
         };
 
+        const applyAjaxFragments = (fragments = {}) => {
+            Object.entries(fragments).forEach(([selector, html]) => {
+                const target = document.querySelector(selector);
+
+                if (target) {
+                    target.innerHTML = html;
+                }
+            });
+
+            initPortalPollSections();
+            window.initializeReportsPage?.();
+            window.initializeDashboardPage?.();
+            applyPageSearch();
+            autoDismissPageInfoAlerts();
+        };
+
         const initPortalPollSections = (root = document) => {
             root.querySelectorAll('[data-poll-url]').forEach((section) => {
                 if (section.dataset.pollReady === 'true') {
@@ -659,6 +626,7 @@
 
         initPortalPollSections();
         movePageFlashAlertsToToast();
+        autoDismissPageInfoAlerts();
 
         window.addEventListener('storage', (event) => {
             if (event.key === 'portal-refresh-sections') {
@@ -718,6 +686,8 @@
                 '.class-tablink',
                 '.class-list-tab',
                 '.assessment-tab-button',
+                '.table-switch-button',
+                '.dashboard-view-link',
                 '.results-class-filter-link',
                 '.portal-ajax-link',
             ].join(', ');
@@ -864,6 +834,7 @@
                 window.initializeDashboardPage?.();
                 applyPageSearch();
                 movePageFlashAlertsToToast();
+                autoDismissPageInfoAlerts();
                 cleanupStaleBootstrapBackdrops();
                 window.scrollTo(0, 0);
 
@@ -876,24 +847,6 @@
         };
 
         document.addEventListener('click', (event) => {
-            const confirmButton = event.target.closest('[data-role-switch-confirm]');
-
-            if (! confirmButton) {
-                return;
-            }
-
-            const roleHref = confirmButton.dataset.roleHref || '';
-
-            if (! roleHref) {
-                return;
-            }
-
-            confirmButton.disabled = true;
-            document.body.classList.add('portal-loading');
-            window.location.href = roleHref;
-        });
-
-        document.addEventListener('click', (event) => {
             const link = event.target.closest('a[href]');
 
             if (! link || ! shouldUseAjaxPage(event, link)) {
@@ -902,6 +855,40 @@
 
             event.preventDefault();
             loadPortalPage(link.href);
+        });
+
+        document.addEventListener('change', (event) => {
+            const field = event.target.closest('[data-submit-on-change]');
+
+            if (! field) {
+                return;
+            }
+
+            field.form?.requestSubmit();
+        });
+
+        document.addEventListener('submit', (event) => {
+            const form = event.target.closest('form[data-ajax-page-form]');
+
+            if (! form || (form.method || 'GET').toUpperCase() !== 'GET') {
+                return;
+            }
+
+            event.preventDefault();
+
+            const url = new URL(form.action, window.location.href);
+            const params = new URLSearchParams();
+
+            new FormData(form).forEach((value, key) => {
+                const stringValue = String(value);
+
+                if (stringValue !== '') {
+                    params.append(key, stringValue);
+                }
+            });
+
+            url.search = params.toString();
+            loadPortalPage(url.href);
         });
 
         document.addEventListener('click', (event) => {
@@ -986,7 +973,7 @@
             if (! errorBox.hasAttribute('data-ajax-errors')) {
                 errorBox.setAttribute('data-ajax-errors', 'true');
                 errorBox.className = 'alert alert-danger d-none';
-                form.querySelector('.modal-body, .p-4, form')?.prepend(errorBox);
+                (form.querySelector('.modal-body, .p-4') || form).prepend(errorBox);
             }
 
             errorBox.classList.add('d-none');
@@ -1030,6 +1017,14 @@
                         if (target && Number.isFinite(value)) {
                             target.textContent = String(Math.max(value - 1, 0));
                         }
+                    }
+
+                    if (data.fragments && typeof data.fragments === 'object') {
+                        applyAjaxFragments(data.fragments);
+                    }
+
+                    if (data.url && ! form.dataset.redirectOnSuccess && form.dataset.reloadPageOnSuccess !== 'true') {
+                        window.history.replaceState({ ajaxPage: true }, '', data.url);
                     }
 
                     localStorage.setItem('portal-refresh-sections', String(Date.now()));

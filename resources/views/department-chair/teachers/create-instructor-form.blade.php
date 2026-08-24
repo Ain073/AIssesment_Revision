@@ -45,14 +45,6 @@
                         <label class="form-label fw-bold text-uppercase small" for="employee_number">Employee Number</label>
                         <input class="form-control" id="employee_number" name="employee_number" required type="text" value="{{ old('base_role') === 'instructor' ? old('employee_number') : '' }}">
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-uppercase small" for="teacher_password">Password</label>
-                        <input class="form-control" id="teacher_password" name="password" required type="password">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-uppercase small" for="teacher_password_confirmation">Confirm Password</label>
-                        <input class="form-control" id="teacher_password_confirmation" name="password_confirmation" required type="password">
-                    </div>
                 </div>
             </div>
 

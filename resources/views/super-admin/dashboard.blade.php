@@ -1,22 +1,21 @@
 @extends('layouts.portal')
 
 @php
-    $portalSubtitle = 'Super Admin Panel';
-    $profileInitials = 'SA';
-    $profileName = 'Super Admin';
-    $profileMeta = 'System Controller';
+    $portalSubtitle = 'Admin Panel';
+    $profileInitials = 'A';
+    $profileName = 'Admin';
+    $profileMeta = 'Admin Account';
     $navItems = [
         ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('super-admin.dashboard'), 'active' => true],
         ['label' => 'Colleges & Departments', 'icon' => 'account_balance', 'href' => route('super-admin.colleges'), 'active' => false],
         ['label' => 'Programs', 'icon' => 'school', 'href' => route('super-admin.programs'), 'active' => false],
-        ['label' => 'Subjects', 'icon' => 'menu_book', 'href' => route('super-admin.subjects'), 'active' => false],
-        ['label' => 'Deans & Department Chairs', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active' => false],
+        ['label' => 'Dean Designation', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active' => false],
         ['label' => 'Users', 'icon' => 'person_search', 'href' => route('super-admin.users'), 'active' => false],
     ];
 @endphp
 
-@section('title', 'Dashboard | AIssessment Super Admin')
-@section('header', 'Super Admin Dashboard')
+@section('title', 'Dashboard | AIssessment Admin')
+@section('header', 'Admin Dashboard')
 
 
 @section('content')
@@ -24,7 +23,7 @@
         <div class="hero-layout">
             <div>
                 <p class="small fw-bold text-uppercase mb-2 hero-eyebrow">Welcome back</p>
-                <h2 class="brand-text hero-title">Super Admin</h2>
+                <h2 class="brand-text hero-title">Admin</h2>
             </div>
 
             <div class="hero-actions" aria-label="Quick actions">

@@ -1,7 +1,7 @@
 @extends('layouts.portal')
 
-@section('title', 'Teachers | AIssessment Department Chair')
-@section('header', 'Teachers')
+@section('title', 'Users | AIssessment Department Chair')
+@section('header', 'Users')
 
 @push('styles')
     <style>
@@ -86,18 +86,32 @@
         <div class="alert alert-success">{{ session('status') }}</div>
     @endif
 
+    @if (session('mail_warning'))
+        <div class="alert alert-warning">{{ session('mail_warning') }}</div>
+    @endif
+
     @if ($errors->any())
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
-    @if ($scopedDepartment)
-        <div class="alert alert-primary border-0 shadow-sm mb-4">
-            You are viewing teachers under <strong>{{ $scopedDepartment->dept_name }}</strong>
-            @if ($scopedDepartment->college)
-                in <strong>{{ $scopedDepartment->college->college_name }}</strong>.
-            @endif
-        </div>
-    @endif
+    @include('partials.user-directory-tabs', [
+        'userDirectoryTabs' => [
+            [
+                'label' => 'Teachers',
+                'icon' => 'badge',
+                'href' => route('department-chair.teachers'),
+                'count' => $teachers->count(),
+                'active' => request()->routeIs('department-chair.teachers'),
+            ],
+            [
+                'label' => 'Students',
+                'icon' => 'groups',
+                'href' => route('department-chair.students'),
+                'count' => $studentsCount,
+                'active' => request()->routeIs('department-chair.students*'),
+            ],
+        ],
+    ])
 
     <div class="d-flex justify-content-end mb-4">
         <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button" @disabled(! $scopedDepartment)>
@@ -105,19 +119,6 @@
             Create Instructor
         </button>
     </div>
-
-    <nav class="table-switch-tabs" aria-label="Department account views">
-        <a class="btn btn-outline-primary table-switch-button active d-inline-flex align-items-center gap-2" href="{{ route('department-chair.teachers') }}" aria-current="page">
-            <span class="material-symbols-outlined fs-5">badge</span>
-            Teachers
-            <span class="table-switch-count">{{ $teachers->count() }}</span>
-        </a>
-        <a class="btn btn-outline-primary table-switch-button d-inline-flex align-items-center gap-2" href="{{ route('department-chair.students') }}">
-            <span class="material-symbols-outlined fs-5">groups</span>
-            Students
-            <span class="table-switch-count">{{ $studentsCount }}</span>
-        </a>
-    </nav>
 
     <section class="directory-card shadow-sm">
         <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
@@ -138,7 +139,7 @@
                         <th>User</th>
                         <th>Email</th>
                         <th>Department</th>
-                        <th>Authorization</th>
+                        <th>Designation</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -168,10 +169,10 @@
                                     <span class="text-secondary fst-italic">Not assigned</span>
                                 @endif
                             </td>
-                            <td data-label="Authorization">
+                            <td data-label="Designation">
                                 <div class="d-flex flex-wrap gap-2">
                                     @if ($teacher->hasRole('admin_dean'))
-                                        <span class="badge text-bg-primary rounded-1">Admin/Dean</span>
+                                        <span class="badge text-bg-primary rounded-1">Dean</span>
                                     @endif
                                     @if ($teacher->hasRole('department_chair'))
                                         <span class="badge text-bg-info rounded-1">Department Chair</span>

@@ -1,4 +1,7 @@
     {{-- View, edit, and delete popups --}}
+    @php
+        $subjectRoutePrefix = $subjectRoutePrefix ?? 'department-chair';
+    @endphp
     @foreach ($subjectMappings as $mapping)
         @php
             $mappingIsActive = $mapping->subject?->is_active && $activeSemester === $mapping->semester;
@@ -29,7 +32,9 @@
                             <div class="col-12">
                                 <div class="subject-detail-label mb-1">Program</div>
                                 <div class="fw-semibold">{{ $mapping->program?->program_name ?? 'Not assigned' }}</div>
-                                <div class="small text-secondary">{{ $mapping->program?->college?->college_name ?? 'No college' }}</div>
+                                <div class="small text-secondary">
+                                    {{ collect([$mapping->program?->department?->dept_name, $mapping->program?->department?->college?->college_name])->filter()->join(' - ') ?: 'No department' }}
+                                </div>
                             </div>
                             <div class="col-sm-5">
                                 <div class="subject-detail-label mb-1">Year Level</div>
@@ -52,7 +57,7 @@
 
         <div class="modal fade" id="editSubjectModal{{ $mapping->subject_program_id }}" tabindex="-1" aria-labelledby="editSubjectModalLabel{{ $mapping->subject_program_id }}" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
-                <form action="{{ route('super-admin.subjects.update', ['subjectProgram' => $mapping, 'program' => $selectedProgramKey, 'year_level' => $selectedYearLevel, 'semester' => $selectedSemester]) }}" class="modal-content" method="POST">
+                <form action="{{ route($subjectRoutePrefix.'.subjects.update', ['subjectProgram' => $mapping, 'program' => $selectedProgramKey, 'year_level' => $selectedYearLevel, 'semester' => $selectedSemester]) }}" class="modal-content" method="POST" data-ajax-form>
                     @csrf
                     @method('PUT')
                     <input name="is_active" type="hidden" value="0">
@@ -65,7 +70,7 @@
                             <label class="form-label fw-bold text-uppercase small" for="edit_program_id_{{ $mapping->subject_program_id }}">Program</label>
                             <select class="form-select" id="edit_program_id_{{ $mapping->subject_program_id }}" name="program_id" required>
                                 @foreach ($programs as $program)
-                                    <option value="{{ $program->program_id }}" @selected($mapping->program_id === $program->program_id)>{{ $program->program_name }} - {{ $program->college?->college_name }}</option>
+                                    <option value="{{ $program->program_id }}" @selected($mapping->program_id === $program->program_id)>{{ $program->program_name }} - {{ $program->department?->dept_name }} - {{ $program->department?->college?->college_name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -110,7 +115,7 @@
 
         <div class="modal fade" id="deleteSubjectModal{{ $mapping->subject_program_id }}" tabindex="-1" aria-labelledby="deleteSubjectModalLabel{{ $mapping->subject_program_id }}" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-sm">
-                <form action="{{ route('super-admin.subjects.destroy', ['subjectProgram' => $mapping, 'program' => $selectedProgramKey, 'year_level' => $selectedYearLevel, 'semester' => $selectedSemester]) }}" class="modal-content" method="POST">
+                <form action="{{ route($subjectRoutePrefix.'.subjects.destroy', ['subjectProgram' => $mapping, 'program' => $selectedProgramKey, 'year_level' => $selectedYearLevel, 'semester' => $selectedSemester]) }}" class="modal-content" method="POST" data-ajax-form>
                     @csrf
                     @method('DELETE')
                     <div class="modal-header">

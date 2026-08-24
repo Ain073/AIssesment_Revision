@@ -113,7 +113,7 @@
                         <option value="">Select program</option>
                         @foreach ($studentImportPrograms as $program)
                             <option value="{{ $program->program_id }}" @selected((string) old('import_program_id') === (string) $program->program_id)>
-                                {{ $program->program_name }}@if ($program->college) - {{ $program->college->college_name }}@endif
+                                {{ $program->program_name }}@if ($program->department) - {{ $program->department->dept_name }}@endif @if ($program->department?->college) - {{ $program->department->college->college_name }}@endif
                             </option>
                         @endforeach
                     </select>

@@ -36,7 +36,7 @@ class DepartmentController extends BaseController
         $scopedCollege = $this->scopedCollege($this->currentUser());
         $scopedCollegeId = $scopedCollege?->college_id;
 
-        abort_unless($scopedCollege, 403, 'Admin/Dean account needs an assigned college before creating departments.');
+        abort_unless($scopedCollege, 403, 'Dean account needs an assigned college before creating departments.');
 
         $validated = $request->validate([
             'college_id' => ['nullable', 'integer', Rule::in([$scopedCollegeId])],
@@ -52,7 +52,7 @@ class DepartmentController extends BaseController
         $validated['college_id'] = $scopedCollegeId;
         $department = Department::create($validated);
 
-        Log::info('Department created by admin/dean.', [
+        Log::info('Department created by dean.', [
             'actor_id' => Auth::id(),
             'department_id' => $department->department_id,
             'department_name' => $department->dept_name,

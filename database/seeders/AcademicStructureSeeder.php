@@ -16,7 +16,7 @@ class AcademicStructureSeeder extends Seeder
             [],
         );
 
-        Department::query()->updateOrCreate(
+        $informationTechnologyDepartment = Department::query()->updateOrCreate(
             [
                 'college_id' => $college->college_id,
                 'dept_name' => 'Department of Information Technology',
@@ -24,7 +24,7 @@ class AcademicStructureSeeder extends Seeder
             [],
         );
 
-        Department::query()->updateOrCreate(
+        $hospitalityManagementDepartment = Department::query()->updateOrCreate(
             [
                 'college_id' => $college->college_id,
                 'dept_name' => 'Hospitality Management Department',
@@ -35,9 +35,12 @@ class AcademicStructureSeeder extends Seeder
         Program::query()->updateOrCreate(
             [
                 'college_id' => $college->college_id,
+                'department_id' => $informationTechnologyDepartment->department_id,
                 'program_name' => 'Bachelor of Science in Information Technology',
             ],
             [
+                'college_id' => $college->college_id,
+                'department_id' => $informationTechnologyDepartment->department_id,
                 'is_active' => true,
             ],
         );
@@ -45,9 +48,12 @@ class AcademicStructureSeeder extends Seeder
         Program::query()->updateOrCreate(
             [
                 'college_id' => $college->college_id,
+                'department_id' => $hospitalityManagementDepartment->department_id,
                 'program_name' => 'Bachelor of Science in Hospitality Management',
             ],
             [
+                'college_id' => $college->college_id,
+                'department_id' => $hospitalityManagementDepartment->department_id,
                 'is_active' => true,
             ],
         );

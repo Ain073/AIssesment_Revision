@@ -2,10 +2,16 @@
 
 namespace App\Services;
 
+use App\Mail\InitialAccountPasswordMail;
 use App\Models\InstructorProfile;
 use App\Models\Role;
 use App\Models\StudentProfile;
 use App\Models\User;
+use Closure;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Throwable;
 
 class UserAccountService
 {
@@ -25,6 +31,8 @@ class UserAccountService
 
     public function createAccount(array $data, array $managedRoles = []): User
     {
+        $data['password'] = $data['password'] ?? $this->initialPasswordFor($data);
+
         $user = User::create([
             'name' => $this->buildName($data),
             'first_name' => $data['first_name'],
@@ -32,6 +40,7 @@ class UserAccountService
             'last_name' => $data['last_name'],
             'email' => $data['email'],
             'password' => $data['password'],
+            'must_change_password' => true,
             'status' => $data['status'],
         ]);
 
@@ -69,6 +78,48 @@ class UserAccountService
             $user->portalRouteName() ? route($user->portalRouteName()) : route('login'),
             'account'
         );
+    }
+
+    public function sendInitialPasswordEmail(User $user, string $initialPassword): bool
+    {
+        try {
+            Mail::to($user->email)->send(new InitialAccountPasswordMail($user, $initialPassword));
+
+            return true;
+        } catch (Throwable $exception) {
+            Log::warning('Initial account password email could not be sent.', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    public function initialPasswordFor(array $data): string
+    {
+        $identifier = $data['base_role'] === 'instructor'
+            ? (string) ($data['employee_number'] ?? '')
+            : (string) ($data['student_number'] ?? '');
+        $digits = preg_replace('/\D+/', '', $identifier) ?? '';
+
+        return Str::upper(
+            Str::substr(Str::ascii(trim((string) ($data['first_name'] ?? ''))), 0, 1)
+            .Str::substr(Str::ascii(trim((string) ($data['last_name'] ?? ''))), 0, 1)
+            .Str::substr($digits, -3)
+        );
+    }
+
+    public static function identifierPasswordDigitsRule(): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail): void {
+            $digits = preg_replace('/\D+/', '', (string) $value) ?? '';
+
+            if (strlen($digits) < 3) {
+                $fail('The '.str_replace('_', ' ', $attribute).' must contain at least 3 digits for the generated initial password.');
+            }
+        };
     }
 
     public function buildName(array $data): string

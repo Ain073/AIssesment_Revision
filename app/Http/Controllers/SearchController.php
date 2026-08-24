@@ -6,7 +6,7 @@ use App\Models\AcademicClass;
 use App\Models\Assessment;
 use App\Models\ClassAssessment;
 use App\Models\Program;
-use App\Models\Subject;
+use App\Models\SubjectProgram;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,6 +34,10 @@ class SearchController extends Controller
 
         if ($user->roles->pluck('role_name')->intersect(['instructor', 'admin_dean', 'department_chair'])->isNotEmpty()) {
             $results = $results->merge($this->instructorResults($query, $user));
+        }
+
+        if ($user->hasRole('department_chair')) {
+            $results = $results->merge($this->departmentChairResults($query, $user));
         }
 
         if ($user->hasRole('student')) {
@@ -68,7 +72,7 @@ class SearchController extends Controller
             ]);
 
         $programs = Program::query()
-            ->with('college')
+            ->with('department.college')
             ->where('program_name', 'like', "%{$query}%")
             ->orderBy('program_name')
             ->limit(3)
@@ -76,28 +80,46 @@ class SearchController extends Controller
             ->toBase()
             ->map(fn (Program $program): array => [
                 'title' => $program->program_name,
-                'subtitle' => 'Program - '.($program->college?->college_name ?? 'No college'),
+                'subtitle' => 'Program - '.(collect([$program->department?->dept_name, $program->department?->college?->college_name])->filter()->join(' - ') ?: 'No department'),
                 'type' => 'Program',
                 'url' => route('super-admin.programs'),
             ]);
 
-        $subjects = Subject::query()
+        return $users->merge($programs);
+    }
+
+    private function departmentChairResults(string $query, User $user)
+    {
+        $departmentId = $user->instructorProfile?->department_id;
+
+        if (! $departmentId) {
+            return collect();
+        }
+
+        return SubjectProgram::query()
+            ->with(['subject', 'program'])
+            ->whereHas('program', fn ($programQuery) => $programQuery->where('department_id', $departmentId))
             ->where(function ($search) use ($query): void {
-                $search->where('subject_code', 'like', "%{$query}%")
-                    ->orWhere('subject_name', 'like', "%{$query}%");
+                $search->whereHas('subject', function ($subjectQuery) use ($query): void {
+                    $subjectQuery->where('subject_code', 'like', "%{$query}%")
+                        ->orWhere('subject_name', 'like', "%{$query}%");
+                })
+                    ->orWhereHas('program', fn ($programQuery) => $programQuery->where('program_name', 'like', "%{$query}%"));
             })
-            ->orderBy('subject_code')
-            ->limit(3)
+            ->orderBy('year_level')
+            ->limit(5)
             ->get()
             ->toBase()
-            ->map(fn (Subject $subject): array => [
-                'title' => $subject->subject_code,
-                'subtitle' => $subject->subject_name,
+            ->map(fn (SubjectProgram $mapping): array => [
+                'title' => $mapping->subject?->subject_code ?? 'Subject',
+                'subtitle' => trim(($mapping->subject?->subject_name ?? '').' - '.($mapping->program?->program_name ?? 'Program'), ' -'),
                 'type' => 'Subject',
-                'url' => route('super-admin.subjects'),
+                'url' => route('department-chair.subjects', array_filter([
+                    'program' => $mapping->program?->public_id,
+                    'year_level' => $mapping->year_level,
+                    'semester' => $mapping->semester,
+                ])),
             ]);
-
-        return $users->merge($programs)->merge($subjects);
     }
 
     private function instructorResults(string $query, User $user)

@@ -1,16 +1,17 @@
 <?php
 
 use App\Http\Controllers\AdminDean\DashboardController as AdminDeanDashboardController;
+use App\Http\Controllers\AdminDean\DesignationController as AdminDeanDesignationController;
 use App\Http\Controllers\AdminDean\DepartmentController as AdminDeanDepartmentController;
-use App\Http\Controllers\AdminDean\ProgramController as AdminDeanProgramController;
-use App\Http\Controllers\AdminDean\StudentController as AdminDeanStudentController;
 use App\Http\Controllers\AdminDean\TeacherController as AdminDeanTeacherController;
 use App\Http\Controllers\AdminDean\UserController as AdminDeanUserController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordSetupController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\DepartmentChair\DashboardController as DepartmentChairDashboardController;
 use App\Http\Controllers\DepartmentChair\ReportController as DepartmentChairReportController;
 use App\Http\Controllers\DepartmentChair\StudentController as DepartmentChairStudentController;
+use App\Http\Controllers\DepartmentChair\SubjectController as DepartmentChairSubjectController;
 use App\Http\Controllers\DepartmentChair\TeacherController as DepartmentChairTeacherController;
 use App\Http\Controllers\DepartmentChair\UserController as DepartmentChairUserController;
 use App\Http\Controllers\Instructor\AssessmentController as InstructorAssessmentController;
@@ -31,7 +32,6 @@ use App\Http\Controllers\SuperAdmin\CollegeDepartmentController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\ProgramController;
 use App\Http\Controllers\SuperAdmin\RoleController;
-use App\Http\Controllers\SuperAdmin\SubjectController;
 use App\Http\Controllers\SuperAdmin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -52,6 +52,8 @@ Route::middleware(['guest', 'no_cache'])->group(function () {
 });
 
 Route::middleware(['auth', 'no_cache'])->group(function () {
+    Route::get('/password/setup', [PasswordSetupController::class, 'edit'])->name('password.setup');
+    Route::put('/password/setup', [PasswordSetupController::class, 'update'])->middleware('throttle:6,1')->name('password.setup.update');
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile/photo', [ProfileController::class, 'updatePhoto'])->middleware('throttle:10,1')->name('profile.photo.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->middleware('throttle:6,1')->name('profile.password.update');
@@ -61,7 +63,7 @@ Route::middleware(['auth', 'no_cache'])->group(function () {
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
 });
 
-Route::middleware(['super_admin', 'no_cache'])
+Route::middleware(['super_admin', 'password_changed', 'no_cache'])
     ->prefix('super-admin')
     ->name('super-admin.')
     ->group(function () {
@@ -77,14 +79,9 @@ Route::middleware(['super_admin', 'no_cache'])
         Route::post('/programs', [ProgramController::class, 'store'])->name('programs.store');
         Route::put('/programs/{program}', [ProgramController::class, 'update'])->name('programs.update');
         Route::delete('/programs/{program}', [ProgramController::class, 'destroy'])->name('programs.destroy');
-        Route::get('/subjects', [SubjectController::class, 'index'])->name('subjects');
-        Route::post('/subjects', [SubjectController::class, 'store'])->name('subjects.store');
-        Route::post('/subjects/active-semester', [SubjectController::class, 'activateSemester'])->name('subjects.semester.activate');
-        Route::put('/subjects/{subjectProgram}', [SubjectController::class, 'update'])->name('subjects.update');
-        Route::delete('/subjects/{subjectProgram}', [SubjectController::class, 'destroy'])->name('subjects.destroy');
         Route::get('/roles', [RoleController::class, 'index'])->name('roles');
-        Route::post('/authorization/grant', [RoleController::class, 'grant'])->name('roles.grant');
-        Route::delete('/authorization/revoke', [RoleController::class, 'revoke'])->name('roles.revoke');
+        Route::post('/designation/grant', [RoleController::class, 'grant'])->name('roles.grant');
+        Route::delete('/designation/revoke', [RoleController::class, 'revoke'])->name('roles.revoke');
         Route::get('/users', [UserController::class, 'index'])->name('users');
         Route::get('/users/student-import-sample', [UserController::class, 'downloadStudentImportSample'])->name('users.students.import.sample');
         Route::post('/users/student-import-preview', [UserController::class, 'previewStudentImport'])->middleware('throttle:10,1')->name('users.students.import.preview');
@@ -94,7 +91,7 @@ Route::middleware(['super_admin', 'no_cache'])
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 
-Route::middleware(['instructor', 'no_cache'])
+Route::middleware(['instructor', 'password_changed', 'no_cache'])
     ->prefix('instructor')
     ->name('instructor.')
     ->group(function () {
@@ -137,32 +134,33 @@ Route::middleware(['instructor', 'no_cache'])
         Route::post('/reports/ai-drafts', [InstructorReportController::class, 'generateAiDrafts'])->middleware('throttle:10,1')->name('reports.ai-drafts');
     });
 
-Route::middleware(['admin_dean', 'no_cache'])
+Route::middleware(['admin_dean', 'password_changed', 'no_cache'])
     ->prefix('admin-dean')
     ->name('admin-dean.')
     ->group(function () {
         Route::get('/dashboard', [AdminDeanDashboardController::class, 'index'])->name('dashboard');
         Route::get('/departments', [AdminDeanDepartmentController::class, 'index'])->name('departments');
         Route::post('/departments', [AdminDeanDepartmentController::class, 'store'])->name('departments.store');
-        Route::get('/programs', [AdminDeanProgramController::class, 'index'])->name('programs');
-        Route::post('/programs', [AdminDeanProgramController::class, 'store'])->name('programs.store');
         Route::get('/teachers', [AdminDeanTeacherController::class, 'index'])->name('teachers');
-        Route::get('/students', [AdminDeanStudentController::class, 'index'])->name('students');
-        Route::get('/students/import-sample', [AdminDeanStudentController::class, 'downloadImportSample'])->name('students.import.sample');
-        Route::post('/students/import-preview', [AdminDeanStudentController::class, 'previewImport'])->middleware('throttle:10,1')->name('students.import.preview');
-        Route::post('/students/import-confirm', [AdminDeanStudentController::class, 'confirmImport'])->middleware('throttle:10,1')->name('students.import.confirm');
+        Route::post('/teachers/{user}/department-chair-designation', [AdminDeanDesignationController::class, 'grantDepartmentChair'])->name('teachers.department-chair.grant');
+        Route::delete('/teachers/{user}/department-chair-designation', [AdminDeanDesignationController::class, 'revokeDepartmentChair'])->name('teachers.department-chair.revoke');
         Route::post('/users', [AdminDeanUserController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [AdminDeanUserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [AdminDeanUserController::class, 'destroy'])->name('users.destroy');
     });
 
-Route::middleware(['department_chair', 'no_cache'])
+Route::middleware(['department_chair', 'password_changed', 'no_cache'])
     ->prefix('department-chair')
     ->name('department-chair.')
     ->group(function () {
         Route::get('/dashboard', [DepartmentChairDashboardController::class, 'index'])->name('dashboard');
         Route::get('/teachers', [DepartmentChairTeacherController::class, 'index'])->name('teachers');
         Route::get('/students', [DepartmentChairStudentController::class, 'index'])->name('students');
+        Route::get('/subjects', [DepartmentChairSubjectController::class, 'index'])->name('subjects');
+        Route::post('/subjects', [DepartmentChairSubjectController::class, 'store'])->name('subjects.store');
+        Route::post('/subjects/active-semester', [DepartmentChairSubjectController::class, 'activateSemester'])->name('subjects.semester.activate');
+        Route::put('/subjects/{subjectProgram}', [DepartmentChairSubjectController::class, 'update'])->name('subjects.update');
+        Route::delete('/subjects/{subjectProgram}', [DepartmentChairSubjectController::class, 'destroy'])->name('subjects.destroy');
         Route::get('/students/import-sample', [DepartmentChairStudentController::class, 'downloadImportSample'])->name('students.import.sample');
         Route::post('/students/import-preview', [DepartmentChairStudentController::class, 'previewImport'])->middleware('throttle:10,1')->name('students.import.preview');
         Route::post('/students/import-confirm', [DepartmentChairStudentController::class, 'confirmImport'])->middleware('throttle:10,1')->name('students.import.confirm');
@@ -173,7 +171,7 @@ Route::middleware(['department_chair', 'no_cache'])
         Route::get('/reports/{classAssessment}/{type}', [DepartmentChairReportController::class, 'show'])->name('reports.show');
     });
 
-Route::middleware(['student', 'no_cache'])
+Route::middleware(['student', 'password_changed', 'no_cache'])
     ->prefix('student')
     ->name('student.')
     ->group(function () {

@@ -164,6 +164,197 @@ h1, h2, h3, .brand-text {
     position: relative;
 }
 
+.program-detail-label,
+.subject-detail-label {
+    color: var(--psu-muted);
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.subject-toolbar .program-filter-select {
+    min-width: min(360px, 100%);
+}
+
+.subject-toolbar .compact-filter-select {
+    min-width: 170px;
+}
+
+.academic-term-toolbar {
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--psu-line);
+}
+
+.active-term-value {
+    color: var(--psu-navy);
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.subject-directory-card {
+    overflow: hidden;
+}
+
+.subjects-table {
+    min-width: 0;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.subjects-table thead th {
+    background: #edf2ff;
+    color: var(--psu-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1.25;
+    text-transform: uppercase;
+    white-space: normal;
+}
+
+.subjects-table thead th,
+.subjects-table tbody td {
+    padding: 0.85rem 0.75rem;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+}
+
+.subjects-table tbody tr {
+    border-bottom: 1px solid #edf0f7;
+}
+
+.subjects-table tbody tr:last-child {
+    border-bottom: 0;
+}
+
+.subjects-table .subject-code-cell {
+    color: var(--psu-navy);
+    font-weight: 900;
+}
+
+.subjects-table .subject-name-cell,
+.subjects-table .subject-program-cell {
+    line-height: 1.45;
+}
+
+.subjects-table .subject-name-cell {
+    font-weight: 650;
+}
+
+.subjects-table .subject-program-cell .fw-semibold {
+    color: var(--psu-navy);
+}
+
+.subjects-table .badge {
+    min-width: 58px;
+    padding: 0.42rem 0.5rem;
+}
+
+.subjects-table .record-action-trigger {
+    min-width: 78px;
+    padding-right: 0.55rem;
+    padding-left: 0.55rem;
+    justify-content: center;
+}
+
+.subjects-table-wrap {
+    overflow-x: visible;
+}
+
+@media (max-width: 1199.98px) {
+    .subjects-table colgroup {
+        display: none;
+    }
+
+    .subjects-table thead th,
+    .subjects-table tbody td {
+        display: none;
+    }
+
+    .subjects-table thead th:first-child,
+    .subjects-table thead th:last-child,
+    .subjects-table tbody td:first-child,
+    .subjects-table tbody td:last-child,
+    .subjects-table tbody td.subject-empty-cell {
+        display: table-cell;
+        vertical-align: middle;
+    }
+
+    .subjects-table thead th:first-child,
+    .subjects-table tbody td:first-child {
+        width: 72%;
+        text-align: left !important;
+    }
+
+    .subjects-table thead th:last-child,
+    .subjects-table tbody td:last-child {
+        width: 28%;
+        text-align: right !important;
+    }
+
+    .subjects-table tbody td.subject-empty-cell {
+        width: 100%;
+        text-align: center !important;
+    }
+}
+
+.dashboard-view-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    max-width: min(52vw, 760px);
+    overflow-x: auto;
+    padding: 0 0.15rem;
+    scrollbar-width: none;
+}
+
+.dashboard-view-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.dashboard-view-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 44px;
+    padding: 0.25rem 0.05rem 0.4rem;
+    border: 0;
+    background: transparent;
+    color: var(--psu-muted);
+    font-weight: 800;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.dashboard-view-link::after {
+    position: absolute;
+    right: 0;
+    bottom: 0.15rem;
+    left: 0;
+    height: 3px;
+    content: "";
+    background: transparent;
+    border-radius: 999px;
+}
+
+.dashboard-view-link:hover,
+.dashboard-view-link:focus {
+    color: var(--psu-navy);
+}
+
+.dashboard-view-link.active {
+    color: var(--psu-navy);
+}
+
+.dashboard-view-link.active::after {
+    background: var(--psu-gold);
+}
+
+.dashboard-view-link .material-symbols-outlined {
+    font-size: 1.15rem;
+}
+
 .global-search-input {
     width: 320px;
 }
@@ -252,6 +443,21 @@ h1, h2, h3, .brand-text {
 .portal-toast-hiding {
     opacity: 0;
     transform: translateY(10px);
+}
+
+.page-container > .alert-primary {
+    transition: opacity 0.24s ease, transform 0.24s ease, max-height 0.24s ease, margin 0.24s ease, padding 0.24s ease;
+}
+
+.page-info-alert-hiding {
+    max-height: 0;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    opacity: 0;
+    overflow: hidden;
+    transform: translateY(-6px);
 }
 
 .portal-toast-success {
@@ -691,6 +897,21 @@ h1, h2, h3, .brand-text {
     .topbar > div:last-child {
         flex-shrink: 0;
         gap: 0.5rem !important;
+    }
+
+    .dashboard-view-nav {
+        max-width: 42vw;
+        gap: 0.65rem;
+    }
+
+    .dashboard-view-link {
+        min-width: 34px;
+        min-height: 38px;
+        justify-content: center;
+    }
+
+    .dashboard-view-label {
+        display: none;
     }
 
     .topbar .brand-text {

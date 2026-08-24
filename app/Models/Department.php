@@ -29,4 +29,9 @@ class Department extends Model
         return $this->hasMany(InstructorProfile::class, 'department_id', 'department_id');
     }
 
+    public function programs(): HasMany
+    {
+        return $this->hasMany(Program::class, 'department_id', 'department_id');
+    }
+
 }

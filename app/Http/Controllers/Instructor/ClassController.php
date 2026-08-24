@@ -200,7 +200,7 @@ class ClassController extends BaseController
             'subject',
             'instructorProfile.department.college',
             'students.user.roles',
-            'students.program.college',
+            'students.program.department.college',
             'classAssessments' => fn ($query) => $query
                 ->with([
                     'assessment.subject',
@@ -212,7 +212,7 @@ class ClassController extends BaseController
                 ->latest('class_assessment_id'),
             'joinRequests' => fn ($query) => $query
                 ->where('status', ClassJoinRequest::STATUS_PENDING)
-                ->with(['studentProfile.user.roles', 'studentProfile.program.college'])
+                ->with(['studentProfile.user.roles', 'studentProfile.program.department.college'])
                 ->latest('requested_at'),
         ])->loadCount('students', 'classAssessments');
 

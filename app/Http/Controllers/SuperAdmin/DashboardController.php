@@ -3,12 +3,9 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AcademicSetting;
 use App\Models\College;
 use App\Models\Department;
 use App\Models\Program;
-use App\Models\Subject;
-use App\Models\SubjectProgram;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -20,9 +17,8 @@ class DashboardController extends Controller
         $totalUsers = User::count();
         $activeUsers = User::query()->where('status', 'active')->count();
         $inactiveUsers = max($totalUsers - $activeUsers, 0);
-        $activeSemester = AcademicSetting::query()->value('active_semester');
         $programStudentRows = Program::query()
-            ->with('college')
+            ->with('department.college')
             ->withCount('studentProfiles')
             ->orderByDesc('student_profiles_count')
             ->orderBy('program_name')
@@ -43,23 +39,13 @@ class DashboardController extends Controller
             'totalDepartmentChairs' => $this->countUsersByRole('department_chair'),
             'totalPrograms' => Program::count(),
             'activePrograms' => Program::query()->where('is_active', true)->count(),
-            'totalSubjects' => Subject::count(),
-            'activeSubjects' => Subject::query()->where('is_active', true)->count(),
-            'activeSemester' => $activeSemester,
-            'activeSemesterSubjectCount' => $activeSemester
-                ? SubjectProgram::query()
-                    ->where('semester', $activeSemester)
-                    ->whereHas('subject', fn ($query) => $query->where('is_active', true))
-                    ->distinct('subject_id')
-                    ->count('subject_id')
-                : 0,
             'programStudentRows' => $programStudentRows->map(function (Program $program) use ($topProgramStudentCount): array {
                 $studentCount = (int) $program->student_profiles_count;
 
                 return [
                     'name' => $program->program_name,
-                    'college_id' => $program->college_id,
-                    'college' => $program->college?->college_name ?? 'No college',
+                    'college_id' => $program->department?->college_id,
+                    'college' => $program->department?->college?->college_name ?? 'No college',
                     'students' => $studentCount,
                     'percentage' => $topProgramStudentCount > 0
                         ? max(round(($studentCount / $topProgramStudentCount) * 100), $studentCount > 0 ? 4 : 0)
@@ -79,11 +65,6 @@ class DashboardController extends Controller
                     'label' => 'Programs',
                     'href' => route('super-admin.programs'),
                     'icon' => 'school',
-                ],
-                [
-                    'label' => 'Subjects',
-                    'href' => route('super-admin.subjects'),
-                    'icon' => 'menu_book',
                 ],
             ],
         ]);

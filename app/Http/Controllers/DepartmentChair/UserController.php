@@ -26,7 +26,6 @@ class UserController extends BaseController
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
             'base_role' => ['required', Rule::in(UserAccountService::BASE_ROLES)],
             'employee_number' => [
@@ -34,6 +33,7 @@ class UserController extends BaseController
                 'nullable',
                 'string',
                 'max:255',
+                UserAccountService::identifierPasswordDigitsRule(),
                 'unique:instructor_profiles,employee_number',
             ],
             'program_id' => [
@@ -47,11 +47,14 @@ class UserController extends BaseController
                 'nullable',
                 'string',
                 'max:255',
+                UserAccountService::identifierPasswordDigitsRule(),
                 'unique:student_profiles,student_number',
             ],
         ]);
 
         $validated['department_id'] = $scopedDepartment->department_id;
+        $initialPassword = $accounts->initialPasswordFor($validated);
+        $validated['password'] = $initialPassword;
 
         $createdUser = DB::transaction(function () use ($validated, $user, $scopedDepartment, $accounts) {
             $createdUser = $accounts->createAccount($validated);
@@ -68,10 +71,17 @@ class UserController extends BaseController
         });
 
         $accounts->sendAccountCreatedNotification($createdUser);
+        $passwordEmailSent = $accounts->sendInitialPasswordEmail($createdUser, $initialPassword);
 
-        return redirect()
+        $redirect = redirect()
             ->back()
             ->with('status', 'User account created successfully.');
+
+        if (! $passwordEmailSent) {
+            $redirect->with('mail_warning', 'Account was created, but the initial password email was not delivered.');
+        }
+
+        return $redirect;
     }
 
     public function update(Request $request, User $user, UserAccountService $accounts): RedirectResponse

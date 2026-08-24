@@ -1,9 +1,7 @@
 @if ($errors->any())
         <script>
             const formMode = @json(old('form_mode'));
-            const modalId = formMode === 'grant_department_chair'
-                ? 'grantDepartmentChairModal'
-                : formMode === 'grant_admin_dean'
+            const modalId = formMode === 'grant_admin_dean'
                     ? 'grantAdminDeanModal'
                     : null;
 

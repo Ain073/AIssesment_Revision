@@ -17,6 +17,7 @@ class Program extends Model
 
     protected $fillable = [
         'college_id',
+        'department_id',
         'program_name',
         'is_active',
     ];
@@ -28,6 +29,11 @@ class Program extends Model
     public function college(): BelongsTo
     {
         return $this->belongsTo(College::class, 'college_id', 'college_id');
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'department_id', 'department_id');
     }
 
     public function studentProfiles(): HasMany

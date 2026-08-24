@@ -1,23 +1,22 @@
 @extends('layouts.portal')
 
 @php
-    $portalSubtitle = 'Super Admin Panel';
-    $profileInitials = 'SA';
-    $profileName = 'Super Admin';
-    $profileMeta = 'System Controller';
+    $portalSubtitle = 'Admin Panel';
+    $profileInitials = 'A';
+    $profileName = 'Admin';
+    $profileMeta = 'Admin Account';
     $showTopbarSearch = true;
     $topbarSearchPlaceholder = 'Search programs...';
     $navItems = [
         ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('super-admin.dashboard'), 'active' => false],
         ['label' => 'Colleges & Departments', 'icon' => 'account_balance', 'href' => route('super-admin.colleges'), 'active' => false],
         ['label' => 'Programs', 'icon' => 'school', 'href' => route('super-admin.programs'), 'active' => true],
-        ['label' => 'Subjects', 'icon' => 'menu_book', 'href' => route('super-admin.subjects'), 'active' => false],
-        ['label' => 'Deans & Department Chairs', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active' => false],
+        ['label' => 'Dean Designation', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active' => false],
         ['label' => 'Users', 'icon' => 'person_search', 'href' => route('super-admin.users'), 'active' => false],
     ];
 @endphp
 
-@section('title', 'Programs | AIssessment Super Admin')
+@section('title', 'Programs | AIssessment Admin')
 @section('header', 'Programs')
 
 
@@ -65,6 +64,7 @@
                 <thead>
                     <tr>
                         <th>Program</th>
+                        <th>Department</th>
                         <th>College</th>
                         <th class="count-cell">Students</th>
                         <th>Status</th>
@@ -75,7 +75,8 @@
                     @forelse ($programs as $program)
                         <tr>
                             <td class="fw-bold mobile-primary-cell" data-label="Program" style="color: var(--psu-navy);">{{ $program->program_name }}</td>
-                            <td data-label="College">{{ $program->college?->college_name ?? 'Not assigned' }}</td>
+                            <td data-label="Department">{{ $program->department?->dept_name ?? 'Not assigned' }}</td>
+                            <td data-label="College">{{ $program->department?->college?->college_name ?? 'Not assigned' }}</td>
                             <td class="count-cell" data-label="Students">{{ $program->student_profiles_count }}</td>
                             <td data-label="Status">
                                 <span class="badge {{ $program->is_active ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
@@ -91,7 +92,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="text-center py-5 mobile-empty-cell" colspan="5">
+                            <td class="text-center py-5 mobile-empty-cell" colspan="6">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">school</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No programs yet</h4>
                                 <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#programModal" data-bs-toggle="modal" type="button">

@@ -108,7 +108,7 @@
             <h3 class="brand-text h4 mb-3" style="color: var(--psu-navy);">Current Status</h3>
             <div class="placeholder-badge mb-3">
                 <span class="material-symbols-outlined">construction</span>
-                <span>Portal shell ready</span>
+                <span>Page ready</span>
             </div>
             <p class="text-secondary mb-0">Nakaayos na ang student portal structure. Susunod na natin isa-isahin ang actual class membership, assessment-taking flow, at released results.</p>
         </article>

@@ -51,13 +51,12 @@
                         <label class="form-label fw-bold text-uppercase small" for="instructor_employee_number">Employee Number</label>
                         <input class="form-control teacher-profile-field" id="instructor_employee_number" name="employee_number" required type="text" value="{{ old('base_role') === 'instructor' ? old('employee_number') : '' }}">
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-uppercase small" for="instructor_password">Password</label>
-                        <input class="form-control" id="instructor_password" name="password" required type="password">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-uppercase small" for="instructor_password_confirmation">Confirm Password</label>
-                        <input class="form-control" id="instructor_password_confirmation" name="password_confirmation" required type="password">
+                    <div class="col-12">
+                        <label class="form-label fw-bold text-uppercase small d-block">Designation</label>
+                        <div class="form-check">
+                            <input class="form-check-input" id="create_instructor_admin_dean" name="authorizations[]" type="checkbox" value="admin_dean" @checked(old('base_role') === 'instructor' && in_array('admin_dean', old('authorizations', []), true))>
+                            <label class="form-check-label fw-semibold" for="create_instructor_admin_dean">Dean</label>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1,7 +1,16 @@
     {{-- Create subject form --}}
+    @php
+        $subjectRoutePrefix = $subjectRoutePrefix ?? 'department-chair';
+    @endphp
     <div class="modal fade" id="subjectModal" tabindex="-1" aria-labelledby="subjectModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <form action="{{ route('super-admin.subjects.store') }}" class="modal-content" method="POST">
+            <form
+                action="{{ route($subjectRoutePrefix.'.subjects.store', array_filter(['program' => $selectedProgramKey, 'year_level' => $selectedYearLevel, 'semester' => $selectedSemester])) }}"
+                class="modal-content"
+                method="POST"
+                data-ajax-form
+                data-reset-on-success="true"
+            >
                 @csrf
                 <input name="is_active" type="hidden" value="0">
                 <div class="modal-header">
@@ -13,7 +22,7 @@
                         <label class="form-label fw-bold text-uppercase small" for="program_id">Program</label>
                         <select class="form-select form-select-lg" id="program_id" name="program_id" required @disabled($programs->isEmpty())>
                             @forelse ($programs as $program)
-                                <option value="{{ $program->program_id }}" @selected(old('program_id', $selectedProgramId) == $program->program_id)>{{ $program->program_name }} - {{ $program->college?->college_name }}</option>
+                                <option value="{{ $program->program_id }}" @selected(old('program_id', $selectedProgramId) == $program->program_id)>{{ $program->program_name }} - {{ $program->department?->dept_name }} - {{ $program->department?->college?->college_name }}</option>
                             @empty
                                 <option>No programs available yet</option>
                             @endforelse

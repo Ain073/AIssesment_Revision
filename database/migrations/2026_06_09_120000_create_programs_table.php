@@ -14,11 +14,12 @@ return new class extends Migration
         Schema::create('programs', function (Blueprint $table) {
             $table->id('program_id');
             $table->foreignId('college_id')->constrained('colleges', 'college_id')->cascadeOnDelete();
+            $table->foreignId('department_id')->constrained('departments', 'department_id')->cascadeOnDelete();
             $table->string('program_name');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->unique(['college_id', 'program_name']);
+            $table->unique(['department_id', 'program_name']);
         });
     }
 

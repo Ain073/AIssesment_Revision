@@ -18,7 +18,6 @@ class RoleController extends Controller
 {
     private const MANAGED_ROLES = [
         'admin_dean',
-        'department_chair',
     ];
 
     public function index(): View
@@ -36,16 +35,10 @@ class RoleController extends Controller
             ->get();
 
         $adminDeans = $teachers->filter->hasRole('admin_dean')->values();
-        $departmentChairs = $teachers->filter->hasRole('department_chair')->values();
-
         return view('super-admin.roles.index', [
             'teachers' => $teachers,
             'adminDeans' => $adminDeans,
-            'departmentChairs' => $departmentChairs,
             'availableAdminDeanTeachers' => $teachers
-                ->reject(fn (User $user) => $user->hasRole('admin_dean') || $user->hasRole('department_chair'))
-                ->values(),
-            'availableDepartmentChairTeachers' => $teachers
                 ->reject(fn (User $user) => $user->hasRole('admin_dean') || $user->hasRole('department_chair'))
                 ->values(),
         ]);
@@ -64,16 +57,14 @@ class RoleController extends Controller
         if (! $user->hasRole('instructor') || $user->hasRole('super_admin')) {
             return redirect()
                 ->route('super-admin.roles')
-                ->withErrors(new MessageBag(['role' => 'Only teacher accounts can receive this authorization.']));
+                ->withErrors(new MessageBag(['role' => 'Only teacher accounts can receive this designation.']));
         }
 
-        $conflictingRole = $validated['role_name'] === 'admin_dean' ? 'department_chair' : 'admin_dean';
-
-        if ($user->hasRole($conflictingRole)) {
+        if ($user->hasRole('department_chair')) {
             return redirect()
                 ->route('super-admin.roles')
                 ->withErrors(new MessageBag([
-                    'role' => 'A teacher can only have one elevated authorization. Remove the current authorization first.',
+                    'role' => 'A teacher can only have one designation. Ask the Dean to remove the current Department Chair designation first.',
                 ]));
         }
 
@@ -90,7 +81,7 @@ class RoleController extends Controller
             ],
         );
 
-        Log::info('Authorization granted by super admin.', [
+        Log::info('Designation granted by admin.', [
             'actor_id' => Auth::id(),
             'user_id' => $user->id,
             'email' => $user->email,
@@ -99,7 +90,7 @@ class RoleController extends Controller
 
         return redirect()
             ->route('super-admin.roles')
-            ->with('status', 'Authorization granted successfully.');
+            ->with('status', 'Designation granted successfully.');
     }
 
     public function revoke(Request $request): RedirectResponse
@@ -116,7 +107,7 @@ class RoleController extends Controller
             ->where('role_id', $roleId)
             ->delete();
 
-        Log::info('Authorization removed by super admin.', [
+        Log::info('Designation removed by admin.', [
             'actor_id' => Auth::id(),
             'user_id' => (int) $validated['user_id'],
             'role_name' => $validated['role_name'],
@@ -124,6 +115,6 @@ class RoleController extends Controller
 
         return redirect()
             ->route('super-admin.roles')
-            ->with('status', 'Authorization removed successfully.');
+            ->with('status', 'Designation removed successfully.');
     }
 }

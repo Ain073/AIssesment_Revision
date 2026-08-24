@@ -3,7 +3,7 @@
         @if (! $instructorProfile)
             This account does not have an instructor profile yet, so class creation is temporarily unavailable.
         @else
-            No active subjects are available yet. Add subjects first from the Super Admin portal before creating classes.
+            No active subjects are available yet. Add subjects first from the Department Chair portal before creating classes.
         @endif
     </div>
 @endif
@@ -71,22 +71,11 @@
                         </td>
                         <td class="text-center">{{ $class->students_count }}</td>
                         <td class="text-center">
-                            <div class="d-inline-flex align-items-center justify-content-center gap-2 join-code-actions">
-                                @if ($class->join_code)
-                                    <span class="badge text-bg-light border rounded-1 px-3 py-2 join-code-pill">{{ $class->join_code }}</span>
-                                @else
-                                    <span class="text-secondary small">Open class to generate</span>
-                                @endif
-
-                                @if ($activeClassTab === 'active')
-                                    @php($pendingRequestCount = $class->joinRequests->count())
-                                    <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 join-request-btn" data-bs-target="#joinRequestsModal{{ $class->class_id }}" data-bs-toggle="modal" type="button">
-                                        <span class="material-symbols-outlined fs-6">person_add</span>
-                                        Requests
-                                        <span class="badge rounded-pill text-bg-primary">{{ $pendingRequestCount }}</span>
-                                    </button>
-                                @endif
-                            </div>
+                            @if ($class->join_code)
+                                <span class="badge text-bg-light border rounded-1 px-3 py-2 join-code-pill">{{ $class->join_code }}</span>
+                            @else
+                                <span class="text-secondary small">Open class to generate</span>
+                            @endif
                         </td>
                         <td>{{ $class->school_year }}</td>
                         <td class="text-center text-nowrap">

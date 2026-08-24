@@ -51,6 +51,7 @@ class ProfileController extends Controller
 
         $this->profileUser()->update([
             'password' => $validated['password'],
+            'must_change_password' => false,
         ]);
 
         return back()->with('status', 'Password updated.');
@@ -61,7 +62,7 @@ class ProfileController extends Controller
         /** @var User $user */
         $user = Auth::user()->loadMissing(
             'roles',
-            'studentProfile.program.college',
+            'studentProfile.program.department.college',
             'instructorProfile.department.college',
         );
 
@@ -76,7 +77,6 @@ class ProfileController extends Controller
             'profileName' => $user->displayName(),
             'profileMeta' => $this->profileMeta($user),
             'navItems' => $this->navItems($user),
-            'viewSwitches' => $this->viewSwitches($user),
             'showTopbarSearch' => false,
         ];
     }
@@ -87,13 +87,14 @@ class ProfileController extends Controller
             $program = $user->studentProfile->program;
             $programAndCollege = collect([
                 $program?->program_name,
-                $program?->college?->college_name,
+                $program?->department?->dept_name,
+                $program?->department?->college?->college_name,
             ])->filter()->join(' - ');
 
             return [
                 ['label' => 'Student Number', 'value' => $user->studentProfile->student_number ?? 'Not assigned'],
                 ['label' => 'Email', 'value' => $user->email],
-                ['label' => 'Program / College', 'value' => $programAndCollege ?: 'Not assigned'],
+                ['label' => 'Program / Department / College', 'value' => $programAndCollege ?: 'Not assigned'],
             ];
         }
 
@@ -119,116 +120,119 @@ class ProfileController extends Controller
     private function navItems(User $user): array
     {
         if ($user->hasRole('super_admin')) {
-            return $this->markActive([
-                ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('super-admin.dashboard')],
-                ['key' => 'colleges', 'label' => 'Colleges & Departments', 'icon' => 'account_balance', 'href' => route('super-admin.colleges')],
-                ['key' => 'programs', 'label' => 'Programs', 'icon' => 'school', 'href' => route('super-admin.programs')],
-                ['key' => 'subjects', 'label' => 'Subjects', 'icon' => 'menu_book', 'href' => route('super-admin.subjects')],
-                ['key' => 'roles', 'label' => 'Deans & Department Chairs', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles')],
-                ['key' => 'users', 'label' => 'Users', 'icon' => 'person_search', 'href' => route('super-admin.users')],
+            return $this->markNavActive([
+                ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('super-admin.dashboard'), 'active_route' => 'super-admin.dashboard'],
+                ['label' => 'Colleges & Departments', 'icon' => 'account_balance', 'href' => route('super-admin.colleges'), 'active_route' => 'super-admin.colleges'],
+                ['label' => 'Programs', 'icon' => 'school', 'href' => route('super-admin.programs'), 'active_route' => 'super-admin.programs'],
+                ['label' => 'Dean Designation', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active_route' => 'super-admin.roles'],
+                ['label' => 'Users', 'icon' => 'person_search', 'href' => route('super-admin.users'), 'active_route' => 'super-admin.users*'],
+            ]);
+        }
+
+        $items = [];
+
+        if ($user->hasRole('instructor') || $user->hasRole('department_chair')) {
+            $items = array_merge($items, [
+                ['label' => 'Classes', 'icon' => 'school', 'href' => route('instructor.classes'), 'active_route' => 'instructor.classes*'],
+                ['label' => 'Assessments', 'icon' => 'assignment', 'href' => route('instructor.assessments'), 'active_route' => 'instructor.assessments*'],
+                ['label' => 'Reports', 'icon' => 'summarize', 'href' => route('instructor.reports'), 'active_route' => 'instructor.reports*'],
             ]);
         }
 
         if ($user->hasRole('admin_dean')) {
-            return $this->markActive([
-                ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('admin-dean.dashboard')],
-                ['key' => 'departments', 'label' => 'Departments', 'icon' => 'apartment', 'href' => route('admin-dean.departments')],
-                ['key' => 'programs', 'label' => 'Programs', 'icon' => 'school', 'href' => route('admin-dean.programs')],
-                ['key' => 'teachers', 'label' => 'Teachers', 'icon' => 'badge', 'href' => route('admin-dean.teachers')],
-                ['key' => 'students', 'label' => 'Students', 'icon' => 'groups', 'href' => route('admin-dean.students')],
+            $items = array_merge($items, [
+                ['label' => 'Departments', 'icon' => 'apartment', 'href' => route('admin-dean.departments'), 'active_route' => 'admin-dean.departments'],
+                ['label' => 'Users', 'icon' => 'groups', 'href' => route('admin-dean.teachers'), 'active_route' => 'admin-dean.teachers'],
             ]);
         }
 
         if ($user->hasRole('department_chair')) {
-            return $this->markActive([
-                ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('department-chair.dashboard')],
-                ['key' => 'teachers', 'label' => 'Teachers', 'icon' => 'badge', 'href' => route('department-chair.teachers')],
-                ['key' => 'students', 'label' => 'Students', 'icon' => 'groups', 'href' => route('department-chair.students')],
-                ['key' => 'reports', 'label' => 'Reports', 'icon' => 'summarize', 'href' => route('department-chair.reports')],
+            $items = array_merge($items, [
+                ['label' => 'Users', 'icon' => 'groups', 'href' => route('department-chair.teachers'), 'active_route' => ['department-chair.teachers', 'department-chair.students*']],
+                ['label' => 'Subjects', 'icon' => 'menu_book', 'href' => route('department-chair.subjects'), 'active_route' => 'department-chair.subjects*'],
             ]);
         }
 
-        if ($user->hasRole('instructor')) {
-            return $this->markActive([
-                ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('instructor.dashboard')],
-                ['key' => 'classes', 'label' => 'Classes', 'icon' => 'school', 'href' => route('instructor.classes')],
-                ['key' => 'assessments', 'label' => 'Assessments', 'icon' => 'assignment', 'href' => route('instructor.assessments')],
-                ['key' => 'reports', 'label' => 'Reports', 'icon' => 'summarize', 'href' => route('instructor.reports')],
-            ]);
+        if (! empty($items)) {
+            array_unshift($items, $this->dashboardNavItem($user));
+
+            return $this->markNavActive($items);
         }
 
-        return $this->markActive([
-            ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('student.dashboard')],
-            ['key' => 'classes', 'label' => 'Classes', 'icon' => 'school', 'href' => route('student.classes')],
-            ['key' => 'assessments', 'label' => 'Assessments', 'icon' => 'assignment', 'href' => route('student.assessments')],
-            ['key' => 'results', 'label' => 'Results', 'icon' => 'grading', 'href' => route('student.results')],
+        return $this->markNavActive([
+            ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('student.dashboard'), 'active_route' => 'student.dashboard'],
+            ['label' => 'Classes', 'icon' => 'school', 'href' => route('student.classes'), 'active_route' => 'student.classes*'],
+            ['label' => 'Assessments', 'icon' => 'assignment', 'href' => route('student.assessments'), 'active_route' => 'student.assessments*'],
+            ['label' => 'Results', 'icon' => 'grading', 'href' => route('student.results'), 'active_route' => 'student.results'],
         ]);
     }
 
-    private function markActive(array $items): array
+    private function markNavActive(array $items): array
     {
-        return array_map(fn (array $item) => $item + ['active' => false], $items);
+        return array_map(function (array $item): array {
+            $activeRoute = (array) $item['active_route'];
+            unset($item['active_route']);
+
+            return $item + ['active' => request()->routeIs(...$activeRoute)];
+        }, $items);
     }
 
-    private function viewSwitches(User $user): array
+    private function dashboardNavItem(User $user): array
     {
-        $switches = [];
+        $href = route('instructor.dashboard');
+        $activeRoutes = [];
 
         if ($user->hasRole('instructor') || $user->hasRole('department_chair')) {
-            $switches[] = [
-                'label' => 'Instructor',
-                'icon' => 'co_present',
-                'href' => route('instructor.dashboard'),
-                'active' => false,
-            ];
+            $activeRoutes[] = 'instructor.dashboard';
         }
 
         if ($user->hasRole('admin_dean')) {
-            $switches[] = [
-                'label' => 'Admin/Dean',
-                'icon' => 'supervisor_account',
-                'href' => route('admin-dean.dashboard'),
-                'active' => false,
-            ];
+            $activeRoutes[] = 'admin-dean.dashboard';
         }
 
         if ($user->hasRole('department_chair')) {
-            $switches[] = [
-                'label' => 'Dept Chair',
-                'icon' => 'assignment_ind',
-                'href' => route('department-chair.dashboard'),
-                'active' => false,
-            ];
+            $activeRoutes[] = 'department-chair.dashboard';
         }
 
-        return $switches;
+        if (request()->routeIs('admin-dean.*') && $user->hasRole('admin_dean')) {
+            $href = route('admin-dean.dashboard');
+        } elseif (request()->routeIs('department-chair.*') && $user->hasRole('department_chair')) {
+            $href = route('department-chair.dashboard');
+        }
+
+        return [
+            'label' => 'Dashboard',
+            'icon' => 'dashboard',
+            'href' => $href,
+            'active_route' => $activeRoutes ?: 'instructor.dashboard',
+        ];
     }
 
     private function portalSubtitle(User $user): string
     {
         if ($user->hasRole('super_admin')) {
-            return 'Super Admin Panel';
+            return 'Admin Panel';
         }
 
         if ($user->hasRole('admin_dean')) {
-            return 'Admin/Dean Portal';
+            return 'Dean';
         }
 
         if ($user->hasRole('department_chair')) {
-            return 'Department Chair Portal';
+            return 'Department Chair';
         }
 
         if ($user->hasRole('instructor')) {
-            return 'Instructor Portal';
+            return 'Instructor';
         }
 
-        return 'Student Portal';
+        return 'Student';
     }
 
     private function profileMeta(User $user): string
     {
         if ($user->hasRole('super_admin')) {
-            return 'System Controller';
+            return 'Admin Account';
         }
 
         return $this->roleLabel($user).' Account';
@@ -237,8 +241,8 @@ class ProfileController extends Controller
     private function roleLabel(User $user): string
     {
         $labels = [
-            'super_admin' => 'Super Admin',
-            'admin_dean' => 'Admin/Dean',
+            'super_admin' => 'Admin',
+            'admin_dean' => 'Dean',
             'department_chair' => 'Department Chair',
             'instructor' => 'Instructor',
             'student' => 'Student',

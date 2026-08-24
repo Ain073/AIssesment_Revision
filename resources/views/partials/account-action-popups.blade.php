@@ -6,6 +6,7 @@
     $accountPrograms = collect($accountPrograms ?? []);
     $accountFixedDepartment = $accountFixedDepartment ?? null;
     $accountAllowDepartmentSelect = (bool) ($accountAllowDepartmentSelect ?? false);
+    $accountAllowDepartmentChairDesignation = (bool) ($accountAllowDepartmentChairDesignation ?? false);
 @endphp
 
 @foreach ($accountUsers as $accountUser)
@@ -18,7 +19,7 @@
         $editProgramId = $isEditTarget ? old('program_id') : $accountUser->studentProfile?->program_id;
         $deleteDisabled = (int) auth()->id() === (int) $accountUser->id;
         $authorization = collect([
-            $accountUser->hasRole('admin_dean') ? 'Admin/Dean' : null,
+            $accountUser->hasRole('admin_dean') ? 'Dean' : null,
             $accountUser->hasRole('department_chair') ? 'Department Chair' : null,
         ])->filter()->implode(', ');
     @endphp
@@ -53,7 +54,7 @@
                         </div>
                         @if ($isInstructorAccount)
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-uppercase small">Authorization</label>
+                                <label class="form-label fw-bold text-uppercase small">Designation</label>
                                 <div class="form-control bg-light">{{ $authorization !== '' ? $authorization : 'Teacher only' }}</div>
                             </div>
                             <div class="col-md-6">
@@ -78,8 +79,14 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Close</button>
                     <button class="btn btn-outline-psu px-4" data-bs-target="#editAccountModal{{ $accountUser->id }}" data-bs-toggle="modal" type="button">Edit</button>
+                    @if ($accountAllowDepartmentChairDesignation && $isInstructorAccount && ! $accountUser->hasRole('admin_dean'))
+                        @if ($accountUser->hasRole('department_chair'))
+                            <button class="btn btn-warning px-4" data-bs-target="#removeDepartmentChairDesignationModal{{ $accountUser->id }}" data-bs-toggle="modal" type="button">Remove Designation</button>
+                        @else
+                            <button class="btn btn-success px-4" data-bs-target="#grantDepartmentChairDesignationModal{{ $accountUser->id }}" data-bs-toggle="modal" type="button">Designate Chair</button>
+                        @endif
+                    @endif
                     <button class="btn btn-danger px-4" data-bs-target="#deleteAccountModal{{ $accountUser->id }}" data-bs-toggle="modal" type="button" @disabled($deleteDisabled)>Delete</button>
                 </div>
             </div>
@@ -157,7 +164,7 @@
                                     <option value="">Select program</option>
                                     @foreach ($accountPrograms as $program)
                                         <option value="{{ $program->program_id }}" @selected((string) $editProgramId === (string) $program->program_id)>
-                                            {{ $program->program_name }} - {{ $program->college?->college_name }}
+                                            {{ $program->program_name }} - {{ $program->department?->dept_name }} - {{ $program->department?->college?->college_name }}
                                         </option>
                                     @endforeach
                                 </select>
