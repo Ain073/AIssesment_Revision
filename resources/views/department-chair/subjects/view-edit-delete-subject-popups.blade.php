@@ -2,7 +2,11 @@
     @php
         $subjectRoutePrefix = $subjectRoutePrefix ?? 'department-chair';
     @endphp
-    @foreach ($subjectMappings as $mapping)
+@php
+    $semesterOptions = $semesters ?? ['First Semester', 'Second Semester', 'Summer'];
+@endphp
+
+@foreach ($subjectMappings as $mapping)
         @php
             $mappingIsActive = $mapping->subject?->is_active && $activeSemester === $mapping->semester;
         @endphp
@@ -94,7 +98,7 @@
                             <div class="col-md-7">
                                 <label class="form-label fw-bold text-uppercase small" for="edit_semester_{{ $mapping->subject_program_id }}">Semester</label>
                                 <select class="form-select" id="edit_semester_{{ $mapping->subject_program_id }}" name="semester" required>
-                                    @foreach (['First Semester', 'Second Semester', 'Summer'] as $semester)
+                                    @foreach ($semesterOptions as $semester)
                                         <option value="{{ $semester }}" @selected($mapping->semester === $semester)>{{ $semester }}</option>
                                     @endforeach
                                 </select>

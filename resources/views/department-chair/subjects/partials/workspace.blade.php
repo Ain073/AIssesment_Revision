@@ -1,3 +1,7 @@
+@php
+    $semesterOptions = $semesters ?? ['First Semester', 'Second Semester', 'Summer'];
+@endphp
+
 <div class="subject-toolbar super-admin-form-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
     <form action="{{ route('department-chair.subjects') }}" class="d-flex flex-wrap align-items-end gap-4" method="GET">
         <div>
@@ -24,7 +28,7 @@
             <label class="form-label small fw-bold text-uppercase mb-1" for="semester-filter">Semester</label>
             <select class="form-select compact-filter-select" id="semester-filter" name="semester" onchange="this.form.submit()">
                 <option value="">All Semesters</option>
-                @foreach (['First Semester', 'Second Semester', 'Summer'] as $semester)
+                @foreach ($semesterOptions as $semester)
                     <option value="{{ $semester }}" @selected($selectedSemester === $semester)>{{ $semester }}</option>
                 @endforeach
             </select>

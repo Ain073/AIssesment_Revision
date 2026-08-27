@@ -1,3 +1,7 @@
+@php
+    $semesterOptions = $semesters ?? ['First Semester', 'Second Semester', 'Summer'];
+@endphp
+
 <div class="academic-term-toolbar super-admin-form-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
     <div>
         <div class="small fw-bold text-secondary text-uppercase mb-1">Active Semester</div>
@@ -17,7 +21,7 @@
         <div>
             <label class="form-label small fw-bold text-uppercase mb-1" for="active-semester">Semester</label>
             <select class="form-select compact-filter-select" id="active-semester" name="semester" required @disabled(! $scopedDepartment)>
-                @foreach (['First Semester', 'Second Semester', 'Summer'] as $semester)
+                @foreach ($semesterOptions as $semester)
                     <option value="{{ $semester }}" @selected($activeSemester === $semester)>{{ $semester }}</option>
                 @endforeach
             </select>

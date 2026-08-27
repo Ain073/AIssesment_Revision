@@ -1,6 +1,7 @@
     {{-- Create subject form --}}
     @php
         $subjectRoutePrefix = $subjectRoutePrefix ?? 'department-chair';
+        $semesterOptions = $semesters ?? ['First Semester', 'Second Semester', 'Summer'];
     @endphp
     <div class="modal fade" id="subjectModal" tabindex="-1" aria-labelledby="subjectModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -48,7 +49,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-uppercase small" for="semester">Semester</label>
                             <select class="form-select form-select-lg" id="semester" name="semester" required>
-                                @foreach (['First Semester', 'Second Semester', 'Summer'] as $semester)
+                                @foreach ($semesterOptions as $semester)
                                     <option value="{{ $semester }}" @selected(old('semester', 'First Semester') === $semester)>{{ $semester }}</option>
                                 @endforeach
                             </select>

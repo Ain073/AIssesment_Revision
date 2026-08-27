@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\DepartmentChair;
 
-use App\Models\AcademicSetting;
 use App\Models\Program;
+use App\Models\Semester;
 use App\Models\Subject;
 use App\Models\SubjectProgram;
 use Illuminate\Http\RedirectResponse;
@@ -38,7 +38,7 @@ class SubjectController extends BaseController
             'subject_code' => ['required', 'string', 'max:255'],
             'subject_name' => ['required', 'string', 'max:255'],
             'year_level' => ['required', Rule::in([1, 2, 3, 4])],
-            'semester' => ['required', Rule::in(AcademicSetting::SEMESTERS)],
+            'semester' => ['required', Rule::in(Semester::names())],
             'is_active' => ['required', 'boolean'],
         ]);
 
@@ -87,17 +87,14 @@ class SubjectController extends BaseController
         abort_unless($this->scopedDepartment($this->currentUser()), 403, 'Department assignment is required before managing subjects.');
 
         $validated = $request->validate([
-            'semester' => ['required', Rule::in(AcademicSetting::SEMESTERS)],
+            'semester' => ['required', Rule::in(Semester::names())],
         ]);
 
-        AcademicSetting::query()->updateOrCreate(
-            ['id' => 1],
-            ['active_semester' => $validated['semester']],
-        );
+        Semester::activate($validated['semester']);
 
         Log::info('Active academic semester changed by department chair.', [
             'actor_id' => Auth::id(),
-            'active_semester' => $validated['semester'],
+            'semester_name' => $validated['semester'],
         ]);
 
         $filters = [
@@ -145,7 +142,7 @@ class SubjectController extends BaseController
             ],
             'subject_name' => ['required', 'string', 'max:255'],
             'year_level' => ['required', Rule::in([1, 2, 3, 4])],
-            'semester' => ['required', Rule::in(AcademicSetting::SEMESTERS)],
+            'semester' => ['required', Rule::in(Semester::names())],
             'is_active' => ['required', 'boolean'],
         ]);
 
@@ -203,7 +200,7 @@ class SubjectController extends BaseController
         $redirectFilters = [
             'program' => $selectedProgram?->public_id ?? $program?->public_id,
             'year_level' => in_array($yearLevel, [1, 2, 3, 4], true) ? $yearLevel : null,
-            'semester' => in_array($semester, AcademicSetting::SEMESTERS, true) ? $semester : null,
+            'semester' => in_array($semester, Semester::names(), true) ? $semester : null,
         ];
 
         try {
@@ -294,7 +291,7 @@ class SubjectController extends BaseController
             $selectedYearLevel = null;
         }
 
-        if (! in_array($selectedSemester, AcademicSetting::SEMESTERS, true)) {
+        if (! in_array($selectedSemester, Semester::names(), true)) {
             $selectedSemester = null;
         }
 
@@ -306,7 +303,8 @@ class SubjectController extends BaseController
             'selectedYearLevel' => $selectedYearLevel,
             'selectedSemester' => $selectedSemester,
             'hasSubjectFilters' => $selectedProgramId || $selectedYearLevel || $selectedSemester,
-            'activeSemester' => AcademicSetting::query()->value('active_semester'),
+            'activeSemester' => Semester::activeName(),
+            'semesters' => Semester::names(),
             'scopedDepartment' => $department,
             'subjectRoutePrefix' => 'department-chair',
         ];

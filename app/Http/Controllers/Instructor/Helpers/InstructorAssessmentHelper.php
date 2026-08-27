@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Instructor\Helpers;
 
-use App\Models\AcademicSetting;
 use App\Models\Assessment;
 use App\Models\ClassAssessment;
 use App\Models\InstructorProfile;
+use App\Models\Semester;
 use App\Models\Subject;
 use App\Models\SubjectProgram;
 use App\Models\User;
@@ -170,7 +170,7 @@ trait InstructorAssessmentHelper
 
     protected function activeSubjectIds(): Collection
     {
-        $activeSemester = AcademicSetting::query()->value('active_semester');
+        $activeSemester = Semester::activeName();
 
         if (! $activeSemester) {
             return collect();
