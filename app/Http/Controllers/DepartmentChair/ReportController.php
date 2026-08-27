@@ -194,7 +194,7 @@ class ReportController extends BaseController
         $passingScore = $maxScore > 0 ? $maxScore * 0.75 : 0;
 
         return [
-            'students_count' => $classAssessment->class?->students?->count() ?? 0,
+            'students_count' => $classAssessment->class?->enrolledStudentsCount() ?? 0,
             'takers_count' => $studentScores->count(),
             'item_count' => $items->count(),
             'highest_score' => $studentScores->isNotEmpty() ? $this->formatNumber((float) $studentScores->max()) : '0',

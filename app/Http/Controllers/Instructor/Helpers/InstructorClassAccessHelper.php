@@ -95,9 +95,7 @@ trait InstructorClassAccessHelper
             ->get()
             ->keyBy('student_number');
 
-        $enrolledIds = $class->students()
-            ->pluck('student_profiles.student_profile_id')
-            ->all();
+        $enrolledIds = $class->enrolledStudentIds();
 
         $rows = [];
         $readyStudentProfileIds = [];

@@ -120,7 +120,7 @@ trait InstructorReportHelper
         $passingScore = $maxScore > 0 ? $maxScore * 0.75 : 0;
 
         return [
-            'students_count' => $classAssessment->class?->students?->count() ?? 0,
+            'students_count' => $classAssessment->class?->enrolledStudentsCount() ?? 0,
             'takers_count' => $studentScores->count(),
             'item_count' => $items->count(),
             'highest_score' => $studentScores->isNotEmpty() ? $this->formatReportNumber((float) $studentScores->max()) : '0',
@@ -165,7 +165,7 @@ trait InstructorReportHelper
             })
             ->values();
 
-        return $class->students->mapWithKeys(function (StudentProfile $student) use ($scoreableAssessments): array {
+        return $class->enrolledStudentsCollection(['user'])->mapWithKeys(function (StudentProfile $student) use ($scoreableAssessments): array {
             if ($scoreableAssessments->isEmpty()) {
                 return [$student->student_profile_id => [
                     'has_results' => false,

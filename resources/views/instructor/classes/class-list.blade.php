@@ -46,7 +46,6 @@
                     <th>Subject</th>
                     <th class="text-center">Students</th>
                     <th class="text-center">Join Code</th>
-                    <th>School Year</th>
                     <th class="text-center">Actions</th>
                 </tr>
             </thead>
@@ -57,7 +56,10 @@
                             <div class="d-flex align-items-center gap-3">
                                 <span class="class-icon"><span class="material-symbols-outlined">school</span></span>
                                 <div>
-                                    <div class="fw-bold" style="color: var(--psu-navy);">{{ $class->class_name }}</div>
+                                    <div class="fw-bold" style="color: var(--psu-navy);">{{ $class->displayName() }}</div>
+                                    @if ($class->year_level)
+                                        <div class="small text-secondary">Year Level {{ $class->year_level }}</div>
+                                    @endif
                                 </div>
                             </div>
                         </td>
@@ -77,7 +79,6 @@
                                 <span class="text-secondary small">Open class to generate</span>
                             @endif
                         </td>
-                        <td>{{ $class->school_year }}</td>
                         <td class="text-center text-nowrap">
                             <div class="d-inline-flex flex-nowrap align-items-center gap-2">
                                 <a class="btn btn-outline-primary btn-sm action-icon-btn d-inline-flex align-items-center justify-content-center" href="{{ route('instructor.classes.show', ['class' => $class, 'tab' => 'students']) }}" title="View class" aria-label="View class">
@@ -106,7 +107,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td class="text-center py-5" colspan="6">
+                        <td class="text-center py-5" colspan="5">
                             <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">school</span></div>
                             <h4 class="h4" style="color: var(--psu-navy);">{{ $activeClassTab === 'archived' ? 'No archived classes yet' : 'No classes yet' }}</h4>
                             @if ($activeClassTab === 'active')

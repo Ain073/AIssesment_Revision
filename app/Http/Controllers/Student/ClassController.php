@@ -48,9 +48,7 @@ class ClassController extends BaseController
             ->where('class_id', $class->class_id)
             ->where('student_profile_id', $studentProfile->student_profile_id)
             ->first();
-        $alreadyEnrolled = $class->students()
-            ->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)
-            ->exists();
+        $alreadyEnrolled = $class->hasStudent($studentProfile);
 
         return view('student.classes.join', $this->sharedData($user, 'classes') + [
             'class' => $class,

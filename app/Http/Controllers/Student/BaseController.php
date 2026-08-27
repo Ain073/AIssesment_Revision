@@ -24,7 +24,7 @@ class BaseController extends Controller
 
     protected function submitClassJoinRequest(Request $request, AcademicClass $class, StudentProfile $studentProfile, User $user, string $source): RedirectResponse|JsonResponse
     {
-        if ($class->students()->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)->exists()) {
+        if ($class->hasStudent($studentProfile)) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'You are already enrolled in that class.']);
             }
@@ -91,14 +91,14 @@ class BaseController extends Controller
     {
         $studentProfile = $user->studentProfile;
         $enrolledClasses = $studentProfile
-            ? $studentProfile->classes()
+            ? $this->classesForStudent($studentProfile)
                 ->with(['subject', 'instructorProfile.user'])
                 ->whereNull('classes.archived_at')
                 ->latest('classes.class_id')
                 ->get()
             : collect();
         $archivedClasses = $studentProfile
-            ? $studentProfile->classes()
+            ? $this->classesForStudent($studentProfile)
                 ->with(['subject', 'instructorProfile.user'])
                 ->whereNotNull('classes.archived_at')
                 ->latest('classes.archived_at')
@@ -123,7 +123,7 @@ class BaseController extends Controller
     {
         $studentProfile = $user->studentProfile;
         $classIds = $studentProfile
-            ? $studentProfile->classes()
+            ? $this->classesForStudent($studentProfile)
                 ->whereNull('classes.archived_at')
                 ->pluck('classes.class_id')
             : collect();
@@ -171,12 +171,22 @@ class BaseController extends Controller
         abort_unless(
             $classAssessment->publish_status === ClassAssessment::STATUS_PUBLISHED
                 && $classAssessment->class
-                && $classAssessment->class->students()
-                    ->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)
-                    ->exists(),
+                && $classAssessment->hasStudent($studentProfile),
             403,
             'You are not allowed to open this assessment.'
         );
+    }
+
+    protected function classesForStudent(StudentProfile $studentProfile)
+    {
+        return AcademicClass::query()
+            ->where(function ($query) use ($studentProfile): void {
+                $query
+                    ->whereHas('classDetails', fn ($detailQuery) => $detailQuery
+                        ->where('student_id', $studentProfile->student_profile_id))
+                    ->orWhereHas('students', fn ($studentQuery) => $studentQuery
+                        ->where('student_profiles.student_profile_id', $studentProfile->student_profile_id));
+            });
     }
 
     protected function startOrResumeSubmission(

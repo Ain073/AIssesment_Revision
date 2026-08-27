@@ -67,7 +67,9 @@ class ClassStudentController extends BaseController
                 ->withInput();
         }
 
-        if ($ownedClass->students()->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)->exists()) {
+        if ($ownedClass->hasStudent($studentProfile)) {
+            $ownedClass->syncClassDetailForStudent($studentProfile);
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'This student is already enrolled in the selected class.',
@@ -83,7 +85,7 @@ class ClassStudentController extends BaseController
                 ->withInput();
         }
 
-        $ownedClass->students()->attach($studentProfile->student_profile_id);
+        $ownedClass->enrollStudent($studentProfile);
         $this->markJoinRequestApproved($ownedClass, $studentProfile, $user->id);
 
         Log::info('Student enrolled into class by instructor.', [
@@ -119,7 +121,7 @@ class ClassStudentController extends BaseController
         $ownedClass = $this->ownedClass($class, $instructorProfile);
         $this->ensureActiveClass($ownedClass);
 
-        if (! $ownedClass->students()->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)->exists()) {
+        if (! $ownedClass->hasStudent($studentProfile)) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'That student is not currently enrolled in this class.',
@@ -134,7 +136,7 @@ class ClassStudentController extends BaseController
                 ->withErrors(['student_file' => 'That student is not currently enrolled in this class.']);
         }
 
-        $ownedClass->students()->detach($studentProfile->student_profile_id);
+        $ownedClass->removeStudent($studentProfile);
 
         Log::warning('Student removed from class by instructor.', [
             'actor_id' => $user->id,
@@ -231,16 +233,25 @@ class ClassStudentController extends BaseController
             ->unique()
             ->values();
 
-        $alreadyEnrolledIds = $ownedClass->students()
-            ->whereIn('student_profiles.student_profile_id', $studentProfileIds)
-            ->pluck('student_profiles.student_profile_id');
+        $alreadyEnrolledIds = collect($ownedClass->enrolledStudentIds())
+            ->intersect($studentProfileIds);
 
         $attachIds = $studentProfileIds
             ->diff($alreadyEnrolledIds)
             ->values();
 
+        $addedStudentProfiles = collect();
+
         if ($attachIds->isNotEmpty()) {
-            $ownedClass->students()->attach($attachIds->all());
+            $addedStudentProfiles = StudentProfile::query()
+                ->with('user')
+                ->whereIn('student_profile_id', $attachIds->all())
+                ->get();
+
+            $addedStudentProfiles->each(
+                fn (StudentProfile $studentProfile) => $ownedClass->enrollStudent($studentProfile)
+            );
+
             ClassJoinRequest::query()
                 ->where('class_id', $ownedClass->class_id)
                 ->whereIn('student_profile_id', $attachIds->all())
@@ -262,10 +273,7 @@ class ClassStudentController extends BaseController
         ]);
 
         if ($attachIds->isNotEmpty()) {
-            $students = StudentProfile::query()
-                ->with('user')
-                ->whereIn('student_profile_id', $attachIds->all())
-                ->get()
+            $students = $addedStudentProfiles
                 ->pluck('user')
                 ->filter();
 
@@ -346,9 +354,7 @@ class ClassStudentController extends BaseController
                 ->withErrors(['join_request' => 'This student account is inactive and cannot be approved yet.']);
         }
 
-        if (! $ownedClass->students()->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)->exists()) {
-            $ownedClass->students()->attach($studentProfile->student_profile_id);
-        }
+        $ownedClass->enrollStudent($studentProfile);
 
         $this->markJoinRequestApproved($ownedClass, $studentProfile, $user->id);
 

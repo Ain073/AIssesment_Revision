@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Student;
 use App\Models\AcademicClass;
 use App\Models\AssessmentItem;
 use App\Models\ClassAssessment;
+use App\Models\StudentProfile;
 use App\Models\Submission;
 use App\Support\AssessmentScoring;
 use Illuminate\Support\Collection;
@@ -17,7 +18,7 @@ class DashboardController extends BaseController
         $user = $this->currentUser();
         $studentProfile = $user->studentProfile;
         $classes = $studentProfile
-            ? $this->activeClasses($studentProfile->student_profile_id)
+            ? $this->activeClasses($studentProfile)
             : collect();
         $classIds = $classes->pluck('class_id');
         $assignedAssessmentsCount = $classIds->isNotEmpty()
@@ -76,9 +77,11 @@ class DashboardController extends BaseController
         ]);
     }
 
-    private function activeClasses(int $studentProfileId): Collection
+    private function activeClasses(StudentProfile $studentProfile): Collection
     {
-        return AcademicClass::query()
+        $studentProfileId = $studentProfile->student_profile_id;
+
+        return $this->classesForStudent($studentProfile)
             ->with([
                 'subject',
                 'instructorProfile.user',
@@ -97,7 +100,6 @@ class DashboardController extends BaseController
                 },
             ])
             ->whereNull('archived_at')
-            ->whereHas('students', fn ($query) => $query->where('student_profiles.student_profile_id', $studentProfileId))
             ->orderBy('class_name')
             ->get();
     }

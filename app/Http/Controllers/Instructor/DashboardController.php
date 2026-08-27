@@ -20,6 +20,7 @@ class DashboardController extends BaseController
                 ->with([
                     'subject',
                     'students',
+                    'classDetails.studentProfile.user',
                     'classAssessments' => fn ($query) => $query
                         ->where(function ($statusQuery): void {
                             $statusQuery->where('publish_status', ClassAssessment::STATUS_CLOSED)
@@ -35,17 +36,26 @@ class DashboardController extends BaseController
                                 ->with('answers.choice'),
                         ]),
                 ])
-                ->withCount('students')
                 ->latest('class_id')
                 ->get()
+                ->each(fn (AcademicClass $class) => $class->applyEnrolledStudentsCount())
             : collect();
         $classIds = $classes->pluck('class_id');
         $classesCount = $classes->count();
         $studentsCount = $classIds->isNotEmpty()
-            ? DB::table('class_students')
+            ? DB::table('class_details')
                 ->whereIn('class_id', $classIds)
-                ->distinct('student_profile_id')
-                ->count('student_profile_id')
+                ->distinct()
+                ->pluck('student_id')
+                ->merge(
+                    DB::table('class_students')
+                        ->whereIn('class_id', $classIds)
+                        ->distinct()
+                        ->pluck('student_profile_id')
+                )
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->count()
             : 0;
         $assessmentsCount = $instructorProfile?->assessments()->count() ?? 0;
 

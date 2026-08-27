@@ -38,11 +38,12 @@ class ClassController extends BaseController
 
         $validated = $request->validate([
             'subject_id' => ['required', 'integer', Rule::in($this->activeSubjectIds()->all())],
-            'class_name' => ['required', 'string', 'max:255'],
-            'school_year' => ['required', 'string', 'max:255'],
+            'year_level' => ['required', 'integer', Rule::in([1, 2, 3, 4])],
+            'section_name' => ['required', 'string', 'max:255'],
         ]);
 
         $class = $instructorProfile->classes()->create($validated + [
+            'class_name' => $this->legacyClassName($validated),
             'join_token' => $this->generateClassJoinToken(),
             'join_code' => $this->generateClassJoinCode(),
         ]);
@@ -52,8 +53,8 @@ class ClassController extends BaseController
             'class_id' => $class->class_id,
             'instructor_profile_id' => $instructorProfile->instructor_profile_id,
             'subject_id' => $class->subject_id,
-            'class_name' => $class->class_name,
-            'school_year' => $class->school_year,
+            'year_level' => $class->year_level,
+            'section_name' => $class->section_name,
         ]);
 
         if ($request->expectsJson()) {
@@ -80,19 +81,21 @@ class ClassController extends BaseController
 
         $validated = $request->validate([
             'subject_id' => ['required', 'integer', Rule::in($allowedSubjectIds)],
-            'class_name' => ['required', 'string', 'max:255'],
-            'school_year' => ['required', 'string', 'max:255'],
+            'year_level' => ['required', 'integer', Rule::in([1, 2, 3, 4])],
+            'section_name' => ['required', 'string', 'max:255'],
         ]);
 
-        $ownedClass->update($validated);
+        $ownedClass->update($validated + [
+            'class_name' => $this->legacyClassName($validated),
+        ]);
 
         Log::info('Class updated by instructor.', [
             'actor_id' => $user->id,
             'class_id' => $ownedClass->class_id,
             'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
             'subject_id' => $ownedClass->subject_id,
-            'class_name' => $ownedClass->class_name,
-            'school_year' => $ownedClass->school_year,
+            'year_level' => $ownedClass->year_level,
+            'section_name' => $ownedClass->section_name,
         ]);
 
         if ($request->expectsJson()) {
@@ -115,6 +118,7 @@ class ClassController extends BaseController
 
         DB::transaction(function () use ($ownedClass) {
             $ownedClass->students()->detach();
+            $ownedClass->classDetails()->delete();
             $ownedClass->joinRequests()->delete();
             $ownedClass->classAssessments()->delete();
             $ownedClass->delete();
@@ -214,7 +218,12 @@ class ClassController extends BaseController
                 ->where('status', ClassJoinRequest::STATUS_PENDING)
                 ->with(['studentProfile.user.roles', 'studentProfile.program.department.college'])
                 ->latest('requested_at'),
-        ])->loadCount('students', 'classAssessments');
+        ])->loadCount('classAssessments');
+
+        $ownedClass->applyEnrolledStudentsCount();
+        $enrolledStudents = $ownedClass->enrolledStudentsCollection(['user.roles', 'program.department.college'])
+            ->sortBy(fn (StudentProfile $student) => strtolower($student->user?->displayName() ?? ''))
+            ->values();
 
         $ownedClass->classAssessments->each(function (ClassAssessment $classAssessment): void {
             $classAssessment->display_status = $classAssessment->publish_status === ClassAssessment::STATUS_CLOSED
@@ -233,12 +242,15 @@ class ClassController extends BaseController
             'pendingJoinRequests' => $ownedClass->joinRequests
                 ->sortByDesc('requested_at')
                 ->values(),
-            'enrolledStudents' => $ownedClass->students
-                ->sortBy(fn (StudentProfile $student) => strtolower($student->user?->displayName() ?? ''))
-                ->values(),
+            'enrolledStudents' => $enrolledStudents,
             'classAssessments' => $ownedClass->classAssessments,
             'studentPerformance' => $this->studentPerformanceByStudent($ownedClass),
             'importPreview' => $this->pullImportPreview($request, $ownedClass),
         ]);
+    }
+
+    private function legacyClassName(array $data): string
+    {
+        return 'Year '.$data['year_level'].' - '.$data['section_name'];
     }
 }

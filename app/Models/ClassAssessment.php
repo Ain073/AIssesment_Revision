@@ -70,6 +70,11 @@ class ClassAssessment extends Model
         return $this->belongsTo(AcademicClass::class, 'class_id', 'class_id');
     }
 
+    public function hasStudent(StudentProfile $studentProfile): bool
+    {
+        return $this->class && $this->class->hasStudent($studentProfile);
+    }
+
     public function submissions(): HasMany
     {
         return $this->hasMany(Submission::class, 'class_assessment_id', 'class_assessment_id');

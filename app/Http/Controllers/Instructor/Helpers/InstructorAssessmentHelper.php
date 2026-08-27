@@ -79,8 +79,7 @@ trait InstructorAssessmentHelper
         ]);
 
         $students = $ownedClasses
-            ->load('students.user')
-            ->pluck('students')
+            ->map(fn ($class) => $class->enrolledStudentsCollection(['user']))
             ->flatten()
             ->pluck('user')
             ->filter();

@@ -214,7 +214,7 @@ class SearchController extends Controller
             return collect();
         }
 
-        $classes = $studentProfile->classes()
+        $classes = $this->classesForStudent($studentProfile)
             ->with('subject')
             ->where(function ($search) use ($query): void {
                 $search->where('class_name', 'like', "%{$query}%")
@@ -233,7 +233,7 @@ class SearchController extends Controller
                 'url' => route('student.classes'),
             ]);
 
-        $classIds = $studentProfile->classes()->pluck('classes.class_id');
+        $classIds = $this->classesForStudent($studentProfile)->pluck('classes.class_id');
         $assessments = ClassAssessment::query()
             ->with(['assessment.subject', 'class'])
             ->whereIn('class_id', $classIds)
@@ -252,5 +252,17 @@ class SearchController extends Controller
             ]);
 
         return $classes->merge($assessments);
+    }
+
+    private function classesForStudent($studentProfile)
+    {
+        return AcademicClass::query()
+            ->where(function ($query) use ($studentProfile): void {
+                $query
+                    ->whereHas('classDetails', fn ($detailQuery) => $detailQuery
+                        ->where('student_id', $studentProfile->student_profile_id))
+                    ->orWhereHas('students', fn ($studentQuery) => $studentQuery
+                        ->where('student_profiles.student_profile_id', $studentProfile->student_profile_id));
+            });
     }
 }

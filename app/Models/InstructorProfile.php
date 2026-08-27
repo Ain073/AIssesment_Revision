@@ -34,6 +34,11 @@ class InstructorProfile extends Model
         return $this->hasMany(AcademicClass::class, 'instructor_id', 'instructor_profile_id');
     }
 
+    public function classDetails(): HasMany
+    {
+        return $this->hasMany(ClassDetail::class, 'instructor_id', 'instructor_profile_id');
+    }
+
     public function assessments(): HasMany
     {
         return $this->hasMany(Assessment::class, 'instructor_id', 'instructor_profile_id');

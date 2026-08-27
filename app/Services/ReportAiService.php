@@ -179,7 +179,7 @@ class ReportAiService
         return [
             'assessment_title' => (string) ($assessment?->title ?? 'Assessment'),
             'subject' => trim(($assessment?->subject?->subject_code ?? '').' '.($assessment?->subject?->subject_name ?? '')),
-            'students_count' => (int) ($classAssessment->class?->students?->count() ?? 0),
+            'students_count' => $classAssessment->class?->enrolledStudentsCount() ?? 0,
             'takers_count' => $scores->count(),
             'items_count' => $items->count(),
             'max_score' => $maxScore,

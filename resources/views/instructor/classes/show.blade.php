@@ -1,6 +1,6 @@
 @extends('layouts.portal')
 
-@section('title', $class->class_name . ' | AIssessment Instructor')
+@section('title', $class->displayName() . ' | AIssessment Instructor')
 @section('header', 'Class Details')
 
 @push('styles')
@@ -192,7 +192,7 @@
                 <span class="material-symbols-outlined align-middle fs-6">arrow_back</span>
                 Back to Classes
             </a>
-            <h1 class="brand-text mt-2 mb-1" style="color: var(--psu-navy);">{{ $class->class_name }}</h1>
+            <h1 class="brand-text mt-2 mb-1" style="color: var(--psu-navy);">{{ $class->displayName() }}</h1>
             <p class="text-secondary mb-0">
                 {{ $class->subject?->subject_code ?? 'No subject' }}{{ $class->subject ? ' - ' . $class->subject->subject_name : '' }}
                 @if ($class->archived_at)
@@ -421,7 +421,7 @@
                         <div class="modal-header">
                             <div>
                                 <h3 class="modal-title h4 mb-1" id="joinRequestsModalLabel">Join Requests</h3>
-                                <p class="small text-white-50 mb-0">{{ $class->class_name }}{{ $class->join_code ? ' - ' . $class->join_code : '' }}</p>
+                                <p class="small text-white-50 mb-0">{{ $class->displayName() }}{{ $class->join_code ? ' - ' . $class->join_code : '' }}</p>
                             </div>
                             <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                         </div>

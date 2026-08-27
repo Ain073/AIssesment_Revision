@@ -18,13 +18,19 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold text-uppercase small" for="class_name">Class Name</label>
-                    <input class="form-control form-control-lg" id="class_name" name="class_name" placeholder="e.g. BSIT 2A" required type="text" value="{{ old('class_name') }}">
-                </div>
-                <div class="mb-0">
-                    <label class="form-label fw-bold text-uppercase small" for="school_year">School Year</label>
-                    <input class="form-control form-control-lg" id="school_year" name="school_year" placeholder="e.g. 2026-2027" required type="text" value="{{ old('school_year') }}">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold text-uppercase small" for="year_level">Year Level</label>
+                        <select class="form-select form-select-lg" id="year_level" name="year_level" required>
+                            @foreach ([1, 2, 3, 4] as $yearLevel)
+                                <option value="{{ $yearLevel }}" @selected((string) old('year_level', '1') === (string) $yearLevel)>Year {{ $yearLevel }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label fw-bold text-uppercase small" for="section_name">Section Name</label>
+                        <input class="form-control form-control-lg" id="section_name" name="section_name" placeholder="e.g. BSIT 3A" required type="text" value="{{ old('section_name') }}">
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">

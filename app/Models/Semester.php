@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
 class Semester extends Model
@@ -39,6 +40,25 @@ class Semester extends Model
             ->value('semester_name');
     }
 
+    public static function activeOrDefault(): self
+    {
+        $semester = self::query()
+            ->where('is_active', true)
+            ->first()
+            ?? self::query()
+                ->orderBy('semester_id')
+                ->first();
+
+        if ($semester) {
+            return $semester;
+        }
+
+        return self::query()->create([
+            'semester_name' => self::SEMESTERS[0],
+            'is_active' => true,
+        ]);
+    }
+
     public static function activate(string $semesterName): self
     {
         return DB::transaction(function () use ($semesterName): self {
@@ -49,5 +69,10 @@ class Semester extends Model
                 ['is_active' => true],
             );
         });
+    }
+
+    public function classDetails(): HasMany
+    {
+        return $this->hasMany(ClassDetail::class, 'semester_id', 'semester_id');
     }
 }

@@ -16,8 +16,10 @@ return new class extends Migration
             $table->foreignId('instructor_id')
                 ->constrained('instructor_profiles', 'instructor_profile_id')
                 ->cascadeOnDelete();
-            $table->string('class_name');
-            $table->string('school_year');
+            $table->unsignedTinyInteger('year_level')->nullable();
+            $table->string('section_name')->nullable();
+            $table->string('class_name')->nullable();
+            $table->string('school_year')->nullable();
             $table->timestamps();
         });
     }

@@ -21,13 +21,19 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-uppercase small" for="edit_class_name_{{ $class->class_id }}">Class Name</label>
-                            <input class="form-control form-control-lg" id="edit_class_name_{{ $class->class_id }}" name="class_name" required type="text" value="{{ $class->class_name }}">
-                        </div>
-                        <div class="mb-0">
-                            <label class="form-label fw-bold text-uppercase small" for="edit_school_year_{{ $class->class_id }}">School Year</label>
-                            <input class="form-control form-control-lg" id="edit_school_year_{{ $class->class_id }}" name="school_year" required type="text" value="{{ $class->school_year }}">
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold text-uppercase small" for="edit_year_level_{{ $class->class_id }}">Year Level</label>
+                                <select class="form-select form-select-lg" id="edit_year_level_{{ $class->class_id }}" name="year_level" required>
+                                    @foreach ([1, 2, 3, 4] as $yearLevel)
+                                        <option value="{{ $yearLevel }}" @selected((int) $class->year_level === $yearLevel)>Year {{ $yearLevel }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-7">
+                                <label class="form-label fw-bold text-uppercase small" for="edit_section_name_{{ $class->class_id }}">Section Name</label>
+                                <input class="form-control form-control-lg" id="edit_section_name_{{ $class->class_id }}" name="section_name" required type="text" value="{{ $class->section_name ?? $class->class_name }}">
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -47,7 +53,7 @@
                         <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p class="fw-bold mb-2" style="color: var(--psu-navy);">{{ $class->class_name }}</p>
+                        <p class="fw-bold mb-2" style="color: var(--psu-navy);">{{ $class->displayName() }}</p>
                         <p class="text-secondary mb-0">This will move the class to archived records. It will no longer appear in active class lists or publishing selections.</p>
                     </div>
                     <div class="modal-footer">
@@ -68,7 +74,7 @@
                         <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p class="fw-bold mb-2" style="color: var(--psu-navy);">{{ $class->class_name }}</p>
+                        <p class="fw-bold mb-2" style="color: var(--psu-navy);">{{ $class->displayName() }}</p>
                         <p class="text-secondary mb-0">This will remove the class record, its enrolled student links, join requests, and class assessment publications.</p>
                     </div>
                     <div class="modal-footer">

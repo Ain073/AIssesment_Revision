@@ -40,6 +40,11 @@ class Subject extends Model
         return $this->hasMany(AcademicClass::class, 'subject_id', 'subject_id');
     }
 
+    public function classDetails(): HasMany
+    {
+        return $this->hasMany(ClassDetail::class, 'subject_id', 'subject_id');
+    }
+
     public function assessments(): HasMany
     {
         return $this->hasMany(Assessment::class, 'subject_id', 'subject_id');

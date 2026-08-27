@@ -17,7 +17,6 @@ trait InstructorClassHelper
         $baseClassesQuery = $instructorProfile
             ? $instructorProfile->classes()
                 ->with('subject')
-                ->withCount('students')
             : null;
         $classes = $baseClassesQuery
             ? (clone $baseClassesQuery)
@@ -28,6 +27,7 @@ trait InstructorClassHelper
                 )
                 ->latest($activeClassTab === 'archived' ? 'archived_at' : 'class_id')
                 ->get()
+                ->each(fn (AcademicClass $class) => $class->applyEnrolledStudentsCount())
             : collect();
         $activeClassesCount = $baseClassesQuery
             ? (clone $baseClassesQuery)->whereNull('archived_at')->count()

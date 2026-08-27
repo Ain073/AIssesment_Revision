@@ -37,6 +37,11 @@ class StudentProfile extends Model
             ->withTimestamps();
     }
 
+    public function classDetails(): HasMany
+    {
+        return $this->hasMany(ClassDetail::class, 'student_id', 'student_profile_id');
+    }
+
     public function classJoinRequests(): HasMany
     {
         return $this->hasMany(ClassJoinRequest::class, 'student_profile_id', 'student_profile_id');

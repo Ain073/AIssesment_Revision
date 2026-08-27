@@ -29,7 +29,6 @@ class AssessmentResultController extends BaseController
             'assessment.subject',
             'assessment.items.choices',
             'class.subject',
-            'class.students.user',
             'submissions' => fn ($query) => $query
                 ->with(['studentProfile.user', 'answers.choice', 'securityEvents'])
                 ->orderBy('attempt_number'),
@@ -39,7 +38,7 @@ class AssessmentResultController extends BaseController
         $maxScore = (float) $items->sum(fn ($item) => (float) $item->points);
         $passingScore = $maxScore * 0.75;
         $submissions = $ownedClassAssessment->submissions;
-        $students = $ownedClassAssessment->class?->students ?? collect();
+        $students = $ownedClassAssessment->class?->enrolledStudentsCollection(['user']) ?? collect();
         $submissionStudents = $submissions
             ->pluck('studentProfile')
             ->filter();
