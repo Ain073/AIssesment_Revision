@@ -130,9 +130,9 @@ class BaseController extends Controller
         $classAssessments = $classIds->isNotEmpty()
             ? ClassAssessment::query()
                 ->with(['assessment.subject', 'assessment.items.choices', 'class.instructorProfile.user'])
-                ->whereIn('class_id', $classIds)
+                ->whereHas('class', fn ($query) => $query->whereIn('classes.class_id', $classIds))
                 ->where('publish_status', ClassAssessment::STATUS_PUBLISHED)
-                ->latest('class_assessment_id')
+                ->latest('publish_assessment_id')
                 ->get()
                 ->map(function (ClassAssessment $classAssessment): ClassAssessment {
                     $classAssessment->student_status = $this->studentAssessmentStatus($classAssessment);
@@ -181,11 +181,8 @@ class BaseController extends Controller
     {
         return AcademicClass::query()
             ->where(function ($query) use ($studentProfile): void {
-                $query
-                    ->whereHas('classDetails', fn ($detailQuery) => $detailQuery
-                        ->where('student_id', $studentProfile->student_profile_id))
-                    ->orWhereHas('students', fn ($studentQuery) => $studentQuery
-                        ->where('student_profiles.student_profile_id', $studentProfile->student_profile_id));
+                $query->whereHas('classDetails', fn ($detailQuery) => $detailQuery
+                    ->where('student_id', $studentProfile->student_profile_id));
             });
     }
 

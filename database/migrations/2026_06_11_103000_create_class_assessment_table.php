@@ -8,14 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('class_assessment', function (Blueprint $table) {
-            $table->id('class_assessment_id');
+        Schema::create('publish_assessment', function (Blueprint $table) {
+            $table->id('publish_assessment_id');
             $table->foreignId('assessment_id')
                 ->constrained('assessments', 'assessment_id')
                 ->cascadeOnDelete();
-            $table->foreignId('class_id')
-                ->constrained('classes', 'class_id')
-                ->cascadeOnDelete();
+            $table->unsignedBigInteger('class_details_id');
             $table->dateTime('available_at')->nullable();
             $table->dateTime('due_at')->nullable();
             $table->string('publish_status', 30)->default('draft');
@@ -27,13 +25,13 @@ return new class extends Migration
             $table->unsignedSmallInteger('warning_limit')->nullable();
             $table->timestamps();
 
-            $table->unique(['assessment_id', 'class_id'], 'class_assessment_unique');
-            $table->index(['class_id', 'publish_status'], 'class_assessment_class_status_index');
+            $table->unique(['assessment_id', 'class_details_id'], 'publish_assessment_unique');
+            $table->index(['class_details_id', 'publish_status'], 'publish_assessment_detail_status_index');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('class_assessment');
+        Schema::dropIfExists('publish_assessment');
     }
 };

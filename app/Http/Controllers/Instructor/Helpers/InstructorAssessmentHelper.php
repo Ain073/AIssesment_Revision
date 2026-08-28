@@ -44,16 +44,26 @@ trait InstructorAssessmentHelper
             ]);
         }
 
+        $missingClassDetail = $ownedClasses
+            ->first(fn ($class) => ! $class->publishContextClassDetail());
+
+        if ($missingClassDetail) {
+            throw ValidationException::withMessages([
+                'class_keys' => 'Add at least one enrolled student to '.$missingClassDetail->displayName().' before publishing an assessment.',
+            ]);
+        }
+
         $publishedAssessmentIds = [];
 
         DB::transaction(function () use ($ownedAssessment, $ownedClasses, $validated, $request, &$publishedAssessmentIds) {
             foreach ($ownedClasses as $class) {
                 $publishedAssessment = $this->copyAssessment($ownedAssessment, Assessment::STATUS_ARCHIVED);
                 $publishedAssessmentIds[] = $publishedAssessment->assessment_id;
+                $classDetail = $class->publishContextClassDetail();
 
                 ClassAssessment::query()->create([
                     'assessment_id' => $publishedAssessment->assessment_id,
-                    'class_id' => $class->class_id,
+                    'class_details_id' => $classDetail->class_details_id,
                     'available_at' => $validated['available_at'] ?? null,
                     'due_at' => $validated['due_at'] ?? null,
                     'publish_status' => ClassAssessment::STATUS_PUBLISHED,

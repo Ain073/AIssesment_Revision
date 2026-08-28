@@ -9,14 +9,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('publish_assessment', function (Blueprint $table) {
-            $table->string('display_mode', 30)->default('all_questions')->after('warning_limit');
+            $table->foreign('class_details_id', 'publish_assessment_class_details_id_foreign')
+                ->references('class_details_id')
+                ->on('class_details')
+                ->cascadeOnDelete();
         });
     }
 
     public function down(): void
     {
         Schema::table('publish_assessment', function (Blueprint $table) {
-            $table->dropColumn('display_mode');
+            $table->dropForeign('publish_assessment_class_details_id_foreign');
         });
     }
 };

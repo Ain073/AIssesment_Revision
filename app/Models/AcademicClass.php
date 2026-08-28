@@ -7,7 +7,7 @@ use App\Models\Subject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
@@ -56,32 +56,29 @@ class AcademicClass extends Model
         return $this->belongsTo(Subject::class, 'subject_id', 'subject_id');
     }
 
-    public function students(): BelongsToMany
+    public function students(): HasManyThrough
     {
-        return $this->belongsToMany(StudentProfile::class, 'class_students', 'class_id', 'student_profile_id')
-            ->withTimestamps();
+        return $this->hasManyThrough(
+            StudentProfile::class,
+            ClassDetail::class,
+            'class_id',
+            'student_profile_id',
+            'class_id',
+            'student_id'
+        );
     }
 
     public function hasStudent(StudentProfile $studentProfile): bool
     {
-        return $this->students()
-            ->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)
-            ->exists()
-            || $this->classDetails()
-                ->where('student_id', $studentProfile->student_profile_id)
-                ->exists();
+        return $this->classDetails()
+            ->where('student_id', $studentProfile->student_profile_id)
+            ->exists();
     }
 
     public function enrolledStudentIds(): array
     {
-        $pivotIds = $this->students()
-            ->pluck('student_profiles.student_profile_id');
-
-        $detailIds = $this->classDetails()
-            ->pluck('student_id');
-
-        return $pivotIds
-            ->merge($detailIds)
+        return $this->classDetails()
+            ->pluck('student_id')
             ->map(fn ($id) => (int) $id)
             ->unique()
             ->values()
@@ -90,25 +87,18 @@ class AcademicClass extends Model
 
     public function enrolledStudentsCollection(array $with = []): Collection
     {
-        $pivotStudents = $this->students()
-            ->with($with)
-            ->get();
         $detailStudentIds = $this->classDetails()
             ->pluck('student_id')
             ->map(fn ($id) => (int) $id)
             ->unique()
             ->values();
-        $detailStudents = $detailStudentIds->isNotEmpty()
+
+        return $detailStudentIds->isNotEmpty()
             ? StudentProfile::query()
                 ->with($with)
                 ->whereIn('student_profile_id', $detailStudentIds)
                 ->get()
             : collect();
-
-        return $pivotStudents
-            ->merge($detailStudents)
-            ->unique('student_profile_id')
-            ->values();
     }
 
     public function enrolledStudentsCount(): int
@@ -126,12 +116,6 @@ class AcademicClass extends Model
     public function enrollStudent(StudentProfile $studentProfile): void
     {
         DB::transaction(function () use ($studentProfile): void {
-            if (! $this->students()
-                ->where('student_profiles.student_profile_id', $studentProfile->student_profile_id)
-                ->exists()) {
-                $this->students()->attach($studentProfile->student_profile_id);
-            }
-
             $this->syncClassDetailForStudent($studentProfile);
         });
     }
@@ -139,8 +123,6 @@ class AcademicClass extends Model
     public function removeStudent(StudentProfile $studentProfile): void
     {
         DB::transaction(function () use ($studentProfile): void {
-            $this->students()->detach($studentProfile->student_profile_id);
-
             $this->classDetails()
                 ->where('student_id', $studentProfile->student_profile_id)
                 ->delete();
@@ -168,6 +150,15 @@ class AcademicClass extends Model
         );
     }
 
+    public function publishContextClassDetail(): ?ClassDetail
+    {
+        return $this->classDetails()
+            ->where('instructor_id', $this->instructor_id)
+            ->where('subject_id', $this->subject_id)
+            ->latest('class_details_id')
+            ->first();
+    }
+
     public function joinRequests(): HasMany
     {
         return $this->hasMany(ClassJoinRequest::class, 'class_id', 'class_id');
@@ -178,8 +169,15 @@ class AcademicClass extends Model
         return $this->hasMany(ClassDetail::class, 'class_id', 'class_id');
     }
 
-    public function classAssessments(): HasMany
+    public function classAssessments(): HasManyThrough
     {
-        return $this->hasMany(ClassAssessment::class, 'class_id', 'class_id');
+        return $this->hasManyThrough(
+            ClassAssessment::class,
+            ClassDetail::class,
+            'class_id',
+            'class_details_id',
+            'class_id',
+            'class_details_id'
+        );
     }
 }

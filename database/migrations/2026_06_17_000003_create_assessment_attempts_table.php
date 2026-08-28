@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('assessment_attempts', function (Blueprint $table) {
             $table->id('assessment_attempt_id');
             $table->foreignId('class_assessment_id')
-                ->constrained('class_assessment', 'class_assessment_id')
+                ->constrained('publish_assessment', 'publish_assessment_id')
                 ->cascadeOnDelete();
             $table->foreignId('student_profile_id')
                 ->constrained('student_profiles', 'student_profile_id')

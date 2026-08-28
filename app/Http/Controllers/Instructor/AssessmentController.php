@@ -31,7 +31,7 @@ class AssessmentController extends BaseController
                     'items',
                     'classAssessments',
                     'classAssessments as submissions_count' => function ($query): void {
-                        $query->join('submissions', 'submissions.class_assessment_id', '=', 'class_assessment.class_assessment_id');
+                        $query->join('submissions', 'submissions.class_assessment_id', '=', 'publish_assessment.publish_assessment_id');
                     },
                 ])
                 ->latest('assessment_id')
@@ -50,7 +50,7 @@ class AssessmentController extends BaseController
                 ->with(['assessment.subject', 'class.subject'])
                 ->withCount(['submissions as submitted_count' => fn ($query) => $query->where('status', Submission::STATUS_SUBMITTED)])
                 ->whereHas('assessment', fn ($query) => $query->where('instructor_id', $instructorProfile->instructor_profile_id))
-                ->latest('class_assessment_id')
+                ->latest('publish_assessment_id')
                 ->get()
                 ->each(function (ClassAssessment $classAssessment) {
                     $classAssessment->display_status = $classAssessment->publish_status === ClassAssessment::STATUS_CLOSED

@@ -34,6 +34,6 @@ class Report extends Model
 
     public function classAssessment(): BelongsTo
     {
-        return $this->belongsTo(ClassAssessment::class, 'class_assessment_id', 'class_assessment_id');
+        return $this->belongsTo(ClassAssessment::class, 'class_assessment_id', 'publish_assessment_id');
     }
 }

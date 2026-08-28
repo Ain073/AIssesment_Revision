@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('reports', function (Blueprint $table) {
             $table->id('report_id');
             $table->foreignId('class_assessment_id')
-                ->constrained('class_assessment', 'class_assessment_id')
+                ->constrained('publish_assessment', 'publish_assessment_id')
                 ->cascadeOnDelete();
             $table->string('report_type', 30);
             $table->text('ai_most_learned_draft')->nullable();

@@ -16,7 +16,7 @@ class PublicIdSeeder extends Seeder
         'subject_program' => 'subject_program_id',
         'classes' => 'class_id',
         'assessments' => 'assessment_id',
-        'class_assessment' => 'class_assessment_id',
+        'publish_assessment' => 'publish_assessment_id',
         'student_profiles' => 'student_profile_id',
         'class_join_requests' => 'class_join_request_id',
         'app_notifications' => 'notification_id',

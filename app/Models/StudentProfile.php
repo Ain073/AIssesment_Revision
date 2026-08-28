@@ -6,8 +6,8 @@ use App\Models\Concerns\UsesPublicId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class StudentProfile extends Model
 {
@@ -31,10 +31,16 @@ class StudentProfile extends Model
         return $this->belongsTo(Program::class, 'program_id', 'program_id');
     }
 
-    public function classes(): BelongsToMany
+    public function classes(): HasManyThrough
     {
-        return $this->belongsToMany(AcademicClass::class, 'class_students', 'student_profile_id', 'class_id')
-            ->withTimestamps();
+        return $this->hasManyThrough(
+            AcademicClass::class,
+            ClassDetail::class,
+            'student_id',
+            'class_id',
+            'student_profile_id',
+            'class_id'
+        );
     }
 
     public function classDetails(): HasMany

@@ -117,7 +117,6 @@ class ClassController extends BaseController
         $className = $ownedClass->class_name;
 
         DB::transaction(function () use ($ownedClass) {
-            $ownedClass->students()->detach();
             $ownedClass->classDetails()->delete();
             $ownedClass->joinRequests()->delete();
             $ownedClass->classAssessments()->delete();
@@ -213,7 +212,7 @@ class ClassController extends BaseController
                         ->where('status', Submission::STATUS_SUBMITTED)
                         ->with('answers.choice'),
                 ])
-                ->latest('class_assessment_id'),
+                ->latest('publish_assessment_id'),
             'joinRequests' => fn ($query) => $query
                 ->where('status', ClassJoinRequest::STATUS_PENDING)
                 ->with(['studentProfile.user.roles', 'studentProfile.program.department.college'])

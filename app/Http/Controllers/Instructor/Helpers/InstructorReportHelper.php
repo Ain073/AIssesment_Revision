@@ -231,7 +231,7 @@ trait InstructorReportHelper
             })
             ->orderBy('assessment_id')
             ->orderBy('due_at')
-            ->orderBy('class_assessment_id')
+            ->orderBy('publish_assessment_id')
             ->get();
     }
 }

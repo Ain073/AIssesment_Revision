@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class ClassAssessment extends Model
 {
@@ -23,13 +24,13 @@ class ClassAssessment extends Model
 
     public const DISPLAY_ONE_QUESTION = 'one_question';
 
-    protected $table = 'class_assessment';
+    protected $table = 'publish_assessment';
 
-    protected $primaryKey = 'class_assessment_id';
+    protected $primaryKey = 'publish_assessment_id';
 
     protected $fillable = [
         'assessment_id',
-        'class_id',
+        'class_details_id',
         'available_at',
         'due_at',
         'publish_status',
@@ -65,9 +66,21 @@ class ClassAssessment extends Model
         return $this->belongsTo(Assessment::class, 'assessment_id', 'assessment_id');
     }
 
-    public function class(): BelongsTo
+    public function classDetail(): BelongsTo
     {
-        return $this->belongsTo(AcademicClass::class, 'class_id', 'class_id');
+        return $this->belongsTo(ClassDetail::class, 'class_details_id', 'class_details_id');
+    }
+
+    public function class(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            AcademicClass::class,
+            ClassDetail::class,
+            'class_details_id',
+            'class_id',
+            'class_details_id',
+            'class_id'
+        );
     }
 
     public function hasStudent(StudentProfile $studentProfile): bool
@@ -77,16 +90,28 @@ class ClassAssessment extends Model
 
     public function submissions(): HasMany
     {
-        return $this->hasMany(Submission::class, 'class_assessment_id', 'class_assessment_id');
+        return $this->hasMany(Submission::class, 'class_assessment_id', 'publish_assessment_id');
     }
 
     public function report(): HasOne
     {
-        return $this->hasOne(Report::class, 'class_assessment_id', 'class_assessment_id');
+        return $this->hasOne(Report::class, 'class_assessment_id', 'publish_assessment_id');
     }
 
     public function reports(): HasMany
     {
-        return $this->hasMany(Report::class, 'class_assessment_id', 'class_assessment_id');
+        return $this->hasMany(Report::class, 'class_assessment_id', 'publish_assessment_id');
+    }
+
+    public function getClassAssessmentIdAttribute(): ?int
+    {
+        $id = $this->getAttribute('publish_assessment_id');
+
+        return $id === null ? null : (int) $id;
+    }
+
+    public function getClassIdAttribute(): ?int
+    {
+        return $this->classDetail?->class_id;
     }
 }

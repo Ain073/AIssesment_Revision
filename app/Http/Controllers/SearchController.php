@@ -192,7 +192,7 @@ class SearchController extends Controller
                         $classQuery->where('class_name', 'like', "%{$query}%");
                     });
             })
-            ->latest('class_assessment_id')
+            ->latest('publish_assessment_id')
             ->limit(2)
             ->get()
             ->toBase()
@@ -236,7 +236,7 @@ class SearchController extends Controller
         $classIds = $this->classesForStudent($studentProfile)->pluck('classes.class_id');
         $assessments = ClassAssessment::query()
             ->with(['assessment.subject', 'class'])
-            ->whereIn('class_id', $classIds)
+            ->whereHas('class', fn ($classQuery) => $classQuery->whereIn('classes.class_id', $classIds))
             ->where('publish_status', ClassAssessment::STATUS_PUBLISHED)
             ->whereHas('assessment', function ($assessmentQuery) use ($query): void {
                 $assessmentQuery->where('title', 'like', "%{$query}%");
@@ -258,11 +258,8 @@ class SearchController extends Controller
     {
         return AcademicClass::query()
             ->where(function ($query) use ($studentProfile): void {
-                $query
-                    ->whereHas('classDetails', fn ($detailQuery) => $detailQuery
-                        ->where('student_id', $studentProfile->student_profile_id))
-                    ->orWhereHas('students', fn ($studentQuery) => $studentQuery
-                        ->where('student_profiles.student_profile_id', $studentProfile->student_profile_id));
+                $query->whereHas('classDetails', fn ($detailQuery) => $detailQuery
+                    ->where('student_id', $studentProfile->student_profile_id));
             });
     }
 }
