@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\DepartmentChair;
 
-use App\Models\ClassAssessment;
+use App\Models\PublishAssessment;
 use App\Models\Department;
 use App\Models\InstructorProfile;
 use App\Models\Report;
@@ -30,12 +30,12 @@ class ReportController extends BaseController
 
         $reports = $this->finalizedReportsForDepartment($department)
             ->when($selectedTeacherId, function (Builder $query, int $instructorProfileId): void {
-                $query->whereHas('classAssessment.assessment', function (Builder $assessmentQuery) use ($instructorProfileId): void {
+                $query->whereHas('publishAssessment.assessment', function (Builder $assessmentQuery) use ($instructorProfileId): void {
                     $assessmentQuery->where('instructor_id', $instructorProfileId);
                 });
             })
             ->when($selectedSubjectId, function (Builder $query, int $subjectId): void {
-                $query->whereHas('classAssessment.assessment', function (Builder $assessmentQuery) use ($subjectId): void {
+                $query->whereHas('publishAssessment.assessment', function (Builder $assessmentQuery) use ($subjectId): void {
                     $assessmentQuery->where('subject_id', $subjectId);
                 });
             })
@@ -55,7 +55,7 @@ class ReportController extends BaseController
         ]);
     }
 
-    public function show(ClassAssessment $classAssessment, string $type): View
+    public function show(PublishAssessment $publishAssessment, string $type): View
     {
         abort_unless(array_key_exists($type, $this->reportTypes()), 404);
 
@@ -64,7 +64,7 @@ class ReportController extends BaseController
 
         abort_unless($department, 403, 'Department Chair account needs an assigned department.');
 
-        $classAssessment->load([
+        $publishAssessment->load([
             'assessment.items.choices',
             'assessment.instructorProfile.user',
             'assessment.instructorProfile.department.college',
@@ -76,22 +76,22 @@ class ReportController extends BaseController
         ]);
 
         abort_unless(
-            $classAssessment->assessment?->instructorProfile?->department_id === $department->department_id,
+            $publishAssessment->assessment?->instructorProfile?->department_id === $department->department_id,
             403,
             'This report is outside your department.'
         );
 
         $report = Report::query()
-            ->where('class_assessment_id', $classAssessment->class_assessment_id)
+            ->where('publish_assessment_id', $publishAssessment->publish_assessment_id)
             ->where('report_type', $type)
             ->where('report_status', Report::STATUS_FINALIZED)
             ->firstOrFail();
         $rows = collect([
             [
-                'classAssessment' => $classAssessment,
-                'assessment' => $classAssessment->assessment,
-                'class' => $classAssessment->class,
-                'analytics' => $this->reportAnalytics($classAssessment),
+                'publishAssessment' => $publishAssessment,
+                'assessment' => $publishAssessment->assessment,
+                'class' => $publishAssessment->class,
+                'analytics' => $this->reportAnalytics($publishAssessment),
                 'report' => $report,
             ],
         ]);
@@ -99,14 +99,14 @@ class ReportController extends BaseController
         return view('department-chair.reports.show', $this->sharedData($user, 'reports') + [
             'department' => $department,
             'report' => $report,
-            'classAssessment' => $classAssessment,
-            'assessment' => $classAssessment->assessment,
-            'class' => $classAssessment->class,
+            'publishAssessment' => $publishAssessment,
+            'assessment' => $publishAssessment->assessment,
+            'class' => $publishAssessment->class,
             'analytics' => $rows->first()['analytics'],
             'reportTypeLabel' => $this->reportTypes()[$type],
             'reportType' => $type,
             'rows' => $rows,
-            'reportMeta' => $this->reportSheetMeta(collect([$classAssessment]), $rows),
+            'reportMeta' => $this->reportSheetMeta(collect([$publishAssessment]), $rows),
         ]);
     }
 
@@ -114,10 +114,10 @@ class ReportController extends BaseController
     {
         $query = Report::query()
             ->with([
-                'classAssessment.assessment.subject',
-                'classAssessment.assessment.instructorProfile.user',
-                'classAssessment.assessment.instructorProfile.department',
-                'classAssessment.class.subject',
+                'publishAssessment.assessment.subject',
+                'publishAssessment.assessment.instructorProfile.user',
+                'publishAssessment.assessment.instructorProfile.department',
+                'publishAssessment.class.subject',
             ])
             ->where('report_status', Report::STATUS_FINALIZED);
 
@@ -125,7 +125,7 @@ class ReportController extends BaseController
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->whereHas('classAssessment.assessment.instructorProfile', function ($profileQuery) use ($department): void {
+        return $query->whereHas('publishAssessment.assessment.instructorProfile', function ($profileQuery) use ($department): void {
             $profileQuery->where('department_id', $department->department_id);
         });
     }
@@ -139,7 +139,7 @@ class ReportController extends BaseController
         return InstructorProfile::query()
             ->with('user')
             ->where('department_id', $department->department_id)
-            ->whereHas('assessments.classAssessments.reports', function (Builder $query): void {
+            ->whereHas('assessments.publishAssessments.reports', function (Builder $query): void {
                 $query->where('report_status', Report::STATUS_FINALIZED);
             })
             ->get()
@@ -159,7 +159,7 @@ class ReportController extends BaseController
                     ->whereHas('instructorProfile', function (Builder $profileQuery) use ($department): void {
                         $profileQuery->where('department_id', $department->department_id);
                     })
-                    ->whereHas('classAssessments.reports', function (Builder $reportQuery): void {
+                    ->whereHas('publishAssessments.reports', function (Builder $reportQuery): void {
                         $reportQuery->where('report_status', Report::STATUS_FINALIZED);
                     });
             })
@@ -176,10 +176,10 @@ class ReportController extends BaseController
         ];
     }
 
-    private function reportAnalytics(ClassAssessment $classAssessment): array
+    private function reportAnalytics(PublishAssessment $publishAssessment): array
     {
-        $items = $classAssessment->assessment?->items ?? collect();
-        $submissions = $classAssessment->submissions
+        $items = $publishAssessment->assessment?->items ?? collect();
+        $submissions = $publishAssessment->submissions
             ->where('status', Submission::STATUS_SUBMITTED)
             ->values();
         $maxScore = (float) $items->sum(fn ($item) => (float) $item->points);
@@ -194,7 +194,7 @@ class ReportController extends BaseController
         $passingScore = $maxScore > 0 ? $maxScore * 0.75 : 0;
 
         return [
-            'students_count' => $classAssessment->class?->enrolledStudentsCount() ?? 0,
+            'students_count' => $publishAssessment->class?->enrolledStudentsCount() ?? 0,
             'takers_count' => $studentScores->count(),
             'item_count' => $items->count(),
             'highest_score' => $studentScores->isNotEmpty() ? $this->formatNumber((float) $studentScores->max()) : '0',
@@ -220,16 +220,16 @@ class ReportController extends BaseController
         return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
     }
 
-    private function reportSheetMeta(Collection $classAssessments, Collection $rows): array
+    private function reportSheetMeta(Collection $publishAssessments, Collection $rows): array
     {
-        $first = $classAssessments->first();
+        $first = $publishAssessments->first();
         $assessment = $first?->assessment;
         $class = $first?->class;
         $subject = $assessment?->subject ?: $class?->subject;
         $instructorProfile = $class?->instructorProfile ?: $assessment?->instructorProfile;
         $department = $instructorProfile?->department;
         $college = $department?->college;
-        $schoolYears = $classAssessments
+        $schoolYears = $publishAssessments
             ->pluck('class.school_year')
             ->filter()
             ->unique()

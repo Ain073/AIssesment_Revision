@@ -21,7 +21,7 @@ class Report extends Model
     protected $primaryKey = 'report_id';
 
     protected $fillable = [
-        'class_assessment_id',
+        'publish_assessment_id',
         'report_type',
         'course_code_title',
         'concept_most_learned_skills',
@@ -32,8 +32,8 @@ class Report extends Model
         'report_status',
     ];
 
-    public function classAssessment(): BelongsTo
+    public function publishAssessment(): BelongsTo
     {
-        return $this->belongsTo(ClassAssessment::class, 'class_assessment_id', 'publish_assessment_id');
+        return $this->belongsTo(PublishAssessment::class, 'publish_assessment_id', 'publish_assessment_id');
     }
 }

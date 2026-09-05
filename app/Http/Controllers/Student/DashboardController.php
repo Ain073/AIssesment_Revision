@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Models\AcademicClass;
 use App\Models\AssessmentItem;
-use App\Models\ClassAssessment;
+use App\Models\PublishAssessment;
 use App\Models\StudentProfile;
 use App\Models\Submission;
 use App\Support\AssessmentScoring;
@@ -22,18 +22,18 @@ class DashboardController extends BaseController
             : collect();
         $classIds = $classes->pluck('class_id');
         $assignedAssessmentsCount = $classIds->isNotEmpty()
-            ? ClassAssessment::query()
+            ? PublishAssessment::query()
                 ->whereHas('class', fn ($query) => $query->whereIn('classes.class_id', $classIds))
-                ->where('publish_status', ClassAssessment::STATUS_PUBLISHED)
+                ->where('publish_status', PublishAssessment::STATUS_PUBLISHED)
                 ->count()
             : 0;
         $releasedResultsCount = $studentProfile
             ? Submission::query()
                 ->where('student_profile_id', $studentProfile->student_profile_id)
                 ->where('status', Submission::STATUS_SUBMITTED)
-                ->whereHas('classAssessment', fn ($query) => $query->where('score_visibility', true))
+                ->whereHas('publishAssessment', fn ($query) => $query->where('score_visibility', true))
                 ->distinct()
-                ->count('class_assessment_id')
+                ->count('publish_assessment_id')
             : 0;
 
         return view('student.dashboard.index', $this->sharedData($user, 'dashboard') + [
@@ -85,9 +85,9 @@ class DashboardController extends BaseController
             ->with([
                 'subject',
                 'instructorProfile.user',
-                'classAssessments' => function ($query) use ($studentProfileId): void {
+                'publishAssessments' => function ($query) use ($studentProfileId): void {
                     $query
-                        ->where('publish_status', ClassAssessment::STATUS_PUBLISHED)
+                        ->where('publish_status', PublishAssessment::STATUS_PUBLISHED)
                         ->with([
                             'assessment.items.choices',
                             'submissions' => function ($submissionQuery) use ($studentProfileId): void {
@@ -99,17 +99,18 @@ class DashboardController extends BaseController
                         ]);
                 },
             ])
-            ->whereNull('archived_at')
-            ->orderBy('class_name')
+            ->whereNull('classes.archived_at')
+            ->orderBy('classes.year_level')
+            ->orderBy('classes.section_name')
             ->get();
     }
 
     private function classPerformance(Collection $classes): Collection
     {
         return $classes->map(function (AcademicClass $class): array {
-            $releasedResults = $class->classAssessments
+            $releasedResults = $class->publishAssessments
                 ->where('score_visibility', true)
-                ->map(fn (ClassAssessment $classAssessment) => $this->bestResult($classAssessment))
+                ->map(fn (PublishAssessment $publishAssessment) => $this->bestResult($publishAssessment))
                 ->filter();
             $average = $releasedResults->isNotEmpty()
                 ? round((float) $releasedResults->avg('percentage'), 1)
@@ -119,7 +120,7 @@ class DashboardController extends BaseController
                 'class' => $class,
                 'subject' => $class->subject,
                 'instructor' => $class->instructorProfile?->user,
-                'assigned_count' => $class->classAssessments->count(),
+                'assigned_count' => $class->publishAssessments->count(),
                 'released_count' => $releasedResults->count(),
                 'passed_count' => $releasedResults->where('passed', true)->count(),
                 'failed_count' => $releasedResults->where('passed', false)->count(),
@@ -128,13 +129,13 @@ class DashboardController extends BaseController
         });
     }
 
-    private function bestResult(ClassAssessment $classAssessment): ?array
+    private function bestResult(PublishAssessment $publishAssessment): ?array
     {
-        $assessment = $classAssessment->assessment;
+        $assessment = $publishAssessment->assessment;
         $items = $assessment?->items ?? collect();
         $maxScore = (float) $items->sum(fn (AssessmentItem $item) => (float) $item->points);
         $passingScore = $maxScore * 0.75;
-        $submittedAttempts = $classAssessment->submissions
+        $submittedAttempts = $publishAssessment->submissions
             ->where('status', Submission::STATUS_SUBMITTED);
 
         if ($submittedAttempts->isEmpty()) {

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AcademicClass;
 use App\Models\Assessment;
-use App\Models\ClassAssessment;
+use App\Models\PublishAssessment;
 use App\Models\ClassDetail;
 use App\Models\Program;
 use App\Models\Subject;
@@ -130,11 +130,12 @@ class SearchController extends Controller
         }
 
         $classes = AcademicClass::query()
-            ->with('subject')
-            ->where('instructor_id', $instructorProfile->instructor_profile_id)
+            ->with(['contextDetail', 'subject'])
+            ->whereHas('contextDetail', fn ($detailQuery) => $detailQuery
+                ->where('instructor_id', $instructorProfile->instructor_profile_id))
             ->where(function ($search) use ($query): void {
-                $search->where('class_name', 'like', "%{$query}%")
-                    ->orWhere('school_year', 'like', "%{$query}%")
+                $search->where('section_name', 'like', "%{$query}%")
+                    ->orWhere('join_code', 'like', "%{$query}%")
                     ->orWhereHas('subject', function ($subjectQuery) use ($query): void {
                         $subjectQuery->where('subject_code', 'like', "%{$query}%")
                             ->orWhere('subject_name', 'like', "%{$query}%");
@@ -173,11 +174,12 @@ class SearchController extends Controller
                 'url' => route('instructor.assessments.show', $assessment),
             ]);
 
-        $completed = ClassAssessment::query()
+        $completed = PublishAssessment::query()
             ->with(['assessment.subject', 'class'])
-            ->whereHas('class', fn ($classQuery) => $classQuery->where('instructor_id', $instructorProfile->instructor_profile_id))
+            ->whereHas('class.contextDetail', fn ($detailQuery) => $detailQuery
+                ->where('instructor_id', $instructorProfile->instructor_profile_id))
             ->where(function ($statusQuery): void {
-                $statusQuery->where('publish_status', ClassAssessment::STATUS_CLOSED)
+                $statusQuery->where('publish_status', PublishAssessment::STATUS_CLOSED)
                     ->orWhere(function ($dueQuery): void {
                         $dueQuery->whereNotNull('due_at')
                             ->where('due_at', '<=', now());
@@ -188,18 +190,19 @@ class SearchController extends Controller
                     $assessmentQuery->where('title', 'like', "%{$query}%");
                 })
                     ->orWhereHas('class', function ($classQuery) use ($query): void {
-                        $classQuery->where('class_name', 'like', "%{$query}%");
+                        $classQuery->where('section_name', 'like', "%{$query}%")
+                            ->orWhere('join_code', 'like', "%{$query}%");
                     });
             })
             ->latest('publish_assessment_id')
             ->limit(2)
             ->get()
             ->toBase()
-            ->map(fn (ClassAssessment $classAssessment): array => [
-                'title' => $classAssessment->assessment?->title ?? 'Assessment Results',
-                'subtitle' => 'Results - '.($classAssessment->class?->class_name ?? 'Class'),
+            ->map(fn (PublishAssessment $publishAssessment): array => [
+                'title' => $publishAssessment->assessment?->title ?? 'Assessment Results',
+                'subtitle' => 'Results - '.($publishAssessment->class?->class_name ?? 'Class'),
                 'type' => 'Result',
-                'url' => route('instructor.assessments.results', $classAssessment),
+                'url' => route('instructor.assessments.results', $publishAssessment),
             ]);
 
         return $classes->merge($assessments)->merge($completed);
@@ -216,7 +219,8 @@ class SearchController extends Controller
         $classes = $this->classesForStudent($studentProfile)
             ->with('subject')
             ->where(function ($search) use ($query): void {
-                $search->where('class_name', 'like', "%{$query}%")
+                $search->where('section_name', 'like', "%{$query}%")
+                    ->orWhere('join_code', 'like', "%{$query}%")
                     ->orWhereHas('subject', function ($subjectQuery) use ($query): void {
                         $subjectQuery->where('subject_code', 'like', "%{$query}%")
                             ->orWhere('subject_name', 'like', "%{$query}%");
@@ -233,21 +237,21 @@ class SearchController extends Controller
             ]);
 
         $classIds = $this->classesForStudent($studentProfile)->pluck('classes.class_id');
-        $assessments = ClassAssessment::query()
+        $assessments = PublishAssessment::query()
             ->with(['assessment.subject', 'class'])
             ->whereHas('class', fn ($classQuery) => $classQuery->whereIn('classes.class_id', $classIds))
-            ->where('publish_status', ClassAssessment::STATUS_PUBLISHED)
+            ->where('publish_status', PublishAssessment::STATUS_PUBLISHED)
             ->whereHas('assessment', function ($assessmentQuery) use ($query): void {
                 $assessmentQuery->where('title', 'like', "%{$query}%");
             })
             ->limit(5)
             ->get()
             ->toBase()
-            ->map(fn (ClassAssessment $classAssessment): array => [
-                'title' => $classAssessment->assessment?->title ?? 'Assessment',
-                'subtitle' => 'Assessment - '.($classAssessment->class?->class_name ?? 'Class'),
+            ->map(fn (PublishAssessment $publishAssessment): array => [
+                'title' => $publishAssessment->assessment?->title ?? 'Assessment',
+                'subtitle' => 'Assessment - '.($publishAssessment->class?->class_name ?? 'Class'),
                 'type' => 'Assessment',
-                'url' => route('student.assessments.take', $classAssessment),
+                'url' => route('student.assessments.take', $publishAssessment),
             ]);
 
         return $classes->merge($assessments);

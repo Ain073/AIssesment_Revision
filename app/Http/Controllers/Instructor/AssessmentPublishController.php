@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Instructor;
 
 use App\Models\Assessment;
-use App\Models\ClassAssessment;
+use App\Models\PublishAssessment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -27,9 +27,10 @@ class AssessmentPublishController extends BaseController
             : collect();
         $classes = $instructorProfile
             ? $instructorProfile->classes()
-                ->with('subject')
-                ->whereNull('archived_at')
-                ->orderBy('class_name')
+                ->with(['contextDetail', 'subject'])
+                ->whereNull('classes.archived_at')
+                ->orderBy('classes.year_level')
+                ->orderBy('classes.section_name')
                 ->get()
             : collect();
 
@@ -75,8 +76,8 @@ class AssessmentPublishController extends BaseController
             'attempt_limit' => ['required', 'integer', 'min:1', 'max:10'],
             'warning_limit' => ['nullable', 'integer', 'min:0', 'max:20'],
             'display_mode' => ['required', 'string', Rule::in([
-                ClassAssessment::DISPLAY_ALL_QUESTIONS,
-                ClassAssessment::DISPLAY_ONE_QUESTION,
+                PublishAssessment::DISPLAY_ALL_QUESTIONS,
+                PublishAssessment::DISPLAY_ONE_QUESTION,
             ])],
             'score_visibility' => ['nullable', 'boolean'],
             'answer_visibility' => ['nullable', 'boolean'],
@@ -113,8 +114,8 @@ class AssessmentPublishController extends BaseController
             'attempt_limit' => ['required', 'integer', 'min:1', 'max:10'],
             'warning_limit' => ['nullable', 'integer', 'min:0', 'max:20'],
             'display_mode' => ['required', 'string', Rule::in([
-                ClassAssessment::DISPLAY_ALL_QUESTIONS,
-                ClassAssessment::DISPLAY_ONE_QUESTION,
+                PublishAssessment::DISPLAY_ALL_QUESTIONS,
+                PublishAssessment::DISPLAY_ONE_QUESTION,
             ])],
             'score_visibility' => ['nullable', 'boolean'],
             'answer_visibility' => ['nullable', 'boolean'],

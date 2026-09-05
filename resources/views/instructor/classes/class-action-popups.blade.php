@@ -75,7 +75,7 @@
                     </div>
                     <div class="modal-body">
                         <p class="fw-bold mb-2" style="color: var(--psu-navy);">{{ $class->displayName() }}</p>
-                        <p class="text-secondary mb-0">This will remove the class record, its enrolled student links, join requests, and class assessment publications.</p>
+                        <p class="text-secondary mb-0">This will remove the class record, its enrolled student links, join requests, and published assessment publications.</p>
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>

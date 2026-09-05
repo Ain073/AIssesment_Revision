@@ -247,9 +247,9 @@
                         <tbody>
                             @foreach ($group['items'] as $report)
                                 @php
-                                    $classAssessment = $report->classAssessment;
-                                    $assessment = $classAssessment?->assessment;
-                                    $class = $classAssessment?->class;
+                                    $publishAssessment = $report->publishAssessment;
+                                    $assessment = $publishAssessment?->assessment;
+                                    $class = $publishAssessment?->class;
                                     $instructor = $assessment?->instructorProfile?->user;
                                 @endphp
                                 <tr>
@@ -265,7 +265,7 @@
                                     <td>{{ $report->updated_at?->format('M d, Y h:i A') }}</td>
                                     <td><span class="report-badge">Finalized</span></td>
                                     <td class="text-end">
-                                        <a class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" href="{{ route('department-chair.reports.show', [$classAssessment, $report->report_type]) }}">
+                                        <a class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" href="{{ route('department-chair.reports.show', [$publishAssessment, $report->report_type]) }}">
                                             <span class="material-symbols-outlined fs-6">visibility</span>
                                             View
                                         </a>

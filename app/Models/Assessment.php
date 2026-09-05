@@ -48,8 +48,8 @@ class Assessment extends Model
             ->orderBy('sort_order');
     }
 
-    public function classAssessments(): HasMany
+    public function publishAssessments(): HasMany
     {
-        return $this->hasMany(ClassAssessment::class, 'assessment_id', 'assessment_id');
+        return $this->hasMany(PublishAssessment::class, 'assessment_id', 'assessment_id');
     }
 }

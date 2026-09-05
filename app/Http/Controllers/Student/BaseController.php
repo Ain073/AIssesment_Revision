@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Student\Helpers\StudentLayoutHelper;
 use App\Models\AcademicClass;
-use App\Models\ClassAssessment;
+use App\Models\PublishAssessment;
 use App\Models\ClassDetail;
 use App\Models\StudentProfile;
 use App\Models\Submission;
@@ -131,33 +131,33 @@ class BaseController extends Controller
                 ->whereNull('classes.archived_at')
                 ->pluck('classes.class_id')
             : collect();
-        $classAssessments = $classIds->isNotEmpty()
-            ? ClassAssessment::query()
+        $publishAssessments = $classIds->isNotEmpty()
+            ? PublishAssessment::query()
                 ->with(['assessment.subject', 'assessment.items.choices', 'class.instructorProfile.user'])
                 ->whereHas('class', fn ($query) => $query->whereIn('classes.class_id', $classIds))
-                ->where('publish_status', ClassAssessment::STATUS_PUBLISHED)
+                ->where('publish_status', PublishAssessment::STATUS_PUBLISHED)
                 ->latest('publish_assessment_id')
                 ->get()
-                ->map(function (ClassAssessment $classAssessment): ClassAssessment {
-                    $classAssessment->student_status = $this->studentAssessmentStatus($classAssessment);
+                ->map(function (PublishAssessment $publishAssessment): PublishAssessment {
+                    $publishAssessment->student_status = $this->studentAssessmentStatus($publishAssessment);
 
-                    return $classAssessment;
+                    return $publishAssessment;
                 })
-                ->reject(fn (ClassAssessment $classAssessment): bool => $classAssessment->student_status === 'completed')
+                ->reject(fn (PublishAssessment $publishAssessment): bool => $publishAssessment->student_status === 'completed')
                 ->values()
             : collect();
 
         return [
             'studentProfile' => $studentProfile,
-            'classAssessments' => $classAssessments,
+            'publishAssessments' => $publishAssessments,
         ];
     }
 
-    protected function prepareAccessibleAssessment(ClassAssessment $classAssessment, StudentProfile $studentProfile): ?RedirectResponse
+    protected function prepareAccessibleAssessment(PublishAssessment $publishAssessment, StudentProfile $studentProfile): ?RedirectResponse
     {
-        $this->ensurePublishedAssessmentEnrollment($classAssessment, $studentProfile);
+        $this->ensurePublishedAssessmentEnrollment($publishAssessment, $studentProfile);
 
-        if ($this->studentAssessmentStatus($classAssessment) !== 'available') {
+        if ($this->studentAssessmentStatus($publishAssessment) !== 'available') {
             return redirect()
                 ->route('student.assessments')
                 ->withErrors(['assessment' => 'This assessment is not available to take right now.']);
@@ -167,15 +167,15 @@ class BaseController extends Controller
     }
 
     protected function ensurePublishedAssessmentEnrollment(
-        ClassAssessment $classAssessment,
+        PublishAssessment $publishAssessment,
         StudentProfile $studentProfile
     ): void {
-        $classAssessment->load(['assessment.subject', 'assessment.items.choices', 'class.instructorProfile.user']);
+        $publishAssessment->load(['assessment.subject', 'assessment.items.choices', 'class.instructorProfile.user']);
 
         abort_unless(
-            $classAssessment->publish_status === ClassAssessment::STATUS_PUBLISHED
-                && $classAssessment->class
-                && $classAssessment->hasStudent($studentProfile),
+            $publishAssessment->publish_status === PublishAssessment::STATUS_PUBLISHED
+                && $publishAssessment->class
+                && $publishAssessment->hasStudent($studentProfile),
             403,
             'You are not allowed to open this assessment.'
         );
@@ -192,17 +192,17 @@ class BaseController extends Controller
     }
 
     protected function startOrResumeSubmission(
-        ClassAssessment $classAssessment,
+        PublishAssessment $publishAssessment,
         StudentProfile $studentProfile
     ): Submission|RedirectResponse {
-        return DB::transaction(function () use ($classAssessment, $studentProfile): Submission|RedirectResponse {
-            ClassAssessment::query()
-                ->whereKey($classAssessment->class_assessment_id)
+        return DB::transaction(function () use ($publishAssessment, $studentProfile): Submission|RedirectResponse {
+            PublishAssessment::query()
+                ->whereKey($publishAssessment->publish_assessment_id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
             $activeSubmission = Submission::query()
-                ->where('class_assessment_id', $classAssessment->class_assessment_id)
+                ->where('publish_assessment_id', $publishAssessment->publish_assessment_id)
                 ->where('student_profile_id', $studentProfile->student_profile_id)
                 ->where('status', Submission::STATUS_IN_PROGRESS)
                 ->latest('attempt_number')
@@ -214,8 +214,8 @@ class BaseController extends Controller
                 return $activeSubmission;
             }
 
-            $attemptLimit = max((int) $classAssessment->attempt_limit, 1);
-            $attemptsUsed = $this->submittedSubmissionCount($classAssessment, $studentProfile);
+            $attemptLimit = max((int) $publishAssessment->attempt_limit, 1);
+            $attemptsUsed = $this->submittedSubmissionCount($publishAssessment, $studentProfile);
 
             if ($attemptsUsed >= $attemptLimit) {
                 return redirect()
@@ -224,12 +224,12 @@ class BaseController extends Controller
             }
 
             $attemptNumber = ((int) Submission::query()
-                ->where('class_assessment_id', $classAssessment->class_assessment_id)
+                ->where('publish_assessment_id', $publishAssessment->publish_assessment_id)
                 ->where('student_profile_id', $studentProfile->student_profile_id)
                 ->max('attempt_number')) + 1;
 
             return Submission::query()->create([
-                'class_assessment_id' => $classAssessment->class_assessment_id,
+                'publish_assessment_id' => $publishAssessment->publish_assessment_id,
                 'student_profile_id' => $studentProfile->student_profile_id,
                 'attempt_number' => $attemptNumber,
                 'status' => Submission::STATUS_IN_PROGRESS,
@@ -240,52 +240,52 @@ class BaseController extends Controller
         });
     }
 
-    protected function securityEventEnabled(ClassAssessment $classAssessment, string $eventType): bool
+    protected function securityEventEnabled(PublishAssessment $publishAssessment, string $eventType): bool
     {
         return match ($eventType) {
             SubmissionSecurityEvent::TYPE_COPY,
             SubmissionSecurityEvent::TYPE_CUT,
             SubmissionSecurityEvent::TYPE_PASTE,
-            SubmissionSecurityEvent::TYPE_CONTEXT_MENU => (bool) $classAssessment->prevent_copy_paste,
+            SubmissionSecurityEvent::TYPE_CONTEXT_MENU => (bool) $publishAssessment->prevent_copy_paste,
             SubmissionSecurityEvent::TYPE_TAB_HIDDEN,
             SubmissionSecurityEvent::TYPE_WINDOW_BLUR,
-            SubmissionSecurityEvent::TYPE_FLOATING_WINDOW => (bool) $classAssessment->detect_tab_switch,
+            SubmissionSecurityEvent::TYPE_FLOATING_WINDOW => (bool) $publishAssessment->detect_tab_switch,
             SubmissionSecurityEvent::TYPE_PRINT_SHORTCUT,
-            SubmissionSecurityEvent::TYPE_SCREENSHOT_SHORTCUT => (bool) $classAssessment->screenshot_protection,
+            SubmissionSecurityEvent::TYPE_SCREENSHOT_SHORTCUT => (bool) $publishAssessment->screenshot_protection,
             default => false,
         };
     }
 
-    protected function warningLimit(ClassAssessment $classAssessment): int
+    protected function warningLimit(PublishAssessment $publishAssessment): int
     {
-        return max((int) ($classAssessment->warning_limit ?? 3), 0);
+        return max((int) ($publishAssessment->warning_limit ?? 3), 0);
     }
 
-    protected function studentAssessmentStatus(ClassAssessment $classAssessment): string
+    protected function studentAssessmentStatus(PublishAssessment $publishAssessment): string
     {
         $now = now();
 
-        if ($classAssessment->due_at && $classAssessment->due_at->copy()->endOfMinute()->lt($now)) {
+        if ($publishAssessment->due_at && $publishAssessment->due_at->copy()->endOfMinute()->lt($now)) {
             return 'completed';
         }
 
         $studentProfile = $this->currentUser()->studentProfile;
 
-        if ($studentProfile && $this->submittedSubmissionCount($classAssessment, $studentProfile) >= max((int) $classAssessment->attempt_limit, 1)) {
+        if ($studentProfile && $this->submittedSubmissionCount($publishAssessment, $studentProfile) >= max((int) $publishAssessment->attempt_limit, 1)) {
             return 'completed';
         }
 
-        if ($classAssessment->available_at && $classAssessment->available_at->copy()->startOfMinute()->gt($now)) {
+        if ($publishAssessment->available_at && $publishAssessment->available_at->copy()->startOfMinute()->gt($now)) {
             return 'pending';
         }
 
         return 'available';
     }
 
-    protected function submittedSubmissionCount(ClassAssessment $classAssessment, StudentProfile $studentProfile): int
+    protected function submittedSubmissionCount(PublishAssessment $publishAssessment, StudentProfile $studentProfile): int
     {
         return Submission::query()
-            ->where('class_assessment_id', $classAssessment->class_assessment_id)
+            ->where('publish_assessment_id', $publishAssessment->publish_assessment_id)
             ->where('student_profile_id', $studentProfile->student_profile_id)
             ->where('status', Submission::STATUS_SUBMITTED)
             ->count();

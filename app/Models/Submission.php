@@ -22,7 +22,7 @@ class Submission extends Model
     protected $primaryKey = 'submission_id';
 
     protected $fillable = [
-        'class_assessment_id',
+        'publish_assessment_id',
         'student_profile_id',
         'attempt_number',
         'status',
@@ -42,9 +42,9 @@ class Submission extends Model
         ];
     }
 
-    public function classAssessment(): BelongsTo
+    public function publishAssessment(): BelongsTo
     {
-        return $this->belongsTo(ClassAssessment::class, 'class_assessment_id', 'publish_assessment_id');
+        return $this->belongsTo(PublishAssessment::class, 'publish_assessment_id', 'publish_assessment_id');
     }
 
     public function studentProfile(): BelongsTo

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Instructor;
 
 use App\Models\Assessment;
 use App\Models\AssessmentItem;
-use App\Models\ClassAssessment;
+use App\Models\PublishAssessment;
 use App\Models\Submission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -25,13 +25,13 @@ class AssessmentController extends BaseController
         $activeAssessmentTab = $request->query('tab') === 'published' ? 'published' : 'draft';
         $assessments = $instructorProfile
             ? $instructorProfile->assessments()
-                ->with(['subject', 'items.choices', 'classAssessments.class'])
+                ->with(['subject', 'items.choices', 'publishAssessments.class'])
                 ->where('status', '!=', Assessment::STATUS_ARCHIVED)
                 ->withCount([
                     'items',
-                    'classAssessments',
-                    'classAssessments as submissions_count' => function ($query): void {
-                        $query->join('submissions', 'submissions.class_assessment_id', '=', 'publish_assessment.publish_assessment_id');
+                    'publishAssessments',
+                    'publishAssessments as submissions_count' => function ($query): void {
+                        $query->join('submissions', 'submissions.publish_assessment_id', '=', 'publish_assessment.publish_assessment_id');
                     },
                 ])
                 ->latest('assessment_id')
@@ -39,22 +39,23 @@ class AssessmentController extends BaseController
             : collect();
         $classesBySubject = $instructorProfile
             ? $instructorProfile->classes()
-                ->with('subject')
-                ->whereNull('archived_at')
-                ->orderBy('class_name')
+                ->with(['contextDetail', 'subject'])
+                ->whereNull('classes.archived_at')
+                ->orderBy('classes.year_level')
+                ->orderBy('classes.section_name')
                 ->get()
                 ->groupBy('subject_id')
             : collect();
         $publishedAssessments = $instructorProfile
-            ? ClassAssessment::query()
+            ? PublishAssessment::query()
                 ->with(['assessment.subject', 'class.subject'])
                 ->withCount(['submissions as submitted_count' => fn ($query) => $query->where('status', Submission::STATUS_SUBMITTED)])
                 ->whereHas('assessment', fn ($query) => $query->where('instructor_id', $instructorProfile->instructor_profile_id))
                 ->latest('publish_assessment_id')
                 ->get()
-                ->each(function (ClassAssessment $classAssessment) {
-                    $classAssessment->display_status = $classAssessment->publish_status === ClassAssessment::STATUS_CLOSED
-                        || ($classAssessment->due_at && $classAssessment->due_at->isPast())
+                ->each(function (PublishAssessment $publishAssessment) {
+                    $publishAssessment->display_status = $publishAssessment->publish_status === PublishAssessment::STATUS_CLOSED
+                        || ($publishAssessment->due_at && $publishAssessment->due_at->isPast())
                             ? 'completed'
                             : 'pending';
                 })
@@ -92,7 +93,7 @@ class AssessmentController extends BaseController
         $instructorProfile = $this->instructorProfile($user);
         $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
 
-        if ($ownedAssessment->classAssessments()->exists()) {
+        if ($ownedAssessment->publishAssessments()->exists()) {
             $editableAssessment = DB::transaction(function () use ($ownedAssessment): Assessment {
                 $copy = $this->copyAssessment($ownedAssessment, Assessment::STATUS_DRAFT);
                 $ownedAssessment->update(['status' => Assessment::STATUS_ARCHIVED]);
@@ -108,22 +109,23 @@ class AssessmentController extends BaseController
         $ownedAssessment->load([
             'subject',
             'items.choices',
-            'classAssessments.class',
-        ])->loadCount('items', 'classAssessments');
+            'publishAssessments.class',
+        ])->loadCount('items', 'publishAssessments');
 
         $publishableClasses = $instructorProfile
             ? $instructorProfile->classes()
-                ->with('subject')
-                ->where('subject_id', $ownedAssessment->subject_id)
-                ->whereNull('archived_at')
-                ->orderBy('class_name')
+                ->with(['contextDetail', 'subject'])
+                ->whereHas('contextDetail', fn ($query) => $query->where('subject_id', $ownedAssessment->subject_id))
+                ->whereNull('classes.archived_at')
+                ->orderBy('classes.year_level')
+                ->orderBy('classes.section_name')
                 ->get()
             : collect();
 
         return view('instructor.assessments.show', $this->sharedData($user, 'assessments') + [
             'assessment' => $ownedAssessment,
             'publishableClasses' => $publishableClasses,
-            'hasStudentSubmissions' => $ownedAssessment->classAssessments()
+            'hasStudentSubmissions' => $ownedAssessment->publishAssessments()
                 ->whereHas('submissions')
                 ->exists(),
             'assessmentTypes' => $this->assessmentTypes(),
@@ -200,7 +202,7 @@ class AssessmentController extends BaseController
         $instructorProfile = $this->instructorProfile($user);
         $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
 
-        $hasClassAssignments = $ownedAssessment->classAssessments()->exists();
+        $hasClassAssignments = $ownedAssessment->publishAssessments()->exists();
 
         $assessmentId = $ownedAssessment->assessment_id;
         $assessmentTitle = $ownedAssessment->title;
@@ -245,28 +247,28 @@ class AssessmentController extends BaseController
             ->with('status', 'Assessment deleted successfully.');
     }
 
-    public function destroyPublishedAssessment(Request $request, ClassAssessment $classAssessment): RedirectResponse|JsonResponse
+    public function destroyPublishedAssessment(Request $request, PublishAssessment $publishAssessment): RedirectResponse|JsonResponse
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
-        $ownedClassAssessment = $this->ownedClassAssessment($classAssessment, $instructorProfile);
+        $ownedPublishAssessment = $this->ownedPublishAssessment($publishAssessment, $instructorProfile);
 
-        $ownedClassAssessment->loadMissing(['assessment', 'class']);
+        $ownedPublishAssessment->loadMissing(['assessment', 'class']);
 
-        $assessment = $ownedClassAssessment->assessment;
+        $assessment = $ownedPublishAssessment->assessment;
         $assessmentId = $assessment?->assessment_id;
         $assessmentTitle = $assessment?->title ?? 'Untitled Assessment';
-        $className = $ownedClassAssessment->class?->class_name ?? 'class';
-        $classAssessmentId = $ownedClassAssessment->class_assessment_id;
-        $submissionCount = $ownedClassAssessment->submissions()->count();
+        $className = $ownedPublishAssessment->class?->class_name ?? 'class';
+        $publishAssessmentId = $ownedPublishAssessment->publish_assessment_id;
+        $submissionCount = $ownedPublishAssessment->submissions()->count();
 
-        DB::transaction(function () use ($ownedClassAssessment, $assessment): void {
-            $ownedClassAssessment->delete();
+        DB::transaction(function () use ($ownedPublishAssessment, $assessment): void {
+            $ownedPublishAssessment->delete();
 
             if (
                 $assessment
                 && $assessment->status === Assessment::STATUS_ARCHIVED
-                && ! $assessment->classAssessments()->exists()
+                && ! $assessment->publishAssessments()->exists()
             ) {
                 $assessment->items()->delete();
                 $assessment->delete();
@@ -277,7 +279,7 @@ class AssessmentController extends BaseController
             'actor_id' => $user->id,
             'assessment_id' => $assessmentId,
             'assessment_title' => $assessmentTitle,
-            'class_assessment_id' => $classAssessmentId,
+            'publish_assessment_id' => $publishAssessmentId,
             'class_name' => $className,
             'submission_count' => $submissionCount,
             'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
@@ -484,7 +486,7 @@ class AssessmentController extends BaseController
 
     private function ensureAssessmentHasNoSubmissions(Assessment $assessment, string $message): void
     {
-        if ($assessment->classAssessments()->whereHas('submissions')->exists()) {
+        if ($assessment->publishAssessments()->whereHas('submissions')->exists()) {
             throw ValidationException::withMessages([
                 'assessment' => $message,
             ]);

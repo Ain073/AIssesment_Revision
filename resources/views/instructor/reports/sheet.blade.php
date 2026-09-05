@@ -790,8 +790,8 @@
         @csrf
         <input name="report_type" type="hidden" value="{{ $reportType }}">
         <input id="paperSizeInput" name="paper_size" type="hidden" value="{{ $selectedPaper }}">
-        @foreach ($classAssessmentKeys as $classAssessmentKey)
-            <input name="class_assessment_keys[]" type="hidden" value="{{ $classAssessmentKey }}">
+        @foreach ($publishAssessmentKeys as $publishAssessmentKey)
+            <input name="publish_assessment_keys[]" type="hidden" value="{{ $publishAssessmentKey }}">
         @endforeach
 
         <div class="report-sheet-wrap">
@@ -876,9 +876,9 @@
                             $assessment = $row['assessment'];
                             $analytics = $row['analytics'];
                             $report = $row['report'];
-                            $classAssessment = $row['classAssessment'];
-                            $classAssessmentKey = $classAssessment->public_id;
-                            $rowName = 'reports['.$classAssessmentKey.']';
+                            $publishAssessment = $row['publishAssessment'];
+                            $publishAssessmentKey = $publishAssessment->public_id;
+                            $rowName = 'reports['.$publishAssessmentKey.']';
                             $reference = strtoupper(($assessment->reporting_term ?: 'Assessment').' '.$assessment->title);
                             $mostLearned = $report->concept_most_learned_skills;
                             $leastLearned = $report->concept_least_learned_skills;
@@ -906,22 +906,22 @@
                                 </div>
                             </td>
                             <td>
-                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_most_learned_skills]" data-assessment-key="{{ $classAssessmentKey }}" data-ai-field="concepts_most_learned_skills">{{ old('reports.'.$classAssessmentKey.'.concept_most_learned_skills', $mostLearned) }}</textarea>
+                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_most_learned_skills]" data-assessment-key="{{ $publishAssessmentKey }}" data-ai-field="concepts_most_learned_skills">{{ old('reports.'.$publishAssessmentKey.'.concept_most_learned_skills', $mostLearned) }}</textarea>
                                 <div class="report-print-text"></div>
                             </td>
                             <td>
-                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_least_learned_skills]" data-assessment-key="{{ $classAssessmentKey }}" data-ai-field="concepts_least_learned_skills">{{ old('reports.'.$classAssessmentKey.'.concept_least_learned_skills', $leastLearned) }}</textarea>
+                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_least_learned_skills]" data-assessment-key="{{ $publishAssessmentKey }}" data-ai-field="concepts_least_learned_skills">{{ old('reports.'.$publishAssessmentKey.'.concept_least_learned_skills', $leastLearned) }}</textarea>
                                 <div class="report-print-text"></div>
                             </td>
                             <td>
-                                <textarea class="report-edit-textarea" name="{{ $rowName }}[issues_concern]">{{ old('reports.'.$classAssessmentKey.'.issues_concern', $report->issues_concern) }}</textarea>
+                                <textarea class="report-edit-textarea" name="{{ $rowName }}[issues_concern]">{{ old('reports.'.$publishAssessmentKey.'.issues_concern', $report->issues_concern) }}</textarea>
                                 <div class="report-print-text"></div>
                             </td>
                             <td>
                                 @if ($reportType === 'formative')
-                                    <textarea class="report-edit-textarea" name="{{ $rowName }}[interventions_done]">{{ old('reports.'.$classAssessmentKey.'.interventions_done', $lastColumn) }}</textarea>
+                                    <textarea class="report-edit-textarea" name="{{ $rowName }}[interventions_done]">{{ old('reports.'.$publishAssessmentKey.'.interventions_done', $lastColumn) }}</textarea>
                                 @else
-                                    <textarea class="report-edit-textarea" name="{{ $rowName }}[future_plans_curriculum]">{{ old('reports.'.$classAssessmentKey.'.future_plans_curriculum', $lastColumn) }}</textarea>
+                                    <textarea class="report-edit-textarea" name="{{ $rowName }}[future_plans_curriculum]">{{ old('reports.'.$publishAssessmentKey.'.future_plans_curriculum', $lastColumn) }}</textarea>
                                 @endif
                                 <div class="report-print-text"></div>
                             </td>
@@ -992,16 +992,16 @@
                             $assessment = $row['assessment'];
                             $analytics = $row['analytics'];
                             $report = $row['report'];
-                            $classAssessment = $row['classAssessment'];
-                            $classAssessmentKey = $classAssessment->public_id;
-                            $rowName = 'reports['.$classAssessmentKey.']';
+                            $publishAssessment = $row['publishAssessment'];
+                            $publishAssessmentKey = $publishAssessment->public_id;
+                            $rowName = 'reports['.$publishAssessmentKey.']';
                             $reference = strtoupper(($assessment->reporting_term ?: 'Assessment').' '.$assessment->title);
-                            $mostLearned = old('reports.'.$classAssessmentKey.'.concept_most_learned_skills', $report->concept_most_learned_skills);
-                            $leastLearned = old('reports.'.$classAssessmentKey.'.concept_least_learned_skills', $report->concept_least_learned_skills);
-                            $issuesConcern = old('reports.'.$classAssessmentKey.'.issues_concern', $report->issues_concern);
+                            $mostLearned = old('reports.'.$publishAssessmentKey.'.concept_most_learned_skills', $report->concept_most_learned_skills);
+                            $leastLearned = old('reports.'.$publishAssessmentKey.'.concept_least_learned_skills', $report->concept_least_learned_skills);
+                            $issuesConcern = old('reports.'.$publishAssessmentKey.'.issues_concern', $report->issues_concern);
                             $lastColumn = $reportType === 'formative'
-                                ? old('reports.'.$classAssessmentKey.'.interventions_done', $report->interventions_done)
-                                : old('reports.'.$classAssessmentKey.'.future_plans_curriculum', $report->future_plans_curriculum);
+                                ? old('reports.'.$publishAssessmentKey.'.interventions_done', $report->interventions_done)
+                                : old('reports.'.$publishAssessmentKey.'.future_plans_curriculum', $report->future_plans_curriculum);
                             $lastColumnField = $reportType === 'formative' ? 'interventions_done' : 'future_plans_curriculum';
                         @endphp
                         <tr>
@@ -1085,16 +1085,16 @@
                             $assessment = $row['assessment'];
                             $analytics = $row['analytics'];
                             $report = $row['report'];
-                            $classAssessment = $row['classAssessment'];
-                            $classAssessmentKey = $classAssessment->public_id;
-                            $rowName = 'reports['.$classAssessmentKey.']';
+                            $publishAssessment = $row['publishAssessment'];
+                            $publishAssessmentKey = $publishAssessment->public_id;
+                            $rowName = 'reports['.$publishAssessmentKey.']';
                             $reference = strtoupper(($assessment->reporting_term ?: 'Assessment').' '.$assessment->title);
-                            $mostLearned = old('reports.'.$classAssessmentKey.'.concept_most_learned_skills', $report->concept_most_learned_skills);
-                            $leastLearned = old('reports.'.$classAssessmentKey.'.concept_least_learned_skills', $report->concept_least_learned_skills);
-                            $issuesConcern = old('reports.'.$classAssessmentKey.'.issues_concern', $report->issues_concern);
+                            $mostLearned = old('reports.'.$publishAssessmentKey.'.concept_most_learned_skills', $report->concept_most_learned_skills);
+                            $leastLearned = old('reports.'.$publishAssessmentKey.'.concept_least_learned_skills', $report->concept_least_learned_skills);
+                            $issuesConcern = old('reports.'.$publishAssessmentKey.'.issues_concern', $report->issues_concern);
                             $lastColumn = $reportType === 'formative'
-                                ? old('reports.'.$classAssessmentKey.'.interventions_done', $report->interventions_done)
-                                : old('reports.'.$classAssessmentKey.'.future_plans_curriculum', $report->future_plans_curriculum);
+                                ? old('reports.'.$publishAssessmentKey.'.interventions_done', $report->interventions_done)
+                                : old('reports.'.$publishAssessmentKey.'.future_plans_curriculum', $report->future_plans_curriculum);
                             $lastColumnField = $reportType === 'formative' ? 'interventions_done' : 'future_plans_curriculum';
                         @endphp
                         <div class="report-print-data-row">

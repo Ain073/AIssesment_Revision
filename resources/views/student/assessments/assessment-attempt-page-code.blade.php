@@ -2,11 +2,11 @@
     const cards = Array.from(document.querySelectorAll('[data-question-card]'));
     const jumps = Array.from(document.querySelectorAll('[data-question-jump]'));
     const warningLimit = Number(@json($warningLimit));
-    const preventCopyPaste = Boolean(@json($classAssessment->prevent_copy_paste));
-    const detectTabSwitch = Boolean(@json($classAssessment->detect_tab_switch));
-    const screenshotProtection = Boolean(@json($classAssessment->screenshot_protection));
+    const preventCopyPaste = Boolean(@json($publishAssessment->prevent_copy_paste));
+    const detectTabSwitch = Boolean(@json($publishAssessment->detect_tab_switch));
+    const screenshotProtection = Boolean(@json($publishAssessment->screenshot_protection));
     const oneQuestionMode = Boolean(@json($isOneQuestionMode));
-    const securityEventUrl = @json(route('student.assessments.security-events.store', $classAssessment));
+    const securityEventUrl = @json(route('student.assessments.security-events.store', $publishAssessment));
     const dueAt = @json($dueIso);
     const countdownTarget = dueAt ? new Date(dueAt).getTime() : Date.now() + (60 * 60 * 1000);
     let currentIndex = 0;

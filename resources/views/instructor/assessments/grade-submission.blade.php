@@ -44,7 +44,7 @@
 @section('content')
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
         <div>
-            <a class="small fw-semibold text-decoration-none" href="{{ route('instructor.assessments.results', $classAssessment) }}" style="color: var(--psu-navy-2);">
+            <a class="small fw-semibold text-decoration-none" href="{{ route('instructor.assessments.results', $publishAssessment) }}" style="color: var(--psu-navy-2);">
                 <span class="material-symbols-outlined align-middle fs-6">arrow_back</span>
                 Back to Results
             </a>
@@ -176,7 +176,7 @@
         </section>
 
         <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
-            <a class="btn btn-outline-secondary px-4" href="{{ route('instructor.assessments.results', $classAssessment) }}">Cancel</a>
+            <a class="btn btn-outline-secondary px-4" href="{{ route('instructor.assessments.results', $publishAssessment) }}">Cancel</a>
             <button class="btn btn-psu px-4 d-inline-flex align-items-center gap-2" type="submit">
                 <span class="material-symbols-outlined fs-5">save</span>
                 Save Scores

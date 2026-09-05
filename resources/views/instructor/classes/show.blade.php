@@ -264,39 +264,39 @@
                         </div>
                         <div>
                             <p class="fw-bold mb-1" style="color: var(--psu-navy);">Assessment Setup</p>
-                            <p class="text-secondary mb-0">{{ $class->class_assessments_count }} assessment{{ $class->class_assessments_count === 1 ? '' : 's' }} published to this class.</p>
+                            <p class="text-secondary mb-0">{{ $class->publish_assessments_count }} assessment{{ $class->publish_assessments_count === 1 ? '' : 's' }} published to this class.</p>
                         </div>
                     </div>
                 </section>
             </div>
         </div>
     @elseif ($activeTab === 'assessments')
-        @if ($classAssessments->isNotEmpty())
+        @if ($publishAssessments->isNotEmpty())
             <div class="d-grid gap-3">
-                @foreach ($classAssessments as $classAssessment)
+                @foreach ($publishAssessments as $publishAssessment)
                     <section class="detail-card p-4">
                         <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
                             <div>
-                                <h3 class="h5 fw-bold mb-1" style="color: var(--psu-navy);">{{ $classAssessment->assessment?->title ?? 'Untitled Assessment' }}</h3>
+                                <h3 class="h5 fw-bold mb-1" style="color: var(--psu-navy);">{{ $publishAssessment->assessment?->title ?? 'Untitled Assessment' }}</h3>
                                 <p class="small text-secondary mb-0">
-                                    {{ ucfirst($classAssessment->assessment?->type ?? 'assessment') }}
-                                    @if ($classAssessment->due_at)
-                                        | Due {{ $classAssessment->due_at->format('M d, Y h:i A') }}
+                                    {{ ucfirst($publishAssessment->assessment?->type ?? 'assessment') }}
+                                    @if ($publishAssessment->due_at)
+                                        | Due {{ $publishAssessment->due_at->format('M d, Y h:i A') }}
                                     @endif
                                 </p>
                             </div>
-                            <span class="badge {{ $classAssessment->display_status === 'completed' ? 'text-bg-success' : 'text-bg-warning' }} rounded-1">
-                                {{ ucfirst($classAssessment->display_status) }}
+                            <span class="badge {{ $publishAssessment->display_status === 'completed' ? 'text-bg-success' : 'text-bg-warning' }} rounded-1">
+                                {{ ucfirst($publishAssessment->display_status) }}
                             </span>
                         </div>
 
                         <div class="d-flex flex-wrap gap-2 mt-3">
-                            <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $classAssessment->assessment) }}">
+                            <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $publishAssessment->assessment) }}">
                                 <span class="material-symbols-outlined fs-5">visibility</span>
                                 View Assessment
                             </a>
-                            @if ($classAssessment->display_status === 'completed')
-                                <a class="btn btn-psu d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.results', $classAssessment) }}">
+                            @if ($publishAssessment->display_status === 'completed')
+                                <a class="btn btn-psu d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.results', $publishAssessment) }}">
                                     <span class="material-symbols-outlined fs-5">analytics</span>
                                     View Results
                                 </a>

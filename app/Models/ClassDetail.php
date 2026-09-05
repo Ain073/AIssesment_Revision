@@ -22,6 +22,8 @@ class ClassDetail extends Model
 
     public const METHOD_IMPORT_FILE = 'import_file';
 
+    public const METHOD_CLASS_SETUP = 'class_setup';
+
     protected $primaryKey = 'class_details_id';
 
     protected $fillable = [

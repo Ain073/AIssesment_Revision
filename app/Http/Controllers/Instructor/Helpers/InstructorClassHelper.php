@@ -16,24 +16,24 @@ trait InstructorClassHelper
         $instructorProfile = $this->instructorProfile($user);
         $baseClassesQuery = $instructorProfile
             ? $instructorProfile->classes()
-                ->with('subject')
+                ->with(['contextDetail', 'subject'])
             : null;
         $classes = $baseClassesQuery
             ? (clone $baseClassesQuery)
                 ->when(
                     $activeClassTab === 'archived',
-                    fn ($query) => $query->whereNotNull('archived_at'),
-                    fn ($query) => $query->whereNull('archived_at')
+                    fn ($query) => $query->whereNotNull('classes.archived_at'),
+                    fn ($query) => $query->whereNull('classes.archived_at')
                 )
-                ->latest($activeClassTab === 'archived' ? 'archived_at' : 'class_id')
+                ->latest($activeClassTab === 'archived' ? 'classes.archived_at' : 'classes.class_id')
                 ->get()
                 ->each(fn (AcademicClass $class) => $class->applyEnrolledStudentsCount())
             : collect();
         $activeClassesCount = $baseClassesQuery
-            ? (clone $baseClassesQuery)->whereNull('archived_at')->count()
+            ? (clone $baseClassesQuery)->whereNull('classes.archived_at')->count()
             : 0;
         $archivedClassesCount = $baseClassesQuery
-            ? (clone $baseClassesQuery)->whereNotNull('archived_at')->count()
+            ? (clone $baseClassesQuery)->whereNotNull('classes.archived_at')->count()
             : 0;
         $activeSubjectIds = $this->activeSubjectIds();
         $existingSubjectIds = $classes->pluck('subject_id')->filter();
@@ -91,6 +91,8 @@ trait InstructorClassHelper
 
     protected function ownedClass(AcademicClass $class, ?InstructorProfile $instructorProfile): AcademicClass
     {
+        $class->loadMissing('contextDetail');
+
         abort_unless(
             $instructorProfile && $class->instructor_id === $instructorProfile->instructor_profile_id,
             403,

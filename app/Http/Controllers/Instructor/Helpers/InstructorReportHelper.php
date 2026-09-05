@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Instructor\Helpers;
 
 use App\Models\AcademicClass;
-use App\Models\ClassAssessment;
+use App\Models\PublishAssessment;
 use App\Models\InstructorProfile;
 use App\Models\Report;
 use App\Models\StudentProfile;
@@ -30,11 +30,11 @@ trait InstructorReportHelper
         ];
     }
 
-    protected function reportSheetRows(Collection $classAssessments, string $reportType): Collection
+    protected function reportSheetRows(Collection $publishAssessments, string $reportType): Collection
     {
-        return $classAssessments
-            ->map(function (ClassAssessment $classAssessment) use ($reportType): array {
-                $classAssessment->loadMissing([
+        return $publishAssessments
+            ->map(function (PublishAssessment $publishAssessment) use ($reportType): array {
+                $publishAssessment->loadMissing([
                     'assessment.items.choices',
                     'assessment.subject',
                     'class.students',
@@ -43,10 +43,10 @@ trait InstructorReportHelper
                     'submissions.answers.choice',
                 ]);
 
-                $analytics = $this->classAssessmentReportAnalytics($classAssessment);
+                $analytics = $this->publishAssessmentReportAnalytics($publishAssessment);
                 $report = Report::query()->firstOrCreate(
                     [
-                        'class_assessment_id' => $classAssessment->class_assessment_id,
+                        'publish_assessment_id' => $publishAssessment->publish_assessment_id,
                         'report_type' => $reportType,
                     ],
                     [
@@ -55,9 +55,9 @@ trait InstructorReportHelper
                 );
 
                 return [
-                    'classAssessment' => $classAssessment,
-                    'assessment' => $classAssessment->assessment,
-                    'class' => $classAssessment->class,
+                    'publishAssessment' => $publishAssessment,
+                    'assessment' => $publishAssessment->assessment,
+                    'class' => $publishAssessment->class,
                     'analytics' => $analytics,
                     'report' => $report,
                 ];
@@ -65,9 +65,9 @@ trait InstructorReportHelper
             ->values();
     }
 
-    protected function reportSheetMeta(Collection $classAssessments, Collection $rows): array
+    protected function reportSheetMeta(Collection $publishAssessments, Collection $rows): array
     {
-        $first = $classAssessments->first();
+        $first = $publishAssessments->first();
         $assessment = $first?->assessment;
         $class = $first?->class;
         $subject = $assessment?->subject ?: $class?->subject;
@@ -75,7 +75,7 @@ trait InstructorReportHelper
         $department = $instructorProfile?->department;
         $college = $department?->college;
         $reportingTerm = (string) ($assessment?->reporting_term ?: 'General');
-        $schoolYears = $classAssessments
+        $schoolYears = $publishAssessments
             ->pluck('class.school_year')
             ->filter()
             ->unique()
@@ -102,10 +102,10 @@ trait InstructorReportHelper
         ];
     }
 
-    protected function classAssessmentReportAnalytics(ClassAssessment $classAssessment): array
+    protected function publishAssessmentReportAnalytics(PublishAssessment $publishAssessment): array
     {
-        $items = $classAssessment->assessment?->items ?? collect();
-        $submissions = $classAssessment->submissions
+        $items = $publishAssessment->assessment?->items ?? collect();
+        $submissions = $publishAssessment->submissions
             ->where('status', Submission::STATUS_SUBMITTED)
             ->values();
         $maxScore = (float) $items->sum(fn ($item) => (float) $item->points);
@@ -120,7 +120,7 @@ trait InstructorReportHelper
         $passingScore = $maxScore > 0 ? $maxScore * 0.75 : 0;
 
         return [
-            'students_count' => $classAssessment->class?->enrolledStudentsCount() ?? 0,
+            'students_count' => $publishAssessment->class?->enrolledStudentsCount() ?? 0,
             'takers_count' => $studentScores->count(),
             'item_count' => $items->count(),
             'highest_score' => $studentScores->isNotEmpty() ? $this->formatReportNumber((float) $studentScores->max()) : '0',
@@ -155,11 +155,11 @@ trait InstructorReportHelper
 
     protected function studentPerformanceByStudent(AcademicClass $class): Collection
     {
-        $scoreableAssessments = $class->classAssessments
-            ->filter(function (ClassAssessment $classAssessment): bool {
-                $isCompleted = $classAssessment->publish_status === ClassAssessment::STATUS_CLOSED
-                    || ($classAssessment->due_at && $classAssessment->due_at->isPast());
-                $maxScore = (float) ($classAssessment->assessment?->items?->sum('points') ?? 0);
+        $scoreableAssessments = $class->publishAssessments
+            ->filter(function (PublishAssessment $publishAssessment): bool {
+                $isCompleted = $publishAssessment->publish_status === PublishAssessment::STATUS_CLOSED
+                    || ($publishAssessment->due_at && $publishAssessment->due_at->isPast());
+                $maxScore = (float) ($publishAssessment->assessment?->items?->sum('points') ?? 0);
 
                 return $isCompleted && $maxScore > 0;
             })
@@ -174,10 +174,10 @@ trait InstructorReportHelper
                 ]];
             }
 
-            $totalPercentage = $scoreableAssessments->sum(function (ClassAssessment $classAssessment) use ($student): float {
-                $items = $classAssessment->assessment->items;
+            $totalPercentage = $scoreableAssessments->sum(function (PublishAssessment $publishAssessment) use ($student): float {
+                $items = $publishAssessment->assessment->items;
                 $maxScore = (float) $items->sum('points');
-                $bestScore = $classAssessment->submissions
+                $bestScore = $publishAssessment->submissions
                     ->where('student_profile_id', $student->student_profile_id)
                     ->map(fn (Submission $submission): float => $this->submissionScore($submission, $items))
                     ->max() ?? 0;
@@ -215,7 +215,7 @@ trait InstructorReportHelper
             return collect();
         }
 
-        return ClassAssessment::query()
+        return PublishAssessment::query()
             ->with(['assessment.subject', 'class.subject', 'report'])
             ->withCount('submissions')
             ->whereHas('assessment', function ($query) use ($instructorProfile): void {
@@ -223,7 +223,7 @@ trait InstructorReportHelper
                     ->whereIn('report_category', array_keys($this->reportCategories()));
             })
             ->where(function ($query): void {
-                $query->where('publish_status', ClassAssessment::STATUS_CLOSED)
+                $query->where('publish_status', PublishAssessment::STATUS_CLOSED)
                     ->orWhere(function ($dueQuery): void {
                         $dueQuery->whereNotNull('due_at')
                             ->where('due_at', '<=', now());

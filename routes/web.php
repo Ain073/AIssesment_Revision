@@ -116,8 +116,8 @@ Route::middleware(['instructor', 'password_changed', 'no_cache'])
         Route::get('/assessments/publish', [InstructorAssessmentPublishController::class, 'publishAssessmentForm'])->name('assessments.publish.form');
         Route::post('/assessments/publish', [InstructorAssessmentPublishController::class, 'publishSelectedAssessment'])->name('assessments.publish.selected');
         Route::post('/assessments', [InstructorAssessmentController::class, 'storeAssessment'])->name('assessments.store');
-        Route::delete('/class-assessments/{classAssessment}', [InstructorAssessmentController::class, 'destroyPublishedAssessment'])->name('assessments.published.destroy');
-        Route::get('/class-assessments/{classAssessment}/results', [InstructorAssessmentResultController::class, 'assessmentResults'])->name('assessments.results');
+        Route::delete('/publish-assessments/{publishAssessment}', [InstructorAssessmentController::class, 'destroyPublishedAssessment'])->name('assessments.published.destroy');
+        Route::get('/publish-assessments/{publishAssessment}/results', [InstructorAssessmentResultController::class, 'assessmentResults'])->name('assessments.results');
         Route::get('/submissions/{submission}/grade', [InstructorAssessmentResultController::class, 'gradeSubmission'])->name('assessments.submissions.grade');
         Route::put('/submissions/{submission}/grade', [InstructorAssessmentResultController::class, 'updateSubmissionGrade'])->name('assessments.submissions.grade.update');
         Route::get('/assessments/{assessment}', [InstructorAssessmentController::class, 'showAssessment'])->name('assessments.show');
@@ -169,7 +169,7 @@ Route::middleware(['department_chair', 'password_changed', 'no_cache'])
         Route::put('/users/{user}', [DepartmentChairUserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [DepartmentChairUserController::class, 'destroy'])->name('users.destroy');
         Route::get('/reports', [DepartmentChairReportController::class, 'index'])->name('reports');
-        Route::get('/reports/{classAssessment}/{type}', [DepartmentChairReportController::class, 'show'])->name('reports.show');
+        Route::get('/reports/{publishAssessment}/{type}', [DepartmentChairReportController::class, 'show'])->name('reports.show');
     });
 
 Route::middleware(['student', 'password_changed', 'no_cache'])
@@ -185,12 +185,12 @@ Route::middleware(['student', 'password_changed', 'no_cache'])
         Route::post('/classes/join/{token}', [StudentClassController::class, 'requestClassJoin'])->name('classes.join.request');
         Route::get('/assessments', [StudentAssessmentController::class, 'assessments'])->name('assessments');
         Route::get('/assessments/live', [StudentAssessmentController::class, 'assessmentsLive'])->name('assessments.live');
-        Route::get('/assessments/{classAssessment}/submitted', [StudentAssessmentController::class, 'submittedAssessment'])->name('assessments.submitted');
-        Route::get('/assessments/{classAssessment}/start', [StudentAssessmentController::class, 'startAssessment'])->name('assessments.start');
-        Route::post('/assessments/{classAssessment}/security-events', [StudentAssessmentController::class, 'recordSecurityEvent'])
+        Route::get('/assessments/{publishAssessment}/submitted', [StudentAssessmentController::class, 'submittedAssessment'])->name('assessments.submitted');
+        Route::get('/assessments/{publishAssessment}/start', [StudentAssessmentController::class, 'startAssessment'])->name('assessments.start');
+        Route::post('/assessments/{publishAssessment}/security-events', [StudentAssessmentController::class, 'recordSecurityEvent'])
             ->middleware('throttle:30,1')
             ->name('assessments.security-events.store');
-        Route::post('/assessments/{classAssessment}/submit', [StudentAssessmentController::class, 'submitAssessment'])->name('assessments.submit');
-        Route::get('/assessments/{classAssessment}/take', [StudentAssessmentController::class, 'takeAssessment'])->name('assessments.take');
+        Route::post('/assessments/{publishAssessment}/submit', [StudentAssessmentController::class, 'submitAssessment'])->name('assessments.submit');
+        Route::get('/assessments/{publishAssessment}/take', [StudentAssessmentController::class, 'takeAssessment'])->name('assessments.take');
         Route::get('/results', [StudentResultController::class, 'results'])->name('results');
     });

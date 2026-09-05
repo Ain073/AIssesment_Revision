@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Instructor;
 
 use App\Models\AcademicClass;
-use App\Models\ClassAssessment;
+use App\Models\PublishAssessment;
 use App\Models\ClassDetail;
 use App\Models\Submission;
 use Illuminate\Support\Facades\DB;
@@ -17,14 +17,15 @@ class DashboardController extends BaseController
         $instructorProfile = $this->instructorProfile($user);
         $classes = $instructorProfile
             ? $instructorProfile->classes()
-                ->whereNull('archived_at')
+                ->whereNull('classes.archived_at')
                 ->with([
+                    'contextDetail',
                     'subject',
                     'students',
                     'classDetails.studentProfile.user',
-                    'classAssessments' => fn ($query) => $query
+                    'publishAssessments' => fn ($query) => $query
                         ->where(function ($statusQuery): void {
-                            $statusQuery->where('publish_status', ClassAssessment::STATUS_CLOSED)
+                            $statusQuery->where('publish_status', PublishAssessment::STATUS_CLOSED)
                                 ->orWhere(function ($dueQuery): void {
                                     $dueQuery->whereNotNull('due_at')
                                         ->where('due_at', '<=', now());

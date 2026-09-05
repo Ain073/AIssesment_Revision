@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Instructor\Helpers;
 
 use App\Models\Assessment;
-use App\Models\ClassAssessment;
+use App\Models\PublishAssessment;
 use App\Models\InstructorProfile;
 use App\Models\Subject;
 use App\Models\User;
@@ -30,9 +30,10 @@ trait InstructorAssessmentHelper
             ->values();
         $ownedClasses = $instructorProfile
             ? $instructorProfile->classes()
-                ->where('subject_id', $ownedAssessment->subject_id)
-                ->whereNull('archived_at')
-                ->whereIn('public_id', $classKeys)
+                ->with('contextDetail')
+                ->whereHas('contextDetail', fn ($query) => $query->where('subject_id', $ownedAssessment->subject_id))
+                ->whereNull('classes.archived_at')
+                ->whereIn('classes.public_id', $classKeys)
                 ->get()
             : collect();
 
@@ -59,12 +60,12 @@ trait InstructorAssessmentHelper
                 $publishedAssessmentIds[] = $publishedAssessment->assessment_id;
                 $classDetail = $class->publishContextClassDetail();
 
-                ClassAssessment::query()->create([
+                PublishAssessment::query()->create([
                     'assessment_id' => $publishedAssessment->assessment_id,
                     'class_details_id' => $classDetail->class_details_id,
                     'available_at' => $validated['available_at'] ?? null,
                     'due_at' => $validated['due_at'] ?? null,
-                    'publish_status' => ClassAssessment::STATUS_PUBLISHED,
+                    'publish_status' => PublishAssessment::STATUS_PUBLISHED,
                     'score_visibility' => $request->boolean('score_visibility'),
                     'answer_visibility' => $request->boolean('answer_visibility'),
                     'prevent_copy_paste' => $request->boolean('prevent_copy_paste'),
@@ -165,9 +166,9 @@ trait InstructorAssessmentHelper
         }
 
         return Subject::query()
-            ->whereIn('subject_id', $instructorProfile->classes()
-                ->whereNotNull('subject_id')
-                ->whereNull('archived_at')
+            ->whereIn('subject_id', $instructorProfile->classDetails()
+                ->whereNull('student_id')
+                ->whereHas('class', fn ($query) => $query->whereNull('classes.archived_at'))
                 ->select('subject_id'))
             ->where('is_active', true)
             ->whereHas('semester', fn ($query) => $query->where('is_active', true))
@@ -195,18 +196,18 @@ trait InstructorAssessmentHelper
         return $assessment;
     }
 
-    protected function ownedClassAssessment(ClassAssessment $classAssessment, ?InstructorProfile $instructorProfile): ClassAssessment
+    protected function ownedPublishAssessment(PublishAssessment $publishAssessment, ?InstructorProfile $instructorProfile): PublishAssessment
     {
-        $classAssessment->loadMissing('assessment');
+        $publishAssessment->loadMissing('assessment');
 
         abort_unless(
             $instructorProfile
-                && $classAssessment->assessment
-                && $classAssessment->assessment->instructor_id === $instructorProfile->instructor_profile_id,
+                && $publishAssessment->assessment
+                && $publishAssessment->assessment->instructor_id === $instructorProfile->instructor_profile_id,
             403,
             'You are not allowed to access these assessment results.'
         );
 
-        return $classAssessment;
+        return $publishAssessment;
     }
 }

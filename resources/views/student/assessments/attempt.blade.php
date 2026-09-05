@@ -4,7 +4,7 @@
 @section('attempt-label', 'Quiz Attempt #1')
 
 @section('navbar-actions')
-    <a class="btn btn-sm btn-outline-light d-inline-flex align-items-center gap-2" href="{{ route('student.assessments.take', $classAssessment) }}">
+    <a class="btn btn-sm btn-outline-light d-inline-flex align-items-center gap-2" href="{{ route('student.assessments.take', $publishAssessment) }}">
         <span class="material-symbols-outlined fs-6">close</span>
         Exit
     </a>
@@ -434,12 +434,12 @@
 @section('content')
     @php
         $itemCount = $items->count();
-        $isOneQuestionMode = $classAssessment->display_mode === \App\Models\ClassAssessment::DISPLAY_ONE_QUESTION;
-        $dueIso = $classAssessment->due_at?->toIso8601String();
+        $isOneQuestionMode = $publishAssessment->display_mode === \App\Models\PublishAssessment::DISPLAY_ONE_QUESTION;
+        $dueIso = $publishAssessment->due_at?->toIso8601String();
         $enabledSecurities = collect([
-            ['enabled' => $classAssessment->prevent_copy_paste, 'icon' => 'content_paste_off', 'label' => 'No copy / paste'],
-            ['enabled' => $classAssessment->detect_tab_switch, 'icon' => 'tab', 'label' => 'Tab/floating monitor'],
-            ['enabled' => $classAssessment->screenshot_protection, 'icon' => 'screenshot_monitor', 'label' => 'Screenshot deterrent'],
+            ['enabled' => $publishAssessment->prevent_copy_paste, 'icon' => 'content_paste_off', 'label' => 'No copy / paste'],
+            ['enabled' => $publishAssessment->detect_tab_switch, 'icon' => 'tab', 'label' => 'Tab/floating monitor'],
+            ['enabled' => $publishAssessment->screenshot_protection, 'icon' => 'screenshot_monitor', 'label' => 'Screenshot deterrent'],
         ])->where('enabled');
     @endphp
 
@@ -570,7 +570,7 @@
     </div>
 
     @if ($isOneQuestionMode)
-        <div class="d-flex gap-2 overflow-auto pb-3 mb-4 {{ $classAssessment->prevent_copy_paste ? 'no-select' : '' }}" data-copy-protected>
+        <div class="d-flex gap-2 overflow-auto pb-3 mb-4 {{ $publishAssessment->prevent_copy_paste ? 'no-select' : '' }}" data-copy-protected>
             @foreach ($items as $item)
                 <button class="question-jump {{ $loop->first ? 'active' : '' }}" data-question-jump="{{ $loop->index }}" type="button">
                     {{ $loop->iteration }}
@@ -579,10 +579,10 @@
         </div>
     @endif
 
-    <form id="assessmentAttemptForm" action="{{ route('student.assessments.submit', $classAssessment) }}" method="POST">
+    <form id="assessmentAttemptForm" action="{{ route('student.assessments.submit', $publishAssessment) }}" method="POST">
         @csrf
 
-        <div class="d-grid gap-4 {{ $classAssessment->prevent_copy_paste ? 'no-select' : '' }} {{ $isOneQuestionMode ? 'one-question-mode' : '' }}" data-copy-protected>
+        <div class="d-grid gap-4 {{ $publishAssessment->prevent_copy_paste ? 'no-select' : '' }} {{ $isOneQuestionMode ? 'one-question-mode' : '' }}" data-copy-protected>
             @foreach ($items as $item)
                 <article class="question-card {{ $isOneQuestionMode && $loop->first ? 'active-question' : '' }}" id="questionCard{{ $loop->iteration }}" data-question-card data-question-index="{{ $loop->index }}">
                     <div class="mb-3 d-flex flex-wrap gap-2">

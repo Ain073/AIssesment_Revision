@@ -5,9 +5,10 @@ namespace App\Models;
 use App\Models\Concerns\UsesPublicId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 
@@ -20,12 +21,8 @@ class AcademicClass extends Model
     protected $primaryKey = 'class_id';
 
     protected $fillable = [
-        'instructor_id',
-        'subject_id',
         'year_level',
         'section_name',
-        'class_name',
-        'school_year',
         'join_token',
         'join_code',
         'archived_at',
@@ -42,17 +39,37 @@ class AcademicClass extends Model
             return 'Year '.$this->year_level.' - '.$this->section_name;
         }
 
-        return $this->class_name ?? 'Class';
+        return 'Class';
     }
 
-    public function instructorProfile(): BelongsTo
+    public function contextDetail(): HasOne
     {
-        return $this->belongsTo(InstructorProfile::class, 'instructor_id', 'instructor_profile_id');
+        return $this->hasOne(ClassDetail::class, 'class_id', 'class_id')
+            ->whereNull('student_id');
     }
 
-    public function subject(): BelongsTo
+    public function instructorProfile(): HasOneThrough
     {
-        return $this->belongsTo(Subject::class, 'subject_id', 'subject_id');
+        return $this->hasOneThrough(
+            InstructorProfile::class,
+            ClassDetail::class,
+            'class_id',
+            'instructor_profile_id',
+            'class_id',
+            'instructor_id'
+        )->whereNull('class_details.student_id');
+    }
+
+    public function subject(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Subject::class,
+            ClassDetail::class,
+            'class_id',
+            'subject_id',
+            'class_id',
+            'subject_id'
+        )->whereNull('class_details.student_id');
     }
 
     public function students(): HasManyThrough
@@ -85,6 +102,7 @@ class AcademicClass extends Model
     public function enrolledStudentIds(): array
     {
         return $this->classDetails()
+            ->whereNotNull('student_id')
             ->where('status', ClassDetail::STATUS_APPROVED)
             ->pluck('student_id')
             ->map(fn ($id) => (int) $id)
@@ -96,6 +114,7 @@ class AcademicClass extends Model
     public function enrolledStudentsCollection(array $with = []): Collection
     {
         $detailStudentIds = $this->classDetails()
+            ->whereNotNull('student_id')
             ->where('status', ClassDetail::STATUS_APPROVED)
             ->pluck('student_id')
             ->map(fn ($id) => (int) $id)
@@ -154,7 +173,9 @@ class AcademicClass extends Model
         string $entryMethod = ClassDetail::METHOD_MANUAL_ADD
     ): ?ClassDetail
     {
-        if (! $this->instructor_id || ! $this->subject_id) {
+        $context = $this->classContext();
+
+        if (! $context) {
             return null;
         }
 
@@ -162,21 +183,37 @@ class AcademicClass extends Model
             [
                 'class_id' => $this->class_id,
                 'student_id' => $studentProfile->student_profile_id,
-                'subject_id' => $this->subject_id,
+                'subject_id' => $context->subject_id,
             ],
             [
-                'instructor_id' => $this->instructor_id,
+                'instructor_id' => $context->instructor_id,
                 'status' => $status,
                 'entry_method' => $entryMethod,
             ],
         );
     }
 
+    public function syncContext(InstructorProfile $instructorProfile, int $subjectId): ClassDetail
+    {
+        return ClassDetail::query()->updateOrCreate(
+            [
+                'class_id' => $this->class_id,
+                'student_id' => null,
+            ],
+            [
+                'instructor_id' => $instructorProfile->instructor_profile_id,
+                'subject_id' => $subjectId,
+                'status' => ClassDetail::STATUS_APPROVED,
+                'entry_method' => ClassDetail::METHOD_CLASS_SETUP,
+            ],
+        );
+    }
+
     public function publishContextClassDetail(): ?ClassDetail
     {
-        return $this->classDetails()
-            ->where('instructor_id', $this->instructor_id)
-            ->where('subject_id', $this->subject_id)
+        return $this->classContext()
+            ?: $this->classDetails()
+            ->whereNotNull('student_id')
             ->where('status', ClassDetail::STATUS_APPROVED)
             ->latest('class_details_id')
             ->first();
@@ -185,6 +222,7 @@ class AcademicClass extends Model
     public function joinRequests(): HasMany
     {
         return $this->hasMany(ClassDetail::class, 'class_id', 'class_id')
+            ->whereNotNull('student_id')
             ->where('entry_method', ClassDetail::METHOD_JOIN_CODE);
     }
 
@@ -193,15 +231,48 @@ class AcademicClass extends Model
         return $this->hasMany(ClassDetail::class, 'class_id', 'class_id');
     }
 
-    public function classAssessments(): HasManyThrough
+    public function publishAssessments(): HasManyThrough
     {
         return $this->hasManyThrough(
-            ClassAssessment::class,
+            PublishAssessment::class,
             ClassDetail::class,
             'class_id',
             'class_details_id',
             'class_id',
             'class_details_id'
         );
+    }
+
+    public function getClassNameAttribute($value): string
+    {
+        return $value ?: $this->displayName();
+    }
+
+    public function getSchoolYearAttribute($value): ?string
+    {
+        return $value;
+    }
+
+    public function getInstructorIdAttribute($value): ?int
+    {
+        $id = $value ?? $this->classContext()?->instructor_id;
+
+        return $id === null ? null : (int) $id;
+    }
+
+    public function getSubjectIdAttribute($value): ?int
+    {
+        $id = $value ?? $this->classContext()?->subject_id;
+
+        return $id === null ? null : (int) $id;
+    }
+
+    private function classContext(): ?ClassDetail
+    {
+        if ($this->relationLoaded('contextDetail')) {
+            return $this->getRelation('contextDetail');
+        }
+
+        return $this->contextDetail()->first();
     }
 }

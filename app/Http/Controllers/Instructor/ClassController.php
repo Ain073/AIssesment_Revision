@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Instructor;
 
 use App\Models\AcademicClass;
-use App\Models\ClassAssessment;
+use App\Models\PublishAssessment;
 use App\Models\ClassDetail;
 use App\Models\StudentProfile;
 use App\Models\Submission;
@@ -42,11 +42,18 @@ class ClassController extends BaseController
             'section_name' => ['required', 'string', 'max:255'],
         ]);
 
-        $class = $instructorProfile->classes()->create($validated + [
-            'class_name' => $this->legacyClassName($validated),
-            'join_token' => $this->generateClassJoinToken(),
-            'join_code' => $this->generateClassJoinCode(),
-        ]);
+        $class = DB::transaction(function () use ($instructorProfile, $validated): AcademicClass {
+            $class = AcademicClass::query()->create([
+                'year_level' => $validated['year_level'],
+                'section_name' => $validated['section_name'],
+                'join_token' => $this->generateClassJoinToken(),
+                'join_code' => $this->generateClassJoinCode(),
+            ]);
+
+            $class->syncContext($instructorProfile, (int) $validated['subject_id']);
+
+            return $class->refresh();
+        });
 
         Log::info('Class created by instructor.', [
             'actor_id' => $user->id,
@@ -85,9 +92,16 @@ class ClassController extends BaseController
             'section_name' => ['required', 'string', 'max:255'],
         ]);
 
-        $ownedClass->update($validated + [
-            'class_name' => $this->legacyClassName($validated),
-        ]);
+        DB::transaction(function () use ($ownedClass, $instructorProfile, $validated): void {
+            $ownedClass->update([
+                'year_level' => $validated['year_level'],
+                'section_name' => $validated['section_name'],
+            ]);
+
+            $ownedClass->syncContext($instructorProfile, (int) $validated['subject_id']);
+            $ownedClass->unsetRelation('contextDetail');
+            $ownedClass->refresh();
+        });
 
         Log::info('Class updated by instructor.', [
             'actor_id' => $user->id,
@@ -118,7 +132,7 @@ class ClassController extends BaseController
 
         DB::transaction(function () use ($ownedClass) {
             $ownedClass->classDetails()->delete();
-            $ownedClass->classAssessments()->delete();
+            $ownedClass->publishAssessments()->delete();
             $ownedClass->delete();
         });
 
@@ -203,7 +217,7 @@ class ClassController extends BaseController
             'instructorProfile.department.college',
             'students.user.roles',
             'students.program.department.college',
-            'classAssessments' => fn ($query) => $query
+            'publishAssessments' => fn ($query) => $query
                 ->with([
                     'assessment.subject',
                     'assessment.items.choices',
@@ -216,16 +230,16 @@ class ClassController extends BaseController
                 ->where('status', ClassDetail::STATUS_PENDING)
                 ->with(['studentProfile.user.roles', 'studentProfile.program.department.college'])
                 ->latest('updated_at'),
-        ])->loadCount('classAssessments');
+        ])->loadCount('publishAssessments');
 
         $ownedClass->applyEnrolledStudentsCount();
         $enrolledStudents = $ownedClass->enrolledStudentsCollection(['user.roles', 'program.department.college'])
             ->sortBy(fn (StudentProfile $student) => strtolower($student->user?->displayName() ?? ''))
             ->values();
 
-        $ownedClass->classAssessments->each(function (ClassAssessment $classAssessment): void {
-            $classAssessment->display_status = $classAssessment->publish_status === ClassAssessment::STATUS_CLOSED
-                || ($classAssessment->due_at && $classAssessment->due_at->isPast())
+        $ownedClass->publishAssessments->each(function (PublishAssessment $publishAssessment): void {
+            $publishAssessment->display_status = $publishAssessment->publish_status === PublishAssessment::STATUS_CLOSED
+                || ($publishAssessment->due_at && $publishAssessment->due_at->isPast())
                     ? 'completed'
                     : 'pending';
         });
@@ -241,14 +255,10 @@ class ClassController extends BaseController
                 ->sortByDesc('updated_at')
                 ->values(),
             'enrolledStudents' => $enrolledStudents,
-            'classAssessments' => $ownedClass->classAssessments,
+            'publishAssessments' => $ownedClass->publishAssessments,
             'studentPerformance' => $this->studentPerformanceByStudent($ownedClass),
             'importPreview' => $this->pullImportPreview($request, $ownedClass),
         ]);
     }
 
-    private function legacyClassName(array $data): string
-    {
-        return 'Year '.$data['year_level'].' - '.$data['section_name'];
-    }
 }

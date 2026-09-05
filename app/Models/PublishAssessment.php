@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
-class ClassAssessment extends Model
+class PublishAssessment extends Model
 {
     use HasFactory, UsesPublicId;
 
@@ -90,20 +90,20 @@ class ClassAssessment extends Model
 
     public function submissions(): HasMany
     {
-        return $this->hasMany(Submission::class, 'class_assessment_id', 'publish_assessment_id');
+        return $this->hasMany(Submission::class, 'publish_assessment_id', 'publish_assessment_id');
     }
 
     public function report(): HasOne
     {
-        return $this->hasOne(Report::class, 'class_assessment_id', 'publish_assessment_id');
+        return $this->hasOne(Report::class, 'publish_assessment_id', 'publish_assessment_id');
     }
 
     public function reports(): HasMany
     {
-        return $this->hasMany(Report::class, 'class_assessment_id', 'publish_assessment_id');
+        return $this->hasMany(Report::class, 'publish_assessment_id', 'publish_assessment_id');
     }
 
-    public function getClassAssessmentIdAttribute(): ?int
+    public function getPublishAssessmentIdAttribute(): ?int
     {
         $id = $this->getAttribute('publish_assessment_id');
 

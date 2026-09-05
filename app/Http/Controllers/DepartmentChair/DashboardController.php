@@ -26,7 +26,7 @@ class DashboardController extends BaseController
         $reportsCount = $scopedDepartmentId
             ? Report::query()
                 ->where('report_status', Report::STATUS_FINALIZED)
-                ->whereHas('classAssessment.assessment.instructorProfile', fn ($query) => $query->where('department_id', $scopedDepartmentId))
+                ->whereHas('publishAssessment.assessment.instructorProfile', fn ($query) => $query->where('department_id', $scopedDepartmentId))
                 ->count()
             : 0;
 

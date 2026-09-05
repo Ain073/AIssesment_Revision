@@ -296,7 +296,7 @@
                     @php
                         $assessment = $result['assessment'];
                         $class = $result['class'];
-                        $classAssessment = $result['class_assessment'];
+                        $publishAssessment = $result['publish_assessment'];
                         $bestAttempt = $result['best_attempt'];
                         $scoreVisible = $result['score_visible'];
                         $canViewResult = $scoreVisible || $result['answer_visible'];
@@ -354,10 +354,10 @@
                                     Results will appear when your instructor releases them.
                                 @endif
                             </p>
-                            @if ($canViewResult && $classAssessment)
+                            @if ($canViewResult && $publishAssessment)
                                 <a
                                     class="btn btn-outline-primary d-inline-flex align-items-center gap-2"
-                                    href="{{ route('student.assessments.submitted', ['classAssessment' => $classAssessment, 'show_results' => 1]) }}"
+                                    href="{{ route('student.assessments.submitted', ['publishAssessment' => $publishAssessment, 'show_results' => 1]) }}"
                                     data-no-ajax="true"
                                 >
                                     <span class="material-symbols-outlined fs-5">visibility</span>

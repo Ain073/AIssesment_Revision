@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Instructor;
 
-use App\Models\ClassAssessment;
+use App\Models\PublishAssessment;
 use App\Models\StudentProfile;
 use App\Models\Submission;
 use App\Support\AssessmentScoring;
@@ -15,17 +15,17 @@ use Illuminate\View\View;
 
 class AssessmentResultController extends BaseController
 {
-    public function assessmentResults(ClassAssessment $classAssessment): View
+    public function assessmentResults(PublishAssessment $publishAssessment): View
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
-        $ownedClassAssessment = $this->ownedClassAssessment($classAssessment, $instructorProfile);
-        $isCompleted = $ownedClassAssessment->publish_status === ClassAssessment::STATUS_CLOSED
-            || ($ownedClassAssessment->due_at && $ownedClassAssessment->due_at->isPast());
+        $ownedPublishAssessment = $this->ownedPublishAssessment($publishAssessment, $instructorProfile);
+        $isCompleted = $ownedPublishAssessment->publish_status === PublishAssessment::STATUS_CLOSED
+            || ($ownedPublishAssessment->due_at && $ownedPublishAssessment->due_at->isPast());
 
         abort_unless($isCompleted, 404, 'Results are available after the assessment is completed.');
 
-        $ownedClassAssessment->load([
+        $ownedPublishAssessment->load([
             'assessment.subject',
             'assessment.items.choices',
             'class.subject',
@@ -34,11 +34,11 @@ class AssessmentResultController extends BaseController
                 ->orderBy('attempt_number'),
         ]);
 
-        $items = $ownedClassAssessment->assessment?->items ?? collect();
+        $items = $ownedPublishAssessment->assessment?->items ?? collect();
         $maxScore = (float) $items->sum(fn ($item) => (float) $item->points);
         $passingScore = $maxScore * 0.75;
-        $submissions = $ownedClassAssessment->submissions;
-        $students = $ownedClassAssessment->class?->enrolledStudentsCollection(['user']) ?? collect();
+        $submissions = $ownedPublishAssessment->submissions;
+        $students = $ownedPublishAssessment->class?->enrolledStudentsCollection(['user']) ?? collect();
         $submissionStudents = $submissions
             ->pluck('studentProfile')
             ->filter();
@@ -94,7 +94,7 @@ class AssessmentResultController extends BaseController
                 ];
             })
             ->values();
-        $analytics = $this->classAssessmentReportAnalytics($ownedClassAssessment);
+        $analytics = $this->publishAssessmentReportAnalytics($ownedPublishAssessment);
         $autoSubmittedCount = $submissions
             ->where('status', Submission::STATUS_SUBMITTED)
             ->where('completion_reason', Submission::COMPLETION_WARNING_LIMIT)
@@ -102,14 +102,14 @@ class AssessmentResultController extends BaseController
 
         Log::info('Instructor viewed completed assessment results.', [
             'actor_id' => $user->id,
-            'class_assessment_id' => $ownedClassAssessment->class_assessment_id,
-            'assessment_id' => $ownedClassAssessment->assessment_id,
-            'class_id' => $ownedClassAssessment->class_id,
+            'publish_assessment_id' => $ownedPublishAssessment->publish_assessment_id,
+            'assessment_id' => $ownedPublishAssessment->assessment_id,
+            'class_id' => $ownedPublishAssessment->class_id,
         ]);
 
         return view('instructor.assessments.results', $this->sharedData($user, 'assessments') + [
-            'assessment' => $ownedClassAssessment->assessment,
-            'class' => $ownedClassAssessment->class,
+            'assessment' => $ownedPublishAssessment->assessment,
+            'class' => $ownedPublishAssessment->class,
             'studentResults' => $studentResults,
             'analytics' => $analytics,
             'autoSubmittedCount' => $autoSubmittedCount,
@@ -123,18 +123,18 @@ class AssessmentResultController extends BaseController
 
         $submission->load([
             'studentProfile.user',
-            'classAssessment.assessment.items.choices',
-            'classAssessment.class.subject',
+            'publishAssessment.assessment.items.choices',
+            'publishAssessment.class.subject',
             'answers.choice',
             'answers.item.choices',
             'answers.checker',
         ]);
 
-        $ownedClassAssessment = $this->ownedClassAssessment($submission->classAssessment, $instructorProfile);
+        $ownedPublishAssessment = $this->ownedPublishAssessment($submission->publishAssessment, $instructorProfile);
 
         abort_unless($submission->status === Submission::STATUS_SUBMITTED, 404, 'Only submitted attempts can be checked.');
 
-        $items = $ownedClassAssessment->assessment?->items ?? collect();
+        $items = $ownedPublishAssessment->assessment?->items ?? collect();
         $answers = $submission->answers->keyBy('assessment_item_id');
         $rows = $items->map(function ($item) use ($answers): array {
             $answer = $answers->get($item->assessment_item_id);
@@ -151,9 +151,9 @@ class AssessmentResultController extends BaseController
 
         return view('instructor.assessments.grade-submission', $this->sharedData($user, 'assessments') + [
             'submission' => $submission,
-            'classAssessment' => $ownedClassAssessment,
-            'assessment' => $ownedClassAssessment->assessment,
-            'class' => $ownedClassAssessment->class,
+            'publishAssessment' => $ownedPublishAssessment,
+            'assessment' => $ownedPublishAssessment->assessment,
+            'class' => $ownedPublishAssessment->class,
             'student' => $submission->studentProfile,
             'rows' => $rows,
             'scoreText' => $this->formatReportNumber($score),
@@ -168,11 +168,11 @@ class AssessmentResultController extends BaseController
         $instructorProfile = $this->instructorProfile($user);
 
         $submission->load([
-            'classAssessment.assessment.items',
+            'publishAssessment.assessment.items',
             'answers.item',
         ]);
 
-        $ownedClassAssessment = $this->ownedClassAssessment($submission->classAssessment, $instructorProfile);
+        $ownedPublishAssessment = $this->ownedPublishAssessment($submission->publishAssessment, $instructorProfile);
 
         abort_unless($submission->status === Submission::STATUS_SUBMITTED, 404, 'Only submitted attempts can be checked.');
 
@@ -221,7 +221,7 @@ class AssessmentResultController extends BaseController
         Log::info('Instructor manually checked essay answers.', [
             'actor_id' => $user->id,
             'submission_id' => $submission->submission_id,
-            'class_assessment_id' => $ownedClassAssessment->class_assessment_id,
+            'publish_assessment_id' => $ownedPublishAssessment->publish_assessment_id,
         ]);
 
         return redirect()

@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\ClassAssessment;
+use App\Models\PublishAssessment;
 use App\Models\Submission;
 use App\Support\AssessmentScoring;
 use Illuminate\Http\Client\RequestException;
@@ -13,9 +13,9 @@ use Illuminate\Support\Str;
 
 class ReportAiService
 {
-    public function generate(ClassAssessment $classAssessment, ?string $provider = null): array
+    public function generate(PublishAssessment $publishAssessment, ?string $provider = null): array
     {
-        $data = $this->reportData($classAssessment);
+        $data = $this->reportData($publishAssessment);
         $provider = $provider ?: (string) config('services.ai_report.provider', 'mock');
         $settings = $this->providerSettings($provider);
         $model = (string) ($settings['model'] ?? '');
@@ -41,7 +41,7 @@ class ReportAiService
 
             Log::warning('AI report draft request failed.', [
                 'provider' => $provider,
-                'class_assessment_id' => $classAssessment->class_assessment_id,
+                'publish_assessment_id' => $publishAssessment->publish_assessment_id,
                 'status' => $status,
                 'message' => $exception->getMessage(),
                 'api_message' => $apiMessage,
@@ -56,7 +56,7 @@ class ReportAiService
         } catch (\Throwable $exception) {
             Log::warning('AI report draft failed.', [
                 'provider' => $provider,
-                'class_assessment_id' => $classAssessment->class_assessment_id,
+                'publish_assessment_id' => $publishAssessment->publish_assessment_id,
                 'message' => $exception->getMessage(),
             ]);
 
@@ -154,18 +154,18 @@ class ReportAiService
         return $this->parseDraft($response['content'][0]['text'] ?? '', 'claude');
     }
 
-    private function reportData(ClassAssessment $classAssessment): array
+    private function reportData(PublishAssessment $publishAssessment): array
     {
-        $classAssessment->loadMissing([
+        $publishAssessment->loadMissing([
             'assessment.items.choices',
             'assessment.subject',
             'class.subject',
             'submissions.answers.choice',
         ]);
 
-        $assessment = $classAssessment->assessment;
+        $assessment = $publishAssessment->assessment;
         $items = $assessment?->items ?? collect();
-        $submissions = $classAssessment->submissions
+        $submissions = $publishAssessment->submissions
             ->where('status', Submission::STATUS_SUBMITTED)
             ->values();
         $maxScore = (float) $items->sum(fn ($item) => (float) $item->points);
@@ -179,7 +179,7 @@ class ReportAiService
         return [
             'assessment_title' => (string) ($assessment?->title ?? 'Assessment'),
             'subject' => trim(($assessment?->subject?->subject_code ?? '').' '.($assessment?->subject?->subject_name ?? '')),
-            'students_count' => $classAssessment->class?->enrolledStudentsCount() ?? 0,
+            'students_count' => $publishAssessment->class?->enrolledStudentsCount() ?? 0,
             'takers_count' => $scores->count(),
             'items_count' => $items->count(),
             'max_score' => $maxScore,

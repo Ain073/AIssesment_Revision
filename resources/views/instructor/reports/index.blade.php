@@ -301,18 +301,18 @@
                     </div>
 
                     <div class="d-grid gap-3">
-                        @foreach ($group['items'] as $classAssessment)
+                        @foreach ($group['items'] as $publishAssessment)
                             @php
-                                $assessment = $classAssessment->assessment;
-                                $class = $classAssessment->class;
-                                $report = $classAssessment->report;
+                                $assessment = $publishAssessment->assessment;
+                                $class = $publishAssessment->class;
+                                $report = $publishAssessment->report;
                             @endphp
                             <label class="report-assessment-card mb-0">
                                 <input
                                     class="form-check-input report-check mt-1"
-                                    name="class_assessment_keys[]"
+                                    name="publish_assessment_keys[]"
                                     type="checkbox"
-                                    value="{{ $classAssessment->public_id }}"
+                                    value="{{ $publishAssessment->public_id }}"
                                     data-report-checkbox="{{ $type }}"
                                 >
                                 <span>
@@ -328,8 +328,8 @@
                                     </span>
                                     <span class="report-meta-line d-block">
                                         Due:
-                                        {{ $classAssessment->due_at ? $classAssessment->due_at->format('M d, Y h:i A') : 'No due date' }}
-                                        | Submissions: {{ $classAssessment->submissions_count }}
+                                        {{ $publishAssessment->due_at ? $publishAssessment->due_at->format('M d, Y h:i A') : 'No due date' }}
+                                        | Submissions: {{ $publishAssessment->submissions_count }}
                                         | Term: {{ ucfirst((string) $assessment->reporting_term) }}
                                     </span>
                                 </span>

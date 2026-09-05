@@ -86,9 +86,9 @@
 @section('content')
     @php
         $enabledSecurities = collect([
-            ['enabled' => $classAssessment->prevent_copy_paste, 'icon' => 'content_paste_off', 'label' => 'No copy / paste'],
-            ['enabled' => $classAssessment->detect_tab_switch, 'icon' => 'tab', 'label' => 'Tab switch monitoring'],
-            ['enabled' => $classAssessment->screenshot_protection, 'icon' => 'screenshot_monitor', 'label' => 'Screenshot deterrent'],
+            ['enabled' => $publishAssessment->prevent_copy_paste, 'icon' => 'content_paste_off', 'label' => 'No copy / paste'],
+            ['enabled' => $publishAssessment->detect_tab_switch, 'icon' => 'tab', 'label' => 'Tab switch monitoring'],
+            ['enabled' => $publishAssessment->screenshot_protection, 'icon' => 'screenshot_monitor', 'label' => 'Screenshot deterrent'],
         ])->where('enabled');
     @endphp
 
@@ -131,13 +131,13 @@
                 <div class="col-md-4">
                     <div class="detail-card p-3 h-100">
                         <p class="small fw-bold text-secondary text-uppercase mb-1">Available</p>
-                        <p class="fw-semibold mb-0" style="color: var(--psu-navy);">{{ $classAssessment->available_at?->format('M d, Y h:i A') ?? 'Now' }}</p>
+                        <p class="fw-semibold mb-0" style="color: var(--psu-navy);">{{ $publishAssessment->available_at?->format('M d, Y h:i A') ?? 'Now' }}</p>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="detail-card p-3 h-100">
                         <p class="small fw-bold text-secondary text-uppercase mb-1">Due</p>
-                        <p class="fw-semibold mb-0" style="color: var(--psu-navy);">{{ $classAssessment->due_at?->format('M d, Y h:i A') ?? 'No due date' }}</p>
+                        <p class="fw-semibold mb-0" style="color: var(--psu-navy);">{{ $publishAssessment->due_at?->format('M d, Y h:i A') ?? 'No due date' }}</p>
                     </div>
                 </div>
             </div>
@@ -146,7 +146,7 @@
                 <div class="col-md-4">
                     <div class="detail-card p-3 h-100">
                         <p class="small fw-bold text-secondary text-uppercase mb-1">Attempts</p>
-                        <p class="fw-semibold mb-0" style="color: var(--psu-navy);">{{ $classAssessment->attempt_limit }} allowed</p>
+                        <p class="fw-semibold mb-0" style="color: var(--psu-navy);">{{ $publishAssessment->attempt_limit }} allowed</p>
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -185,7 +185,7 @@
 
             <div class="d-flex flex-wrap justify-content-end gap-2">
                 <a class="btn btn-outline-secondary portal-ajax-link px-4" href="{{ route('student.assessments') }}">Cancel</a>
-                <a class="btn btn-psu px-4 d-inline-flex align-items-center gap-2 {{ $assessment->items->isEmpty() ? 'disabled' : '' }}" href="{{ route('student.assessments.start', $classAssessment) }}" aria-disabled="{{ $assessment->items->isEmpty() ? 'true' : 'false' }}">
+                <a class="btn btn-psu px-4 d-inline-flex align-items-center gap-2 {{ $assessment->items->isEmpty() ? 'disabled' : '' }}" href="{{ route('student.assessments.start', $publishAssessment) }}" aria-disabled="{{ $assessment->items->isEmpty() ? 'true' : 'false' }}">
                     <span class="material-symbols-outlined fs-5">play_arrow</span>
                     Start Assessment
                 </a>

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Subject extends Model
 {
@@ -37,9 +38,16 @@ class Subject extends Model
         return $this->belongsTo(Semester::class, 'semester_id', 'semester_id');
     }
 
-    public function classes(): HasMany
+    public function classes(): HasManyThrough
     {
-        return $this->hasMany(AcademicClass::class, 'subject_id', 'subject_id');
+        return $this->hasManyThrough(
+            AcademicClass::class,
+            ClassDetail::class,
+            'subject_id',
+            'class_id',
+            'subject_id',
+            'class_id'
+        )->whereNull('class_details.student_id');
     }
 
     public function classDetails(): HasMany

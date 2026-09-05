@@ -84,7 +84,7 @@
                             <div class="assessment-meta mb-3">
                                 <span class="badge text-bg-primary rounded-1">{{ $assessmentTypes[$assessment->type] ?? ucfirst($assessment->type) }}</span>
                                 <span class="badge text-bg-light border rounded-1">{{ $assessment->items_count }} item{{ $assessment->items_count === 1 ? '' : 's' }}</span>
-                                <span class="badge text-bg-light border rounded-1">{{ $assessment->class_assessments_count }} class{{ $assessment->class_assessments_count === 1 ? '' : 'es' }}</span>
+                                <span class="badge text-bg-light border rounded-1">{{ $assessment->publish_assessments_count }} class{{ $assessment->publish_assessments_count === 1 ? '' : 'es' }}</span>
                             </div>
 
                             @if ($assessment->description)
@@ -123,53 +123,53 @@
     @else
         @if ($publishedAssessments->isNotEmpty())
             <div class="row g-4">
-                @foreach ($publishedAssessments as $classAssessment)
+                @foreach ($publishedAssessments as $publishAssessment)
                     <div class="col-xl-6">
-                        <section class="assessment-card h-100" id="publishedAssessmentCard{{ $classAssessment->class_assessment_id }}">
+                        <section class="assessment-card h-100" id="publishedAssessmentCard{{ $publishAssessment->publish_assessment_id }}">
                             <div class="directory-header px-4 py-3 d-flex justify-content-between gap-3">
                                 <div>
-                                    <h2 class="h4 mb-1">{{ $classAssessment->assessment?->title ?? 'Untitled Assessment' }}</h2>
-                                    <p class="small text-white-50 mb-0">{{ $classAssessment->assessment?->subject?->subject_code }} - {{ $classAssessment->class?->class_name }}</p>
+                                    <h2 class="h4 mb-1">{{ $publishAssessment->assessment?->title ?? 'Untitled Assessment' }}</h2>
+                                    <p class="small text-white-50 mb-0">{{ $publishAssessment->assessment?->subject?->subject_code }} - {{ $publishAssessment->class?->class_name }}</p>
                                 </div>
-                                <span class="badge {{ $classAssessment->display_status === 'completed' ? 'text-bg-success' : 'text-bg-warning' }} rounded-1 align-self-start">
-                                    {{ ucfirst($classAssessment->display_status) }}
+                                <span class="badge {{ $publishAssessment->display_status === 'completed' ? 'text-bg-success' : 'text-bg-warning' }} rounded-1 align-self-start">
+                                    {{ ucfirst($publishAssessment->display_status) }}
                                 </span>
                             </div>
 
                             <div class="p-4">
                                 <div class="assessment-meta mb-3">
-                                    <span class="badge text-bg-primary rounded-1">{{ ucfirst($classAssessment->publish_status) }}</span>
-                                    <span class="badge text-bg-light border rounded-1">{{ $classAssessment->attempt_limit }} attempt{{ $classAssessment->attempt_limit === 1 ? '' : 's' }}</span>
-                                    <span class="badge text-bg-light border rounded-1">{{ $classAssessment->submitted_count }} submission{{ $classAssessment->submitted_count === 1 ? '' : 's' }}</span>
-                                    @if ($classAssessment->due_at)
-                                        <span class="badge text-bg-light border rounded-1">Due {{ $classAssessment->due_at->format('M d, Y h:i A') }}</span>
+                                    <span class="badge text-bg-primary rounded-1">{{ ucfirst($publishAssessment->publish_status) }}</span>
+                                    <span class="badge text-bg-light border rounded-1">{{ $publishAssessment->attempt_limit }} attempt{{ $publishAssessment->attempt_limit === 1 ? '' : 's' }}</span>
+                                    <span class="badge text-bg-light border rounded-1">{{ $publishAssessment->submitted_count }} submission{{ $publishAssessment->submitted_count === 1 ? '' : 's' }}</span>
+                                    @if ($publishAssessment->due_at)
+                                        <span class="badge text-bg-light border rounded-1">Due {{ $publishAssessment->due_at->format('M d, Y h:i A') }}</span>
                                     @endif
                                 </div>
 
                                 <p class="text-secondary mb-3">
-                                    Published to {{ $classAssessment->class?->class_name ?? 'class' }}
-                                    @if ($classAssessment->class?->school_year)
-                                        for {{ $classAssessment->class->school_year }}
+                                    Published to {{ $publishAssessment->class?->class_name ?? 'class' }}
+                                    @if ($publishAssessment->class?->school_year)
+                                        for {{ $publishAssessment->class->school_year }}
                                     @endif
                                 </p>
 
                                 <div class="d-flex flex-wrap gap-2">
-                                    @if ($classAssessment->display_status === 'completed')
-                                        <a class="btn btn-psu d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.results', $classAssessment) }}">
+                                    @if ($publishAssessment->display_status === 'completed')
+                                        <a class="btn btn-psu d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.results', $publishAssessment) }}">
                                             <span class="material-symbols-outlined fs-5">analytics</span>
                                             View Results
                                         </a>
                                     @else
-                                        <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $classAssessment->assessment) }}">
+                                        <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $publishAssessment->assessment) }}">
                                             <span class="material-symbols-outlined fs-5">visibility</span>
                                             View Assessment
                                         </a>
                                     @endif
-                                    <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('instructor.classes.show', $classAssessment->class) }}">
+                                    <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('instructor.classes.show', $publishAssessment->class) }}">
                                         <span class="material-symbols-outlined fs-5">school</span>
                                         View Class
                                     </a>
-                                    <button class="btn btn-outline-danger d-inline-flex align-items-center gap-2" data-bs-target="#deletePublishedAssessmentModal{{ $classAssessment->class_assessment_id }}" data-bs-toggle="modal" type="button">
+                                    <button class="btn btn-outline-danger d-inline-flex align-items-center gap-2" data-bs-target="#deletePublishedAssessmentModal{{ $publishAssessment->publish_assessment_id }}" data-bs-toggle="modal" type="button">
                                         <span class="material-symbols-outlined fs-5">delete</span>
                                         Delete
                                     </button>

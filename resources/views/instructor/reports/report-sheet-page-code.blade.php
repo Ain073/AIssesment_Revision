@@ -15,7 +15,7 @@
         };
         const contentFontStorageKey = `aissessment:report-content-style:${@json($reportType)}`;
         const reportDraftAssessmentKeys = reportForm
-            ? [...reportForm.querySelectorAll('input[name="class_assessment_keys[]"]')]
+            ? [...reportForm.querySelectorAll('input[name="publish_assessment_keys[]"]')]
                 .map((input) => input.value.trim())
                 .filter(Boolean)
                 .sort()
@@ -256,11 +256,11 @@
         };
 
         aiButton?.addEventListener('click', async () => {
-            const classAssessmentKeys = [...reportForm.querySelectorAll('input[name="class_assessment_keys[]"]')]
+            const publishAssessmentKeys = [...reportForm.querySelectorAll('input[name="publish_assessment_keys[]"]')]
                 .map((input) => input.value.trim())
                 .filter(Boolean);
 
-            if (classAssessmentKeys.length === 0) {
+            if (publishAssessmentKeys.length === 0) {
                 showAiStatus('No completed assessments were selected.', 'warning');
                 return;
             }
@@ -280,7 +280,7 @@
                     },
                     body: JSON.stringify({
                         report_type: @json($reportType),
-                        class_assessment_keys: classAssessmentKeys,
+                        publish_assessment_keys: publishAssessmentKeys,
                         ai_provider: aiProvider?.value || 'openai',
                     }),
                 });

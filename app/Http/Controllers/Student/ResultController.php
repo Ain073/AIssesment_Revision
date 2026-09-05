@@ -18,10 +18,10 @@ class ResultController extends BaseController
             ? Submission::query()
                 ->with([
                     'answers.choice',
-                    'classAssessment.assessment.items.choices',
-                    'classAssessment.assessment.subject',
-                    'classAssessment.class.subject',
-                    'classAssessment.class.instructorProfile.user',
+                    'publishAssessment.assessment.items.choices',
+                    'publishAssessment.assessment.subject',
+                    'publishAssessment.class.subject',
+                    'publishAssessment.class.instructorProfile.user',
                 ])
                 ->where('student_profile_id', $studentProfile->student_profile_id)
                 ->where('status', Submission::STATUS_SUBMITTED)
@@ -63,10 +63,10 @@ class ResultController extends BaseController
     private function buildResults(Collection $submissions): Collection
     {
         return $submissions
-            ->groupBy('class_assessment_id')
+            ->groupBy('publish_assessment_id')
             ->map(function (Collection $attempts): array {
-                $classAssessment = $attempts->first()->classAssessment;
-                $assessment = $classAssessment?->assessment;
+                $publishAssessment = $attempts->first()->publishAssessment;
+                $assessment = $publishAssessment?->assessment;
                 $items = $assessment?->items ?? collect();
                 $maxScore = (float) $items->sum(fn ($item) => (float) $item->points);
                 $passingScore = $maxScore * 0.75;
@@ -93,17 +93,17 @@ class ResultController extends BaseController
                     ->first();
 
                 return [
-                    'class_assessment' => $classAssessment,
+                    'publish_assessment' => $publishAssessment,
                     'assessment' => $assessment,
-                    'class' => $classAssessment?->class,
-                    'class_key' => $classAssessment?->class?->public_id,
+                    'class' => $publishAssessment?->class,
+                    'class_key' => $publishAssessment?->class?->public_id,
                     'best_attempt' => $bestAttempt,
                     'attempts' => $attemptRows,
                     'attempt_count' => $attemptRows->count(),
                     'max_score' => $maxScore,
                     'max_score_text' => $this->formatNumber($maxScore),
-                    'score_visible' => (bool) $classAssessment?->score_visibility,
-                    'answer_visible' => (bool) $classAssessment?->answer_visibility,
+                    'score_visible' => (bool) $publishAssessment?->score_visibility,
+                    'answer_visible' => (bool) $publishAssessment?->answer_visibility,
                     'percentage' => $bestAttempt['percentage'] ?? 0,
                     'passed' => $bestAttempt['passed'] ?? false,
                     'latest_submitted_at' => $attemptRows->pluck('submitted_at')->filter()->max(),

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
-use App\Models\ClassAssessment;
+use App\Models\PublishAssessment;
 use App\Models\Submission;
 use App\Models\SubmissionSecurityEvent;
 use App\Services\NotificationService;
@@ -32,7 +32,7 @@ class AssessmentController extends BaseController
         return view('student.assessments.assessment-list', $this->studentAssessmentsData($this->currentUser()));
     }
 
-    public function takeAssessment(ClassAssessment $classAssessment): View|RedirectResponse
+    public function takeAssessment(PublishAssessment $publishAssessment): View|RedirectResponse
     {
         $user = $this->currentUser();
         $studentProfile = $this->studentProfileOrRedirect($user);
@@ -41,7 +41,7 @@ class AssessmentController extends BaseController
             return $studentProfile;
         }
 
-        $unavailable = $this->prepareAccessibleAssessment($classAssessment, $studentProfile);
+        $unavailable = $this->prepareAccessibleAssessment($publishAssessment, $studentProfile);
 
         if ($unavailable instanceof RedirectResponse) {
             return $unavailable;
@@ -50,20 +50,20 @@ class AssessmentController extends BaseController
         Log::info('Student opened published assessment.', [
             'actor_id' => $user->id,
             'student_profile_id' => $studentProfile->student_profile_id,
-            'class_assessment_id' => $classAssessment->class_assessment_id,
-            'assessment_id' => $classAssessment->assessment_id,
-            'class_id' => $classAssessment->class_id,
+            'publish_assessment_id' => $publishAssessment->publish_assessment_id,
+            'assessment_id' => $publishAssessment->assessment_id,
+            'class_id' => $publishAssessment->class_id,
         ]);
 
         return view('student.assessments.take', $this->sharedData($user, 'assessments') + [
-            'classAssessment' => $classAssessment,
-            'assessment' => $classAssessment->assessment,
-            'class' => $classAssessment->class,
-            'warningLimit' => $this->warningLimit($classAssessment),
+            'publishAssessment' => $publishAssessment,
+            'assessment' => $publishAssessment->assessment,
+            'class' => $publishAssessment->class,
+            'warningLimit' => $this->warningLimit($publishAssessment),
         ]);
     }
 
-    public function submittedAssessment(ClassAssessment $classAssessment): View|RedirectResponse
+    public function submittedAssessment(PublishAssessment $publishAssessment): View|RedirectResponse
     {
         $user = $this->currentUser();
         $studentProfile = $this->studentProfileOrRedirect($user);
@@ -72,11 +72,11 @@ class AssessmentController extends BaseController
             return $studentProfile;
         }
 
-        $this->ensurePublishedAssessmentEnrollment($classAssessment, $studentProfile);
+        $this->ensurePublishedAssessmentEnrollment($publishAssessment, $studentProfile);
 
         $submission = Submission::query()
             ->with(['answers.choice'])
-            ->where('class_assessment_id', $classAssessment->class_assessment_id)
+            ->where('publish_assessment_id', $publishAssessment->publish_assessment_id)
             ->where('student_profile_id', $studentProfile->student_profile_id)
             ->where('status', Submission::STATUS_SUBMITTED)
             ->latest('submitted_at')
@@ -88,19 +88,19 @@ class AssessmentController extends BaseController
                 ->withErrors(['assessment' => 'No submitted attempt was found for this assessment.']);
         }
 
-        $items = $classAssessment->assessment?->items ?? collect();
+        $items = $publishAssessment->assessment?->items ?? collect();
         $maxScore = (float) $items->sum(fn ($item): float => (float) $item->points);
         $score = $this->submissionScore($submission, $items);
         $percentage = $maxScore > 0 ? round(($score / $maxScore) * 100, 1) : 0;
         $passingScore = $maxScore * 0.75;
 
         return view('student.assessments.submitted', $this->sharedData($user, 'assessments') + [
-            'classAssessment' => $classAssessment,
-            'assessment' => $classAssessment->assessment,
-            'class' => $classAssessment->class,
+            'publishAssessment' => $publishAssessment,
+            'assessment' => $publishAssessment->assessment,
+            'class' => $publishAssessment->class,
             'submission' => $submission,
-            'showScore' => (bool) $classAssessment->score_visibility,
-            'showAnswers' => (bool) $classAssessment->answer_visibility,
+            'showScore' => (bool) $publishAssessment->score_visibility,
+            'showAnswers' => (bool) $publishAssessment->answer_visibility,
             'score' => $score,
             'scoreText' => $this->formatNumber($score),
             'maxScore' => $maxScore,
@@ -111,7 +111,7 @@ class AssessmentController extends BaseController
         ]);
     }
 
-    public function startAssessment(ClassAssessment $classAssessment): View|RedirectResponse
+    public function startAssessment(PublishAssessment $publishAssessment): View|RedirectResponse
     {
         $user = $this->currentUser();
         $studentProfile = $this->studentProfileOrRedirect($user);
@@ -120,31 +120,31 @@ class AssessmentController extends BaseController
             return $studentProfile;
         }
 
-        $unavailable = $this->prepareAccessibleAssessment($classAssessment, $studentProfile);
+        $unavailable = $this->prepareAccessibleAssessment($publishAssessment, $studentProfile);
 
         if ($unavailable instanceof RedirectResponse) {
             return $unavailable;
         }
 
-        if ($classAssessment->assessment->items->isEmpty()) {
+        if ($publishAssessment->assessment->items->isEmpty()) {
             return redirect()
-                ->route('student.assessments.take', $classAssessment)
+                ->route('student.assessments.take', $publishAssessment)
                 ->withErrors(['assessment' => 'This assessment has no questions yet.']);
         }
 
-        $submission = $this->startOrResumeSubmission($classAssessment, $studentProfile);
+        $submission = $this->startOrResumeSubmission($publishAssessment, $studentProfile);
 
         if ($submission instanceof RedirectResponse) {
             return $submission;
         }
 
-        $items = $classAssessment->assessment->items;
+        $items = $publishAssessment->assessment->items;
 
-        if ($classAssessment->shuffle_items) {
+        if ($publishAssessment->shuffle_items) {
             $items = $items->shuffle()->values();
         }
 
-        if ($classAssessment->shuffle_choices) {
+        if ($publishAssessment->shuffle_choices) {
             $items->each(function ($item) {
                 $item->setRelation('choices', $item->choices->shuffle()->values());
             });
@@ -153,46 +153,46 @@ class AssessmentController extends BaseController
         Log::info('Student started assessment attempt view.', [
             'actor_id' => $user->id,
             'student_profile_id' => $studentProfile->student_profile_id,
-            'class_assessment_id' => $classAssessment->class_assessment_id,
-            'assessment_id' => $classAssessment->assessment_id,
-            'class_id' => $classAssessment->class_id,
+            'publish_assessment_id' => $publishAssessment->publish_assessment_id,
+            'assessment_id' => $publishAssessment->assessment_id,
+            'class_id' => $publishAssessment->class_id,
         ]);
 
         return view('student.assessments.attempt', [
             'user' => $user,
             'studentProfile' => $studentProfile,
-            'classAssessment' => $classAssessment,
-            'assessment' => $classAssessment->assessment,
-            'class' => $classAssessment->class,
+            'publishAssessment' => $publishAssessment,
+            'assessment' => $publishAssessment->assessment,
+            'class' => $publishAssessment->class,
             'items' => $items,
             'submission' => $submission,
-            'warningLimit' => $this->warningLimit($classAssessment),
+            'warningLimit' => $this->warningLimit($publishAssessment),
         ]);
     }
 
-    public function recordSecurityEvent(Request $request, ClassAssessment $classAssessment): JsonResponse
+    public function recordSecurityEvent(Request $request, PublishAssessment $publishAssessment): JsonResponse
     {
         $user = $this->currentUser();
         $studentProfile = $this->studentProfileOrRedirect($user);
 
         abort_if($studentProfile instanceof RedirectResponse, 403, 'A student profile is required.');
 
-        $this->ensurePublishedAssessmentEnrollment($classAssessment, $studentProfile);
+        $this->ensurePublishedAssessmentEnrollment($publishAssessment, $studentProfile);
 
         $validated = $request->validate([
             'event_uuid' => ['required', 'string', 'max:64'],
             'event_type' => ['required', 'string', Rule::in(array_keys(SubmissionSecurityEvent::labels()))],
         ]);
 
-        if (! $this->securityEventEnabled($classAssessment, $validated['event_type'])) {
+        if (! $this->securityEventEnabled($publishAssessment, $validated['event_type'])) {
             throw ValidationException::withMessages([
                 'event_type' => 'This security event is not enabled for the assessment.',
             ]);
         }
 
-        $result = DB::transaction(function () use ($request, $classAssessment, $studentProfile, $validated): array {
+        $result = DB::transaction(function () use ($request, $publishAssessment, $studentProfile, $validated): array {
             $submission = Submission::query()
-                ->where('class_assessment_id', $classAssessment->class_assessment_id)
+                ->where('publish_assessment_id', $publishAssessment->publish_assessment_id)
                 ->where('student_profile_id', $studentProfile->student_profile_id)
                 ->where('status', Submission::STATUS_IN_PROGRESS)
                 ->lockForUpdate()
@@ -218,7 +218,7 @@ class AssessmentController extends BaseController
 
             abort_unless($event->submission_id === $submission->submission_id, 409, 'Security event identifier conflict.');
 
-            $warningLimit = $this->warningLimit($classAssessment);
+            $warningLimit = $this->warningLimit($publishAssessment);
 
             if ($event->wasRecentlyCreated && $warningLimit > 0 && $submission->warning_count < $warningLimit) {
                 $submission->warning_count++;
@@ -239,18 +239,18 @@ class AssessmentController extends BaseController
             Log::warning('Assessment warning limit reached.', [
                 'actor_id' => $user->id,
                 'student_profile_id' => $studentProfile->student_profile_id,
-                'class_assessment_id' => $classAssessment->class_assessment_id,
+                'publish_assessment_id' => $publishAssessment->publish_assessment_id,
                 'submission_id' => $result['submission']->submission_id,
             ]);
 
-            $classAssessment->loadMissing('assessment', 'class.instructorProfile.user');
+            $publishAssessment->loadMissing('assessment', 'class.instructorProfile.user');
 
-            if ($classAssessment->class?->instructorProfile?->user) {
+            if ($publishAssessment->class?->instructorProfile?->user) {
                 app(NotificationService::class)->send(
-                    $classAssessment->class->instructorProfile->user,
+                    $publishAssessment->class->instructorProfile->user,
                     'Security Limit Reached',
-                    $user->displayName().' reached the warning limit in '.$classAssessment->assessment?->title.'.',
-                    route('instructor.assessments.results', $classAssessment),
+                    $user->displayName().' reached the warning limit in '.$publishAssessment->assessment?->title.'.',
+                    route('instructor.assessments.results', $publishAssessment),
                     'warning'
                 );
             }
@@ -264,7 +264,7 @@ class AssessmentController extends BaseController
         ]);
     }
 
-    public function submitAssessment(Request $request, ClassAssessment $classAssessment): RedirectResponse
+    public function submitAssessment(Request $request, PublishAssessment $publishAssessment): RedirectResponse
     {
         $user = $this->currentUser();
         $studentProfile = $this->studentProfileOrRedirect($user);
@@ -273,23 +273,23 @@ class AssessmentController extends BaseController
             return $studentProfile;
         }
 
-        $unavailable = $this->prepareAccessibleAssessment($classAssessment, $studentProfile);
+        $unavailable = $this->prepareAccessibleAssessment($publishAssessment, $studentProfile);
 
         if ($unavailable instanceof RedirectResponse) {
             return $unavailable;
         }
 
-        $classAssessment->load(['assessment.items.choices', 'class']);
+        $publishAssessment->load(['assessment.items.choices', 'class']);
 
         $validated = $request->validate([
             'answers' => ['nullable', 'array'],
         ]);
 
         $answers = collect($validated['answers'] ?? []);
-        $items = $classAssessment->assessment->items;
+        $items = $publishAssessment->assessment->items;
 
         $submission = Submission::query()
-            ->where('class_assessment_id', $classAssessment->class_assessment_id)
+            ->where('publish_assessment_id', $publishAssessment->publish_assessment_id)
             ->where('student_profile_id', $studentProfile->student_profile_id)
             ->where('status', Submission::STATUS_IN_PROGRESS)
             ->latest('attempt_number')
@@ -301,7 +301,7 @@ class AssessmentController extends BaseController
                 ->withErrors(['assessment' => 'No active attempt was found. Start the assessment before submitting.']);
         }
 
-        DB::transaction(function () use ($classAssessment, $items, $answers, $submission) {
+        DB::transaction(function () use ($publishAssessment, $items, $answers, $submission) {
             $lockedSubmission = Submission::query()
                 ->whereKey($submission->submission_id)
                 ->lockForUpdate()
@@ -335,7 +335,7 @@ class AssessmentController extends BaseController
                 ]);
             }
 
-            $warningLimit = $this->warningLimit($classAssessment);
+            $warningLimit = $this->warningLimit($publishAssessment);
             $lockedSubmission->update([
                 'status' => Submission::STATUS_SUBMITTED,
                 'completion_reason' => $warningLimit > 0 && $lockedSubmission->warning_count >= $warningLimit
@@ -349,26 +349,26 @@ class AssessmentController extends BaseController
         Log::info('Student submitted assessment.', [
             'actor_id' => $user->id,
             'student_profile_id' => $studentProfile->student_profile_id,
-            'class_assessment_id' => $classAssessment->class_assessment_id,
-            'assessment_id' => $classAssessment->assessment_id,
+            'publish_assessment_id' => $publishAssessment->publish_assessment_id,
+            'assessment_id' => $publishAssessment->assessment_id,
             'submission_id' => $submission->submission_id,
             'warning_count' => $submission->fresh()->warning_count,
         ]);
 
-        $classAssessment->loadMissing('assessment', 'class.instructorProfile.user');
+        $publishAssessment->loadMissing('assessment', 'class.instructorProfile.user');
 
-        if ($classAssessment->class?->instructorProfile?->user) {
+        if ($publishAssessment->class?->instructorProfile?->user) {
             app(NotificationService::class)->send(
-                $classAssessment->class->instructorProfile->user,
+                $publishAssessment->class->instructorProfile->user,
                 'Assessment Submitted',
-                $user->displayName().' submitted '.$classAssessment->assessment?->title.'.',
-                route('instructor.assessments.results', $classAssessment),
+                $user->displayName().' submitted '.$publishAssessment->assessment?->title.'.',
+                route('instructor.assessments.results', $publishAssessment),
                 'assessment'
             );
         }
 
         return redirect()
-            ->route('student.assessments.submitted', $classAssessment);
+            ->route('student.assessments.submitted', $publishAssessment);
     }
 
     private function answerRows(Submission $submission, Collection $items): Collection
