@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers\DepartmentChair;
 
-use App\Models\StudentProfile;
-use App\Models\User;
 use App\Services\StudentAccountImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,31 +13,11 @@ class StudentController extends BaseController
     public function index(Request $request, StudentAccountImportService $importer): View
     {
         $user = $this->currentUser();
-        $scopedDepartment = $this->scopedDepartment($user);
-        $scopedPrograms = $this->scopedPrograms($scopedDepartment);
-        $scopedProgramIds = $scopedPrograms->pluck('program_id');
-        $students = $scopedProgramIds->isNotEmpty()
-            ? StudentProfile::query()
-                ->with(['user.roles', 'program.department.college'])
-                ->whereIn('program_id', $scopedProgramIds)
-                ->get()
-                ->sortBy(fn (StudentProfile $student) => strtolower($student->user?->displayName() ?? ''))
-                ->values()
-            : collect();
-        $teachersCount = $scopedDepartment
-            ? User::query()
-                ->whereHas('roles', fn ($query) => $query->where('role_name', 'instructor'))
-                ->whereHas('instructorProfile', fn ($query) => $query->where('department_id', $scopedDepartment->department_id))
-                ->count()
-            : 0;
 
-        return view('department-chair.students.index', $this->sharedData($user, 'students') + [
-            'students' => $students,
-            'teachersCount' => $teachersCount,
-            'scopedDepartment' => $scopedDepartment,
-            'scopedPrograms' => $scopedPrograms,
-            'studentImportPreview' => $importer->previewForRequest($request, $this->studentImportScope($scopedDepartment)),
-        ]);
+        return view(
+            'department-chair.users.index',
+            $this->sharedData($user, 'teachers') + $this->departmentUserDirectoryData($user, $request, $importer, $request->query('tab', 'students'))
+        );
     }
 
     public function downloadImportSample(StudentAccountImportService $importer): StreamedResponse

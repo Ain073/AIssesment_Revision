@@ -7,6 +7,7 @@
     $profileMeta = 'Admin Account';
     $showTopbarSearch = true;
     $topbarSearchPlaceholder = 'Search accounts...';
+    $activeUserTab = request('tab') === 'students' ? 'students' : 'teachers';
     $navItems = [
         ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('super-admin.dashboard'), 'active' => request()->routeIs('super-admin.dashboard')],
         ['label' => 'Colleges & Departments', 'icon' => 'account_balance', 'href' => route('super-admin.colleges'), 'active' => request()->routeIs('super-admin.colleges')],
@@ -52,22 +53,23 @@
                 </button>
             </div>
 
+            <div data-table-tabs-root data-table-tabs-param="tab" data-table-tabs-default="{{ $activeUserTab }}">
             <div class="table-switch-tabs" id="userTabs" role="tablist">
-                <button class="btn btn-outline-primary table-switch-button active d-inline-flex align-items-center gap-2" data-bs-target="#teachersPane" data-bs-toggle="tab" type="button" role="tab">
+                <button class="btn btn-outline-primary table-switch-button {{ $activeUserTab === 'teachers' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="teachers" type="button" role="tab" aria-pressed="{{ $activeUserTab === 'teachers' ? 'true' : 'false' }}">
                     <span class="material-symbols-outlined fs-5">badge</span>
                     Teachers
                     <span class="table-switch-count">{{ $teachers->count() }}</span>
                 </button>
-                <button class="btn btn-outline-primary table-switch-button d-inline-flex align-items-center gap-2" data-bs-target="#studentsPane" data-bs-toggle="tab" type="button" role="tab">
+                <button class="btn btn-outline-primary table-switch-button {{ $activeUserTab === 'students' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="students" type="button" role="tab" aria-pressed="{{ $activeUserTab === 'students' ? 'true' : 'false' }}">
                     <span class="material-symbols-outlined fs-5">groups</span>
                     Students
                     <span class="table-switch-count">{{ $students->count() }}</span>
                 </button>
             </div>
 
-            <div class="tab-content">
+            <div>
                 {{-- Teachers table --}}
-                <section class="tab-pane fade show active directory-card shadow-sm" id="teachersPane" role="tabpanel">
+                <section class="directory-card shadow-sm {{ $activeUserTab === 'teachers' ? '' : 'd-none' }}" data-table-tab-panel="teachers" role="tabpanel" @if ($activeUserTab !== 'teachers') hidden @endif>
                     <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
                         <h3 class="h4 mb-0">Teachers</h3>
                     </div>
@@ -165,7 +167,7 @@
                 </section>
 
                 {{-- Students table --}}
-                <section class="tab-pane fade directory-card shadow-sm" id="studentsPane" role="tabpanel">
+                <section class="directory-card shadow-sm {{ $activeUserTab === 'students' ? '' : 'd-none' }}" data-table-tab-panel="students" role="tabpanel" @if ($activeUserTab !== 'students') hidden @endif>
                     <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
                         <h3 class="h4 mb-0">Students</h3>
                     </div>
@@ -249,6 +251,7 @@
                     </div>
                 </section>
 
+            </div>
             </div>
 
     @include('super-admin.users.view-edit-delete-user-popups')

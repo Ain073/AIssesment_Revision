@@ -18,17 +18,21 @@ trait InstructorClassHelper
             ? $instructorProfile->classes()
                 ->with(['contextDetail', 'subject'])
             : null;
-        $classes = $baseClassesQuery
+        $activeClasses = $baseClassesQuery
             ? (clone $baseClassesQuery)
-                ->when(
-                    $activeClassTab === 'archived',
-                    fn ($query) => $query->whereNotNull('classes.archived_at'),
-                    fn ($query) => $query->whereNull('classes.archived_at')
-                )
-                ->latest($activeClassTab === 'archived' ? 'classes.archived_at' : 'classes.class_id')
+                ->whereNull('classes.archived_at')
+                ->latest('classes.class_id')
                 ->get()
                 ->each(fn (AcademicClass $class) => $class->applyEnrolledStudentsCount())
             : collect();
+        $archivedClasses = $baseClassesQuery
+            ? (clone $baseClassesQuery)
+                ->whereNotNull('classes.archived_at')
+                ->latest('classes.archived_at')
+                ->get()
+                ->each(fn (AcademicClass $class) => $class->applyEnrolledStudentsCount())
+            : collect();
+        $classes = $activeClassTab === 'archived' ? $archivedClasses : $activeClasses;
         $activeClassesCount = $baseClassesQuery
             ? (clone $baseClassesQuery)->whereNull('classes.archived_at')->count()
             : 0;
@@ -36,7 +40,7 @@ trait InstructorClassHelper
             ? (clone $baseClassesQuery)->whereNotNull('classes.archived_at')->count()
             : 0;
         $activeSubjectIds = $this->activeSubjectIds();
-        $existingSubjectIds = $classes->pluck('subject_id')->filter();
+        $existingSubjectIds = $activeClasses->merge($archivedClasses)->pluck('subject_id')->filter();
         $activeSubjects = Subject::query()
             ->whereIn('subject_id', $activeSubjectIds)
             ->orderBy('subject_code')
@@ -51,6 +55,8 @@ trait InstructorClassHelper
         return [
             'instructorProfile' => $instructorProfile,
             'classes' => $classes,
+            'activeClasses' => $activeClasses,
+            'archivedClasses' => $archivedClasses,
             'subjects' => $subjects,
             'activeSubjects' => $activeSubjects,
             'activeClassTab' => $activeClassTab,

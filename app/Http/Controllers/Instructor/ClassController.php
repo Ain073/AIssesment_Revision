@@ -182,7 +182,6 @@ class ClassController extends BaseController
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedClass = $this->ownedClass($class, $instructorProfile);
-        $this->ensureActiveClass($ownedClass);
 
         $ownedClass->update(['archived_at' => null]);
 
