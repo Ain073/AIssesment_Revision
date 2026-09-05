@@ -40,7 +40,7 @@ class StudentProfile extends Model
             'class_id',
             'student_profile_id',
             'class_id'
-        );
+        )->where('class_details.status', ClassDetail::STATUS_APPROVED);
     }
 
     public function classDetails(): HasMany
@@ -50,6 +50,7 @@ class StudentProfile extends Model
 
     public function classJoinRequests(): HasMany
     {
-        return $this->hasMany(ClassJoinRequest::class, 'student_profile_id', 'student_profile_id');
+        return $this->classDetails()
+            ->where('entry_method', ClassDetail::METHOD_JOIN_CODE);
     }
 }

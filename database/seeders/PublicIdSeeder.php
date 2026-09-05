@@ -13,12 +13,10 @@ class PublicIdSeeder extends Seeder
         'colleges' => 'college_id',
         'departments' => 'department_id',
         'programs' => 'program_id',
-        'subject_program' => 'subject_program_id',
         'classes' => 'class_id',
         'assessments' => 'assessment_id',
         'publish_assessment' => 'publish_assessment_id',
         'student_profiles' => 'student_profile_id',
-        'class_join_requests' => 'class_join_request_id',
         'app_notifications' => 'notification_id',
     ];
 

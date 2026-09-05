@@ -70,30 +70,31 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse ($subjectMappings as $mapping)
+                @forelse ($subjects as $subject)
                     @php
-                        $mappingIsActive = $mapping->subject?->is_active && $activeSemester === $mapping->semester;
+                        $subjectSemester = $subject->semester?->semester_name ?? 'Not assigned';
+                        $subjectIsActive = $subject->is_active && $activeSemester === $subjectSemester;
                     @endphp
                     <tr>
                         <td class="fw-bold subject-primary-cell subject-name-cell" data-label="Subject Name" style="color: var(--psu-navy);">
-                            <div>{{ $mapping->subject?->subject_name }}</div>
-                            <div class="small text-secondary fw-semibold mt-1">{{ $mapping->subject?->subject_code }}</div>
+                            <div>{{ $subject->subject_name }}</div>
+                            <div class="small text-secondary fw-semibold mt-1">{{ $subject->subject_code }}</div>
                         </td>
                         <td class="subject-program-cell" data-label="Program">
-                            <div class="fw-semibold">{{ $mapping->program?->program_name ?? 'Not assigned' }}</div>
+                            <div class="fw-semibold">{{ $subject->program?->program_name ?? 'Not assigned' }}</div>
                             <div class="small text-secondary">
-                                {{ collect([$mapping->program?->department?->dept_name, $mapping->program?->department?->college?->college_name])->filter()->join(' - ') ?: 'No department' }}
+                                {{ collect([$subject->program?->department?->dept_name, $subject->program?->department?->college?->college_name])->filter()->join(' - ') ?: 'No department' }}
                             </div>
                         </td>
-                        <td class="text-center" data-label="Year Level">{{ $mapping->year_level }}</td>
-                        <td data-label="Semester">{{ $mapping->semester }}</td>
+                        <td class="text-center" data-label="Year Level">{{ $subject->year_level }}</td>
+                        <td data-label="Semester">{{ $subjectSemester }}</td>
                         <td class="text-center" data-label="Status">
-                            <span class="badge {{ $mappingIsActive ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
-                                {{ $mappingIsActive ? 'Active' : 'Inactive' }}
+                            <span class="badge {{ $subjectIsActive ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
+                                {{ $subjectIsActive ? 'Active' : 'Inactive' }}
                             </span>
                         </td>
                         <td class="text-center" data-label="Actions">
-                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewSubjectModal{{ $mapping->subject_program_id }}" data-bs-toggle="modal" type="button" aria-label="View {{ $mapping->subject?->subject_name }}">
+                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewSubjectModal{{ $subject->subject_id }}" data-bs-toggle="modal" type="button" aria-label="View {{ $subject->subject_name }}">
                                 <span class="material-symbols-outlined fs-6">visibility</span>
                                 View
                             </button>
@@ -118,6 +119,6 @@
     </div>
 
     <div class="px-4 py-3 border-top" style="background: #eff4ff;">
-        <span class="small text-secondary">Showing {{ $subjectMappings->count() }} {{ $subjectMappings->count() === 1 ? 'entry' : 'entries' }}</span>
+        <span class="small text-secondary">Showing {{ $subjects->count() }} {{ $subjects->count() === 1 ? 'entry' : 'entries' }}</span>
     </div>
 </section>

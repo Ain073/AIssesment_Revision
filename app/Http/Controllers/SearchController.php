@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\AcademicClass;
 use App\Models\Assessment;
 use App\Models\ClassAssessment;
+use App\Models\ClassDetail;
 use App\Models\Program;
-use App\Models\SubjectProgram;
+use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -96,28 +97,26 @@ class SearchController extends Controller
             return collect();
         }
 
-        return SubjectProgram::query()
-            ->with(['subject', 'program'])
+        return Subject::query()
+            ->with(['semester', 'program'])
             ->whereHas('program', fn ($programQuery) => $programQuery->where('department_id', $departmentId))
             ->where(function ($search) use ($query): void {
-                $search->whereHas('subject', function ($subjectQuery) use ($query): void {
-                    $subjectQuery->where('subject_code', 'like', "%{$query}%")
-                        ->orWhere('subject_name', 'like', "%{$query}%");
-                })
+                $search->where('subject_code', 'like', "%{$query}%")
+                    ->orWhere('subject_name', 'like', "%{$query}%")
                     ->orWhereHas('program', fn ($programQuery) => $programQuery->where('program_name', 'like', "%{$query}%"));
             })
             ->orderBy('year_level')
             ->limit(5)
             ->get()
             ->toBase()
-            ->map(fn (SubjectProgram $mapping): array => [
-                'title' => $mapping->subject?->subject_code ?? 'Subject',
-                'subtitle' => trim(($mapping->subject?->subject_name ?? '').' - '.($mapping->program?->program_name ?? 'Program'), ' -'),
+            ->map(fn (Subject $subject): array => [
+                'title' => $subject->subject_code,
+                'subtitle' => trim($subject->subject_name.' - '.($subject->program?->program_name ?? 'Program'), ' -'),
                 'type' => 'Subject',
                 'url' => route('department-chair.subjects', array_filter([
-                    'program' => $mapping->program?->public_id,
-                    'year_level' => $mapping->year_level,
-                    'semester' => $mapping->semester,
+                    'program' => $subject->program?->public_id,
+                    'year_level' => $subject->year_level,
+                    'semester' => $subject->semester?->semester_name,
                 ])),
             ]);
     }
@@ -259,7 +258,8 @@ class SearchController extends Controller
         return AcademicClass::query()
             ->where(function ($query) use ($studentProfile): void {
                 $query->whereHas('classDetails', fn ($detailQuery) => $detailQuery
-                    ->where('student_id', $studentProfile->student_profile_id));
+                    ->where('student_id', $studentProfile->student_profile_id)
+                    ->where('status', ClassDetail::STATUS_APPROVED));
             });
     }
 }

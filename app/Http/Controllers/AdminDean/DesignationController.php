@@ -9,9 +9,28 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\MessageBag;
+use Illuminate\Support\Collection;
+use Illuminate\View\View;
 
 class DesignationController extends BaseController
 {
+    public function index(): View
+    {
+        $user = $this->currentUser();
+        $scopedCollege = $this->scopedCollege($user);
+        $teachers = $this->scopedTeachers();
+
+        return view('admin-dean.designations.index', $this->sharedData('designations') + [
+            'scopedCollege' => $scopedCollege,
+            'departmentChairs' => $teachers
+                ->filter(fn (User $teacher) => $teacher->hasRole('department_chair'))
+                ->values(),
+            'availableDepartmentChairTeachers' => $teachers
+                ->reject(fn (User $teacher) => $teacher->hasRole('admin_dean') || $teacher->hasRole('department_chair'))
+                ->values(),
+        ]);
+    }
+
     public function grantDepartmentChair(User $user): RedirectResponse
     {
         $actor = $this->currentUser();
@@ -19,7 +38,7 @@ class DesignationController extends BaseController
 
         if ($teacher->hasRole('admin_dean')) {
             return redirect()
-                ->route('admin-dean.teachers')
+                ->back()
                 ->withErrors(new MessageBag(['designation' => 'Dean accounts cannot also be designated as Department Chair.']));
         }
 
@@ -44,7 +63,7 @@ class DesignationController extends BaseController
         ]);
 
         return redirect()
-            ->route('admin-dean.teachers')
+            ->back()
             ->with('status', 'Department Chair designation granted successfully.');
     }
 
@@ -67,8 +86,31 @@ class DesignationController extends BaseController
         ]);
 
         return redirect()
-            ->route('admin-dean.teachers')
+            ->back()
             ->with('status', 'Department Chair designation removed successfully.');
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    private function scopedTeachers(): Collection
+    {
+        $scopedCollege = $this->scopedCollege($this->currentUser());
+
+        if (! $scopedCollege) {
+            return collect();
+        }
+
+        return User::with(['roles', 'instructorProfile.department.college'])
+            ->whereHas('roles', fn ($query) => $query->where('role_name', 'instructor'))
+            ->whereHas(
+                'instructorProfile.department',
+                fn ($query) => $query->where('college_id', $scopedCollege->college_id)
+            )
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->orderBy('name')
+            ->get();
     }
 
     private function scopedTeacher(User $user): User

@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Hash;
 
 class RoleAndSuperAdminSeeder extends Seeder
 {
+    private string $adminEmail = 'admin@psu.edu.ph';
+
+    private string $legacyAdminEmail = 'superadmin@psu.edu.ph';
+
     public function run(): void
     {
         $roles = [
@@ -32,12 +36,13 @@ class RoleAndSuperAdminSeeder extends Seeder
             ->where('role_name', 'super_admin')
             ->value('role_id');
 
-        $superAdmin = DB::table('users')
-            ->where('email', 'superadmin@psu.edu.ph')
+        $admin = DB::table('users')
+            ->whereIn('email', [$this->adminEmail, $this->legacyAdminEmail])
+            ->orderByRaw('email = ? DESC', [$this->adminEmail])
             ->first();
 
-        if ($superAdmin) {
-            $userId = $superAdmin->id;
+        if ($admin) {
+            $userId = $admin->id;
 
             DB::table('users')
                 ->where('id', $userId)
@@ -46,6 +51,7 @@ class RoleAndSuperAdminSeeder extends Seeder
                     'first_name' => 'Admin',
                     'middle_name' => null,
                     'last_name' => null,
+                    'email' => $this->adminEmail,
                     'status' => 'active',
                     'updated_at' => now(),
                 ]);
@@ -55,7 +61,7 @@ class RoleAndSuperAdminSeeder extends Seeder
                 'first_name' => 'Admin',
                 'middle_name' => null,
                 'last_name' => null,
-                'email' => 'superadmin@psu.edu.ph',
+                'email' => $this->adminEmail,
                 'password' => Hash::make('password'),
                 'status' => 'active',
                 'created_at' => now(),

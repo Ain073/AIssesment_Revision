@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Subject extends Model
@@ -14,25 +14,27 @@ class Subject extends Model
     protected $primaryKey = 'subject_id';
 
     protected $fillable = [
+        'program_id',
+        'semester_id',
         'subject_code',
         'subject_name',
+        'year_level',
         'is_active',
     ];
 
     protected $casts = [
+        'year_level' => 'integer',
         'is_active' => 'boolean',
     ];
 
-    public function subjectPrograms(): HasMany
+    public function program(): BelongsTo
     {
-        return $this->hasMany(SubjectProgram::class, 'subject_id', 'subject_id');
+        return $this->belongsTo(Program::class, 'program_id', 'program_id');
     }
 
-    public function programs(): BelongsToMany
+    public function semester(): BelongsTo
     {
-        return $this->belongsToMany(Program::class, 'subject_program', 'subject_id', 'program_id')
-            ->withPivot(['subject_program_id', 'year_level', 'semester'])
-            ->withTimestamps();
+        return $this->belongsTo(Semester::class, 'semester_id', 'semester_id');
     }
 
     public function classes(): HasMany

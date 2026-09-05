@@ -142,6 +142,7 @@ Route::middleware(['admin_dean', 'password_changed', 'no_cache'])
         Route::get('/departments', [AdminDeanDepartmentController::class, 'index'])->name('departments');
         Route::post('/departments', [AdminDeanDepartmentController::class, 'store'])->name('departments.store');
         Route::get('/teachers', [AdminDeanTeacherController::class, 'index'])->name('teachers');
+        Route::get('/designations', [AdminDeanDesignationController::class, 'index'])->name('designations');
         Route::post('/teachers/{user}/department-chair-designation', [AdminDeanDesignationController::class, 'grantDepartmentChair'])->name('teachers.department-chair.grant');
         Route::delete('/teachers/{user}/department-chair-designation', [AdminDeanDesignationController::class, 'revokeDepartmentChair'])->name('teachers.department-chair.revoke');
         Route::post('/users', [AdminDeanUserController::class, 'store'])->name('users.store');
@@ -159,8 +160,8 @@ Route::middleware(['department_chair', 'password_changed', 'no_cache'])
         Route::get('/subjects', [DepartmentChairSubjectController::class, 'index'])->name('subjects');
         Route::post('/subjects', [DepartmentChairSubjectController::class, 'store'])->name('subjects.store');
         Route::post('/subjects/active-semester', [DepartmentChairSubjectController::class, 'activateSemester'])->name('subjects.semester.activate');
-        Route::put('/subjects/{subjectProgram}', [DepartmentChairSubjectController::class, 'update'])->name('subjects.update');
-        Route::delete('/subjects/{subjectProgram}', [DepartmentChairSubjectController::class, 'destroy'])->name('subjects.destroy');
+        Route::put('/subjects/{subject}', [DepartmentChairSubjectController::class, 'update'])->name('subjects.update');
+        Route::delete('/subjects/{subject}', [DepartmentChairSubjectController::class, 'destroy'])->name('subjects.destroy');
         Route::get('/students/import-sample', [DepartmentChairStudentController::class, 'downloadImportSample'])->name('students.import.sample');
         Route::post('/students/import-preview', [DepartmentChairStudentController::class, 'previewImport'])->middleware('throttle:10,1')->name('students.import.preview');
         Route::post('/students/import-confirm', [DepartmentChairStudentController::class, 'confirmImport'])->middleware('throttle:10,1')->name('students.import.confirm');

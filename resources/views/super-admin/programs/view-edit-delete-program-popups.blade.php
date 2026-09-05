@@ -32,8 +32,8 @@
                             <div class="fw-bold">{{ $program->student_profiles_count }}</div>
                         </div>
                         <div class="col-md-6">
-                            <div class="program-detail-label mb-1">Subject Mappings</div>
-                            <div class="fw-bold">{{ $program->subject_programs_count }}</div>
+                            <div class="program-detail-label mb-1">Subjects</div>
+                            <div class="fw-bold">{{ $program->subjects_count }}</div>
                         </div>
                     </div>
                 </div>
@@ -95,7 +95,7 @@
                 </div>
                 <div class="modal-body">
                     <p class="mb-2">Delete <strong>{{ $program->program_name }}</strong>?</p>
-                    <p class="text-secondary mb-0">Programs with linked students or subject mappings cannot be deleted.</p>
+                    <p class="text-secondary mb-0">Programs with linked students or subjects cannot be deleted.</p>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>

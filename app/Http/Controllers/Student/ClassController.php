@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Models\AcademicClass;
-use App\Models\ClassJoinRequest;
+use App\Models\ClassDetail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,9 +44,9 @@ class ClassController extends BaseController
             ->whereNull('archived_at')
             ->firstOrFail();
 
-        $existingRequest = ClassJoinRequest::query()
+        $existingRequest = ClassDetail::query()
             ->where('class_id', $class->class_id)
-            ->where('student_profile_id', $studentProfile->student_profile_id)
+            ->where('student_id', $studentProfile->student_profile_id)
             ->first();
         $alreadyEnrolled = $class->hasStudent($studentProfile);
 

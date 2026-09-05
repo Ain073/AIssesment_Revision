@@ -16,7 +16,7 @@
                         <div class="small text-secondary">{{ $joinRequest->class?->subject?->subject_code ?? 'No subject' }}</div>
                     </td>
                     <td>{{ $joinRequest->class?->instructorProfile?->user?->displayName() ?? 'Not assigned' }}</td>
-                    <td>{{ $joinRequest->requested_at?->format('M d, Y g:i A') ?? 'Recently' }}</td>
+                    <td>{{ $joinRequest->updated_at?->format('M d, Y g:i A') ?? 'Recently' }}</td>
                     <td>
                         @php
                             $badgeClass = match ($joinRequest->status) {

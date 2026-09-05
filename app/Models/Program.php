@@ -6,7 +6,6 @@ use App\Models\Concerns\UsesPublicId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Program extends Model
@@ -41,15 +40,8 @@ class Program extends Model
         return $this->hasMany(StudentProfile::class, 'program_id', 'program_id');
     }
 
-    public function subjectPrograms(): HasMany
+    public function subjects(): HasMany
     {
-        return $this->hasMany(SubjectProgram::class, 'program_id', 'program_id');
-    }
-
-    public function subjects(): BelongsToMany
-    {
-        return $this->belongsToMany(Subject::class, 'subject_program', 'program_id', 'subject_id')
-            ->withPivot(['subject_program_id', 'year_level', 'semester'])
-            ->withTimestamps();
+        return $this->hasMany(Subject::class, 'program_id', 'program_id');
     }
 }

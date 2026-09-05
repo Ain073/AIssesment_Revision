@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Instructor;
 
 use App\Models\AcademicClass;
 use App\Models\ClassAssessment;
-use App\Models\ClassJoinRequest;
+use App\Models\ClassDetail;
 use App\Models\StudentProfile;
 use App\Models\Submission;
 use Illuminate\Http\JsonResponse;
@@ -118,7 +118,6 @@ class ClassController extends BaseController
 
         DB::transaction(function () use ($ownedClass) {
             $ownedClass->classDetails()->delete();
-            $ownedClass->joinRequests()->delete();
             $ownedClass->classAssessments()->delete();
             $ownedClass->delete();
         });
@@ -214,9 +213,9 @@ class ClassController extends BaseController
                 ])
                 ->latest('publish_assessment_id'),
             'joinRequests' => fn ($query) => $query
-                ->where('status', ClassJoinRequest::STATUS_PENDING)
+                ->where('status', ClassDetail::STATUS_PENDING)
                 ->with(['studentProfile.user.roles', 'studentProfile.program.department.college'])
-                ->latest('requested_at'),
+                ->latest('updated_at'),
         ])->loadCount('classAssessments');
 
         $ownedClass->applyEnrolledStudentsCount();
@@ -239,7 +238,7 @@ class ClassController extends BaseController
             'classTabs' => $this->classTabs($ownedClass, $activeTab),
             'classJoinLink' => route('student.classes.join.show', $ownedClass->join_token),
             'pendingJoinRequests' => $ownedClass->joinRequests
-                ->sortByDesc('requested_at')
+                ->sortByDesc('updated_at')
                 ->values(),
             'enrolledStudents' => $enrolledStudents,
             'classAssessments' => $ownedClass->classAssessments,

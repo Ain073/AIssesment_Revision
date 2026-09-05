@@ -55,6 +55,11 @@ class DashboardController extends BaseController
                     'href' => route('admin-dean.teachers'),
                     'icon' => 'badge',
                 ],
+                [
+                    'label' => 'Chair Designation',
+                    'href' => route('admin-dean.designations'),
+                    'icon' => 'admin_panel_settings',
+                ],
             ],
         ]);
     }

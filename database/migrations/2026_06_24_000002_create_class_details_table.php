@@ -22,17 +22,16 @@ return new class extends Migration
             $table->foreignId('subject_id')
                 ->constrained('subjects', 'subject_id')
                 ->cascadeOnDelete();
-            $table->foreignId('semester_id')
-                ->constrained('semesters', 'semester_id')
-                ->cascadeOnDelete();
+            $table->string('status', 20)->default('approved');
+            $table->string('entry_method', 30)->default('manual_add');
             $table->timestamps();
 
             $table->unique(
-                ['class_id', 'student_id', 'subject_id', 'semester_id'],
-                'class_details_student_subject_semester_unique'
+                ['class_id', 'student_id', 'subject_id'],
+                'class_details_student_subject_unique'
             );
-            $table->index(['instructor_id', 'subject_id', 'semester_id'], 'class_details_instructor_subject_semester_index');
-            $table->index(['class_id', 'semester_id'], 'class_details_class_semester_index');
+            $table->index(['instructor_id', 'subject_id'], 'class_details_instructor_subject_index');
+            $table->index(['class_id', 'status'], 'class_details_class_status_index');
         });
     }
 

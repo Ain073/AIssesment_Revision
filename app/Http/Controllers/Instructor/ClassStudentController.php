@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Instructor;
 
 use App\Models\AcademicClass;
-use App\Models\ClassJoinRequest;
+use App\Models\ClassDetail;
 use App\Models\StudentProfile;
 use App\Services\NotificationService;
 use App\Services\TabularFileReader;
@@ -68,8 +68,6 @@ class ClassStudentController extends BaseController
         }
 
         if ($ownedClass->hasStudent($studentProfile)) {
-            $ownedClass->syncClassDetailForStudent($studentProfile);
-
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'This student is already enrolled in the selected class.',
@@ -85,7 +83,7 @@ class ClassStudentController extends BaseController
                 ->withInput();
         }
 
-        $ownedClass->enrollStudent($studentProfile);
+        $ownedClass->addStudentWithMethod($studentProfile, ClassDetail::METHOD_MANUAL_ADD);
         $this->markJoinRequestApproved($ownedClass, $studentProfile, $user->id);
 
         Log::info('Student enrolled into class by instructor.', [
@@ -249,18 +247,8 @@ class ClassStudentController extends BaseController
                 ->get();
 
             $addedStudentProfiles->each(
-                fn (StudentProfile $studentProfile) => $ownedClass->enrollStudent($studentProfile)
+                fn (StudentProfile $studentProfile) => $ownedClass->addStudentWithMethod($studentProfile, ClassDetail::METHOD_IMPORT_FILE)
             );
-
-            ClassJoinRequest::query()
-                ->where('class_id', $ownedClass->class_id)
-                ->whereIn('student_profile_id', $attachIds->all())
-                ->update([
-                    'status' => ClassJoinRequest::STATUS_APPROVED,
-                    'responded_at' => now(),
-                    'responded_by' => $user->id,
-                    'updated_at' => now(),
-                ]);
         }
 
         $request->session()->forget($sessionKey);
@@ -312,7 +300,7 @@ class ClassStudentController extends BaseController
         ]);
     }
 
-    public function approveClassJoinRequest(Request $request, AcademicClass $class, ClassJoinRequest $joinRequest): RedirectResponse|JsonResponse
+    public function approveClassJoinRequest(Request $request, AcademicClass $class, ClassDetail $joinRequest): RedirectResponse|JsonResponse
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
@@ -320,6 +308,21 @@ class ClassStudentController extends BaseController
         $this->ensureActiveClass($ownedClass);
 
         abort_unless($joinRequest->class_id === $ownedClass->class_id, 404);
+
+        if ($joinRequest->status !== ClassDetail::STATUS_PENDING) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Only pending join requests can be approved.',
+                    'errors' => [
+                        'join_request' => ['Only pending join requests can be approved.'],
+                    ],
+                ], 422);
+            }
+
+            return redirect()
+                ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
+                ->withErrors(['join_request' => 'Only pending join requests can be approved.']);
+        }
 
         $joinRequest->load('studentProfile.user.roles');
         $studentProfile = $joinRequest->studentProfile;
@@ -354,14 +357,12 @@ class ClassStudentController extends BaseController
                 ->withErrors(['join_request' => 'This student account is inactive and cannot be approved yet.']);
         }
 
-        $ownedClass->enrollStudent($studentProfile);
-
         $this->markJoinRequestApproved($ownedClass, $studentProfile, $user->id);
 
         Log::info('Class join request approved by instructor.', [
             'actor_id' => $user->id,
             'class_id' => $ownedClass->class_id,
-            'class_join_request_id' => $joinRequest->class_join_request_id,
+            'class_details_id' => $joinRequest->class_details_id,
             'student_profile_id' => $studentProfile->student_profile_id,
         ]);
 
@@ -382,7 +383,7 @@ class ClassStudentController extends BaseController
             ->with('status', 'Student join request approved.');
     }
 
-    public function rejectClassJoinRequest(Request $request, AcademicClass $class, ClassJoinRequest $joinRequest): RedirectResponse|JsonResponse
+    public function rejectClassJoinRequest(Request $request, AcademicClass $class, ClassDetail $joinRequest): RedirectResponse|JsonResponse
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
@@ -391,7 +392,7 @@ class ClassStudentController extends BaseController
 
         abort_unless($joinRequest->class_id === $ownedClass->class_id, 404);
 
-        if ($joinRequest->status !== ClassJoinRequest::STATUS_PENDING) {
+        if ($joinRequest->status !== ClassDetail::STATUS_PENDING) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Only pending join requests can be rejected.',
@@ -407,9 +408,7 @@ class ClassStudentController extends BaseController
         }
 
         $joinRequest->update([
-            'status' => ClassJoinRequest::STATUS_REJECTED,
-            'responded_at' => now(),
-            'responded_by' => $user->id,
+            'status' => ClassDetail::STATUS_REJECTED,
         ]);
 
         $joinRequest->loadMissing('studentProfile.user');
@@ -417,7 +416,7 @@ class ClassStudentController extends BaseController
         Log::info('Class join request rejected by instructor.', [
             'actor_id' => $user->id,
             'class_id' => $ownedClass->class_id,
-            'class_join_request_id' => $joinRequest->class_join_request_id,
+            'class_details_id' => $joinRequest->class_details_id,
         ]);
 
         if ($joinRequest->studentProfile?->user) {

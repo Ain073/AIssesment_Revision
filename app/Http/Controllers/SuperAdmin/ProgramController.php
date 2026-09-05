@@ -104,16 +104,16 @@ class ProgramController extends Controller
     public function destroy(Request $request, Program $program): RedirectResponse
     {
         $program->loadMissing('department.college');
-        $program->loadCount(['studentProfiles', 'subjectPrograms']);
+        $program->loadCount(['studentProfiles', 'subjects']);
         $selectedCollege = College::query()
             ->where('public_id', $request->query('college'))
             ->first();
         $redirectCollegeKey = $selectedCollege?->public_id ?? $program->department?->college?->public_id;
 
-        if ($program->student_profiles_count > 0 || $program->subject_programs_count > 0) {
+        if ($program->student_profiles_count > 0 || $program->subjects_count > 0) {
             return redirect()
                 ->route('super-admin.programs', ['college' => $redirectCollegeKey])
-                ->withErrors('This program still has linked students or subject mappings. Remove those links before deleting it.');
+                ->withErrors('This program still has linked students or subjects. Remove those links before deleting it.');
         }
 
         $programName = $program->program_name;
@@ -135,7 +135,7 @@ class ProgramController extends Controller
     private function programsList(?int $collegeId = null)
     {
         return Program::with(['department.college'])
-            ->withCount(['studentProfiles', 'subjectPrograms'])
+            ->withCount(['studentProfiles', 'subjects'])
             ->when($collegeId, fn ($query) => $query->whereHas('department', fn ($departmentQuery) => $departmentQuery->where('college_id', $collegeId)))
             ->orderBy('program_name')
             ->get();

@@ -20,10 +20,9 @@ return new class extends Migration
                 ->constrained('programs', 'program_id')
                 ->cascadeOnDelete();
             $table->unsignedTinyInteger('year_level');
-            $table->string('semester', 50);
             $table->timestamps();
 
-            $table->unique(['subject_id', 'program_id', 'year_level', 'semester'], 'subject_program_scope_unique');
+            $table->unique(['subject_id', 'program_id', 'year_level'], 'subject_program_scope_unique');
         });
     }
 

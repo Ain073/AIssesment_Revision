@@ -5,9 +5,7 @@ namespace App\Http\Controllers\Instructor\Helpers;
 use App\Models\Assessment;
 use App\Models\ClassAssessment;
 use App\Models\InstructorProfile;
-use App\Models\Semester;
 use App\Models\Subject;
-use App\Models\SubjectProgram;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
@@ -172,6 +170,7 @@ trait InstructorAssessmentHelper
                 ->whereNull('archived_at')
                 ->select('subject_id'))
             ->where('is_active', true)
+            ->whereHas('semester', fn ($query) => $query->where('is_active', true))
             ->orderBy('subject_code')
             ->orderBy('subject_name')
             ->get();
@@ -179,16 +178,9 @@ trait InstructorAssessmentHelper
 
     protected function activeSubjectIds(): Collection
     {
-        $activeSemester = Semester::activeName();
-
-        if (! $activeSemester) {
-            return collect();
-        }
-
-        return SubjectProgram::query()
-            ->where('semester', $activeSemester)
-            ->whereHas('subject', fn ($query) => $query->where('is_active', true))
-            ->distinct()
+        return Subject::query()
+            ->where('is_active', true)
+            ->whereHas('semester', fn ($query) => $query->where('is_active', true))
             ->pluck('subject_id');
     }
 

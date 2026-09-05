@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Instructor;
 
 use App\Models\AcademicClass;
 use App\Models\ClassAssessment;
+use App\Models\ClassDetail;
 use App\Models\Submission;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -45,6 +46,7 @@ class DashboardController extends BaseController
         $studentsCount = $classIds->isNotEmpty()
             ? DB::table('class_details')
                 ->whereIn('class_id', $classIds)
+                ->where('status', ClassDetail::STATUS_APPROVED)
                 ->distinct()
                 ->pluck('student_id')
                 ->map(fn ($id) => (int) $id)

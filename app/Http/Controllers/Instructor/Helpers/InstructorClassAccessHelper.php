@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Instructor\Helpers;
 
 use App\Models\AcademicClass;
-use App\Models\ClassJoinRequest;
+use App\Models\ClassDetail;
 use App\Models\StudentProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -42,17 +42,14 @@ trait InstructorClassAccessHelper
 
     protected function markJoinRequestApproved(AcademicClass $class, StudentProfile $studentProfile, int $responderId): void
     {
-        ClassJoinRequest::query()->updateOrCreate(
-            [
-                'class_id' => $class->class_id,
-                'student_profile_id' => $studentProfile->student_profile_id,
-            ],
-            [
-                'status' => ClassJoinRequest::STATUS_APPROVED,
-                'requested_at' => now(),
-                'responded_at' => now(),
-                'responded_by' => $responderId,
-            ],
+        $existingDetail = $class->classDetails()
+            ->where('student_id', $studentProfile->student_profile_id)
+            ->first();
+
+        $class->syncClassDetailForStudent(
+            $studentProfile,
+            ClassDetail::STATUS_APPROVED,
+            $existingDetail?->entry_method ?: ClassDetail::METHOD_MANUAL_ADD
         );
     }
 

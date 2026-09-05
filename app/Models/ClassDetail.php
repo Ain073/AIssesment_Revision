@@ -10,6 +10,18 @@ class ClassDetail extends Model
 {
     use HasFactory;
 
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_APPROVED = 'approved';
+
+    public const STATUS_REJECTED = 'rejected';
+
+    public const METHOD_JOIN_CODE = 'join_code';
+
+    public const METHOD_MANUAL_ADD = 'manual_add';
+
+    public const METHOD_IMPORT_FILE = 'import_file';
+
     protected $primaryKey = 'class_details_id';
 
     protected $fillable = [
@@ -17,7 +29,8 @@ class ClassDetail extends Model
         'instructor_id',
         'student_id',
         'subject_id',
-        'semester_id',
+        'status',
+        'entry_method',
     ];
 
     public function class(): BelongsTo
@@ -39,10 +52,4 @@ class ClassDetail extends Model
     {
         return $this->belongsTo(Subject::class, 'subject_id', 'subject_id');
     }
-
-    public function semester(): BelongsTo
-    {
-        return $this->belongsTo(Semester::class, 'semester_id', 'semester_id');
-    }
-
 }

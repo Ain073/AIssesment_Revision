@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Models\Concerns\UsesPublicId;
-use App\Models\Subject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -65,10 +64,18 @@ class AcademicClass extends Model
             'student_profile_id',
             'class_id',
             'student_id'
-        );
+        )->where('class_details.status', ClassDetail::STATUS_APPROVED);
     }
 
     public function hasStudent(StudentProfile $studentProfile): bool
+    {
+        return $this->classDetails()
+            ->where('student_id', $studentProfile->student_profile_id)
+            ->where('status', ClassDetail::STATUS_APPROVED)
+            ->exists();
+    }
+
+    public function hasClassDetailForStudent(StudentProfile $studentProfile): bool
     {
         return $this->classDetails()
             ->where('student_id', $studentProfile->student_profile_id)
@@ -78,6 +85,7 @@ class AcademicClass extends Model
     public function enrolledStudentIds(): array
     {
         return $this->classDetails()
+            ->where('status', ClassDetail::STATUS_APPROVED)
             ->pluck('student_id')
             ->map(fn ($id) => (int) $id)
             ->unique()
@@ -88,6 +96,7 @@ class AcademicClass extends Model
     public function enrolledStudentsCollection(array $with = []): Collection
     {
         $detailStudentIds = $this->classDetails()
+            ->where('status', ClassDetail::STATUS_APPROVED)
             ->pluck('student_id')
             ->map(fn ($id) => (int) $id)
             ->unique()
@@ -115,9 +124,19 @@ class AcademicClass extends Model
 
     public function enrollStudent(StudentProfile $studentProfile): void
     {
-        DB::transaction(function () use ($studentProfile): void {
-            $this->syncClassDetailForStudent($studentProfile);
+        $this->addStudentWithMethod($studentProfile, ClassDetail::METHOD_MANUAL_ADD);
+    }
+
+    public function addStudentWithMethod(StudentProfile $studentProfile, string $entryMethod): void
+    {
+        DB::transaction(function () use ($studentProfile, $entryMethod): void {
+            $this->syncClassDetailForStudent($studentProfile, ClassDetail::STATUS_APPROVED, $entryMethod);
         });
+    }
+
+    public function requestStudentJoin(StudentProfile $studentProfile): ?ClassDetail
+    {
+        return $this->syncClassDetailForStudent($studentProfile, ClassDetail::STATUS_PENDING, ClassDetail::METHOD_JOIN_CODE);
     }
 
     public function removeStudent(StudentProfile $studentProfile): void
@@ -129,23 +148,26 @@ class AcademicClass extends Model
         });
     }
 
-    public function syncClassDetailForStudent(StudentProfile $studentProfile): ?ClassDetail
+    public function syncClassDetailForStudent(
+        StudentProfile $studentProfile,
+        string $status = ClassDetail::STATUS_APPROVED,
+        string $entryMethod = ClassDetail::METHOD_MANUAL_ADD
+    ): ?ClassDetail
     {
         if (! $this->instructor_id || ! $this->subject_id) {
             return null;
         }
-
-        $semester = Semester::activeOrDefault();
 
         return ClassDetail::query()->updateOrCreate(
             [
                 'class_id' => $this->class_id,
                 'student_id' => $studentProfile->student_profile_id,
                 'subject_id' => $this->subject_id,
-                'semester_id' => $semester->semester_id,
             ],
             [
                 'instructor_id' => $this->instructor_id,
+                'status' => $status,
+                'entry_method' => $entryMethod,
             ],
         );
     }
@@ -155,13 +177,15 @@ class AcademicClass extends Model
         return $this->classDetails()
             ->where('instructor_id', $this->instructor_id)
             ->where('subject_id', $this->subject_id)
+            ->where('status', ClassDetail::STATUS_APPROVED)
             ->latest('class_details_id')
             ->first();
     }
 
     public function joinRequests(): HasMany
     {
-        return $this->hasMany(ClassJoinRequest::class, 'class_id', 'class_id');
+        return $this->hasMany(ClassDetail::class, 'class_id', 'class_id')
+            ->where('entry_method', ClassDetail::METHOD_JOIN_CODE);
     }
 
     public function classDetails(): HasMany

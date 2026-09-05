@@ -39,6 +39,7 @@ trait InstructorLayoutHelper
             $items = array_merge($items, [
                 ['label' => 'Departments', 'icon' => 'apartment', 'href' => route('admin-dean.departments'), 'active_route' => 'admin-dean.departments'],
                 ['label' => 'Users', 'icon' => 'groups', 'href' => route('admin-dean.teachers'), 'active_route' => 'admin-dean.teachers'],
+                ['label' => 'Chair Designation', 'icon' => 'admin_panel_settings', 'href' => route('admin-dean.designations'), 'active_route' => 'admin-dean.designations'],
             ]);
         }
 

@@ -71,8 +71,8 @@ class Semester extends Model
         });
     }
 
-    public function classDetails(): HasMany
+    public function subjects(): HasMany
     {
-        return $this->hasMany(ClassDetail::class, 'semester_id', 'semester_id');
+        return $this->hasMany(Subject::class, 'semester_id', 'semester_id');
     }
 }

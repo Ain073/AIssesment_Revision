@@ -13,7 +13,6 @@ return new class extends Migration
         'colleges' => 'college_id',
         'departments' => 'department_id',
         'programs' => 'program_id',
-        'subject_program' => 'subject_program_id',
         'classes' => 'class_id',
         'assessments' => 'assessment_id',
         'publish_assessment' => 'publish_assessment_id',

@@ -458,7 +458,7 @@
                                                             <span class="text-secondary">Not assigned</span>
                                                         @endif
                                                     </td>
-                                                    <td>{{ $joinRequest->requested_at?->format('M d, Y g:i A') ?? 'Recently' }}</td>
+                                                    <td>{{ $joinRequest->updated_at?->format('M d, Y g:i A') ?? 'Recently' }}</td>
                                                     <td class="text-end">
                                                         <div class="d-inline-flex align-items-center justify-content-end gap-2">
                                                             <form action="{{ route('instructor.classes.join-requests.approve', ['class' => $class, 'joinRequest' => $joinRequest]) }}" method="POST" data-ajax-form data-reload-page-on-success="true">

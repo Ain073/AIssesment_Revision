@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Student\Helpers\StudentLayoutHelper;
 use App\Models\AcademicClass;
 use App\Models\ClassAssessment;
-use App\Models\ClassJoinRequest;
+use App\Models\ClassDetail;
 use App\Models\StudentProfile;
 use App\Models\Submission;
 use App\Models\SubmissionSecurityEvent;
@@ -24,7 +24,11 @@ class BaseController extends Controller
 
     protected function submitClassJoinRequest(Request $request, AcademicClass $class, StudentProfile $studentProfile, User $user, string $source): RedirectResponse|JsonResponse
     {
-        if ($class->hasStudent($studentProfile)) {
+        $existingClassDetail = $class->classDetails()
+            ->where('student_id', $studentProfile->student_profile_id)
+            ->first();
+
+        if ($existingClassDetail?->status === ClassDetail::STATUS_APPROVED || $class->hasStudent($studentProfile)) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'You are already enrolled in that class.']);
             }
@@ -34,24 +38,23 @@ class BaseController extends Controller
                 ->with('status', 'You are already enrolled in that class.');
         }
 
-        $joinRequest = ClassJoinRequest::query()->updateOrCreate(
-            [
-                'class_id' => $class->class_id,
-                'student_profile_id' => $studentProfile->student_profile_id,
-            ],
-            [
-                'status' => ClassJoinRequest::STATUS_PENDING,
-                'requested_at' => now(),
-                'responded_at' => null,
-                'responded_by' => null,
-            ],
-        );
+        if ($existingClassDetail?->status === ClassDetail::STATUS_PENDING) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Join request already pending. Please wait for your teacher to approve it.']);
+            }
+
+            return redirect()
+                ->route('student.classes')
+                ->with('status', 'Join request already pending. Please wait for your teacher to approve it.');
+        }
+
+        $joinRequest = $class->requestStudentJoin($studentProfile);
 
         Log::info('Student requested to join class.', [
             'actor_id' => $user->id,
             'source' => $source,
             'class_id' => $class->class_id,
-            'class_join_request_id' => $joinRequest->class_join_request_id,
+            'class_details_id' => $joinRequest?->class_details_id,
             'student_profile_id' => $studentProfile->student_profile_id,
         ]);
 
@@ -105,9 +108,10 @@ class BaseController extends Controller
                 ->get()
             : collect();
         $joinRequests = $studentProfile
-            ? $studentProfile->classJoinRequests()
+            ? $studentProfile->classDetails()
+                ->where('entry_method', ClassDetail::METHOD_JOIN_CODE)
                 ->with(['class.subject', 'class.instructorProfile.user'])
-                ->latest('requested_at')
+                ->latest('updated_at')
                 ->get()
             : collect();
 
@@ -182,7 +186,8 @@ class BaseController extends Controller
         return AcademicClass::query()
             ->where(function ($query) use ($studentProfile): void {
                 $query->whereHas('classDetails', fn ($detailQuery) => $detailQuery
-                    ->where('student_id', $studentProfile->student_profile_id));
+                    ->where('student_id', $studentProfile->student_profile_id)
+                    ->where('status', ClassDetail::STATUS_APPROVED));
             });
     }
 
