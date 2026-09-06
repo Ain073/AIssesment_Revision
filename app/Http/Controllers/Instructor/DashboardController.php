@@ -6,14 +6,24 @@ use App\Models\AcademicClass;
 use App\Models\PublishAssessment;
 use App\Models\ClassDetail;
 use App\Models\Submission;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class DashboardController extends BaseController
 {
-    public function index(): View
+    public function index(): RedirectResponse|View
     {
         $user = $this->currentUser();
+
+        if ($user->hasRole('admin_dean')) {
+            return redirect()->route('admin-dean.dashboard');
+        }
+
+        if ($user->hasRole('department_chair')) {
+            return redirect()->route('department-chair.dashboard');
+        }
+
         $instructorProfile = $this->instructorProfile($user);
         $classes = $instructorProfile
             ? $instructorProfile->classes()

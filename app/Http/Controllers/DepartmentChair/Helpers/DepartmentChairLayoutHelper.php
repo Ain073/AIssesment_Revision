@@ -62,7 +62,7 @@ trait DepartmentChairLayoutHelper
 
     private function dashboardNavItem(User $user): array
     {
-        $href = route('instructor.dashboard');
+        $href = $this->preferredDashboardRoute($user);
         $activeRoutes = [];
 
         if ($user->hasRole('instructor') || $user->hasRole('department_chair')) {
@@ -77,17 +77,24 @@ trait DepartmentChairLayoutHelper
             $activeRoutes[] = 'department-chair.dashboard';
         }
 
-        if (request()->routeIs('admin-dean.*') && $user->hasRole('admin_dean')) {
-            $href = route('admin-dean.dashboard');
-        } elseif (request()->routeIs('department-chair.*') && $user->hasRole('department_chair')) {
-            $href = route('department-chair.dashboard');
-        }
-
         return [
             'label' => 'Dashboard',
             'icon' => 'dashboard',
             'href' => $href,
             'active_route' => $activeRoutes ?: 'instructor.dashboard',
         ];
+    }
+
+    private function preferredDashboardRoute(User $user): string
+    {
+        if ($user->hasRole('admin_dean')) {
+            return route('admin-dean.dashboard');
+        }
+
+        if ($user->hasRole('department_chair')) {
+            return route('department-chair.dashboard');
+        }
+
+        return route('instructor.dashboard');
     }
 }
