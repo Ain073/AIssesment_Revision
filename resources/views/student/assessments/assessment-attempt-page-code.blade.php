@@ -14,8 +14,7 @@
     let isAutoSubmitting = false;
     let isFinalSubmitting = false;
     let isSubmitConfirmOpen = false;
-    let isRecordingWarning = false;
-    let lastSecurityIncidentAt = 0;
+    const lastSecurityIncidentByType = new Map();
     const textAnswerSelector = 'input[type="text"], textarea';
     const isTextAnswerField = (element = document.activeElement) => Boolean(element?.matches?.(textAnswerSelector));
 
@@ -27,6 +26,24 @@
         document.getElementById('securityWarningBackdrop')?.classList.remove('show');
     };
 
+    const syncWarningDisplay = () => {
+        const pageWarningCount = document.getElementById('warningCount');
+        const warningCount = document.getElementById('securityWarningCount');
+        const warningProgress = document.getElementById('securityWarningProgress');
+
+        if (pageWarningCount) {
+            pageWarningCount.textContent = String(warnings);
+        }
+
+        if (warningCount) {
+            warningCount.textContent = `Warning ${warnings} of ${warningLimit}`;
+        }
+
+        if (warningProgress) {
+            warningProgress.style.width = warningLimit > 0 ? `${Math.min((warnings / warningLimit) * 100, 100)}%` : '0%';
+        }
+    };
+
     const showSecurityWarning = (
         title = 'Security Warning',
         message = 'Restricted action detected. Stay on this assessment page.',
@@ -35,8 +52,6 @@
         const backdrop = document.getElementById('securityWarningBackdrop');
         const warningTitle = document.getElementById('securityWarningTitle');
         const warningMessage = document.getElementById('securityWarningMessage');
-        const warningCount = document.getElementById('securityWarningCount');
-        const warningProgress = document.getElementById('securityWarningProgress');
         const acknowledgeButton = document.getElementById('acknowledgeSecurityWarning');
         const closeButton = document.getElementById('closeSecurityWarning');
 
@@ -46,8 +61,7 @@
 
         warningTitle.textContent = title;
         warningMessage.textContent = message;
-        warningCount.textContent = `Warning ${warnings} of ${warningLimit}`;
-        warningProgress.style.width = warningLimit > 0 ? `${Math.min((warnings / warningLimit) * 100, 100)}%` : '0%';
+        syncWarningDisplay();
         acknowledgeButton.disabled = locked;
         closeButton.disabled = locked;
         acknowledgeButton.innerHTML = locked
@@ -58,6 +72,18 @@
         window.setTimeout(() => {
             backdrop.classList.add('show');
         }, 10);
+    };
+
+    const applyLocalWarning = (eventType) => {
+        if (warningLimit > 0 && warnings < warningLimit) {
+            warnings += 1;
+        }
+
+        syncWarningDisplay();
+        showSecurityWarning(
+            'Security Warning',
+            securityMessages[eventType] || 'Restricted action detected. Stay on this assessment page.'
+        );
     };
 
     const setCurrentQuestion = (index) => {
@@ -143,19 +169,19 @@
 
     const recordWarning = async (eventType) => {
         const now = Date.now();
+        const lastIncidentAt = Number(lastSecurityIncidentByType.get(eventType) || 0);
 
         if (
             isAutoSubmitting
             || isFinalSubmitting
             || isSubmitConfirmOpen
-            || isRecordingWarning
-            || now - lastSecurityIncidentAt < 1200
+            || now - lastIncidentAt < 1200
         ) {
             return;
         }
 
-        isRecordingWarning = true;
-        lastSecurityIncidentAt = now;
+        lastSecurityIncidentByType.set(eventType, now);
+        applyLocalWarning(eventType);
 
         try {
             const response = await fetch(securityEventUrl, {
@@ -180,24 +206,13 @@
 
             const result = await response.json();
             warnings = Number(result.warning_count || 0);
-            document.getElementById('warningCount').textContent = String(warnings);
+            syncWarningDisplay();
 
             if (result.should_auto_submit) {
                 autoSubmitAssessment();
-            } else if (warningLimit > 0) {
-                showSecurityWarning(
-                    'Security Warning',
-                    securityMessages[eventType] || 'Restricted action detected. Stay on this assessment page.'
-                );
             }
         } catch (error) {
             console.warn('Security event recording failed.', error);
-            showSecurityWarning(
-                'Restricted Action Detected',
-                'The action was blocked. Keep this assessment page active.'
-            );
-        } finally {
-            isRecordingWarning = false;
         }
     };
 
@@ -329,6 +344,14 @@
             if (document.hidden) {
                 recordWarning('tab_hidden');
             }
+        });
+
+        window.addEventListener('blur', () => {
+            window.setTimeout(() => {
+                if (! document.hidden && ! isTextAnswerField()) {
+                    recordWarning('window_blur');
+                }
+            }, 150);
         });
 
         const getViewportSize = () => ({
