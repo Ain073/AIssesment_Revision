@@ -50,7 +50,7 @@
                         <label class="form-label fw-bold text-uppercase small" for="employee_number">Employee Number</label>
                         <input class="form-control" id="employee_number" name="employee_number" required type="text" value="{{ old('base_role') === 'instructor' ? old('employee_number') : '' }}">
                     </div>
-                    <div class="col-12">
+                    <div class="col-md-6">
                         <label class="form-label fw-bold text-uppercase small" for="teacher_designation">Designation</label>
                         <select class="form-select" id="teacher_designation" name="designation">
                             <option value="instructor" @selected(old('designation', 'instructor') === 'instructor')>Instructor</option>

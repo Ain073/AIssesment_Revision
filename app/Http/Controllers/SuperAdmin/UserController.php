@@ -131,12 +131,17 @@ class UserController extends Controller
                 UserAccountService::identifierPasswordDigitsRule(),
                 'unique:student_profiles,student_number',
             ],
+            'designation' => ['nullable', Rule::in(['instructor', 'admin_dean'])],
             'authorizations' => ['nullable', 'array'],
             'authorizations.*' => [Rule::in(['admin_dean'])],
             'form_mode' => ['nullable', 'string'],
         ]);
 
-        $managedRoles = collect($validated['authorizations'] ?? [])
+        $selectedAuthorizations = ($validated['designation'] ?? 'instructor') === 'admin_dean'
+            ? ['admin_dean']
+            : ($validated['authorizations'] ?? []);
+
+        $managedRoles = collect($selectedAuthorizations)
             ->intersect(['admin_dean'])
             ->unique()
             ->values();

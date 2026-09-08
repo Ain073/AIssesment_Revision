@@ -136,6 +136,8 @@
             $editStatus = $isEditTarget ? old('status') : $user->status;
             $editDepartmentId = $isEditTarget ? old('department_id') : $user->instructorProfile?->department_id;
             $editProgramId = $isEditTarget ? old('program_id') : $user->studentProfile?->program_id;
+            $editingTeacher = $editBaseRole === 'instructor';
+            $editingStudent = $editBaseRole === 'student';
             $selectedAuthorizations = collect($isEditTarget ? old('authorizations', []) : [
                 $user->hasRole('admin_dean') ? 'admin_dean' : null,
             ])->filter()->values();
@@ -184,9 +186,9 @@
                                     <option value="inactive" @selected($editStatus === 'inactive')>Inactive</option>
                                 </select>
                             </div>
-                            <div class="col-md-6 profile-section teacher-profile-section" id="edit_teacher_department_section_{{ $user->id }}">
+                            <div class="col-md-6 profile-section teacher-profile-section" id="edit_teacher_department_section_{{ $user->id }}" @if (! $editingTeacher) hidden @endif>
                                 <label class="form-label fw-bold text-uppercase small" for="edit_department_id_{{ $user->id }}">Department</label>
-                                <select class="form-select department-select" id="edit_department_id_{{ $user->id }}" name="department_id">
+                                <select class="form-select department-select" id="edit_department_id_{{ $user->id }}" name="department_id" @if (! $editingTeacher) disabled @endif @if ($editingTeacher) required @endif>
                                     <option value="">Select department</option>
                                     @forelse ($departments as $department)
                                         <option value="{{ $department->department_id }}" @selected((string) $editDepartmentId === (string) $department->department_id)>
@@ -197,13 +199,13 @@
                                     @endforelse
                                 </select>
                             </div>
-                            <div class="col-md-6 profile-section teacher-profile-section" id="edit_teacher_employee_section_{{ $user->id }}">
+                            <div class="col-md-6 profile-section teacher-profile-section" id="edit_teacher_employee_section_{{ $user->id }}" @if (! $editingTeacher) hidden @endif>
                                 <label class="form-label fw-bold text-uppercase small" for="edit_employee_number_{{ $user->id }}">Employee Number</label>
-                                <input class="form-control teacher-profile-field" id="edit_employee_number_{{ $user->id }}" name="employee_number" type="text" value="{{ $isEditTarget ? old('employee_number') : $user->instructorProfile?->employee_number }}">
+                                <input class="form-control teacher-profile-field" id="edit_employee_number_{{ $user->id }}" name="employee_number" type="text" value="{{ $isEditTarget ? old('employee_number') : $user->instructorProfile?->employee_number }}" @if (! $editingTeacher) disabled @endif @if ($editingTeacher) required @endif>
                             </div>
-                            <div class="col-md-6 profile-section student-profile-section" id="edit_student_program_section_{{ $user->id }}">
+                            <div class="col-md-6 profile-section student-profile-section" id="edit_student_program_section_{{ $user->id }}" @if (! $editingStudent) hidden @endif>
                                 <label class="form-label fw-bold text-uppercase small" for="edit_program_id_{{ $user->id }}">Program</label>
-                                <select class="form-select student-profile-field" id="edit_program_id_{{ $user->id }}" name="program_id">
+                                <select class="form-select student-profile-field" id="edit_program_id_{{ $user->id }}" name="program_id" @if (! $editingStudent) disabled @endif @if ($editingStudent) required @endif>
                                     <option value="">Select program</option>
                                     @forelse ($programs as $program)
                                         <option value="{{ $program->program_id }}" @selected((string) $editProgramId === (string) $program->program_id)>
@@ -214,11 +216,11 @@
                                     @endforelse
                                 </select>
                             </div>
-                            <div class="col-md-6 profile-section student-profile-section" id="edit_student_number_section_{{ $user->id }}">
+                            <div class="col-md-6 profile-section student-profile-section" id="edit_student_number_section_{{ $user->id }}" @if (! $editingStudent) hidden @endif>
                                 <label class="form-label fw-bold text-uppercase small" for="edit_student_number_{{ $user->id }}">Student Number</label>
-                                <input class="form-control student-profile-field" id="edit_student_number_{{ $user->id }}" name="student_number" type="text" value="{{ $isEditTarget ? old('student_number') : $user->studentProfile?->student_number }}">
+                                <input class="form-control student-profile-field" id="edit_student_number_{{ $user->id }}" name="student_number" type="text" value="{{ $isEditTarget ? old('student_number') : $user->studentProfile?->student_number }}" @if (! $editingStudent) disabled @endif @if ($editingStudent) required @endif>
                             </div>
-                            <div class="col-12 profile-section teacher-profile-section" id="edit_authorization_section_{{ $user->id }}">
+                            <div class="col-12 profile-section teacher-profile-section" id="edit_authorization_section_{{ $user->id }}" @if (! $editingTeacher) hidden @endif>
                                 <div class="border rounded p-3" style="background: #eff4ff;">
                                     <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
                                         <div>
@@ -228,7 +230,7 @@
                                     </div>
                                     <div class="d-grid gap-3">
                                         <label class="border rounded p-3 d-flex align-items-start gap-3 bg-white">
-                                            <input class="form-check-input mt-1 authorization-checkbox" data-teacher-target="edit_base_role_{{ $user->id }}" name="authorizations[]" type="checkbox" value="admin_dean" @checked($selectedAuthorizations->contains('admin_dean'))>
+                                            <input class="form-check-input mt-1 authorization-checkbox" data-teacher-target="edit_base_role_{{ $user->id }}" name="authorizations[]" type="checkbox" value="admin_dean" @checked($selectedAuthorizations->contains('admin_dean')) @if (! $editingTeacher) disabled @endif>
                                             <span>
                                                 <span class="fw-bold d-block" style="color: var(--psu-navy);">Dean</span>
                                             </span>

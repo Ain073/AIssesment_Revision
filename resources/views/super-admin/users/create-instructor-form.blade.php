@@ -51,12 +51,12 @@
                         <label class="form-label fw-bold text-uppercase small" for="instructor_employee_number">Employee Number</label>
                         <input class="form-control teacher-profile-field" id="instructor_employee_number" name="employee_number" required type="text" value="{{ old('base_role') === 'instructor' ? old('employee_number') : '' }}">
                     </div>
-                    <div class="col-12">
-                        <label class="form-label fw-bold text-uppercase small d-block">Designation</label>
-                        <div class="form-check">
-                            <input class="form-check-input" id="create_instructor_admin_dean" name="authorizations[]" type="checkbox" value="admin_dean" @checked(old('base_role') === 'instructor' && in_array('admin_dean', old('authorizations', []), true))>
-                            <label class="form-check-label fw-semibold" for="create_instructor_admin_dean">Dean</label>
-                        </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-uppercase small" for="instructor_designation">Designation</label>
+                        <select class="form-select" id="instructor_designation" name="designation">
+                            <option value="instructor" @selected(old('designation', 'instructor') === 'instructor')>Instructor</option>
+                            <option value="admin_dean" @selected(old('designation') === 'admin_dean')>Dean</option>
+                        </select>
                     </div>
                 </div>
             </div>
