@@ -42,14 +42,14 @@
             @endif
 
             {{-- Page actions --}}
-            <div class="d-flex flex-wrap justify-content-lg-end gap-2 mb-4 super-admin-toolbar">
+            <div class="d-flex flex-wrap justify-content-end gap-2 mb-4 super-admin-toolbar">
                 <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button">
-                    <span class="material-symbols-outlined fs-5">person_add</span>
-                    Create Instructor
+                    <span class="material-symbols-outlined fs-5">add</span>
+                    Instructor
                 </button>
                 <button class="btn btn-outline-primary d-flex align-items-center gap-2" data-bs-target="#createStudentModal" data-bs-toggle="modal" type="button">
-                    <span class="material-symbols-outlined fs-5">person_add</span>
-                    Create Student
+                    <span class="material-symbols-outlined fs-5">add</span>
+                    Student
                 </button>
             </div>
 
@@ -151,8 +151,8 @@
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">school</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No teacher accounts yet</h4>
                                             <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button">
-                                                <span class="material-symbols-outlined fs-5">person_add</span>
-                                                Create Instructor
+                                                <span class="material-symbols-outlined fs-5">add</span>
+                                                Instructor
                                             </button>
                                         </td>
                                     </tr>
@@ -236,8 +236,8 @@
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No student accounts yet</h4>
                                             <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createStudentModal" data-bs-toggle="modal" type="button">
-                                                <span class="material-symbols-outlined fs-5">person_add</span>
-                                                Create Student
+                                                <span class="material-symbols-outlined fs-5">add</span>
+                                                Student
                                             </button>
                                         </td>
                                     </tr>

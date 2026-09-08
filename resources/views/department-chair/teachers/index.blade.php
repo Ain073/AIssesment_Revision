@@ -115,8 +115,8 @@
 
     <div class="d-flex justify-content-end mb-4">
         <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button" @disabled(! $scopedDepartment)>
-            <span class="material-symbols-outlined fs-5">person_add</span>
-            Create Instructor
+            <span class="material-symbols-outlined fs-5">add</span>
+            Instructor
         </button>
     </div>
 

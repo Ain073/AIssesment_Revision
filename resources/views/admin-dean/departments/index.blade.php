@@ -73,10 +73,10 @@
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
-    <div class="d-flex flex-wrap justify-content-lg-end gap-2 mb-4">
+    <div class="d-flex flex-wrap justify-content-end gap-2 mb-4">
         <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#departmentModal" data-bs-toggle="modal" type="button">
-            <span class="material-symbols-outlined fs-5">add_business</span>
-            Create Department
+            <span class="material-symbols-outlined fs-5">add</span>
+            Department
         </button>
     </div>
 
@@ -121,8 +121,8 @@
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">apartment</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No departments yet</h4>
                                 <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#departmentModal" data-bs-toggle="modal" type="button">
-                                    <span class="material-symbols-outlined fs-5">add_business</span>
-                                    Create First Department
+                                    <span class="material-symbols-outlined fs-5">add</span>
+                                    Department
                                 </button>
                             </td>
                         </tr>

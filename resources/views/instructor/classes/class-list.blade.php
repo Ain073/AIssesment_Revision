@@ -24,7 +24,7 @@
 
     <button class="btn btn-psu d-flex align-items-center gap-2 {{ $activeClassTab === 'active' ? '' : 'd-none' }}" data-table-tab-panel="active" data-bs-target="#classModal" data-bs-toggle="modal" type="button" @disabled(! $instructorProfile || $subjects->isEmpty()) @if ($activeClassTab !== 'active') hidden @endif>
         <span class="material-symbols-outlined fs-5">add</span>
-        Create Class
+        Class
     </button>
 </div>
 

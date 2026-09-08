@@ -26,7 +26,7 @@
                         <div>
                             <button class="btn btn-psu btn-lg w-100 d-inline-flex justify-content-center align-items-center gap-2" id="addQuestionButton" type="button">
                                 <span class="material-symbols-outlined fs-5">add</span>
-                                Add Question Field
+                                Question Field
                             </button>
                         </div>
                     </div>

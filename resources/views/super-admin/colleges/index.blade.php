@@ -35,14 +35,14 @@
             @endif
 
             {{-- Page actions --}}
-            <div class="d-flex flex-wrap justify-content-lg-end gap-2 mb-4 super-admin-toolbar">
+            <div class="d-flex flex-wrap justify-content-end gap-2 mb-4 super-admin-toolbar">
                 <button class="btn btn-outline-psu d-flex align-items-center gap-2" data-bs-target="#departmentModal" data-bs-toggle="modal" type="button">
-                    <span class="material-symbols-outlined fs-5">add_business</span>
-                    Add Department
+                    <span class="material-symbols-outlined fs-5">add</span>
+                    Department
                 </button>
                 <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#collegeModal" data-bs-toggle="modal" type="button">
                     <span class="material-symbols-outlined fs-5">add</span>
-                    Add College
+                    College
                 </button>
             </div>
 

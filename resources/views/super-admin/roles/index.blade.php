@@ -34,13 +34,16 @@
         </div>
     @endif
 
+    <div class="designation-action-row">
+        <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#grantAdminDeanModal" data-bs-toggle="modal" type="button">
+            <span class="material-symbols-outlined fs-5">add</span>
+            Designation
+        </button>
+    </div>
+
     <section class="directory-card shadow-sm">
-                    <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
+                    <div class="directory-header px-4 py-3">
                         <h3 class="h4 mb-0">Dean Designation</h3>
-                        <button class="btn btn-sm btn-light bg-white bg-opacity-10 border-0 text-white d-inline-flex align-items-center gap-1" data-bs-target="#grantAdminDeanModal" data-bs-toggle="modal" type="button">
-                            <span class="material-symbols-outlined fs-6">person_add</span>
-                            Add Designation
-                        </button>
                     </div>
 
                     <div class="table-responsive">
@@ -85,8 +88,8 @@
                                             <h4 class="h4" style="color: var(--psu-navy);">No Dean designation yet</h4>
                                             <p class="text-secondary mb-4">Assign a teacher account when you are ready to delegate dean-level access.</p>
                                             <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#grantAdminDeanModal" data-bs-toggle="modal" type="button">
-                                                <span class="material-symbols-outlined fs-5">person_add</span>
-                                                Add Designation
+                                                <span class="material-symbols-outlined fs-5">add</span>
+                                                Designation
                                             </button>
                                         </td>
                                     </tr>

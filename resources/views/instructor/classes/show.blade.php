@@ -202,7 +202,7 @@
         </div>
 
         @if ($activeTab === 'students' && ! $class->archived_at)
-            <div class="d-flex flex-wrap gap-2">
+            <div class="class-detail-actions d-flex flex-wrap justify-content-end gap-2">
                 <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" data-bs-target="#joinLinkModal" data-bs-toggle="modal" type="button">
                     <span class="material-symbols-outlined fs-5">link</span>
                     Join Code
@@ -213,8 +213,8 @@
                     <span class="badge rounded-pill text-bg-primary">{{ $pendingJoinRequests->count() }}</span>
                 </button>
                 <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#addStudentModal" data-bs-toggle="modal" type="button">
-                    <span class="material-symbols-outlined fs-5">person_add</span>
-                    Add Student
+                    <span class="material-symbols-outlined fs-5">add</span>
+                    Student
                 </button>
             </div>
         @endif
@@ -405,8 +405,8 @@
                                     <h4 class="h4" style="color: var(--psu-navy);">No students enrolled yet</h4>
                                     @if (! $class->archived_at)
                                         <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#addStudentModal" data-bs-toggle="modal" type="button">
-                                            <span class="material-symbols-outlined fs-5">person_add</span>
-                                            Add First Student
+                                            <span class="material-symbols-outlined fs-5">add</span>
+                                            Student
                                         </button>
                                     @endif
                                 </td>

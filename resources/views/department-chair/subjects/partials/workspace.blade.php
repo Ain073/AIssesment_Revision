@@ -39,7 +39,7 @@
 
         <button class="btn btn-psu d-flex align-items-center gap-2 subject-toolbar-action" data-bs-target="#subjectModal" data-bs-toggle="modal" type="button" @disabled($programs->isEmpty())>
             <span class="material-symbols-outlined fs-5">add</span>
-            Add Subject
+            Subject
         </button>
     </form>
 </div>
@@ -109,7 +109,7 @@
                             </h4>
                             <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#subjectModal" data-bs-toggle="modal" type="button" @disabled($programs->isEmpty())>
                                 <span class="material-symbols-outlined fs-5">add</span>
-                                Add First Subject
+                                Subject
                             </button>
                         </td>
                     </tr>

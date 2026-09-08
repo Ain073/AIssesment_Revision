@@ -114,8 +114,8 @@
 
     <div class="d-flex flex-wrap justify-content-end gap-2 mb-4">
         <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createStudentModal" data-bs-toggle="modal" type="button" @disabled($scopedPrograms->isEmpty())>
-            <span class="material-symbols-outlined fs-5">person_add</span>
-            Create Student
+            <span class="material-symbols-outlined fs-5">add</span>
+            Student
         </button>
     </div>
 

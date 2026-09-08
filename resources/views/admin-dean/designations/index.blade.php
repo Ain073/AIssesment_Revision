@@ -73,13 +73,16 @@
         </div>
     @endif
 
+    <div class="designation-action-row">
+        <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#grantDepartmentChairModal" data-bs-toggle="modal" type="button">
+            <span class="material-symbols-outlined fs-5">add</span>
+            Designation
+        </button>
+    </div>
+
     <section class="directory-card shadow-sm">
-        <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
+        <div class="directory-header px-4 py-3">
             <h3 class="h4 mb-0">Department Chair Designation</h3>
-            <button class="btn btn-sm btn-light bg-white bg-opacity-10 border-0 text-white d-inline-flex align-items-center gap-1" data-bs-target="#grantDepartmentChairModal" data-bs-toggle="modal" type="button">
-                <span class="material-symbols-outlined fs-6">person_add</span>
-                Add Designation
-            </button>
         </div>
 
         <div class="table-responsive">
@@ -127,8 +130,8 @@
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">supervisor_account</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No Department Chair designation yet</h4>
                                 <button class="btn btn-psu d-inline-flex align-items-center gap-2 mt-2" data-bs-target="#grantDepartmentChairModal" data-bs-toggle="modal" type="button">
-                                    <span class="material-symbols-outlined fs-5">person_add</span>
-                                    Add Designation
+                                    <span class="material-symbols-outlined fs-5">add</span>
+                                    Designation
                                 </button>
                             </td>
                         </tr>
@@ -144,29 +147,43 @@
     </section>
 
     <div class="modal fade" id="grantDepartmentChairModal" tabindex="-1" aria-labelledby="grantDepartmentChairModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <form action="{{ $availableDepartmentChairTeachers->isNotEmpty() ? route('admin-dean.teachers.department-chair.grant', $availableDepartmentChairTeachers->first()) : '#' }}" class="modal-content" method="POST">
-                @csrf
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="grantDepartmentChairModalLabel">Designate Department Chair</h3>
                     <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <label class="form-label fw-bold text-uppercase small" for="department_chair_user_id">Teacher Account</label>
-                    <select class="form-select form-select-lg" id="department_chair_user_id" name="user_id" required @disabled($availableDepartmentChairTeachers->isEmpty())>
+                    <p class="small text-secondary mb-3">Choose a teacher from your college.</p>
+                    <div class="designation-picker-list">
                         @forelse ($availableDepartmentChairTeachers as $teacher)
-                            <option value="{{ $teacher->id }}">{{ $teacher->displayName() }} - {{ $teacher->email }}</option>
+                            <form action="{{ route('admin-dean.teachers.department-chair.grant', $teacher) }}" class="designation-picker-form" method="POST">
+                                @csrf
+                                <button class="designation-picker-card" type="submit">
+                                    <span class="avatar">{{ strtoupper(substr($teacher->displayName(), 0, 1)) }}</span>
+                                    <span class="designation-picker-info">
+                                        <span class="fw-bold d-block" style="color: var(--psu-navy);">{{ $teacher->displayName() }}</span>
+                                        <span class="small text-secondary d-block">{{ $teacher->email }}</span>
+                                        <span class="small text-secondary d-block">{{ $teacher->instructorProfile?->department?->dept_name ?? 'Not assigned' }}</span>
+                                    </span>
+                                    <span class="designation-picker-action" aria-hidden="true">
+                                        <span class="material-symbols-outlined fs-5">add</span>
+                                    </span>
+                                </button>
+                            </form>
                         @empty
-                            <option>No available teacher accounts</option>
+                            <div class="text-center py-4">
+                                <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">person_off</span></div>
+                                <p class="fw-bold mb-1" style="color: var(--psu-navy);">No available teacher accounts</p>
+                                <p class="small text-secondary mb-0">All eligible teachers already have a designation or no teacher account is available yet.</p>
+                            </div>
                         @endforelse
-                    </select>
-                    <div class="small text-secondary mt-2">Choose a teacher from your college.</div>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>
-                    <button class="btn btn-psu px-4" data-designation-submit type="submit" @disabled($availableDepartmentChairTeachers->isEmpty())>Confirm Designation</button>
+                    <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Close</button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -234,25 +251,3 @@
         </div>
     @endforeach
 @endsection
-
-@push('scripts')
-    <script>
-        document.addEventListener('change', (event) => {
-            const select = event.target.closest('#department_chair_user_id');
-
-            if (! select) {
-                return;
-            }
-
-            const form = select.closest('form');
-            const selectedId = select.value;
-            const currentAction = form.getAttribute('action');
-
-            if (! selectedId || ! currentAction || currentAction === '#') {
-                return;
-            }
-
-            form.setAttribute('action', currentAction.replace(/\/teachers\/\d+\/department-chair-designation$/, `/teachers/${selectedId}/department-chair-designation`));
-        });
-    </script>
-@endpush

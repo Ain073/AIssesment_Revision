@@ -85,7 +85,7 @@
                             @if ($tabKey === 'active')
                                 <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#classModal" data-bs-toggle="modal" type="button" @disabled(! $instructorProfile || $subjects->isEmpty())>
                                     <span class="material-symbols-outlined fs-5">add</span>
-                                    Create First Class
+                                    Class
                                 </button>
                             @endif
                         </td>

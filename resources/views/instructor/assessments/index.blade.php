@@ -49,7 +49,7 @@
     <div class="d-flex flex-wrap justify-content-end gap-2 mb-4">
         <a class="btn btn-psu d-inline-flex align-items-center gap-2 {{ (! $instructorProfile || $handledSubjects->isEmpty()) ? 'disabled' : '' }}" href="{{ route('instructor.assessments.create') }}" aria-disabled="{{ (! $instructorProfile || $handledSubjects->isEmpty()) ? 'true' : 'false' }}">
             <span class="material-symbols-outlined fs-5">add</span>
-            New Assessment
+            Assessment
         </a>
     </div>
 
@@ -92,16 +92,16 @@
                                         <p class="text-secondary">{{ $assessment->description }}</p>
                                     @endif
 
-                                    <div class="d-flex flex-wrap gap-2">
-                                        <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $assessment) }}">
+                                    <div class="assessment-card-actions d-flex flex-wrap gap-2">
+                                        <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $assessment) }}" title="Open builder" aria-label="Open builder for {{ $assessment->title }}">
                                             <span class="material-symbols-outlined fs-5">edit_square</span>
                                             Open Builder
                                         </a>
-                                        <a class="btn btn-psu d-inline-flex align-items-center gap-2 {{ $assessment->items_count === 0 ? 'disabled' : '' }}" href="{{ route('instructor.assessments.publish.form', ['assessment_key' => $assessment->public_id]) }}" aria-disabled="{{ $assessment->items_count === 0 ? 'true' : 'false' }}">
+                                        <a class="btn btn-psu d-inline-flex align-items-center gap-2 {{ $assessment->items_count === 0 ? 'disabled' : '' }}" href="{{ route('instructor.assessments.publish.form', ['assessment_key' => $assessment->public_id]) }}" aria-disabled="{{ $assessment->items_count === 0 ? 'true' : 'false' }}" title="Publish" aria-label="Publish {{ $assessment->title }}">
                                             <span class="material-symbols-outlined fs-5">publish</span>
                                             Publish
                                         </a>
-                                        <button class="btn btn-outline-danger d-inline-flex align-items-center gap-2" data-bs-target="#deleteAssessmentModal{{ $assessment->assessment_id }}" data-bs-toggle="modal" type="button">
+                                        <button class="btn btn-outline-danger d-inline-flex align-items-center gap-2" data-bs-target="#deleteAssessmentModal{{ $assessment->assessment_id }}" data-bs-toggle="modal" type="button" title="Delete" aria-label="Delete {{ $assessment->title }}">
                                             <span class="material-symbols-outlined fs-5">delete</span>
                                             Delete
                                         </button>
@@ -117,7 +117,7 @@
                     <h2 class="h4" style="color: var(--psu-navy);">No assessments yet</h2>
                     <a class="btn btn-psu d-inline-flex align-items-center gap-2 {{ (! $instructorProfile || $handledSubjects->isEmpty()) ? 'disabled' : '' }}" href="{{ route('instructor.assessments.create') }}" aria-disabled="{{ (! $instructorProfile || $handledSubjects->isEmpty()) ? 'true' : 'false' }}">
                         <span class="material-symbols-outlined fs-5">add</span>
-                        Create First Assessment
+                        Assessment
                     </a>
                 </section>
             @endif
@@ -160,37 +160,37 @@
                                         @endif
                                     </p>
 
-                                    <div class="d-flex flex-wrap gap-2">
+                                    <div class="assessment-card-actions d-flex flex-wrap gap-2">
                                         @if ($publishAssessment->display_status === 'completed')
-                                            <a class="btn btn-psu d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.results', $publishAssessment) }}">
+                                            <a class="btn btn-psu d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.results', $publishAssessment) }}" title="View results" aria-label="View results for {{ $publishedAssessment?->title ?? 'assessment' }}">
                                                 <span class="material-symbols-outlined fs-5">analytics</span>
                                                 View Results
                                             </a>
                                         @else
                                             @if ($publishedAssessment)
-                                                <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $publishedAssessment) }}">
+                                                <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $publishedAssessment) }}" title="View assessment" aria-label="View {{ $publishedAssessment->title }}">
                                                     <span class="material-symbols-outlined fs-5">visibility</span>
                                                     View Assessment
                                                 </a>
                                             @else
-                                                <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" type="button" disabled>
+                                                <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" type="button" disabled title="Assessment unavailable" aria-label="Assessment unavailable">
                                                     <span class="material-symbols-outlined fs-5">visibility_off</span>
                                                     View Assessment
                                                 </button>
                                             @endif
                                         @endif
                                         @if ($publishedClass)
-                                            <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('instructor.classes.show', $publishedClass) }}">
+                                            <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('instructor.classes.show', $publishedClass) }}" title="View class" aria-label="View {{ $publishedClass->class_name }}">
                                                 <span class="material-symbols-outlined fs-5">school</span>
                                                 View Class
                                             </a>
                                         @else
-                                            <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" type="button" disabled>
+                                            <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" type="button" disabled title="Class unavailable" aria-label="Class unavailable">
                                                 <span class="material-symbols-outlined fs-5">school</span>
                                                 View Class
                                             </button>
                                         @endif
-                                        <button class="btn btn-outline-danger d-inline-flex align-items-center gap-2" data-bs-target="#deletePublishedAssessmentModal{{ $publishAssessment->publish_assessment_id }}" data-bs-toggle="modal" type="button">
+                                        <button class="btn btn-outline-danger d-inline-flex align-items-center gap-2" data-bs-target="#deletePublishedAssessmentModal{{ $publishAssessment->publish_assessment_id }}" data-bs-toggle="modal" type="button" title="Delete" aria-label="Delete published assessment">
                                             <span class="material-symbols-outlined fs-5">delete</span>
                                             Delete
                                         </button>

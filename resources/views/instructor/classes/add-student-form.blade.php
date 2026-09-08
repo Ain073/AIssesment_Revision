@@ -13,7 +13,10 @@
                         <input class="form-control form-control-lg" id="student_number" name="student_number" placeholder="e.g. 2024-00001" required type="text" value="{{ old('student_number') }}">
                     </div>
                     <div class="d-flex justify-content-end">
-                        <button class="btn btn-psu px-4" type="submit">Add Student</button>
+                        <button class="btn btn-psu d-inline-flex align-items-center gap-2 px-4" type="submit">
+                            <span class="material-symbols-outlined fs-6">add</span>
+                            Student
+                        </button>
                     </div>
                 </form>
 

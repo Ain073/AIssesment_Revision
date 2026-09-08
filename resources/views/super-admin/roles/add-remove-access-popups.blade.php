@@ -1,29 +1,45 @@
     {{-- Add Dean designation popup --}}
     <div class="modal fade" id="grantAdminDeanModal" tabindex="-1" aria-labelledby="grantAdminDeanModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <form action="{{ route('super-admin.roles.grant') }}" class="modal-content" method="POST">
-                @csrf
-                <input name="form_mode" type="hidden" value="grant_admin_dean">
-                <input name="role_name" type="hidden" value="admin_dean">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="grantAdminDeanModalLabel">Designate Dean</h3>
                     <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <label class="form-label fw-bold text-uppercase small" for="admin_dean_user_id">Teacher Account</label>
-                    <select class="form-select form-select-lg" id="admin_dean_user_id" name="user_id" required @disabled($availableAdminDeanTeachers->isEmpty())>
+                    <p class="small text-secondary mb-3">Choose a teacher account to designate as dean.</p>
+                    <div class="designation-picker-list">
                         @forelse ($availableAdminDeanTeachers as $user)
-                            <option value="{{ $user->id }}" @selected(old('form_mode') === 'grant_admin_dean' && (int) old('user_id') === $user->id)>{{ $user->displayName() }} - {{ $user->email }}</option>
+                            <form action="{{ route('super-admin.roles.grant') }}" class="designation-picker-form" method="POST">
+                                @csrf
+                                <input name="form_mode" type="hidden" value="grant_admin_dean">
+                                <input name="role_name" type="hidden" value="admin_dean">
+                                <input name="user_id" type="hidden" value="{{ $user->id }}">
+                                <button class="designation-picker-card" type="submit">
+                                    <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
+                                    <span class="designation-picker-info">
+                                        <span class="fw-bold d-block" style="color: var(--psu-navy);">{{ $user->displayName() }}</span>
+                                        <span class="small text-secondary d-block">{{ $user->email }}</span>
+                                        <span class="small text-secondary d-block">Teacher Account</span>
+                                    </span>
+                                    <span class="designation-picker-action" aria-hidden="true">
+                                        <span class="material-symbols-outlined fs-5">add</span>
+                                    </span>
+                                </button>
+                            </form>
                         @empty
-                            <option>No available teacher accounts</option>
+                            <div class="text-center py-4">
+                                <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">person_off</span></div>
+                                <p class="fw-bold mb-1" style="color: var(--psu-navy);">No available teacher accounts</p>
+                                <p class="small text-secondary mb-0">All eligible teachers already have a designation or no teacher account is available yet.</p>
+                            </div>
                         @endforelse
-                    </select>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>
-                    <button class="btn btn-psu px-4" type="submit" @disabled($availableAdminDeanTeachers->isEmpty())>Confirm Designation</button>
+                    <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Close</button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 

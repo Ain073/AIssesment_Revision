@@ -332,7 +332,7 @@
                 @unless($isPublishedSnapshot)
                 <button class="btn btn-light d-inline-flex align-items-center gap-2" data-bs-target="#questionBuilderModal" data-bs-toggle="modal" type="button">
                     <span class="material-symbols-outlined fs-5">add</span>
-                    Add Questions
+                    Questions
                 </button>
                 @endunless
             </div>
