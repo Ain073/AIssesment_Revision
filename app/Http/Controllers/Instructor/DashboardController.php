@@ -57,6 +57,7 @@ class DashboardController extends BaseController
         $studentsCount = $classIds->isNotEmpty()
             ? DB::table('class_details')
                 ->whereIn('class_id', $classIds)
+                ->whereNotNull('student_id')
                 ->where('status', ClassDetail::STATUS_APPROVED)
                 ->distinct()
                 ->pluck('student_id')

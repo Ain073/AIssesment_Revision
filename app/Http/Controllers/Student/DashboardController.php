@@ -23,7 +23,7 @@ class DashboardController extends BaseController
         $classIds = $classes->pluck('class_id');
         $assignedAssessmentsCount = $classIds->isNotEmpty()
             ? PublishAssessment::query()
-                ->whereHas('class', fn ($query) => $query->whereIn('classes.class_id', $classIds))
+                ->whereHas('classDetail', fn ($query) => $query->whereIn('class_id', $classIds))
                 ->where('publish_status', PublishAssessment::STATUS_PUBLISHED)
                 ->count()
             : 0;

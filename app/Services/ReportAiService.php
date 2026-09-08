@@ -159,7 +159,7 @@ class ReportAiService
         $publishAssessment->loadMissing([
             'assessment.items.choices',
             'assessment.subject',
-            'class.subject',
+            'classDetail.class.subject',
             'submissions.answers.choice',
         ]);
 

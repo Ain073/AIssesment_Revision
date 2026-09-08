@@ -20,8 +20,8 @@ class ResultController extends BaseController
                     'answers.choice',
                     'publishAssessment.assessment.items.choices',
                     'publishAssessment.assessment.subject',
-                    'publishAssessment.class.subject',
-                    'publishAssessment.class.instructorProfile.user',
+                    'publishAssessment.classDetail.class.subject',
+                    'publishAssessment.classDetail.class.instructorProfile.user',
                 ])
                 ->where('student_profile_id', $studentProfile->student_profile_id)
                 ->where('status', Submission::STATUS_SUBMITTED)

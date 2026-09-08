@@ -133,8 +133,8 @@ class BaseController extends Controller
             : collect();
         $publishAssessments = $classIds->isNotEmpty()
             ? PublishAssessment::query()
-                ->with(['assessment.subject', 'assessment.items.choices', 'class.instructorProfile.user'])
-                ->whereHas('class', fn ($query) => $query->whereIn('classes.class_id', $classIds))
+                ->with(['assessment.subject', 'assessment.items.choices', 'classDetail.class.instructorProfile.user'])
+                ->whereHas('classDetail', fn ($query) => $query->whereIn('class_id', $classIds))
                 ->where('publish_status', PublishAssessment::STATUS_PUBLISHED)
                 ->latest('publish_assessment_id')
                 ->get()
@@ -170,7 +170,7 @@ class BaseController extends Controller
         PublishAssessment $publishAssessment,
         StudentProfile $studentProfile
     ): void {
-        $publishAssessment->load(['assessment.subject', 'assessment.items.choices', 'class.instructorProfile.user']);
+        $publishAssessment->load(['assessment.subject', 'assessment.items.choices', 'classDetail.class.instructorProfile.user']);
 
         abort_unless(
             $publishAssessment->publish_status === PublishAssessment::STATUS_PUBLISHED

@@ -28,7 +28,7 @@ class AssessmentResultController extends BaseController
         $ownedPublishAssessment->load([
             'assessment.subject',
             'assessment.items.choices',
-            'class.subject',
+            'classDetail.class.subject',
             'submissions' => fn ($query) => $query
                 ->with(['studentProfile.user', 'answers.choice', 'securityEvents'])
                 ->orderBy('attempt_number'),
@@ -124,7 +124,7 @@ class AssessmentResultController extends BaseController
         $submission->load([
             'studentProfile.user',
             'publishAssessment.assessment.items.choices',
-            'publishAssessment.class.subject',
+            'publishAssessment.classDetail.class.subject',
             'answers.choice',
             'answers.item.choices',
             'answers.checker',

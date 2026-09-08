@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class PublishAssessment extends Model
 {
@@ -71,18 +70,6 @@ class PublishAssessment extends Model
         return $this->belongsTo(ClassDetail::class, 'class_details_id', 'class_details_id');
     }
 
-    public function class(): HasOneThrough
-    {
-        return $this->hasOneThrough(
-            AcademicClass::class,
-            ClassDetail::class,
-            'class_details_id',
-            'class_id',
-            'class_details_id',
-            'class_id'
-        );
-    }
-
     public function hasStudent(StudentProfile $studentProfile): bool
     {
         return $this->class && $this->class->hasStudent($studentProfile);
@@ -105,7 +92,7 @@ class PublishAssessment extends Model
 
     public function getPublishAssessmentIdAttribute(): ?int
     {
-        $id = $this->getAttribute('publish_assessment_id');
+        $id = $this->attributes['publish_assessment_id'] ?? null;
 
         return $id === null ? null : (int) $id;
     }
@@ -113,5 +100,14 @@ class PublishAssessment extends Model
     public function getClassIdAttribute(): ?int
     {
         return $this->classDetail?->class_id;
+    }
+
+    public function getClassAttribute(): ?AcademicClass
+    {
+        $classDetail = $this->relationLoaded('classDetail')
+            ? $this->getRelation('classDetail')
+            : $this->classDetail()->with('class')->first();
+
+        return $classDetail?->class;
     }
 }

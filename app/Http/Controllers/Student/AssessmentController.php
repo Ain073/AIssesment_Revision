@@ -243,7 +243,7 @@ class AssessmentController extends BaseController
                 'submission_id' => $result['submission']->submission_id,
             ]);
 
-            $publishAssessment->loadMissing('assessment', 'class.instructorProfile.user');
+            $publishAssessment->loadMissing('assessment', 'classDetail.class.instructorProfile.user');
 
             if ($publishAssessment->class?->instructorProfile?->user) {
                 app(NotificationService::class)->send(
@@ -279,7 +279,7 @@ class AssessmentController extends BaseController
             return $unavailable;
         }
 
-        $publishAssessment->load(['assessment.items.choices', 'class']);
+        $publishAssessment->load(['assessment.items.choices', 'classDetail.class']);
 
         $validated = $request->validate([
             'answers' => ['nullable', 'array'],
@@ -355,7 +355,7 @@ class AssessmentController extends BaseController
             'warning_count' => $submission->fresh()->warning_count,
         ]);
 
-        $publishAssessment->loadMissing('assessment', 'class.instructorProfile.user');
+        $publishAssessment->loadMissing('assessment', 'classDetail.class.instructorProfile.user');
 
         if ($publishAssessment->class?->instructorProfile?->user) {
             app(NotificationService::class)->send(

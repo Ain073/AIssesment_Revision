@@ -25,7 +25,7 @@ class AssessmentController extends BaseController
         $activeAssessmentTab = $request->query('tab') === 'published' ? 'published' : 'draft';
         $assessments = $instructorProfile
             ? $instructorProfile->assessments()
-                ->with(['subject', 'items.choices', 'publishAssessments.class'])
+                ->with(['subject', 'items.choices', 'publishAssessments.classDetail.class'])
                 ->where('status', '!=', Assessment::STATUS_ARCHIVED)
                 ->withCount([
                     'items',
@@ -106,7 +106,7 @@ class AssessmentController extends BaseController
         $ownedAssessment->load([
             'subject',
             'items.choices',
-            'publishAssessments.class',
+            'publishAssessments.classDetail.class',
         ])->loadCount('items', 'publishAssessments');
 
         $publishableClasses = $instructorProfile
@@ -250,7 +250,7 @@ class AssessmentController extends BaseController
         $instructorProfile = $this->instructorProfile($user);
         $ownedPublishAssessment = $this->ownedPublishAssessment($publishAssessment, $instructorProfile);
 
-        $ownedPublishAssessment->loadMissing(['assessment', 'class']);
+        $ownedPublishAssessment->loadMissing(['assessment', 'classDetail.class']);
 
         $assessment = $ownedPublishAssessment->assessment;
         $assessmentId = $assessment?->assessment_id;

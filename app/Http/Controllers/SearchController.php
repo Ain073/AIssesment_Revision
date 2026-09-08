@@ -175,8 +175,8 @@ class SearchController extends Controller
             ]);
 
         $completed = PublishAssessment::query()
-            ->with(['assessment.subject', 'class'])
-            ->whereHas('class.contextDetail', fn ($detailQuery) => $detailQuery
+            ->with(['assessment.subject', 'classDetail.class'])
+            ->whereHas('classDetail', fn ($detailQuery) => $detailQuery
                 ->where('instructor_id', $instructorProfile->instructor_profile_id))
             ->where(function ($statusQuery): void {
                 $statusQuery->where('publish_status', PublishAssessment::STATUS_CLOSED)
@@ -189,7 +189,7 @@ class SearchController extends Controller
                 $search->whereHas('assessment', function ($assessmentQuery) use ($query): void {
                     $assessmentQuery->where('title', 'like', "%{$query}%");
                 })
-                    ->orWhereHas('class', function ($classQuery) use ($query): void {
+                    ->orWhereHas('classDetail.class', function ($classQuery) use ($query): void {
                         $classQuery->where('section_name', 'like', "%{$query}%")
                             ->orWhere('join_code', 'like', "%{$query}%");
                     });
@@ -238,8 +238,8 @@ class SearchController extends Controller
 
         $classIds = $this->classesForStudent($studentProfile)->pluck('classes.class_id');
         $assessments = PublishAssessment::query()
-            ->with(['assessment.subject', 'class'])
-            ->whereHas('class', fn ($classQuery) => $classQuery->whereIn('classes.class_id', $classIds))
+            ->with(['assessment.subject', 'classDetail.class'])
+            ->whereHas('classDetail', fn ($detailQuery) => $detailQuery->whereIn('class_id', $classIds))
             ->where('publish_status', PublishAssessment::STATUS_PUBLISHED)
             ->whereHas('assessment', function ($assessmentQuery) use ($query): void {
                 $assessmentQuery->where('title', 'like', "%{$query}%");

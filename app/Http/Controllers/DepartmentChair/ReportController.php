@@ -69,9 +69,9 @@ class ReportController extends BaseController
             'assessment.instructorProfile.user',
             'assessment.instructorProfile.department.college',
             'assessment.subject',
-            'class.instructorProfile.department.college',
-            'class.students',
-            'class.subject',
+            'classDetail.class.instructorProfile.department.college',
+            'classDetail.class.students',
+            'classDetail.class.subject',
             'submissions.answers.choice',
         ]);
 
@@ -117,7 +117,7 @@ class ReportController extends BaseController
                 'publishAssessment.assessment.subject',
                 'publishAssessment.assessment.instructorProfile.user',
                 'publishAssessment.assessment.instructorProfile.department',
-                'publishAssessment.class.subject',
+                'publishAssessment.classDetail.class.subject',
             ])
             ->where('report_status', Report::STATUS_FINALIZED);
 

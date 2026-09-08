@@ -37,8 +37,8 @@ trait InstructorReportHelper
                 $publishAssessment->loadMissing([
                     'assessment.items.choices',
                     'assessment.subject',
-                    'class.students',
-                    'class.subject',
+                    'classDetail.class.students',
+                    'classDetail.class.subject',
                     'report',
                     'submissions.answers.choice',
                 ]);
@@ -216,7 +216,7 @@ trait InstructorReportHelper
         }
 
         return PublishAssessment::query()
-            ->with(['assessment.subject', 'class.subject', 'report'])
+            ->with(['assessment.subject', 'classDetail.class.subject', 'report'])
             ->withCount('submissions')
             ->whereHas('assessment', function ($query) use ($instructorProfile): void {
                 $query->where('instructor_id', $instructorProfile->instructor_profile_id)
