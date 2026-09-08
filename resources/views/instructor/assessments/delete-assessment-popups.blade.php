@@ -1,7 +1,7 @@
 @foreach ($assessments as $assessment)
     <div class="modal fade" id="deleteAssessmentModal{{ $assessment->assessment_id }}" tabindex="-1" aria-labelledby="deleteAssessmentModalLabel{{ $assessment->assessment_id }}" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <form action="{{ route('instructor.assessments.destroy', $assessment) }}" class="modal-content" method="POST" data-ajax-form data-remove-target="#assessmentCard{{ $assessment->assessment_id }}">
+            <form action="{{ route('instructor.assessments.destroy', $assessment) }}" class="modal-content" method="POST" data-ajax-form data-remove-target="#assessmentCard{{ $assessment->assessment_id }}" data-reload-page-on-success="true">
                 @csrf
                 @method('DELETE')
                 <div class="modal-header">

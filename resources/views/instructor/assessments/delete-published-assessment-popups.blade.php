@@ -4,7 +4,7 @@
     @endphp
     <div class="modal fade" id="deletePublishedAssessmentModal{{ $publishAssessment->publish_assessment_id }}" tabindex="-1" aria-labelledby="deletePublishedAssessmentModalLabel{{ $publishAssessment->publish_assessment_id }}" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <form action="{{ route('instructor.assessments.published.destroy', $publishAssessment) }}" class="modal-content" method="POST" data-ajax-form data-remove-target="#publishedAssessmentCard{{ $publishAssessment->publish_assessment_id }}">
+            <form action="{{ route('instructor.assessments.published.destroy', $publishAssessment) }}" class="modal-content" method="POST" data-ajax-form data-remove-target="#publishedAssessmentCard{{ $publishAssessment->publish_assessment_id }}" data-reload-page-on-success="true">
                 @csrf
                 @method('DELETE')
                 <div class="modal-header">
