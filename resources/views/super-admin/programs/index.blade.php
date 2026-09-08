@@ -49,7 +49,7 @@
 
         <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#programModal" data-bs-toggle="modal" type="button">
             <span class="material-symbols-outlined fs-5">add</span>
-            Add Program
+            Program
         </button>
     </div>
 

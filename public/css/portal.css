@@ -1394,21 +1394,52 @@ h1, h2, h3, .brand-text {
     }
 
     .super-admin-toolbar {
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        align-items: stretch !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
         gap: 0.5rem !important;
         margin-bottom: 1rem !important;
     }
 
-    .super-admin-toolbar > form,
-    .super-admin-toolbar > div {
+    .super-admin-toolbar:not(.program-toolbar) {
+        display: flex !important;
+    }
+
+    .super-admin-toolbar:not(.program-toolbar) > form,
+    .super-admin-toolbar:not(.program-toolbar) > div {
+        width: auto;
+        min-width: 0;
+    }
+
+    .super-admin-toolbar:not(.program-toolbar) .btn {
+        width: auto;
+        min-width: 0;
+        padding-inline: 0.85rem;
+    }
+
+    .super-admin-toolbar:not(.program-toolbar) .form-select {
+        width: auto;
+    }
+
+    .program-toolbar {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end !important;
+        justify-content: stretch !important;
+    }
+
+    .program-toolbar > form {
         width: 100%;
         min-width: 0;
     }
 
-    .super-admin-toolbar .btn,
-    .super-admin-toolbar .form-select {
+    .program-toolbar .btn {
+        width: auto;
+        min-width: 0;
+        justify-self: end;
+        padding-inline: 0.85rem;
+    }
+
+    .program-toolbar .form-select {
         width: 100%;
     }
 

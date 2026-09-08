@@ -449,11 +449,22 @@
     }
 
     .program-toolbar {
+        display: grid !important;
         grid-template-columns: minmax(0, 1fr) auto !important;
+        align-items: end !important;
+        justify-content: stretch !important;
     }
 
     .program-toolbar > form {
+        width: 100%;
         min-width: 0;
+    }
+
+    .program-toolbar .btn {
+        width: auto;
+        min-width: 0;
+        justify-self: end;
+        padding-inline: 0.85rem;
     }
 
     .program-toolbar .college-filter-select,
