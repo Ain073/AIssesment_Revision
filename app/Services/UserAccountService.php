@@ -85,6 +85,11 @@ class UserAccountService
         try {
             Mail::to($user->email)->send(new InitialAccountPasswordMail($user, $initialPassword));
 
+            Log::info('Initial account password email sent.', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+
             return true;
         } catch (Throwable $exception) {
             Log::warning('Initial account password email could not be sent.', [
