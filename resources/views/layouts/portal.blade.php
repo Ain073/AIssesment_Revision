@@ -23,9 +23,7 @@
 <body class="@yield('body_class')">
     @php
         $sidebarUser = auth()->user();
-        $sidebarPhotoUrl = $sidebarUser?->profile_photo_path
-            ? asset('storage/'.$sidebarUser->profile_photo_path)
-            : null;
+        $sidebarPhotoUrl = $sidebarUser?->profilePhotoUrl();
     @endphp
 
     <aside class="sidebar d-flex flex-column">

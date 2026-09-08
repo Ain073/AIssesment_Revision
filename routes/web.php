@@ -55,6 +55,7 @@ Route::middleware(['auth', 'no_cache'])->group(function () {
     Route::get('/password/setup', [PasswordSetupController::class, 'edit'])->name('password.setup');
     Route::put('/password/setup', [PasswordSetupController::class, 'update'])->middleware('throttle:6,1')->name('password.setup.update');
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/photo', [ProfileController::class, 'photo'])->name('profile.photo.show');
     Route::put('/profile/photo', [ProfileController::class, 'updatePhoto'])->middleware('throttle:10,1')->name('profile.photo.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->middleware('throttle:6,1')->name('profile.password.update');
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');

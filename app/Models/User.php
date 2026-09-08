@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -32,6 +34,8 @@ class User extends Authenticatable
         'must_change_password',
         'status',
         'profile_photo_path',
+        'profile_photo_mime',
+        'profile_photo_data',
     ];
 
     /**
@@ -93,6 +97,29 @@ class User extends Authenticatable
         ])->filter()->implode(' ');
 
         return $fullName !== '' ? $fullName : $this->name;
+    }
+
+    public function profilePhotoUrl(): ?string
+    {
+        if (! $this->profile_photo_path) {
+            return null;
+        }
+
+        if (Str::startsWith($this->profile_photo_path, ['http://', 'https://'])) {
+            return $this->profile_photo_path;
+        }
+
+        if ($this->profile_photo_path === 'database') {
+            $version = $this->updated_at?->timestamp ?? time();
+
+            return route('profile.photo.show', ['v' => $version]);
+        }
+
+        if (Str::startsWith($this->profile_photo_path, 's3:')) {
+            return Storage::disk('s3')->url(Str::after($this->profile_photo_path, 's3:'));
+        }
+
+        return asset('storage/'.$this->profile_photo_path);
     }
 
     public function portalRouteName(): ?string

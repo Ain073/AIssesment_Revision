@@ -30,9 +30,6 @@ class AssessmentController extends BaseController
                 ->withCount([
                     'items',
                     'publishAssessments',
-                    'publishAssessments as submissions_count' => function ($query): void {
-                        $query->join('submissions', 'submissions.publish_assessment_id', '=', 'publish_assessment.publish_assessment_id');
-                    },
                 ])
                 ->latest('assessment_id')
                 ->get()

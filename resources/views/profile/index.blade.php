@@ -4,9 +4,7 @@
 @section('header', 'Profile')
 
 @php
-    $photoUrl = $user->profile_photo_path
-        ? asset('storage/'.$user->profile_photo_path)
-        : null;
+    $photoUrl = $user->profilePhotoUrl();
 @endphp
 
 @push('styles')

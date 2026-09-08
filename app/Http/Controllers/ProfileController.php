@@ -5,9 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -29,17 +34,192 @@ class ProfileController extends Controller
         ]);
 
         $user = $this->profileUser();
-        $path = $validated['profile_photo']->store('profile-photos', 'public');
+        $file = $validated['profile_photo'];
+        $photoAttributes = $this->storeProfilePhoto($file, $user);
 
-        if ($user->profile_photo_path) {
-            Storage::disk('public')->delete($user->profile_photo_path);
-        }
+        $this->deleteExistingProfilePhoto($user);
 
-        $user->update([
-            'profile_photo_path' => $path,
-        ]);
+        $user->update($photoAttributes);
 
         return back()->with('status', 'Profile picture updated.');
+    }
+
+    public function photo(): Response
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        abort_unless(
+            $user->profile_photo_path === 'database' && filled($user->profile_photo_data),
+            404
+        );
+
+        $photo = base64_decode($user->profile_photo_data, true);
+
+        abort_if($photo === false, 404);
+
+        return response($photo, 200)
+            ->header('Content-Type', $user->profile_photo_mime ?: 'image/jpeg')
+            ->header('Cache-Control', 'private, max-age=3600');
+    }
+
+    private function storeProfilePhoto(UploadedFile $file, User $user): array
+    {
+        if ($this->storesProfilePhotosInDatabase()) {
+            return $this->storeProfilePhotoInDatabase($file);
+        }
+
+        if ($this->storesProfilePhotosOnS3()) {
+            return $this->storeProfilePhotoOnS3($file);
+        }
+
+        if ($this->storesProfilePhotosOnCloudinary()) {
+            return [
+                'profile_photo_path' => $this->uploadProfilePhotoToCloudinary($file, $user),
+                'profile_photo_mime' => null,
+                'profile_photo_data' => null,
+            ];
+        }
+
+        return [
+            'profile_photo_path' => $file->store('profile-photos', 'public'),
+            'profile_photo_mime' => null,
+            'profile_photo_data' => null,
+        ];
+    }
+
+    private function deleteExistingProfilePhoto(User $user): void
+    {
+        if (! $user->profile_photo_path) {
+            return;
+        }
+
+        if (Str::startsWith($user->profile_photo_path, 's3:')) {
+            Storage::disk('s3')->delete(Str::after($user->profile_photo_path, 's3:'));
+
+            return;
+        }
+
+        if (
+            $user->profile_photo_path !== 'database'
+            && ! Str::startsWith($user->profile_photo_path, ['http://', 'https://'])
+        ) {
+            Storage::disk('public')->delete($user->profile_photo_path);
+        }
+    }
+
+    private function storesProfilePhotosInDatabase(): bool
+    {
+        return config('services.cloudinary.driver') === 'database';
+    }
+
+    private function storeProfilePhotoInDatabase(UploadedFile $file): array
+    {
+        $contents = file_get_contents($file->getRealPath());
+
+        if ($contents === false) {
+            throw ValidationException::withMessages([
+                'profile_photo' => 'Profile picture could not be read. Please try again.',
+            ]);
+        }
+
+        return [
+            'profile_photo_path' => 'database',
+            'profile_photo_mime' => $file->getMimeType() ?: 'image/jpeg',
+            'profile_photo_data' => base64_encode($contents),
+        ];
+    }
+
+    private function storesProfilePhotosOnS3(): bool
+    {
+        return in_array(config('services.cloudinary.driver'), ['s3', 'r2'], true);
+    }
+
+    private function storeProfilePhotoOnS3(UploadedFile $file): array
+    {
+        $path = $file->store('profile-photos', 's3');
+
+        if ($path === false) {
+            throw ValidationException::withMessages([
+                'profile_photo' => 'Profile picture could not be uploaded. Please try again.',
+            ]);
+        }
+
+        return [
+            'profile_photo_path' => 's3:'.$path,
+            'profile_photo_mime' => null,
+            'profile_photo_data' => null,
+        ];
+    }
+
+    private function storesProfilePhotosOnCloudinary(): bool
+    {
+        $cloudinary = config('services.cloudinary');
+
+        return ($cloudinary['driver'] ?? 'local') === 'cloudinary'
+            && filled($cloudinary['cloud_name'] ?? null)
+            && filled($cloudinary['api_key'] ?? null)
+            && filled($cloudinary['api_secret'] ?? null);
+    }
+
+    private function uploadProfilePhotoToCloudinary(UploadedFile $file, User $user): string
+    {
+        $cloudinary = config('services.cloudinary');
+        $cloudName = (string) $cloudinary['cloud_name'];
+        $apiKey = (string) $cloudinary['api_key'];
+        $apiSecret = (string) $cloudinary['api_secret'];
+        $folder = trim((string) ($cloudinary['folder'] ?? 'aissessment/pfp'), '/');
+
+        $contents = file_get_contents($file->getRealPath());
+
+        if ($contents === false) {
+            throw ValidationException::withMessages([
+                'profile_photo' => 'Profile picture could not be read. Please try again.',
+            ]);
+        }
+
+        $params = [
+            'overwrite' => 'true',
+            'public_id' => 'u'.$user->id.'-'.Str::random(10),
+            'timestamp' => time(),
+        ];
+
+        if ($folder !== '') {
+            $params['folder'] = $folder;
+        }
+
+        $response = Http::timeout(20)
+            ->attach('file', $contents, $file->getClientOriginalName())
+            ->post("https://api.cloudinary.com/v1_1/{$cloudName}/image/upload", $params + [
+                'api_key' => $apiKey,
+                'signature' => $this->cloudinarySignature($params, $apiSecret),
+            ]);
+
+        if (! $response->successful() || blank($response->json('secure_url'))) {
+            Log::warning('Profile picture Cloudinary upload failed.', [
+                'user_id' => $user->id,
+                'status' => $response->status(),
+                'body' => Str::limit($response->body(), 500),
+            ]);
+
+            throw ValidationException::withMessages([
+                'profile_photo' => 'Profile picture could not be uploaded. Please try again.',
+            ]);
+        }
+
+        return (string) $response->json('secure_url');
+    }
+
+    private function cloudinarySignature(array $params, string $apiSecret): string
+    {
+        ksort($params);
+
+        $payload = collect($params)
+            ->reject(fn ($value) => $value === null || $value === '')
+            ->map(fn ($value, string $key) => $key.'='.$value)
+            ->implode('&');
+
+        return sha1($payload.$apiSecret);
     }
 
     public function updatePassword(Request $request): RedirectResponse

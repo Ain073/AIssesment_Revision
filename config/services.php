@@ -46,6 +46,14 @@ return [
         ],
     ],
 
+    'cloudinary' => [
+        'driver' => env('PROFILE_PHOTO_DRIVER', 'local'),
+        'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
+        'api_key' => env('CLOUDINARY_API_KEY'),
+        'api_secret' => env('CLOUDINARY_API_SECRET'),
+        'folder' => env('CLOUDINARY_UPLOAD_FOLDER', 'aissessment/pfp'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

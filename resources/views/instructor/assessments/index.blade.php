@@ -127,12 +127,16 @@
             @if ($publishedAssessments->isNotEmpty())
                 <div class="row g-4">
                     @foreach ($publishedAssessments as $publishAssessment)
+                        @php
+                            $publishedAssessment = $publishAssessment->assessment;
+                            $publishedClass = $publishAssessment->class;
+                        @endphp
                         <div class="col-xl-6">
                             <section class="assessment-card h-100" id="publishedAssessmentCard{{ $publishAssessment->publish_assessment_id }}">
                                 <div class="directory-header px-4 py-3 d-flex justify-content-between gap-3">
                                     <div>
-                                        <h2 class="h4 mb-1">{{ $publishAssessment->assessment?->title ?? 'Untitled Assessment' }}</h2>
-                                        <p class="small text-white-50 mb-0">{{ $publishAssessment->assessment?->subject?->subject_code }} - {{ $publishAssessment->class?->class_name }}</p>
+                                        <h2 class="h4 mb-1">{{ $publishedAssessment?->title ?? 'Untitled Assessment' }}</h2>
+                                        <p class="small text-white-50 mb-0">{{ $publishedAssessment?->subject?->subject_code ?? 'No subject' }} - {{ $publishedClass?->class_name ?? 'No class' }}</p>
                                     </div>
                                     <span class="badge {{ $publishAssessment->display_status === 'completed' ? 'text-bg-success' : 'text-bg-warning' }} rounded-1 align-self-start">
                                         {{ ucfirst($publishAssessment->display_status) }}
@@ -150,9 +154,9 @@
                                     </div>
 
                                     <p class="text-secondary mb-3">
-                                        Published to {{ $publishAssessment->class?->class_name ?? 'class' }}
-                                        @if ($publishAssessment->class?->school_year)
-                                            for {{ $publishAssessment->class->school_year }}
+                                        Published to {{ $publishedClass?->class_name ?? 'class' }}
+                                        @if ($publishedClass?->school_year)
+                                            for {{ $publishedClass->school_year }}
                                         @endif
                                     </p>
 
@@ -163,15 +167,29 @@
                                                 View Results
                                             </a>
                                         @else
-                                            <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $publishAssessment->assessment) }}">
-                                                <span class="material-symbols-outlined fs-5">visibility</span>
-                                                View Assessment
-                                            </a>
+                                            @if ($publishedAssessment)
+                                                <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $publishedAssessment) }}">
+                                                    <span class="material-symbols-outlined fs-5">visibility</span>
+                                                    View Assessment
+                                                </a>
+                                            @else
+                                                <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" type="button" disabled>
+                                                    <span class="material-symbols-outlined fs-5">visibility_off</span>
+                                                    View Assessment
+                                                </button>
+                                            @endif
                                         @endif
-                                        <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('instructor.classes.show', $publishAssessment->class) }}">
-                                            <span class="material-symbols-outlined fs-5">school</span>
-                                            View Class
-                                        </a>
+                                        @if ($publishedClass)
+                                            <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('instructor.classes.show', $publishedClass) }}">
+                                                <span class="material-symbols-outlined fs-5">school</span>
+                                                View Class
+                                            </a>
+                                        @else
+                                            <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" type="button" disabled>
+                                                <span class="material-symbols-outlined fs-5">school</span>
+                                                View Class
+                                            </button>
+                                        @endif
                                         <button class="btn btn-outline-danger d-inline-flex align-items-center gap-2" data-bs-target="#deletePublishedAssessmentModal{{ $publishAssessment->publish_assessment_id }}" data-bs-toggle="modal" type="button">
                                             <span class="material-symbols-outlined fs-5">delete</span>
                                             Delete
