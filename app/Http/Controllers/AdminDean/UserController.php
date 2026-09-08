@@ -66,11 +66,16 @@ class UserController extends BaseController
                 UserAccountService::identifierPasswordDigitsRule(),
                 'unique:student_profiles,student_number',
             ],
+            'designation' => ['nullable', Rule::in(['instructor', 'department_chair'])],
             'authorizations' => ['nullable', 'array'],
             'authorizations.*' => [Rule::in(['department_chair'])],
         ]);
 
-        $managedRoles = collect($validated['authorizations'] ?? [])
+        $selectedAuthorizations = ($validated['designation'] ?? 'instructor') === 'department_chair'
+            ? ['department_chair']
+            : ($validated['authorizations'] ?? []);
+
+        $managedRoles = collect($selectedAuthorizations)
             ->intersect(['department_chair'])
             ->unique()
             ->values();

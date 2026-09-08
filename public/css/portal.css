@@ -172,12 +172,32 @@ h1, h2, h3, .brand-text {
     text-transform: uppercase;
 }
 
+.subject-toolbar .subject-filter-form {
+    width: 100%;
+}
+
+.subject-toolbar .subject-filter-program {
+    flex: 1 1 420px;
+    max-width: min(560px, 100%);
+}
+
+.subject-toolbar .subject-filter-control {
+    flex: 0 0 210px;
+}
+
 .subject-toolbar .program-filter-select {
-    min-width: min(360px, 100%);
+    min-width: 0;
+    width: 100%;
 }
 
 .subject-toolbar .compact-filter-select {
-    min-width: 170px;
+    min-width: 0;
+    width: 100%;
+}
+
+.subject-toolbar .subject-toolbar-action {
+    flex: 0 0 auto;
+    margin-left: auto;
 }
 
 .academic-term-toolbar {
@@ -1821,6 +1841,14 @@ h1, h2, h3, .brand-text {
 }
 
 @media (max-width: 767.98px) {
+    .subject-toolbar .subject-filter-program,
+    .subject-toolbar .subject-filter-control,
+    .subject-toolbar .subject-toolbar-action {
+        flex: 1 1 100%;
+        max-width: 100%;
+        margin-left: 0;
+    }
+
     .dashboard-heading {
         align-items: stretch;
         flex-direction: column;

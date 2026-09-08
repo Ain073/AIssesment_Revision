@@ -97,13 +97,36 @@
     text-transform: uppercase;
 }
 
-.program-toolbar .college-filter-select,
-.subject-toolbar .program-filter-select {
+.subject-toolbar .subject-filter-form {
+    width: 100%;
+}
+
+.subject-toolbar .subject-filter-program {
+    flex: 1 1 420px;
+    max-width: min(560px, 100%);
+}
+
+.subject-toolbar .subject-filter-control {
+    flex: 0 0 210px;
+}
+
+.program-toolbar .college-filter-select {
     min-width: min(360px, 100%);
 }
 
+.subject-toolbar .program-filter-select {
+    min-width: 0;
+    width: 100%;
+}
+
 .subject-toolbar .compact-filter-select {
-    min-width: 170px;
+    min-width: 0;
+    width: 100%;
+}
+
+.subject-toolbar .subject-toolbar-action {
+    flex: 0 0 auto;
+    margin-left: auto;
 }
 
 .academic-term-toolbar {
@@ -427,6 +450,14 @@
     .subject-toolbar .compact-filter-select {
         min-width: 0;
         width: 100%;
+    }
+
+    .subject-toolbar .subject-filter-program,
+    .subject-toolbar .subject-filter-control,
+    .subject-toolbar .subject-toolbar-action {
+        flex: 1 1 100%;
+        max-width: 100%;
+        margin-left: 0;
     }
 
     .academic-term-toolbar {

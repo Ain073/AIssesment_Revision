@@ -3,6 +3,20 @@
 @section('title', 'Subjects | AIssessment Department Chair')
 @section('header', 'Subjects')
 
+@push('scripts')
+    @if (request('action') === 'create-subject')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const modal = document.getElementById('subjectModal');
+
+                if (modal) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        </script>
+    @endif
+@endpush
+
 @section('content')
     @if (session('status'))
         <div class="alert alert-success">{{ session('status') }}</div>

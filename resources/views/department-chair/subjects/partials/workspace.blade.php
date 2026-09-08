@@ -2,9 +2,9 @@
     $semesterOptions = $semesters ?? ['First Semester', 'Second Semester', 'Summer'];
 @endphp
 
-<div class="subject-toolbar super-admin-form-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
-    <form action="{{ route('department-chair.subjects') }}" class="d-flex flex-wrap align-items-end gap-4" method="GET">
-        <div>
+<div class="subject-toolbar super-admin-form-toolbar d-flex flex-wrap align-items-end gap-3 mb-4">
+    <form action="{{ route('department-chair.subjects') }}" class="subject-filter-form d-flex flex-wrap align-items-end gap-3" method="GET">
+        <div class="subject-filter-program">
             <label class="form-label small fw-bold text-uppercase mb-1" for="program-filter">View Program</label>
             <select class="form-select program-filter-select" id="program-filter" name="program" onchange="this.form.submit()">
                 <option value="">All Programs</option>
@@ -15,7 +15,7 @@
                 @endforeach
             </select>
         </div>
-        <div>
+        <div class="subject-filter-control">
             <label class="form-label small fw-bold text-uppercase mb-1" for="year-level-filter">Year Level</label>
             <select class="form-select compact-filter-select" id="year-level-filter" name="year_level" onchange="this.form.submit()">
                 <option value="">All Year Levels</option>
@@ -24,7 +24,7 @@
                 @endforeach
             </select>
         </div>
-        <div>
+        <div class="subject-filter-control">
             <label class="form-label small fw-bold text-uppercase mb-1" for="semester-filter">Semester</label>
             <select class="form-select compact-filter-select" id="semester-filter" name="semester" onchange="this.form.submit()">
                 <option value="">All Semesters</option>
@@ -36,12 +36,12 @@
         <noscript>
             <button class="btn btn-outline-primary" type="submit">View</button>
         </noscript>
-    </form>
 
-    <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#subjectModal" data-bs-toggle="modal" type="button" @disabled($programs->isEmpty())>
-        <span class="material-symbols-outlined fs-5">add</span>
-        Add Subject
-    </button>
+        <button class="btn btn-psu d-flex align-items-center gap-2 subject-toolbar-action" data-bs-target="#subjectModal" data-bs-toggle="modal" type="button" @disabled($programs->isEmpty())>
+            <span class="material-symbols-outlined fs-5">add</span>
+            Add Subject
+        </button>
+    </form>
 </div>
 
 <section class="directory-card subject-directory-card shadow-sm">

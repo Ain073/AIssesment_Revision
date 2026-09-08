@@ -71,13 +71,13 @@ class DashboardController extends BaseController
             ],
             'quickActions' => [
                 [
-                    'label' => 'Users',
-                    'href' => route('department-chair.teachers'),
+                    'label' => 'Add User',
+                    'href' => route('department-chair.teachers', ['tab' => 'teachers', 'action' => 'create-teacher']),
                     'icon' => 'groups',
                 ],
                 [
-                    'label' => 'Subjects',
-                    'href' => route('department-chair.subjects'),
+                    'label' => 'Add Subject',
+                    'href' => route('department-chair.subjects', ['action' => 'create-subject']),
                     'icon' => 'menu_book',
                 ],
                 [

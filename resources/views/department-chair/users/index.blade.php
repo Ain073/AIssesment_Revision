@@ -82,6 +82,17 @@
 
 @push('scripts')
     @include('department-chair.students.student-page-code')
+    @if (request('action') === 'create-teacher')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const modal = document.getElementById('createInstructorModal');
+
+                if (modal) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        </script>
+    @endif
 @endpush
 
 @section('content')
