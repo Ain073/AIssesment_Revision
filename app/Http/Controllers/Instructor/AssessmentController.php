@@ -45,7 +45,7 @@ class AssessmentController extends BaseController
             : collect();
         $publishedAssessments = $instructorProfile
             ? PublishAssessment::query()
-                ->with(['assessment.subject', 'class.subject'])
+                ->with(['assessment.subject', 'classDetail.class.subject'])
                 ->withCount(['submissions as submitted_count' => fn ($query) => $query->where('status', Submission::STATUS_SUBMITTED)])
                 ->whereHas('assessment', fn ($query) => $query->where('instructor_id', $instructorProfile->instructor_profile_id))
                 ->latest('publish_assessment_id')

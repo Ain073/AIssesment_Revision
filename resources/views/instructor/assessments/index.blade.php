@@ -129,7 +129,7 @@
                     @foreach ($publishedAssessments as $publishAssessment)
                         @php
                             $publishedAssessment = $publishAssessment->assessment;
-                            $publishedClass = $publishAssessment->class;
+                            $publishedClass = $publishAssessment->classDetail?->class;
                         @endphp
                         <div class="col-xl-6">
                             <section class="assessment-card h-100" id="publishedAssessmentCard{{ $publishAssessment->publish_assessment_id }}">
