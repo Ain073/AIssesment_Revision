@@ -43,7 +43,7 @@
                             </div>
                             <div class="col-sm-5">
                                 <div class="subject-detail-label mb-1">Year Level</div>
-                                <div>{{ $subject->year_level }}</div>
+                                <div>{{ $subject->yearLevelLabel() }}</div>
                             </div>
                             <div class="col-sm-7">
                                 <div class="subject-detail-label mb-1">Semester</div>
@@ -92,7 +92,7 @@
                                 <label class="form-label fw-bold text-uppercase small" for="edit_year_level_{{ $subject->subject_id }}">Year Level</label>
                                 <select class="form-select" id="edit_year_level_{{ $subject->subject_id }}" name="year_level" required>
                                     @foreach ([1, 2, 3, 4] as $yearLevel)
-                                        <option value="{{ $yearLevel }}" @selected((int) $subject->year_level === $yearLevel)>{{ $yearLevel }}</option>
+                                        <option value="{{ $yearLevel }}" @selected((int) $subject->year_level === $yearLevel)>{{ \App\Support\YearLevel::label($yearLevel) }}</option>
                                     @endforeach
                                 </select>
                             </div>

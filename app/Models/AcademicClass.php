@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use App\Support\YearLevel;
 
 class AcademicClass extends Model
 {
@@ -36,10 +37,15 @@ class AcademicClass extends Model
     public function displayName(): string
     {
         if ($this->year_level && $this->section_name) {
-            return 'Year '.$this->year_level.' - '.$this->section_name;
+            return YearLevel::label($this->year_level).' - '.$this->section_name;
         }
 
         return 'Class';
+    }
+
+    public function yearLevelLabel(): string
+    {
+        return YearLevel::label($this->year_level);
     }
 
     public function contextDetail(): HasOne

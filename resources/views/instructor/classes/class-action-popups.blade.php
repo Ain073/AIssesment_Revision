@@ -26,7 +26,7 @@
                                 <label class="form-label fw-bold text-uppercase small" for="edit_year_level_{{ $class->class_id }}">Year Level</label>
                                 <select class="form-select form-select-lg" id="edit_year_level_{{ $class->class_id }}" name="year_level" required>
                                     @foreach ([1, 2, 3, 4] as $yearLevel)
-                                        <option value="{{ $yearLevel }}" @selected((int) $class->year_level === $yearLevel)>Year {{ $yearLevel }}</option>
+                                        <option value="{{ $yearLevel }}" @selected((int) $class->year_level === $yearLevel)>{{ \App\Support\YearLevel::label($yearLevel) }}</option>
                                     @endforeach
                                 </select>
                             </div>

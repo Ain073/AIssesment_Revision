@@ -30,7 +30,7 @@
                                 <div>
                                     <div class="fw-bold" style="color: var(--psu-navy);">{{ $class->displayName() }}</div>
                                     @if ($class->year_level)
-                                        <div class="small text-secondary">Year Level {{ $class->year_level }}</div>
+                                        <div class="small text-secondary">{{ $class->yearLevelLabel() }}</div>
                                     @endif
                                 </div>
                             </div>

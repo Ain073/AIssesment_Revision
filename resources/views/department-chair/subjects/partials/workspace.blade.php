@@ -20,7 +20,7 @@
             <select class="form-select compact-filter-select" id="year-level-filter" name="year_level" onchange="this.form.submit()">
                 <option value="">All Year Levels</option>
                 @foreach ([1, 2, 3, 4] as $yearLevel)
-                    <option value="{{ $yearLevel }}" @selected($selectedYearLevel === $yearLevel)>Year {{ $yearLevel }}</option>
+                    <option value="{{ $yearLevel }}" @selected($selectedYearLevel === $yearLevel)>{{ \App\Support\YearLevel::label($yearLevel) }}</option>
                 @endforeach
             </select>
         </div>
@@ -86,7 +86,7 @@
                                 {{ collect([$subject->program?->department?->dept_name, $subject->program?->department?->college?->college_name])->filter()->join(' - ') ?: 'No department' }}
                             </div>
                         </td>
-                        <td class="text-center" data-label="Year Level">{{ $subject->year_level }}</td>
+                        <td class="text-center" data-label="Year Level">{{ $subject->yearLevelLabel() }}</td>
                         <td data-label="Semester">{{ $subjectSemester }}</td>
                         <td class="text-center" data-label="Status">
                             <span class="badge {{ $subjectIsActive ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">

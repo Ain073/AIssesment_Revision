@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\YearLevel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -58,5 +59,10 @@ class Subject extends Model
     public function assessments(): HasMany
     {
         return $this->hasMany(Assessment::class, 'subject_id', 'subject_id');
+    }
+
+    public function yearLevelLabel(): string
+    {
+        return YearLevel::label($this->year_level);
     }
 }
