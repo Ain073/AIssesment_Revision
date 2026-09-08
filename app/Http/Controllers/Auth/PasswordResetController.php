@@ -43,7 +43,20 @@ class PasswordResetController extends Controller
                 ->onlyInput('email');
         }
 
-        $status = Password::sendResetLink(['email' => $email]);
+        try {
+            $status = Password::sendResetLink(['email' => $email]);
+        } catch (\Throwable $exception) {
+            Log::warning('Password reset link email could not be sent.', [
+                'email' => $email,
+                'ip' => $request->ip(),
+                'user_id' => $user->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return back()
+                ->with('mail_warning', 'Password reset email could not be sent. Please try again later or contact the administrator.')
+                ->onlyInput('email');
+        }
 
         Log::info('Password reset link requested.', [
             'email' => $email,

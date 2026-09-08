@@ -167,6 +167,12 @@
                     </div>
                 @endif
 
+                @if (session('mail_warning'))
+                    <div class="alert alert-warning py-2">
+                        {{ session('mail_warning') }}
+                    </div>
+                @endif
+
                 <div class="mb-4">
                     <label class="form-label fw-bold" for="email">Email Address</label>
                     <div class="position-relative">
