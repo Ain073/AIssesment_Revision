@@ -89,19 +89,8 @@ class AssessmentController extends BaseController
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
-
-        if ($ownedAssessment->publishAssessments()->exists()) {
-            $editableAssessment = DB::transaction(function () use ($ownedAssessment): Assessment {
-                $copy = $this->copyAssessment($ownedAssessment, Assessment::STATUS_DRAFT);
-                $ownedAssessment->update(['status' => Assessment::STATUS_ARCHIVED]);
-
-                return $copy;
-            });
-
-            return redirect()
-                ->route('instructor.assessments.show', $editableAssessment)
-                ->with('status', 'An editable draft copy was created. Published assessment records remain unchanged.');
-        }
+        $isPublishedSnapshot = $ownedAssessment->status === Assessment::STATUS_ARCHIVED
+            || $ownedAssessment->publishAssessments()->exists();
 
         $ownedAssessment->load([
             'subject',
@@ -122,6 +111,7 @@ class AssessmentController extends BaseController
         return view('instructor.assessments.show', $this->sharedData($user, 'assessments') + [
             'assessment' => $ownedAssessment,
             'publishableClasses' => $publishableClasses,
+            'isPublishedSnapshot' => $isPublishedSnapshot,
             'hasStudentSubmissions' => $ownedAssessment->publishAssessments()
                 ->whereHas('submissions')
                 ->exists(),
@@ -171,6 +161,7 @@ class AssessmentController extends BaseController
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
+        $this->ensureAssessmentIsEditable($ownedAssessment, 'Published assessment records cannot be updated.');
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -296,6 +287,7 @@ class AssessmentController extends BaseController
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
+        $this->ensureAssessmentIsEditable($ownedAssessment, 'Published assessment records cannot be changed.');
 
         $validated = $request->validate([
             'item_type' => ['required', 'string', Rule::in(array_keys($this->itemTypes()))],
@@ -414,6 +406,7 @@ class AssessmentController extends BaseController
         $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
         $ownedItem = $this->ownedAssessmentItem($ownedAssessment, $item);
 
+        $this->ensureAssessmentIsEditable($ownedAssessment, 'Published assessment records cannot be edited.');
         $this->ensureAssessmentHasNoSubmissions($ownedAssessment, 'Questions cannot be edited after students have submitted attempts.');
 
         $validated = $this->validateAssessmentItemUpdate($request, $ownedItem);
@@ -445,6 +438,7 @@ class AssessmentController extends BaseController
         $ownedAssessment = $this->ownedAssessment($assessment, $instructorProfile);
         $ownedItem = $this->ownedAssessmentItem($ownedAssessment, $item);
 
+        $this->ensureAssessmentIsEditable($ownedAssessment, 'Published assessment records cannot be deleted.');
         $this->ensureAssessmentHasNoSubmissions($ownedAssessment, 'Questions cannot be deleted after students have submitted attempts.');
 
         DB::transaction(function () use ($ownedAssessment, $ownedItem): void {
@@ -484,6 +478,15 @@ class AssessmentController extends BaseController
     private function ensureAssessmentHasNoSubmissions(Assessment $assessment, string $message): void
     {
         if ($assessment->publishAssessments()->whereHas('submissions')->exists()) {
+            throw ValidationException::withMessages([
+                'assessment' => $message,
+            ]);
+        }
+    }
+
+    private function ensureAssessmentIsEditable(Assessment $assessment, string $message): void
+    {
+        if ($assessment->status === Assessment::STATUS_ARCHIVED || $assessment->publishAssessments()->exists()) {
             throw ValidationException::withMessages([
                 'assessment' => $message,
             ]);

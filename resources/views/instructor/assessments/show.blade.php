@@ -249,14 +249,20 @@
         <span class="badge text-bg-primary rounded-1 px-3 py-2">{{ $assessment->items_count }} question{{ $assessment->items_count === 1 ? '' : 's' }}</span>
     </div>
 
+    @if ($isPublishedSnapshot)
+        <div class="alert alert-info border-0">
+            This is a published assessment record. Its questions and details are locked so student records remain unchanged.
+        </div>
+    @endif
+
     <section class="step-track mb-4">
-        <button class="step-pill clickable" data-step-tab data-step-target="detailsPanel" type="button" aria-selected="{{ $errors->hasAny(['title', 'description', 'type', 'report_category', 'reporting_term', 'instructions']) ? 'true' : 'false' }}">
+        <button class="step-pill {{ $isPublishedSnapshot ? '' : 'clickable' }}" @unless($isPublishedSnapshot) data-step-tab data-step-target="detailsPanel" @endunless type="button" aria-selected="{{ (! $isPublishedSnapshot && $errors->hasAny(['title', 'description', 'type', 'report_category', 'reporting_term', 'instructions'])) ? 'true' : 'false' }}" @disabled($isPublishedSnapshot)>
             <span class="step-number">1</span>
             <div>
                 <p class="fw-bold mb-0" style="color: var(--psu-navy);">Details and Instructions</p>
             </div>
         </button>
-        <button class="step-pill clickable" data-bs-target="#questionBuilderModal" data-bs-toggle="modal" type="button" aria-selected="false">
+        <button class="step-pill {{ $isPublishedSnapshot ? '' : 'clickable' }}" @unless($isPublishedSnapshot) data-bs-target="#questionBuilderModal" data-bs-toggle="modal" @endunless type="button" aria-selected="false" @disabled($isPublishedSnapshot)>
             <span class="step-number">2</span>
             <div>
                 <p class="fw-bold mb-0" style="color: var(--psu-navy);">Question Builder</p>
@@ -264,6 +270,7 @@
         </button>
     </section>
 
+    @unless($isPublishedSnapshot)
     <section class="details-card mb-4 {{ $errors->hasAny(['title', 'description', 'type', 'report_category', 'reporting_term', 'instructions']) ? '' : 'd-none' }}" id="detailsPanel" data-step-panel="detailsPanel">
             <form action="{{ route('instructor.assessments.update', $assessment) }}" method="POST" class="p-4">
                 @csrf
@@ -313,6 +320,7 @@
                 </div>
             </form>
     </section>
+    @endunless
 
     <section class="saved-card overflow-hidden mb-4">
         <div class="builder-header px-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -321,10 +329,12 @@
             </div>
             <div class="d-flex flex-wrap align-items-center gap-2">
                 <span class="badge text-bg-light rounded-1">{{ $assessment->items_count }} saved</span>
+                @unless($isPublishedSnapshot)
                 <button class="btn btn-light d-inline-flex align-items-center gap-2" data-bs-target="#questionBuilderModal" data-bs-toggle="modal" type="button">
                     <span class="material-symbols-outlined fs-5">add</span>
                     Add Questions
                 </button>
+                @endunless
             </div>
         </div>
 
@@ -354,7 +364,7 @@
                                         type="button"
                                         title="Edit question"
                                         aria-label="Edit question {{ $item->sort_order }}"
-                                        @disabled($hasStudentSubmissions)
+                                        @disabled($isPublishedSnapshot || $hasStudentSubmissions)
                                     >
                                         <span class="material-symbols-outlined fs-6">edit</span>
                                     </button>
@@ -365,7 +375,7 @@
                                         type="button"
                                         title="Delete question"
                                         aria-label="Delete question {{ $item->sort_order }}"
-                                        @disabled($hasStudentSubmissions)
+                                        @disabled($isPublishedSnapshot || $hasStudentSubmissions)
                                     >
                                         <span class="material-symbols-outlined fs-6">delete</span>
                                     </button>
@@ -393,6 +403,7 @@
                             </div>
                         </article>
 
+                        @unless($isPublishedSnapshot)
                         <div class="modal fade" id="editQuestionModal{{ $item->assessment_item_id }}" tabindex="-1" aria-labelledby="editQuestionModalLabel{{ $item->assessment_item_id }}" aria-hidden="true">
                             <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                                 <form class="modal-content" action="{{ route('instructor.assessments.items.update', [$assessment, $item]) }}" method="POST">
@@ -489,6 +500,7 @@
                                 </form>
                             </div>
                         </div>
+                        @endunless
                     @endforeach
                 </div>
                 @if ($hasStudentSubmissions)
@@ -505,9 +517,13 @@
         </div>
     </section>
 
-    @include('instructor.assessments.question-form-popup')
+    @unless($isPublishedSnapshot)
+        @include('instructor.assessments.question-form-popup')
+    @endunless
 @endsection
 
 @push('scripts')
-    @include('instructor.assessments.assessment-show-page-code')
+    @unless($isPublishedSnapshot)
+        @include('instructor.assessments.assessment-show-page-code')
+    @endunless
 @endpush

@@ -91,7 +91,7 @@ class AssessmentPublishController extends BaseController
         $this->publishAssessmentToClasses($request, $user, $instructorProfile, $ownedAssessment, $validated);
 
         return redirect()
-            ->route('instructor.assessments.show', $ownedAssessment)
+            ->route('instructor.assessments', ['tab' => 'published'])
             ->with('status', 'Assessment published to selected classes.');
     }
 
@@ -147,7 +147,7 @@ class AssessmentPublishController extends BaseController
         $this->publishAssessmentToClasses($request, $user, $instructorProfile, $ownedAssessment, $validated);
 
         return redirect()
-            ->route('instructor.assessments')
+            ->route('instructor.assessments', ['tab' => 'published'])
             ->with('status', 'Assessment published to selected classes.');
     }
 }
