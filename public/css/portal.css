@@ -124,40 +124,58 @@ h1, h2, h3, .brand-text {
 .table-switch-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+    align-items: center;
+    gap: 1.15rem;
+    margin-bottom: 1.15rem;
+    border-bottom: 1px solid var(--psu-line);
 }
 
 .table-switch-button {
-    min-height: 3rem;
-    border-radius: 0.45rem;
+    position: relative;
+    min-height: 2.75rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--psu-muted);
     font-weight: 800;
-    padding: 0.65rem 1rem;
+    padding: 0.5rem 0.25rem 0.75rem;
     text-decoration: none;
+    box-shadow: none;
 }
 
 .table-switch-button .table-switch-count {
-    min-width: 1.8rem;
-    height: 1.8rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0.45rem;
-    background: #fff;
-    color: var(--psu-navy);
-    font-weight: 900;
+    display: none;
+}
+
+.table-switch-button::after {
+    position: absolute;
+    right: 0.15rem;
+    bottom: -1px;
+    left: 0.15rem;
+    height: 2px;
+    content: "";
+    background: var(--psu-gold);
+    opacity: 0;
+    transform: scaleX(0.65);
+    transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .table-switch-button.active {
-    background: var(--psu-navy-2);
-    border-color: var(--psu-navy-2);
-    color: #fff;
-    box-shadow: 0 12px 24px rgba(9, 39, 216, 0.18);
+    background: rgba(9, 39, 216, 0.06);
+    color: var(--psu-navy);
+    box-shadow: none;
 }
 
-.table-switch-button:not(.active):hover {
-    background: #edf2ff;
+.table-switch-button.active::after {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+.table-switch-button:hover,
+.table-switch-button:focus {
+    background: rgba(9, 39, 216, 0.05);
     color: var(--psu-navy);
+    box-shadow: none;
 }
 
 .global-search {
@@ -1066,29 +1084,24 @@ h1, h2, h3, .brand-text {
     }
 
     .table-switch-tabs {
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.5rem;
+        display: flex !important;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.9rem;
         overflow: visible !important;
         white-space: normal !important;
     }
 
     .table-switch-button {
-        width: 100%;
+        width: auto;
         justify-content: center;
-        min-height: 2.65rem;
-        padding: 0.5rem 0.6rem;
-        font-size: 0.92rem;
+        min-height: 2.55rem;
+        padding: 0.45rem 0.2rem 0.65rem;
+        font-size: 0.88rem;
     }
 
     .table-switch-button .material-symbols-outlined {
         font-size: 1.1rem !important;
-    }
-
-    .table-switch-button .table-switch-count {
-        min-width: 1.55rem;
-        height: 1.55rem;
-        font-size: 0.86rem;
     }
 
     .directory-header,

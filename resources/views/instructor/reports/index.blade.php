@@ -198,11 +198,14 @@
 
         @media (max-width: 575.98px) {
             .table-switch-tabs {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+                display: flex !important;
+                flex-wrap: wrap;
+                gap: 0.9rem;
             }
 
             .table-switch-button {
-                min-height: 2.5rem;
+                width: auto;
+                min-height: 2.55rem;
                 justify-content: center;
                 font-size: 0.78rem;
                 white-space: normal;
