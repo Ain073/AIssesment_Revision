@@ -152,7 +152,7 @@ h1, h2, h3, .brand-text {
     right: 0.15rem;
     bottom: -1px;
     left: 0.15rem;
-    height: 2px;
+    height: 3px;
     content: "";
     background: var(--psu-gold);
     opacity: 0;
@@ -161,7 +161,7 @@ h1, h2, h3, .brand-text {
 }
 
 .table-switch-button.active {
-    background: rgba(9, 39, 216, 0.06);
+    background: transparent;
     color: var(--psu-navy);
     box-shadow: none;
 }
@@ -173,7 +173,7 @@ h1, h2, h3, .brand-text {
 
 .table-switch-button:hover,
 .table-switch-button:focus {
-    background: rgba(9, 39, 216, 0.05);
+    background: transparent;
     color: var(--psu-navy);
     box-shadow: none;
 }
