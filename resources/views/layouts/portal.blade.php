@@ -621,7 +621,9 @@
                         return;
                     }
 
-                    if (document.querySelector('.modal.show')) {
+                    const activeModal = document.querySelector('.modal.show');
+
+                    if (activeModal && ! activeModal.contains(section)) {
                         return;
                     }
 

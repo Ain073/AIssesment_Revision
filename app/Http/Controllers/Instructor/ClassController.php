@@ -29,6 +29,47 @@ class ClassController extends BaseController
         return view('instructor.classes.class-list', $this->instructorClassesData($this->currentUser(), $this->classListTab($request)));
     }
 
+    public function joinRequestsLive(Request $request, AcademicClass $class): View
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedClass = $this->ownedClass($class, $instructorProfile);
+
+        $this->ensureClassJoinAccess($ownedClass);
+
+        $pendingJoinRequests = $ownedClass->joinRequests()
+            ->where('status', ClassDetail::STATUS_PENDING)
+            ->with(['studentProfile.user.roles', 'studentProfile.program.department.college'])
+            ->latest('updated_at')
+            ->get();
+
+        $part = $request->query('part') === 'button' ? 'button' : 'list';
+
+        return view("instructor.classes.join-requests-{$part}", [
+            'class' => $ownedClass,
+            'pendingJoinRequests' => $pendingJoinRequests,
+        ]);
+    }
+
+    public function studentsLive(AcademicClass $class): View
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedClass = $this->ownedClass($class, $instructorProfile);
+
+        $this->ensureActiveClass($ownedClass);
+
+        $enrolledStudents = $ownedClass->enrolledStudentsCollection(['user.roles', 'program.department.college'])
+            ->sortBy(fn (StudentProfile $student) => strtolower($student->user?->displayName() ?? ''))
+            ->values();
+
+        return view('instructor.classes.student-table', [
+            'class' => $ownedClass,
+            'enrolledStudents' => $enrolledStudents,
+            'studentPerformance' => $this->studentPerformanceByStudent($ownedClass),
+        ]);
+    }
+
     public function storeClass(Request $request): RedirectResponse|JsonResponse
     {
         $user = $this->currentUser();

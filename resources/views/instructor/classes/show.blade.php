@@ -207,11 +207,9 @@
                     <span class="material-symbols-outlined fs-5">link</span>
                     Join Code
                 </button>
-                <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" data-bs-target="#joinRequestsModal" data-bs-toggle="modal" type="button">
-                    <span class="material-symbols-outlined fs-5">person_add</span>
-                    Requests
-                    <span class="badge rounded-pill text-bg-primary">{{ $pendingJoinRequests->count() }}</span>
-                </button>
+                <span data-poll-url="{{ route('instructor.classes.join-requests.live', ['class' => $class, 'part' => 'button']) }}" data-poll-interval="5000">
+                    @include('instructor.classes.join-requests-button')
+                </span>
                 <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#addStudentModal" data-bs-toggle="modal" type="button">
                     <span class="material-symbols-outlined fs-5">add</span>
                     Student
@@ -324,102 +322,9 @@
             </section>
         @endif
     @else
-        <section class="directory-card shadow-sm">
-            <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
-                <h3 class="h4 mb-0">Students in Class</h3>
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-hover mb-0 students-table compact-data-table">
-                    <thead>
-                        <tr>
-                            <th>Student</th>
-                            <th>Program</th>
-                            <th>Performance</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($enrolledStudents as $student)
-                            @php($performance = $studentPerformance->get($student->student_profile_id))
-                            <tr>
-                                <td>
-                                    <div class="d-flex align-items-center gap-3">
-                                        <span class="avatar">{{ strtoupper(substr($student->user?->displayName() ?? 'S', 0, 1)) }}</span>
-                                        <div>
-                                            <div class="fw-bold" style="color: var(--psu-navy);">{{ $student->user?->displayName() ?? 'Unnamed student' }}</div>
-                                            <div class="small text-secondary">{{ $student->student_number ?? 'No student number' }}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    @if ($student->program)
-                                        <div class="fw-semibold">{{ $student->program->program_name }}</div>
-                                        <div class="small text-secondary">{{ collect([$student->program->department?->dept_name, $student->program->department?->college?->college_name])->filter()->join(' - ') }}</div>
-                                    @else
-                                        <span class="text-secondary">Not assigned</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if ($performance['has_results'])
-                                        <div class="student-performance">
-                                            <div class="student-performance-row">
-                                                <div
-                                                    class="student-performance-track {{ $performance['passed'] ? 'passed' : 'failed' }}"
-                                                    role="img"
-                                                    aria-label="{{ $performance['percentage'] }} percent performance"
-                                                >
-                                                    <span
-                                                        class="student-performance-fill {{ $performance['passed'] ? 'passed' : 'failed' }}"
-                                                        style="width: {{ $performance['percentage'] }}%;"
-                                                    ></span>
-                                                </div>
-                                                <span class="student-performance-percent {{ $performance['passed'] ? 'text-success' : 'text-danger' }}">
-                                                    {{ $performance['percentage'] }}%
-                                                </span>
-                                            </div>
-                                        </div>
-                                    @else
-                                        <span class="text-secondary small">No results</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if (! $class->archived_at)
-                                        <form action="{{ route('instructor.classes.students.destroy', ['class' => $class, 'studentProfile' => $student]) }}" method="POST" onsubmit="return confirm('Remove this student from the class?');" data-ajax-form data-reload-page-on-success="true">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1" type="submit">
-                                                <span class="material-symbols-outlined fs-6">delete</span>
-                                                Remove
-                                            </button>
-                                        </form>
-                                    @else
-                                        <span class="text-secondary small">Record only</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td class="text-center py-5" colspan="4">
-                                    <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">groups</span></div>
-                                    <h4 class="h4" style="color: var(--psu-navy);">No students enrolled yet</h4>
-                                    @if (! $class->archived_at)
-                                        <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#addStudentModal" data-bs-toggle="modal" type="button">
-                                            <span class="material-symbols-outlined fs-5">add</span>
-                                            Student
-                                        </button>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #edf2ff;">
-                <span class="small text-secondary">Showing {{ $enrolledStudents->count() }} {{ $enrolledStudents->count() === 1 ? 'student' : 'students' }}</span>
-            </div>
-        </section>
+        <div data-poll-url="{{ route('instructor.classes.students.live', $class) }}" data-poll-interval="5000">
+            @include('instructor.classes.student-table')
+        </div>
 
         @if (! $class->archived_at)
             @include('instructor.classes.join-link-popup')
@@ -433,70 +338,8 @@
                             </div>
                             <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                         </div>
-                        <div class="modal-body p-0">
-                            @if ($pendingJoinRequests->isNotEmpty())
-                                <div class="table-responsive">
-                                    <table class="table table-hover mb-0 compact-data-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Student</th>
-                                                <th>Program</th>
-                                                <th>Requested</th>
-                                                <th class="text-end">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($pendingJoinRequests as $joinRequest)
-                                                @php($student = $joinRequest->studentProfile)
-                                                <tr>
-                                                    <td>
-                                                        <div class="d-flex align-items-center gap-3">
-                                                            <span class="avatar">{{ strtoupper(substr($student?->user?->displayName() ?? 'S', 0, 1)) }}</span>
-                                                            <div>
-                                                                <div class="fw-bold" style="color: var(--psu-navy);">{{ $student?->user?->displayName() ?? 'Unknown student' }}</div>
-                                                                <div class="small text-secondary">{{ $student?->student_number ?? 'No student number' }}</div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        @if ($student?->program)
-                                                            <div class="fw-semibold">{{ $student->program->program_name }}</div>
-                                                            <div class="small text-secondary">{{ collect([$student->program->department?->dept_name, $student->program->department?->college?->college_name])->filter()->join(' - ') }}</div>
-                                                        @else
-                                                            <span class="text-secondary">Not assigned</span>
-                                                        @endif
-                                                    </td>
-                                                    <td>{{ $joinRequest->updated_at?->format('M d, Y g:i A') ?? 'Recently' }}</td>
-                                                    <td class="text-end">
-                                                        <div class="d-inline-flex align-items-center justify-content-end gap-2">
-                                                            <form action="{{ route('instructor.classes.join-requests.approve', ['class' => $class, 'joinRequest' => $joinRequest]) }}" method="POST" data-ajax-form data-reload-page-on-success="true">
-                                                                @csrf
-                                                                <button class="btn btn-success btn-sm d-inline-flex align-items-center gap-1" type="submit">
-                                                                    <span class="material-symbols-outlined fs-6">check</span>
-                                                                    Approve
-                                                                </button>
-                                                            </form>
-                                                            <form action="{{ route('instructor.classes.join-requests.reject', ['class' => $class, 'joinRequest' => $joinRequest]) }}" method="POST" onsubmit="return confirm('Reject this join request?');" data-ajax-form data-reload-page-on-success="true">
-                                                                @csrf
-                                                                <button class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1" type="submit">
-                                                                    <span class="material-symbols-outlined fs-6">close</span>
-                                                                    Reject
-                                                                </button>
-                                                            </form>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                            @else
-                                <div class="p-5 text-center">
-                                    <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">person_add_disabled</span></div>
-                                    <h4 class="h5 mb-1" style="color: var(--psu-navy);">No pending requests</h4>
-                                    <p class="text-secondary mb-0">Students who request to join this class will appear here.</p>
-                                </div>
-                            @endif
+                        <div class="modal-body p-0" data-poll-url="{{ route('instructor.classes.join-requests.live', ['class' => $class, 'part' => 'list']) }}" data-poll-interval="5000">
+                            @include('instructor.classes.join-requests-list')
                         </div>
                     </div>
                 </div>

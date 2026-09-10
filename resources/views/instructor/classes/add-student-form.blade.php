@@ -6,7 +6,7 @@
                 <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form action="{{ route('instructor.classes.students.store', $class) }}" method="POST" data-ajax-form data-reset-on-success="true" data-reload-page-on-success="true">
+                <form action="{{ route('instructor.classes.students.store', $class) }}" method="POST" data-ajax-form data-reset-on-success="true">
                     @csrf
                     <div class="mb-3">
                         <label class="form-label fw-bold text-uppercase small" for="student_number">Student Number</label>

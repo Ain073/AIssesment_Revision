@@ -75,7 +75,16 @@ class SanitizeLogContext
 
     private function isSensitiveKey(string $key): bool
     {
-        return in_array(strtolower($key), $this->sensitiveKeys, true);
+        $normalizedKey = strtolower($key);
+
+        return $normalizedKey === 'id'
+            || str_ends_with($normalizedKey, '_id')
+            || str_ends_with($normalizedKey, '_ids')
+            || str_ends_with($normalizedKey, '_token')
+            || str_ends_with($normalizedKey, '_tokens')
+            || str_ends_with($normalizedKey, '_key')
+            || str_ends_with($normalizedKey, '_keys')
+            || in_array($normalizedKey, $this->sensitiveKeys, true);
     }
 
     private function actorRole(): string

@@ -104,6 +104,8 @@ Route::middleware(['instructor', 'password_changed', 'no_cache'])
         Route::post('/classes/{class}/archive', [InstructorClassController::class, 'archiveClass'])->name('classes.archive');
         Route::post('/classes/{class}/restore', [InstructorClassController::class, 'restoreClass'])->name('classes.restore');
         Route::delete('/classes/{class}', [InstructorClassController::class, 'destroyClass'])->name('classes.destroy');
+        Route::get('/classes/{class}/join-requests/live', [InstructorClassController::class, 'joinRequestsLive'])->name('classes.join-requests.live');
+        Route::get('/classes/{class}/students/live', [InstructorClassController::class, 'studentsLive'])->name('classes.students.live');
         Route::get('/classes/{class}', [InstructorClassController::class, 'showClass'])->name('classes.show');
         Route::post('/classes/{class}/students', [InstructorClassStudentController::class, 'storeClassStudent'])->name('classes.students.store');
         Route::delete('/classes/{class}/students/{studentProfile}', [InstructorClassStudentController::class, 'destroyClassStudent'])->name('classes.students.destroy');
