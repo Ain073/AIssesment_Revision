@@ -105,7 +105,7 @@
         cards[currentIndex]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         document.getElementById('previousQuestion').disabled = currentIndex === 0;
         document.getElementById('nextQuestion').innerHTML = currentIndex === cards.length - 1
-            ? 'Review Answers <span class="material-symbols-outlined">checklist</span>'
+            ? 'Last Question <span class="material-symbols-outlined">checklist</span>'
             : 'Next Question <span class="material-symbols-outlined">chevron_right</span>';
     };
 

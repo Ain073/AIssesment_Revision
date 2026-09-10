@@ -473,14 +473,18 @@
     <div class="modal fade" id="submitConfirmModal" tabindex="-1" aria-labelledby="submitConfirmTitle" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
-                <div class="modal-body p-4 p-lg-5">
-                    <div class="text-center">
+                <div class="modal-body p-4 p-lg-5 position-relative">
+                    <button class="btn btn-sm btn-light border position-absolute top-0 end-0 m-3 d-inline-flex align-items-center justify-content-center" data-bs-dismiss="modal" type="button" aria-label="Close submit confirmation">
+                        <span class="material-symbols-outlined fs-6">close</span>
+                    </button>
+
+                    <div class="text-center pt-2">
                         <div class="submit-confirm-icon mx-auto mb-3">
                             <span class="material-symbols-outlined fs-1">send</span>
                         </div>
                         <h2 class="brand-text h3 mb-2" id="submitConfirmTitle" style="color: var(--psu-navy);">Submit Assessment?</h2>
                         <p class="text-secondary mb-4" id="submitConfirmMessage">
-                            Review your answers before submitting. You cannot edit this attempt after submission.
+                            Please confirm your submission. You cannot edit this attempt after submission.
                         </p>
                     </div>
 
@@ -498,10 +502,9 @@
                     </div>
 
                     <div class="d-flex flex-column flex-sm-row justify-content-end gap-2">
-                        <button class="btn btn-outline-secondary px-4" id="cancelSubmitConfirm" data-bs-dismiss="modal" type="button">Review Answers</button>
                         <button class="btn btn-psu px-4 d-inline-flex align-items-center justify-content-center gap-2" id="confirmSubmitAssessment" type="button">
                             <span class="material-symbols-outlined fs-5">check_circle</span>
-                            Submit Now
+                            Submit Assessment
                         </button>
                     </div>
                 </div>
