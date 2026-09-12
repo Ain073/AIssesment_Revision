@@ -27,8 +27,16 @@ class ReportController extends BaseController
             ->unique('subject_id')
             ->sortBy(fn ($subject): string => Str::lower(trim($subject->subject_code.' '.$subject->subject_name)))
             ->values();
+        $classes = $completedAssessments
+            ->map(fn ($publishAssessment) => $publishAssessment->class)
+            ->filter(fn ($class): bool => (bool) $class?->class_id)
+            ->unique('class_id')
+            ->sortBy(fn ($class): string => Str::lower(trim($class->displayName().' '.$class->class_name)))
+            ->values();
         $subjectId = $request->integer('subject');
         $selectedSubjectId = $subjects->contains('subject_id', $subjectId) ? $subjectId : null;
+        $classId = $request->integer('class');
+        $selectedClassId = $classes->contains('class_id', $classId) ? $classId : null;
 
         if ($selectedSubjectId) {
             $completedAssessments = $completedAssessments
@@ -37,6 +45,12 @@ class ReportController extends BaseController
 
                     return (int) $subject?->subject_id === $selectedSubjectId;
                 })
+                ->values();
+        }
+
+        if ($selectedClassId) {
+            $completedAssessments = $completedAssessments
+                ->filter(fn ($publishAssessment): bool => (int) $publishAssessment->class?->class_id === $selectedClassId)
                 ->values();
         }
 
@@ -49,7 +63,9 @@ class ReportController extends BaseController
             'summativeAssessments' => $summativeAssessments,
             'reportCategories' => $this->reportCategories(),
             'subjects' => $subjects,
+            'classes' => $classes,
             'selectedSubjectId' => $selectedSubjectId,
+            'selectedClassId' => $selectedClassId,
         ]);
     }
 

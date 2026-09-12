@@ -46,7 +46,7 @@
 
         .instructor-report-filter-form {
             display: grid;
-            grid-template-columns: minmax(240px, 420px) auto;
+            grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
             gap: 0.75rem;
             align-items: end;
         }
@@ -252,13 +252,31 @@
                 </select>
             </div>
 
-            @if ($selectedSubjectId)
+            <div class="instructor-report-filter-field">
+                <label class="instructor-report-filter-label" for="instructorReportClassFilter">
+                    <span class="material-symbols-outlined fs-6">school</span>
+                    Class
+                </label>
+                <select class="form-select" id="instructorReportClassFilter" name="class" onchange="this.form.submit()" @disabled($classes->isEmpty())>
+                    <option value="">All classes</option>
+                    @foreach ($classes as $class)
+                        <option value="{{ $class->class_id }}" @selected($selectedClassId === (int) $class->class_id)>
+                            {{ $class->displayName() }}
+                            @if ($class->subject?->subject_code)
+                                - {{ $class->subject->subject_code }}
+                            @endif
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            @if ($selectedSubjectId || $selectedClassId)
                 <div class="instructor-report-filter-actions">
                     <a
-                        aria-label="Clear subject filter"
+                        aria-label="Clear report filters"
                         class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center"
                         href="{{ route('instructor.reports', ['type' => $activeReportType]) }}"
-                        title="Clear filter"
+                        title="Clear filters"
                     >
                         <span class="material-symbols-outlined fs-6">filter_alt_off</span>
                     </a>

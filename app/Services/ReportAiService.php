@@ -179,6 +179,8 @@ class ReportAiService
         return [
             'assessment_title' => (string) ($assessment?->title ?? 'Assessment'),
             'subject' => trim(($assessment?->subject?->subject_code ?? '').' '.($assessment?->subject?->subject_name ?? '')),
+            'report_category' => (string) ($assessment?->report_category ?? 'general'),
+            'reporting_term' => (string) ($assessment?->reporting_term ?? 'general'),
             'students_count' => $publishAssessment->class?->enrolledStudentsCount() ?? 0,
             'takers_count' => $scores->count(),
             'items_count' => $items->count(),
@@ -213,39 +215,57 @@ class ReportAiService
         $json = json_encode($data, JSON_PRETTY_PRINT);
 
         return <<<PROMPT
-You are helping an instructor prepare the narrative cells of a school performance monitoring report.
+You are helping an instructor prepare draft narrative cells for a school performance monitoring report.
 
-Use only the assessment data below. Write in a natural instructor-assisted academic tone, like a teacher preparing a concise performance monitoring report.
+Use only the assessment data below. Write in a formal but natural academic reporting style. The output is a draft that the instructor will review, edit, and finalize.
 
-Rules:
-- Return valid JSON only.
-- Write only these two fields:
-  1. concepts_most_learned_skills
-  2. concepts_least_learned_skills
-- Do not write like an answer key or quiz explanation.
-- Do not focus on only one exact answer phrase unless the data only supports that topic.
-- Summarize the item results into broader concepts or skills.
-- For most learned, use the highest-performing item topics and describe demonstrated competencies.
-- For least learned, use the lowest-performing item topics and describe areas that need reinforcement.
-- Write as a human-readable paragraph, not as a rigid template.
-- Vary the sentence construction naturally based on the results.
-- Use phrases such as "students demonstrated", "students showed", "most students correctly answered", "students need to strengthen", or "difficulty was observed" only when they fit the data.
-- For most learned, prefer natural wording such as "students correctly answered questions related to..." or "students demonstrated understanding of..." when the results point to mastered topics.
-- For least learned, prefer natural wording such as "students showed difficulty in applying concepts to questions about..." when the results point to application or situational weaknesses.
-- Avoid artificial phrases such as "relative strength", "well-understood grasp", or wording that sounds like an answer explanation.
-- Do not copy the sample wording when the assessment data points to different concepts or skills.
-- Do not start with disclaimers such as "Based on the limited responses" or "Despite the small sample size."
-- Do not start with weak setup phrases such as "Based on the assessment results", "It appears that", or "The data shows that".
-- Do not start by naming the assessment title, assessment type, or course code. Start directly with the students' performance.
-- If the data set is small, keep the wording cautious by using phrases such as "the results suggest" instead of making broad claims.
-- Avoid unsupported student counts, names, or invented statistics.
+Return valid JSON only with exactly these two string fields:
+1. concepts_most_learned_skills
+2. concepts_least_learned_skills
+
+Evidence rules:
+- Base every statement only on the assessment data, including performance patterns, assessment items, item results, scores, and concepts or skills connected to those items.
+- Do not invent reasons for performance. Do not claim students did not study, lacked motivation, were not taught properly, had poor attendance, or experienced a specific learning problem unless the data explicitly says so.
+- Avoid unsupported student counts, names, percentages, statistics, or causal explanations.
+- Explain what the results mean academically instead of simply repeating numerical values.
+- Use cautious evidence-based wording when the data set is small or limited.
+
+Most learned section:
+- Explain areas where students showed stronger performance.
+- Discuss concepts students understood well, skills applied correctly, competencies demonstrated, or patterns of strong performance across related items.
+- Do not only identify the highest-scoring topic. Interpret what students were generally able to understand, recognize, apply, analyze, or perform.
+
+Least learned section:
+- Explain areas where students showed weaker performance.
+- Discuss concepts where difficulty appeared, skills applied incorrectly or inconsistently, patterns of lower performance, or competencies that may require reinforcement.
+- Do not exaggerate the result or make unsupported conclusions.
+- Include a recommendation only when it is useful and supported by the assessment results.
+
+Report tone:
+- If report_category indicates a formative report, use a developmental tone focused on current strengths, developing skills, reinforcement, and possible areas for additional practice in succeeding lessons or activities.
+- If report_category indicates a summative report, use an overall performance tone focused on demonstrated mastery, stronger areas of achievement, lower-performing concepts or skills, and areas that may still need reinforcement after the assessment period.
+- If the report category is unclear, use a balanced academic reporting tone.
+
+Writing style:
+- Write each field as a short narrative paragraph, not a list of topics, scores, or percentages.
 - Keep each field to 2 to 4 concise sentences suitable for a narrow report table cell.
-- Do not include markdown, bullets, or labels inside the JSON values.
+- Do not include markdown, bullets, labels, or headings inside the JSON values.
+- Do not write like an answer key or quiz explanation.
+- Summarize item results into broader concepts or skills when the data supports it.
+- Do not focus on only one exact answer phrase unless the data only supports that topic.
+- The paragraph should sound written specifically for the current assessment.
 
-Sample tone only:
+Writing variety:
+- Do not repeatedly begin paragraphs with fixed phrases such as "Students demonstrated", "The assessment results indicate", "Students showed difficulty", or "The results suggest".
+- These phrases may be used when appropriate, but they must not become the default opening.
+- Vary paragraph openings, sentence structure, transitions, order of ideas, conclusion style, and wording naturally based on the data.
+- Do not only perform synonym replacement. Vary the flow and organization of ideas when appropriate.
+- Avoid repetitive conclusions, overly generic statements, mechanical sentence patterns, and wording copied from previous reports.
+
+Reference tone only. Do not copy or mechanically paraphrase:
 {
-  "concepts_most_learned_skills": "Students correctly answered questions related to the foundational concepts covered in the assessment. This shows that they can recall key terms and explain basic ideas when the questions are direct and theory-based.",
-  "concepts_least_learned_skills": "Students showed difficulty in applying concepts to questions about practical or situational parts of the lesson. The results suggest that they need further support in connecting lesson terms with actual procedures, examples, or problem scenarios."
+  "concepts_most_learned_skills": "The class showed stronger performance on items involving foundational concepts and direct recall of lesson terms. Their responses suggest that many students can recognize key ideas and connect them with basic explanations when the questions are straightforward.",
+  "concepts_least_learned_skills": "Lower performance appeared in items requiring application of concepts to practical or situational contexts. These areas may benefit from additional guided practice that helps students connect lesson terms with procedures, examples, or problem scenarios."
 }
 
 Assessment data:
