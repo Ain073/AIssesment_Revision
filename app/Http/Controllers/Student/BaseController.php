@@ -201,6 +201,12 @@ class BaseController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            if ($this->isSubmittedStudentLockedAfterReopen($publishAssessment, $studentProfile)) {
+                return redirect()
+                    ->route('student.assessments')
+                    ->withErrors(['assessment' => 'You already submitted this assessment before it was reopened.']);
+            }
+
             $activeSubmission = Submission::query()
                 ->where('publish_assessment_id', $publishAssessment->publish_assessment_id)
                 ->where('student_profile_id', $studentProfile->student_profile_id)
@@ -271,6 +277,10 @@ class BaseController extends Controller
 
         $studentProfile = $this->currentUser()->studentProfile;
 
+        if ($studentProfile && $this->isSubmittedStudentLockedAfterReopen($publishAssessment, $studentProfile)) {
+            return 'completed';
+        }
+
         if ($studentProfile && $this->submittedSubmissionCount($publishAssessment, $studentProfile) >= max((int) $publishAssessment->attempt_limit, 1)) {
             return 'completed';
         }
@@ -289,5 +299,11 @@ class BaseController extends Controller
             ->where('student_profile_id', $studentProfile->student_profile_id)
             ->where('status', Submission::STATUS_SUBMITTED)
             ->count();
+    }
+
+    protected function isSubmittedStudentLockedAfterReopen(PublishAssessment $publishAssessment, StudentProfile $studentProfile): bool
+    {
+        return (bool) $publishAssessment->reopened_at
+            && $this->submittedSubmissionCount($publishAssessment, $studentProfile) > 0;
     }
 }

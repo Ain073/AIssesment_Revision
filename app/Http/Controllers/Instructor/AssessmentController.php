@@ -282,6 +282,54 @@ class AssessmentController extends BaseController
             ->with('status', 'Published assessment deleted. You can publish the stored assessment again.');
     }
 
+    public function reopenPublishedAssessment(Request $request, PublishAssessment $publishAssessment): RedirectResponse|JsonResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedPublishAssessment = $this->ownedPublishAssessment($publishAssessment, $instructorProfile);
+
+        $isCompleted = $ownedPublishAssessment->publish_status === PublishAssessment::STATUS_CLOSED
+            || ($ownedPublishAssessment->due_at && $ownedPublishAssessment->due_at->isPast());
+
+        if (! $isCompleted) {
+            throw ValidationException::withMessages([
+                'due_at' => 'Only completed assessments can be reopened.',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'available_at' => ['nullable', 'date', 'before:due_at'],
+            'due_at' => ['required', 'date', 'after:now'],
+        ]);
+
+        $previousDueAt = $ownedPublishAssessment->due_at;
+
+        $ownedPublishAssessment->update([
+            'available_at' => $validated['available_at'] ?? now(),
+            'due_at' => $validated['due_at'],
+            'original_due_at' => $ownedPublishAssessment->original_due_at ?? $previousDueAt,
+            'reopened_at' => now(),
+            'publish_status' => PublishAssessment::STATUS_PUBLISHED,
+        ]);
+
+        Log::info('Published assessment reopened by instructor.', [
+            'actor_id' => $user->id,
+            'publish_assessment_id' => $ownedPublishAssessment->publish_assessment_id,
+            'assessment_id' => $ownedPublishAssessment->assessment_id,
+            'previous_due_at' => $previousDueAt?->toDateTimeString(),
+            'new_due_at' => $ownedPublishAssessment->fresh()->due_at?->toDateTimeString(),
+            'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Assessment reopened for students who have not submitted yet.']);
+        }
+
+        return redirect()
+            ->route('instructor.assessments', ['tab' => 'published'])
+            ->with('status', 'Assessment reopened for students who have not submitted yet.');
+    }
+
     public function storeAssessmentItem(Request $request, Assessment $assessment): RedirectResponse
     {
         $user = $this->currentUser();

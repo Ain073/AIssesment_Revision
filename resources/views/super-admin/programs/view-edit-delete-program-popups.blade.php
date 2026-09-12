@@ -13,13 +13,12 @@
                         <div class="fw-bold" style="color: var(--psu-navy);">{{ $program->program_name }}</div>
                     </div>
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="program-detail-label mb-1">Department</div>
-                            <div>{{ $program->department?->dept_name ?? 'Not assigned' }}</div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="program-detail-label mb-1">College</div>
-                            <div>{{ $program->department?->college?->college_name ?? 'Not assigned' }}</div>
+                            <div class="fw-semibold">{{ $program->department?->dept_name ?? 'Not assigned' }}</div>
+                            @if ($program->department?->college?->college_name)
+                                <div class="small text-secondary">{{ $program->department->college->college_name }}</div>
+                            @endif
                         </div>
                         <div class="col-md-6">
                             <div class="program-detail-label mb-1">Status</div>
@@ -48,7 +47,7 @@
 
     <div class="modal fade" id="editProgramModal{{ $program->program_id }}" tabindex="-1" aria-labelledby="editProgramModalLabel{{ $program->program_id }}" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <form action="{{ route('super-admin.programs.update', ['program' => $program, 'college' => $selectedCollegeKey]) }}" class="modal-content" method="POST">
+            <form action="{{ route('super-admin.programs.update', ['program' => $program, 'department' => $selectedDepartmentKey]) }}" class="modal-content" method="POST">
                 @csrf
                 @method('PUT')
                 <input name="is_active" type="hidden" value="0">
@@ -62,7 +61,7 @@
                         <select class="form-select form-select-lg" id="edit_department_id_{{ $program->program_id }}" name="department_id" required>
                             @foreach ($departments as $department)
                                 <option value="{{ $department->department_id }}" @selected(old('department_id', $program->department_id) == $department->department_id)>
-                                    {{ $department->dept_name }} - {{ $department->college?->college_name }}
+                                    {{ $department->dept_name }}{{ $department->college?->college_name ? ' - '.$department->college->college_name : '' }}
                                 </option>
                             @endforeach
                         </select>
@@ -86,7 +85,7 @@
 
     <div class="modal fade" id="deleteProgramModal{{ $program->program_id }}" tabindex="-1" aria-labelledby="deleteProgramModalLabel{{ $program->program_id }}" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <form action="{{ route('super-admin.programs.destroy', ['program' => $program, 'college' => $selectedCollegeKey]) }}" class="modal-content" method="POST">
+            <form action="{{ route('super-admin.programs.destroy', ['program' => $program, 'department' => $selectedDepartmentKey]) }}" class="modal-content" method="POST">
                 @csrf
                 @method('DELETE')
                 <div class="modal-header">

@@ -10,7 +10,7 @@
         </span>
     </div>
 
-    <div class="table-responsive">
+    <div class="table-responsive class-table-responsive">
         <table class="table table-hover mb-0 classes-table compact-data-table">
             <thead>
                 <tr>
@@ -52,7 +52,7 @@
                             @endif
                         </td>
                         <td class="text-center text-nowrap">
-                            <div class="d-inline-flex flex-nowrap align-items-center gap-2">
+                            <div class="class-row-actions-desktop d-none d-md-inline-flex flex-nowrap align-items-center gap-2">
                                 <a class="btn btn-outline-primary btn-sm action-icon-btn d-inline-flex align-items-center justify-content-center" href="{{ route('instructor.classes.show', ['class' => $class, 'tab' => 'students']) }}" title="View class" aria-label="View class">
                                     <span class="material-symbols-outlined fs-6">visibility</span>
                                 </a>
@@ -74,6 +74,40 @@
                                         </button>
                                     </form>
                                 @endif
+                            </div>
+                            <div class="class-row-actions-mobile d-inline-flex d-md-none flex-nowrap align-items-center justify-content-end gap-2">
+                                <a class="btn btn-outline-primary btn-sm action-icon-btn d-inline-flex align-items-center justify-content-center" href="{{ route('instructor.classes.show', ['class' => $class, 'tab' => 'students']) }}" title="View class" aria-label="View class">
+                                    <span class="material-symbols-outlined fs-6">visibility</span>
+                                </a>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm action-icon-btn d-inline-flex align-items-center justify-content-center" data-bs-toggle="dropdown" data-bs-display="static" type="button" title="More actions" aria-label="More actions">
+                                        <span class="material-symbols-outlined fs-6">more_vert</span>
+                                    </button>
+                                    <div class="dropdown-menu dropdown-menu-end shadow-sm">
+                                        @if ($tabKey === 'active')
+                                            <button class="dropdown-item d-flex align-items-center gap-2" data-bs-target="#editClassModal{{ $class->class_id }}" data-bs-toggle="modal" type="button">
+                                                <span class="material-symbols-outlined fs-6">edit</span>
+                                                Edit Class
+                                            </button>
+                                            <button class="dropdown-item d-flex align-items-center gap-2" data-bs-target="#archiveClassModal{{ $class->class_id }}" data-bs-toggle="modal" type="button">
+                                                <span class="material-symbols-outlined fs-6">archive</span>
+                                                Archive Class
+                                            </button>
+                                            <button class="dropdown-item d-flex align-items-center gap-2 text-danger" data-bs-target="#deleteClassModal{{ $class->class_id }}" data-bs-toggle="modal" type="button">
+                                                <span class="material-symbols-outlined fs-6">delete</span>
+                                                Delete Class
+                                            </button>
+                                        @else
+                                            <form action="{{ route('instructor.classes.restore', $class) }}" method="POST" data-ajax-form>
+                                                @csrf
+                                                <button class="dropdown-item d-flex align-items-center gap-2 text-success" type="submit">
+                                                    <span class="material-symbols-outlined fs-6">settings_backup_restore</span>
+                                                    Restore Class
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
                         </td>
                     </tr>

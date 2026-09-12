@@ -47,12 +47,18 @@ class AssessmentResultController extends BaseController
             ->concat($submissionStudents)
             ->unique('student_profile_id')
             ->sortBy(fn (StudentProfile $student): string => Str::lower($student->user?->displayName() ?? $student->student_number ?? ''))
-            ->map(function (StudentProfile $student) use ($submissions, $items, $maxScore, $passingScore): array {
+            ->map(function (StudentProfile $student) use ($ownedPublishAssessment, $submissions, $items, $maxScore, $passingScore): array {
                 $attempts = $submissions
                     ->where('student_profile_id', $student->student_profile_id)
-                    ->map(function (Submission $submission) use ($items, $maxScore, $passingScore): array {
+                    ->map(function (Submission $submission) use ($ownedPublishAssessment, $items, $maxScore, $passingScore): array {
                         $isSubmitted = $submission->status === Submission::STATUS_SUBMITTED;
                         $score = $isSubmitted ? $this->submissionScore($submission, $items) : null;
+                        $submittedAt = $submission->submitted_at;
+                        $originalDueAt = $ownedPublishAssessment->original_due_at;
+                        $isLate = $isSubmitted
+                            && $submittedAt
+                            && $originalDueAt
+                            && $submittedAt->gt($originalDueAt);
 
                         return [
                             'submission_id' => $submission->submission_id,
@@ -60,7 +66,10 @@ class AssessmentResultController extends BaseController
                             'score' => $score !== null ? $this->formatReportNumber($score) : null,
                             'score_value' => $score,
                             'passed' => $score !== null && $maxScore > 0 && $score >= $passingScore,
-                            'submitted_at' => $submission->submitted_at,
+                            'submitted_at' => $submittedAt,
+                            'submission_timing' => $isSubmitted && $originalDueAt
+                                ? ($isLate ? 'late' : 'on_time')
+                                : null,
                             'warning_count' => $submission->warning_count,
                             'completion_reason' => $submission->completion_reason,
                             'pending_essay_count' => AssessmentScoring::essayPendingCount($submission, $items),
@@ -110,6 +119,7 @@ class AssessmentResultController extends BaseController
         return view('instructor.assessments.results', $this->sharedData($user, 'assessments') + [
             'assessment' => $ownedPublishAssessment->assessment,
             'class' => $ownedPublishAssessment->class,
+            'publishAssessment' => $ownedPublishAssessment,
             'studentResults' => $studentResults,
             'analytics' => $analytics,
             'autoSubmittedCount' => $autoSubmittedCount,

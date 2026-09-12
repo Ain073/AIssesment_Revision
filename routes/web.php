@@ -119,6 +119,7 @@ Route::middleware(['instructor', 'password_changed', 'no_cache'])
         Route::get('/assessments/publish', [InstructorAssessmentPublishController::class, 'publishAssessmentForm'])->name('assessments.publish.form');
         Route::post('/assessments/publish', [InstructorAssessmentPublishController::class, 'publishSelectedAssessment'])->name('assessments.publish.selected');
         Route::post('/assessments', [InstructorAssessmentController::class, 'storeAssessment'])->name('assessments.store');
+        Route::put('/publish-assessments/{publishAssessment}/reopen', [InstructorAssessmentController::class, 'reopenPublishedAssessment'])->name('assessments.published.reopen');
         Route::delete('/publish-assessments/{publishAssessment}', [InstructorAssessmentController::class, 'destroyPublishedAssessment'])->name('assessments.published.destroy');
         Route::get('/publish-assessments/{publishAssessment}/results', [InstructorAssessmentResultController::class, 'assessmentResults'])->name('assessments.results');
         Route::get('/submissions/{submission}/grade', [InstructorAssessmentResultController::class, 'gradeSubmission'])->name('assessments.submissions.grade');

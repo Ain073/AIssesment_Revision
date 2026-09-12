@@ -32,6 +32,8 @@ class PublishAssessment extends Model
         'class_details_id',
         'available_at',
         'due_at',
+        'original_due_at',
+        'reopened_at',
         'publish_status',
         'score_visibility',
         'answer_visibility',
@@ -50,6 +52,8 @@ class PublishAssessment extends Model
         return [
             'available_at' => 'datetime',
             'due_at' => 'datetime',
+            'original_due_at' => 'datetime',
+            'reopened_at' => 'datetime',
             'score_visibility' => 'boolean',
             'answer_visibility' => 'boolean',
             'prevent_copy_paste' => 'boolean',

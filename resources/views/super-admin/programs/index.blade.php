@@ -33,12 +33,12 @@
     {{-- Filters and actions --}}
     <div class="program-toolbar super-admin-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
         <form action="{{ route('super-admin.programs') }}" method="GET">
-            <label class="form-label small fw-bold text-uppercase mb-1" for="college-filter">View College</label>
-            <select class="form-select college-filter-select" id="college-filter" name="college" onchange="this.form.submit()">
-                <option value="">All Colleges</option>
-                @foreach ($colleges as $college)
-                    <option value="{{ $college->public_id }}" @selected($selectedCollegeKey === $college->public_id)>
-                        {{ $college->college_name }}
+            <label class="form-label small fw-bold text-uppercase mb-1" for="department-filter">View Department</label>
+            <select class="form-select department-filter-select" id="department-filter" name="department" onchange="this.form.submit()">
+                <option value="">All Departments</option>
+                @foreach ($departments as $department)
+                    <option value="{{ $department->public_id }}" @selected($selectedDepartmentKey === $department->public_id)>
+                        {{ $department->dept_name }}
                     </option>
                 @endforeach
             </select>
@@ -65,7 +65,6 @@
                     <tr>
                         <th>Program</th>
                         <th>Department</th>
-                        <th>College</th>
                         <th class="count-cell">Students</th>
                         <th>Status</th>
                         <th class="text-center">Actions</th>
@@ -75,8 +74,12 @@
                     @forelse ($programs as $program)
                         <tr>
                             <td class="fw-bold mobile-primary-cell" data-label="Program" style="color: var(--psu-navy);">{{ $program->program_name }}</td>
-                            <td data-label="Department">{{ $program->department?->dept_name ?? 'Not assigned' }}</td>
-                            <td data-label="College">{{ $program->department?->college?->college_name ?? 'Not assigned' }}</td>
+                            <td data-label="Department">
+                                <span class="fw-semibold d-block">{{ $program->department?->dept_name ?? 'Not assigned' }}</span>
+                                @if ($program->department?->college?->college_name)
+                                    <span class="small text-secondary d-block">{{ $program->department->college->college_name }}</span>
+                                @endif
+                            </td>
                             <td class="count-cell" data-label="Students">{{ $program->student_profiles_count }}</td>
                             <td data-label="Status">
                                 <span class="badge {{ $program->is_active ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
@@ -92,7 +95,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="text-center py-5 mobile-empty-cell" colspan="6">
+                            <td class="text-center py-5 mobile-empty-cell" colspan="5">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">school</span></div>
                                 <h4 class="h4" style="color: var(--psu-navy);">No programs yet</h4>
                                 <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#programModal" data-bs-toggle="modal" type="button">

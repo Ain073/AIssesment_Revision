@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
-use App\Models\College;
 use App\Models\Department;
 use App\Models\Program;
 use Illuminate\Http\RedirectResponse;
@@ -17,22 +16,18 @@ class ProgramController extends Controller
 {
     public function index(Request $request): View
     {
-        $selectedCollege = College::query()
-            ->where('public_id', $request->query('college'))
+        $selectedDepartment = Department::query()
+            ->where('public_id', $request->query('department'))
             ->first();
-        $selectedCollegeId = $selectedCollege?->college_id;
+        $selectedDepartmentId = $selectedDepartment?->department_id;
 
         return view('super-admin.programs.index', [
-            'colleges' => College::query()
-                ->orderBy('college_name')
-                ->get(),
             'departments' => Department::with('college')
-                ->orderBy('college_id')
                 ->orderBy('dept_name')
                 ->get(),
-            'programs' => $this->programsList($selectedCollegeId),
-            'selectedCollegeId' => $selectedCollegeId,
-            'selectedCollegeKey' => $selectedCollege?->public_id,
+            'programs' => $this->programsList($selectedDepartmentId),
+            'selectedDepartmentId' => $selectedDepartmentId,
+            'selectedDepartmentKey' => $selectedDepartment?->public_id,
         ]);
     }
 
@@ -64,7 +59,7 @@ class ProgramController extends Controller
         ]);
 
         return redirect()
-            ->route('super-admin.programs')
+            ->route('super-admin.programs', ['department' => $department->public_id])
             ->with('status', 'Program added successfully.');
     }
 
@@ -97,7 +92,7 @@ class ProgramController extends Controller
         ]);
 
         return redirect()
-            ->route('super-admin.programs', ['college' => $program->department?->college?->public_id])
+            ->route('super-admin.programs', ['department' => $program->department?->public_id])
             ->with('status', 'Program updated successfully.');
     }
 
@@ -105,14 +100,14 @@ class ProgramController extends Controller
     {
         $program->loadMissing('department.college');
         $program->loadCount(['studentProfiles', 'subjects']);
-        $selectedCollege = College::query()
-            ->where('public_id', $request->query('college'))
+        $selectedDepartment = Department::query()
+            ->where('public_id', $request->query('department'))
             ->first();
-        $redirectCollegeKey = $selectedCollege?->public_id ?? $program->department?->college?->public_id;
+        $redirectDepartmentKey = $selectedDepartment?->public_id ?? $program->department?->public_id;
 
         if ($program->student_profiles_count > 0 || $program->subjects_count > 0) {
             return redirect()
-                ->route('super-admin.programs', ['college' => $redirectCollegeKey])
+                ->route('super-admin.programs', ['department' => $redirectDepartmentKey])
                 ->withErrors('This program still has linked students or subjects. Remove those links before deleting it.');
         }
 
@@ -128,15 +123,15 @@ class ProgramController extends Controller
         ]);
 
         return redirect()
-            ->route('super-admin.programs', ['college' => $redirectCollegeKey])
+            ->route('super-admin.programs', ['department' => $redirectDepartmentKey])
             ->with('status', "{$programName} deleted successfully.");
     }
 
-    private function programsList(?int $collegeId = null)
+    private function programsList(?int $departmentId = null)
     {
         return Program::with(['department.college'])
             ->withCount(['studentProfiles', 'subjects'])
-            ->when($collegeId, fn ($query) => $query->whereHas('department', fn ($departmentQuery) => $departmentQuery->where('college_id', $collegeId)))
+            ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
             ->orderBy('program_name')
             ->get();
     }

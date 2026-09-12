@@ -95,6 +95,9 @@
                 @if ($class?->school_year)
                     | {{ $class->school_year }}
                 @endif
+                @if ($publishAssessment->original_due_at)
+                    | Original due {{ $publishAssessment->original_due_at->format('M d, Y h:i A') }}
+                @endif
             </p>
         </div>
         <div class="d-flex flex-wrap gap-2">
@@ -182,6 +185,11 @@
                                         <span class="small text-secondary d-block">{{ $bestAttempt['submitted_at']->format('h:i A') }}</span>
                                         @if ($bestAttempt['completion_reason'] === \App\Models\Submission::COMPLETION_WARNING_LIMIT)
                                             <span class="badge text-bg-warning rounded-1 mt-1">Auto-submitted</span>
+                                        @endif
+                                        @if ($bestAttempt['submission_timing'] === 'late')
+                                            <span class="badge text-bg-warning rounded-1 mt-1">Late</span>
+                                        @elseif ($bestAttempt['submission_timing'] === 'on_time')
+                                            <span class="badge text-bg-success rounded-1 mt-1">On time</span>
                                         @endif
                                     @else
                                         <span class="text-secondary">-</span>

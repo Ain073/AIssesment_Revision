@@ -28,6 +28,50 @@
             white-space: pre-wrap;
         }
 
+        .answer-box.answer-box-correct,
+        .choice-review-option.choice-review-correct {
+            background: #ecfdf3;
+            border-color: #198754;
+            color: #0f5132;
+        }
+
+        .answer-box.answer-box-wrong,
+        .choice-review-option.choice-review-wrong {
+            background: #fff1f2;
+            border-color: #dc3545;
+            color: #842029;
+        }
+
+        .choice-review-list {
+            display: grid;
+            gap: 0.7rem;
+        }
+
+        .choice-review-option {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            background: #f8faff;
+            border: 1px solid var(--psu-line);
+            border-radius: 0.5rem;
+            padding: 0.85rem 1rem;
+        }
+
+        .choice-review-text {
+            min-width: 0;
+            font-weight: 650;
+            overflow-wrap: anywhere;
+        }
+
+        .choice-review-badges {
+            display: inline-flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 0.4rem;
+            flex: 0 0 auto;
+        }
+
         .score-input {
             max-width: 9rem;
         }
@@ -36,6 +80,16 @@
             .score-input {
                 max-width: none;
                 width: 100%;
+            }
+
+            .choice-review-option {
+                gap: 0.65rem;
+                padding: 0.75rem;
+            }
+
+            .choice-review-badges {
+                flex-direction: column;
+                align-items: flex-end;
             }
         }
     </style>
@@ -95,9 +149,11 @@
                         $answerId = $answer?->submission_answer_id;
                         $studentAnswer = $answer?->choice?->choice_text
                             ?? (filled($answer?->answer_text) ? $answer->answer_text : 'No answer');
+                        $correctAnswer = $item->choices->firstWhere('is_correct', true)?->choice_text ?? 'No correct answer set';
                         $maxPoints = (float) $item->points;
                         $earnedPoints = $row['earned_points'];
                         $isEssay = $item->item_type === 'essay';
+                        $hasChoiceReview = in_array($item->item_type, ['multiple_choice', 'true_false'], true);
                         $scoreField = $answerId ? "essay_scores.{$answerId}" : null;
                         $feedbackField = $answerId ? "essay_feedback.{$answerId}" : null;
                     @endphp
@@ -124,51 +180,99 @@
                         <div class="p-3 p-lg-4">
                             <h3 class="h5 fw-bold mb-3" style="color: var(--psu-navy);">{{ $item->question_text }}</h3>
 
-                            <div class="row g-3">
-                                <div class="col-lg-{{ $isEssay ? '8' : '12' }}">
-                                    <p class="small fw-bold text-secondary text-uppercase mb-2">Student Answer</p>
-                                    <div class="answer-box">{{ $studentAnswer }}</div>
-                                </div>
+                            @if ($hasChoiceReview)
+                                <p class="small fw-bold text-secondary text-uppercase mb-2">Choices</p>
+                                <div class="choice-review-list">
+                                    @foreach ($item->choices as $choice)
+                                        @php
+                                            $isSelected = $answer?->assessment_item_choice_id === $choice->assessment_item_choice_id
+                                                || (
+                                                    ! $answer?->assessment_item_choice_id
+                                                    && filled($answer?->answer_text)
+                                                    && strcasecmp(trim((string) $answer->answer_text), trim((string) $choice->choice_text)) === 0
+                                                );
+                                            $isCorrectChoice = (bool) $choice->is_correct;
+                                            $choiceClasses = $isSelected && $isCorrectChoice
+                                                ? 'choice-review-correct'
+                                                : ($isSelected && ! $isCorrectChoice
+                                                    ? 'choice-review-wrong'
+                                                    : ($isCorrectChoice ? 'choice-review-correct' : ''));
+                                        @endphp
+                                        <div class="choice-review-option {{ $choiceClasses }}">
+                                            <span class="choice-review-text">{{ $choice->choice_text }}</span>
+                                            <span class="choice-review-badges">
+                                                @if ($isSelected)
+                                                    <span class="badge {{ $isCorrectChoice ? 'text-bg-success' : 'text-bg-danger' }} rounded-1">
+                                                        Student answer
+                                                    </span>
+                                                @endif
+                                                @if ($isCorrectChoice)
+                                                    <span class="badge text-bg-success rounded-1">Correct answer</span>
+                                                @endif
+                                            </span>
+                                        </div>
+                                    @endforeach
 
-                                @if ($isEssay && $answerId)
-                                    <div class="col-lg-4">
-                                        <label class="form-label small fw-bold text-secondary text-uppercase" for="essayScore{{ $answerId }}">
-                                            Score
-                                        </label>
-                                        <div class="input-group score-input">
-                                            <input
-                                                class="form-control @error($scoreField) is-invalid @enderror"
-                                                id="essayScore{{ $answerId }}"
-                                                name="essay_scores[{{ $answerId }}]"
-                                                type="number"
-                                                min="0"
-                                                max="{{ $maxPoints }}"
-                                                step="0.01"
-                                                value="{{ old("essay_scores.$answerId", $answer->earned_points) }}"
-                                                required
-                                            >
-                                            <span class="input-group-text">/ {{ $maxPoints }}</span>
-                                            @error($scoreField)
+                                    @if (! $answer)
+                                        <div class="choice-review-option">
+                                            <span class="choice-review-text text-secondary">No answer selected</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            @else
+                                <div class="row g-3">
+                                    <div class="col-lg-{{ $isEssay ? '8' : '6' }}">
+                                        <p class="small fw-bold text-secondary text-uppercase mb-2">Student Answer</p>
+                                        <div class="answer-box {{ ! $isEssay ? ($row['is_correct'] ? 'answer-box-correct' : 'answer-box-wrong') : '' }}">{{ $studentAnswer }}</div>
+                                    </div>
+
+                                    @if (! $isEssay)
+                                        <div class="col-lg-6">
+                                            <p class="small fw-bold text-secondary text-uppercase mb-2">Correct Answer</p>
+                                            <div class="answer-box answer-box-correct">{{ $correctAnswer }}</div>
+                                        </div>
+                                    @endif
+
+                                    @if ($isEssay && $answerId)
+                                        <div class="col-lg-4">
+                                            <label class="form-label small fw-bold text-secondary text-uppercase" for="essayScore{{ $answerId }}">
+                                                Score
+                                            </label>
+                                            <div class="input-group score-input">
+                                                <input
+                                                    class="form-control @error($scoreField) is-invalid @enderror"
+                                                    id="essayScore{{ $answerId }}"
+                                                    name="essay_scores[{{ $answerId }}]"
+                                                    type="number"
+                                                    min="0"
+                                                    max="{{ $maxPoints }}"
+                                                    step="0.01"
+                                                    value="{{ old("essay_scores.$answerId", $answer->earned_points) }}"
+                                                    required
+                                                >
+                                                <span class="input-group-text">/ {{ $maxPoints }}</span>
+                                                @error($scoreField)
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+
+                                            <label class="form-label small fw-bold text-secondary text-uppercase mt-3" for="essayFeedback{{ $answerId }}">
+                                                Feedback
+                                            </label>
+                                            <textarea
+                                                class="form-control @error($feedbackField) is-invalid @enderror"
+                                                id="essayFeedback{{ $answerId }}"
+                                                name="essay_feedback[{{ $answerId }}]"
+                                                rows="4"
+                                                placeholder="Optional feedback"
+                                            >{{ old("essay_feedback.$answerId", $answer->feedback) }}</textarea>
+                                            @error($feedbackField)
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                         </div>
-
-                                        <label class="form-label small fw-bold text-secondary text-uppercase mt-3" for="essayFeedback{{ $answerId }}">
-                                            Feedback
-                                        </label>
-                                        <textarea
-                                            class="form-control @error($feedbackField) is-invalid @enderror"
-                                            id="essayFeedback{{ $answerId }}"
-                                            name="essay_feedback[{{ $answerId }}]"
-                                            rows="4"
-                                            placeholder="Optional feedback"
-                                        >{{ old("essay_feedback.$answerId", $answer->feedback) }}</textarea>
-                                        @error($feedbackField)
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                @endif
-                            </div>
+                                    @endif
+                                </div>
+                            @endif
                         </div>
                     </article>
                 @endforeach

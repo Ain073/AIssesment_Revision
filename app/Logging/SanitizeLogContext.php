@@ -22,11 +22,15 @@ class SanitizeLogContext
         'full_name',
         'instructor_id',
         'instructor_profile_id',
+        'ip',
+        'ip_address',
         'last_name',
         'middle_name',
         'name',
         'password',
         'profile_id',
+        'remote_addr',
+        'request_fingerprint',
         'remember_token',
         'student_id',
         'student_number',
@@ -36,6 +40,7 @@ class SanitizeLogContext
         'token',
         'user_email',
         'user_id',
+        'user_agent',
         'user_name',
         'username',
     ];
@@ -80,6 +85,7 @@ class SanitizeLogContext
         return $normalizedKey === 'id'
             || str_ends_with($normalizedKey, '_id')
             || str_ends_with($normalizedKey, '_ids')
+            || str_ends_with($normalizedKey, '_ip')
             || str_ends_with($normalizedKey, '_token')
             || str_ends_with($normalizedKey, '_tokens')
             || str_ends_with($normalizedKey, '_key')

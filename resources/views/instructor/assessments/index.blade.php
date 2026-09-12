@@ -54,7 +54,7 @@
     </div>
 
     <div data-table-tabs-root data-table-tabs-param="tab" data-table-tabs-default="{{ $activeAssessmentTab }}">
-        <div class="table-switch-tabs">
+        <div class="table-switch-tabs assessment-switch-tabs">
             <button class="btn btn-outline-primary assessment-tab-button table-switch-button {{ $activeAssessmentTab === 'draft' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="draft" type="button" aria-pressed="{{ $activeAssessmentTab === 'draft' ? 'true' : 'false' }}">
                 <span class="material-symbols-outlined fs-5">inventory_2</span>
                 Draft / Stored Assessments
@@ -166,6 +166,10 @@
                                                 <span class="material-symbols-outlined fs-5">analytics</span>
                                                 View Results
                                             </a>
+                                            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" data-bs-target="#reopenPublishedAssessmentModal{{ $publishAssessment->publish_assessment_id }}" data-bs-toggle="modal" type="button" title="Reopen for missed students" aria-label="Reopen {{ $publishedAssessment?->title ?? 'assessment' }} for missed students">
+                                                <span class="material-symbols-outlined fs-5">restart_alt</span>
+                                                Reopen
+                                            </button>
                                         @else
                                             @if ($publishedAssessment)
                                                 <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $publishedAssessment) }}" title="View assessment" aria-label="View {{ $publishedAssessment->title }}">
@@ -214,5 +218,6 @@
     </div>
 
     @include('instructor.assessments.delete-assessment-popups')
+    @include('instructor.assessments.reopen-published-assessment-popups')
     @include('instructor.assessments.delete-published-assessment-popups')
 @endsection
