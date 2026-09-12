@@ -198,7 +198,15 @@ class ReportController extends BaseController
             ]);
         }
 
-        DB::transaction(function () use ($ownedCompletedAssessments, $validated): void {
+        $firstAssessment = $ownedCompletedAssessments->first();
+        $subject = $firstAssessment?->assessment?->subject ?: $firstAssessment?->class?->subject;
+        $courseCodeTitle = $this->cleanReportCourseCodeTitle(
+            $validated['course_code_title'] ?? null,
+            $this->defaultCourseCodeTitle($subject, $firstAssessment?->class),
+            $ownedCompletedAssessments,
+        );
+
+        DB::transaction(function () use ($ownedCompletedAssessments, $validated, $courseCodeTitle): void {
             foreach ($ownedCompletedAssessments as $publishAssessment) {
                 $row = $validated['reports'][$publishAssessment->public_id] ?? [];
 
@@ -208,7 +216,7 @@ class ReportController extends BaseController
                         'report_type' => $validated['report_type'],
                     ],
                     [
-                        'course_code_title' => $validated['course_code_title'] ?? null,
+                        'course_code_title' => $courseCodeTitle,
                         'concept_most_learned_skills' => $row['concept_most_learned_skills'] ?? null,
                         'concept_least_learned_skills' => $row['concept_least_learned_skills'] ?? null,
                         'issues_concern' => $row['issues_concern'] ?? null,

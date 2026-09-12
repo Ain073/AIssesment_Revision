@@ -81,12 +81,14 @@ class ClassController extends BaseController
             'subject_id' => ['required', 'integer', Rule::in($this->activeSubjectIds()->all())],
             'year_level' => ['required', 'integer', Rule::in([1, 2, 3, 4])],
             'section_name' => ['required', 'string', 'max:255'],
+            'school_year' => ['required', 'string', 'max:20', 'regex:/^\d{4}-\d{4}$/'],
         ]);
 
         $class = DB::transaction(function () use ($instructorProfile, $validated): AcademicClass {
             $class = AcademicClass::query()->create([
                 'year_level' => $validated['year_level'],
                 'section_name' => $validated['section_name'],
+                'school_year' => $validated['school_year'],
                 'join_token' => $this->generateClassJoinToken(),
                 'join_code' => $this->generateClassJoinCode(),
             ]);
@@ -103,6 +105,7 @@ class ClassController extends BaseController
             'subject_id' => $class->subject_id,
             'year_level' => $class->year_level,
             'section_name' => $class->section_name,
+            'school_year' => $class->school_year,
         ]);
 
         if ($request->expectsJson()) {
@@ -131,12 +134,14 @@ class ClassController extends BaseController
             'subject_id' => ['required', 'integer', Rule::in($allowedSubjectIds)],
             'year_level' => ['required', 'integer', Rule::in([1, 2, 3, 4])],
             'section_name' => ['required', 'string', 'max:255'],
+            'school_year' => ['required', 'string', 'max:20', 'regex:/^\d{4}-\d{4}$/'],
         ]);
 
         DB::transaction(function () use ($ownedClass, $instructorProfile, $validated): void {
             $ownedClass->update([
                 'year_level' => $validated['year_level'],
                 'section_name' => $validated['section_name'],
+                'school_year' => $validated['school_year'],
             ]);
 
             $ownedClass->syncContext($instructorProfile, (int) $validated['subject_id']);
@@ -151,6 +156,7 @@ class ClassController extends BaseController
             'subject_id' => $ownedClass->subject_id,
             'year_level' => $ownedClass->year_level,
             'section_name' => $ownedClass->section_name,
+            'school_year' => $ownedClass->school_year,
         ]);
 
         if ($request->expectsJson()) {

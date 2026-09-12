@@ -22,7 +22,7 @@
                             </select>
                         </div>
                         <div class="row g-3">
-                            <div class="col-md-5">
+                            <div class="col-md-4">
                                 <label class="form-label fw-bold text-uppercase small" for="edit_year_level_{{ $class->class_id }}">Year Level</label>
                                 <select class="form-select form-select-lg" id="edit_year_level_{{ $class->class_id }}" name="year_level" required>
                                     @foreach ([1, 2, 3, 4] as $yearLevel)
@@ -30,9 +30,13 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-7">
+                            <div class="col-md-4">
                                 <label class="form-label fw-bold text-uppercase small" for="edit_section_name_{{ $class->class_id }}">Section Name</label>
                                 <input class="form-control form-control-lg" id="edit_section_name_{{ $class->class_id }}" name="section_name" required type="text" value="{{ $class->section_name ?? $class->class_name }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-uppercase small" for="edit_school_year_{{ $class->class_id }}">Academic Year</label>
+                                <input class="form-control form-control-lg" id="edit_school_year_{{ $class->class_id }}" name="school_year" placeholder="e.g. 2026-2027" required type="text" value="{{ $class->school_year }}">
                             </div>
                         </div>
                     </div>

@@ -195,6 +195,9 @@
             <h1 class="brand-text mt-2 mb-1" style="color: var(--psu-navy);">{{ $class->displayName() }}</h1>
             <p class="text-secondary mb-0">
                 {{ $class->subject?->subject_code ?? 'No subject' }}{{ $class->subject ? ' - ' . $class->subject->subject_name : '' }}
+                @if ($class->school_year)
+                    <span class="mx-1">|</span> AY {{ $class->school_year }}
+                @endif
                 @if ($class->archived_at)
                     <span class="badge text-bg-secondary rounded-1 ms-2">Archived</span>
                 @endif

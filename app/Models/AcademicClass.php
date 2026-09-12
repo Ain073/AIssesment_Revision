@@ -24,6 +24,7 @@ class AcademicClass extends Model
     protected $fillable = [
         'year_level',
         'section_name',
+        'school_year',
         'join_token',
         'join_code',
         'archived_at',

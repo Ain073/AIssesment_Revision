@@ -81,7 +81,7 @@ trait InstructorReportHelper
             ->unique()
             ->values();
         $studentCount = (int) ($rows->first()['analytics']['students_count'] ?? 0);
-        $defaultCourseCodeTitle = trim(($subject?->subject_code ?? 'No code').' / '.($subject?->subject_name ?? 'No subject'), ' /');
+        $defaultCourseCodeTitle = $this->defaultCourseCodeTitle($subject, $class);
         $savedCourseCodeTitle = $rows
             ->pluck('report.course_code_title')
             ->filter()
@@ -94,12 +94,59 @@ trait InstructorReportHelper
             'semester' => 'Second Semester',
             'school_year' => $schoolYears->count() === 1 ? $schoolYears->first() : 'Multiple school years',
             'reporting_term' => ucfirst($reportingTerm),
-            'course_code_title' => $savedCourseCodeTitle ?: $defaultCourseCodeTitle,
+            'course_code_title' => $this->cleanReportCourseCodeTitle(
+                $savedCourseCodeTitle,
+                $defaultCourseCodeTitle,
+                $publishAssessments,
+            ),
             'students_count' => $studentCount,
             'note' => ($assessment?->report_category === Report::TYPE_SUMMATIVE)
                 ? 'Note: Summative Assessments include the unit/chapter tests, midterm and final examination.'
                 : 'Note: Graded Formative Assessments include the short quizzes, pre-class open-ended questions, end-in-class poll, concept map, homework completion, self-assessment, mind mapping, discussion, identifying misconceptions, exit slips, comprehension questions, doodle notes, quiz poll, think-pair-share, word journal.',
         ];
+    }
+
+    protected function defaultCourseCodeTitle($subject, ?AcademicClass $class = null): string
+    {
+        $subjectCode = $subject?->subject_code ?? 'No code';
+        $subjectName = $subject?->subject_name ?? 'No subject';
+        $classLabel = $class?->displayName();
+
+        if (filled($classLabel) && $classLabel !== 'Class') {
+            return trim($subjectCode.' - '.$classLabel.' / '.$subjectName, ' -/');
+        }
+
+        return trim($subjectCode.' / '.$subjectName, ' /');
+    }
+
+    protected function cleanReportCourseCodeTitle(?string $value, string $defaultCourseCodeTitle, Collection $publishAssessments): string
+    {
+        $courseCodeTitle = trim((string) $value);
+
+        if ($courseCodeTitle === '') {
+            return $defaultCourseCodeTitle;
+        }
+
+        $classLabels = $publishAssessments
+            ->map(fn (PublishAssessment $publishAssessment): array => [
+                $publishAssessment->class?->displayName(),
+                $publishAssessment->class?->class_name,
+                $publishAssessment->class?->section_name,
+            ])
+            ->flatten()
+            ->filter(fn ($label): bool => filled($label) && $label !== 'Class')
+            ->unique()
+            ->values();
+
+        $normalizedCourseCodeTitle = Str::lower($courseCodeTitle);
+        $hasKnownClassLabel = $classLabels
+            ->contains(fn ($classLabel): bool => Str::contains($normalizedCourseCodeTitle, Str::lower((string) $classLabel)));
+
+        if ($classLabels->isNotEmpty() && ! $hasKnownClassLabel) {
+            return $defaultCourseCodeTitle;
+        }
+
+        return $courseCodeTitle;
     }
 
     protected function publishAssessmentReportAnalytics(PublishAssessment $publishAssessment): array
