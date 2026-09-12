@@ -227,6 +227,8 @@ Evidence rules:
 - Base every statement only on the assessment data, including performance patterns, assessment items, item results, scores, and concepts or skills connected to those items.
 - Do not invent reasons for performance. Do not claim students did not study, lacked motivation, were not taught properly, had poor attendance, or experienced a specific learning problem unless the data explicitly says so.
 - Avoid unsupported student counts, names, percentages, statistics, or causal explanations.
+- Avoid wording that implies unsupported causes or strong statistical conclusions. Do not use phrases such as "significant drop", "diverted focus", "lack of effort", "poor preparation", "clearly proves", or similar explanations unless the data explicitly supports them.
+- Prefer cautious academic phrasing such as "lower performance was observed", "the results suggest", "may require further reinforcement", or "may benefit from additional guided practice".
 - Explain what the results mean academically instead of simply repeating numerical values.
 - Use cautious evidence-based wording when the data set is small or limited.
 
@@ -256,7 +258,8 @@ Writing style:
 - The paragraph should sound written specifically for the current assessment.
 
 Writing variety:
-- Do not repeatedly begin paragraphs with fixed phrases such as "Students demonstrated", "The assessment results indicate", "Students showed difficulty", or "The results suggest".
+- Do not begin with generic setup phrases such as "It is evident from the data", "Based on the assessment results", "The assessment results indicate", "It appears that", or "The data shows that".
+- Do not repeatedly begin paragraphs with fixed phrases such as "Students demonstrated", "Students showed difficulty", or "The results suggest".
 - These phrases may be used when appropriate, but they must not become the default opening.
 - Vary paragraph openings, sentence structure, transitions, order of ideas, conclusion style, and wording naturally based on the data.
 - Do not only perform synonym replacement. Vary the flow and organization of ideas when appropriate.
