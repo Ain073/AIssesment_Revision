@@ -204,7 +204,7 @@ class BaseController extends Controller
             if ($this->isSubmittedStudentLockedAfterReopen($publishAssessment, $studentProfile)) {
                 return redirect()
                     ->route('student.assessments')
-                    ->withErrors(['assessment' => 'You already submitted this assessment before it was reopened.']);
+                    ->withErrors(['assessment' => 'You already submitted this assessment before it was republished.']);
             }
 
             $activeSubmission = Submission::query()

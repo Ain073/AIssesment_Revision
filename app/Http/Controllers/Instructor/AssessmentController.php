@@ -293,7 +293,7 @@ class AssessmentController extends BaseController
 
         if (! $isCompleted) {
             throw ValidationException::withMessages([
-                'due_at' => 'Only completed assessments can be reopened.',
+                'due_at' => 'Only completed assessments can be republished.',
             ]);
         }
 
@@ -312,7 +312,7 @@ class AssessmentController extends BaseController
             'publish_status' => PublishAssessment::STATUS_PUBLISHED,
         ]);
 
-        Log::info('Published assessment reopened by instructor.', [
+        Log::info('Published assessment republished by instructor.', [
             'actor_id' => $user->id,
             'publish_assessment_id' => $ownedPublishAssessment->publish_assessment_id,
             'assessment_id' => $ownedPublishAssessment->assessment_id,
@@ -322,12 +322,67 @@ class AssessmentController extends BaseController
         ]);
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Assessment reopened for students who have not submitted yet.']);
+            return response()->json(['message' => 'Assessment republished for students who have not submitted yet.']);
         }
 
         return redirect()
             ->route('instructor.assessments', ['tab' => 'published'])
-            ->with('status', 'Assessment reopened for students who have not submitted yet.');
+            ->with('status', 'Assessment republished for students who have not submitted yet.');
+    }
+
+    public function updatePublishedAssessmentSettings(Request $request, PublishAssessment $publishAssessment): RedirectResponse|JsonResponse
+    {
+        $user = $this->currentUser();
+        $instructorProfile = $this->instructorProfile($user);
+        $ownedPublishAssessment = $this->ownedPublishAssessment($publishAssessment, $instructorProfile);
+
+        $validated = $request->validate([
+            'available_at' => ['nullable', 'date'],
+            'due_at' => ['nullable', 'date', 'after:available_at'],
+            'attempt_limit' => ['required', 'integer', 'min:1', 'max:10'],
+            'warning_limit' => ['nullable', 'integer', 'min:0', 'max:20'],
+            'display_mode' => ['required', 'string', Rule::in([
+                PublishAssessment::DISPLAY_ALL_QUESTIONS,
+                PublishAssessment::DISPLAY_ONE_QUESTION,
+            ])],
+            'score_visibility' => ['nullable', 'boolean'],
+            'answer_visibility' => ['nullable', 'boolean'],
+            'prevent_copy_paste' => ['nullable', 'boolean'],
+            'detect_tab_switch' => ['nullable', 'boolean'],
+            'screenshot_protection' => ['nullable', 'boolean'],
+            'shuffle_items' => ['nullable', 'boolean'],
+            'shuffle_choices' => ['nullable', 'boolean'],
+        ]);
+
+        $ownedPublishAssessment->update([
+            'available_at' => $validated['available_at'] ?? null,
+            'due_at' => $validated['due_at'] ?? null,
+            'attempt_limit' => (int) $validated['attempt_limit'],
+            'warning_limit' => $validated['warning_limit'] ?? 3,
+            'display_mode' => $validated['display_mode'],
+            'score_visibility' => $request->boolean('score_visibility'),
+            'answer_visibility' => $request->boolean('answer_visibility'),
+            'prevent_copy_paste' => $request->boolean('prevent_copy_paste'),
+            'detect_tab_switch' => $request->boolean('detect_tab_switch'),
+            'screenshot_protection' => $request->boolean('screenshot_protection'),
+            'shuffle_items' => $request->boolean('shuffle_items'),
+            'shuffle_choices' => $request->boolean('shuffle_choices'),
+        ]);
+
+        Log::info('Published assessment settings updated by instructor.', [
+            'actor_id' => $user->id,
+            'publish_assessment_id' => $ownedPublishAssessment->publish_assessment_id,
+            'assessment_id' => $ownedPublishAssessment->assessment_id,
+            'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Published assessment settings updated.']);
+        }
+
+        return redirect()
+            ->route('instructor.assessments', ['tab' => 'published'])
+            ->with('status', 'Published assessment settings updated.');
     }
 
     public function storeAssessmentItem(Request $request, Assessment $assessment): RedirectResponse

@@ -251,12 +251,12 @@
 
     @if ($isPublishedSnapshot)
         <div class="alert alert-info border-0">
-            This is a published assessment record. Its questions and details are locked so student records remain unchanged.
+            This is a published assessment record. Details are shown for review, while questions are locked so student records remain unchanged.
         </div>
     @endif
 
     <section class="step-track mb-4">
-        <button class="step-pill {{ $isPublishedSnapshot ? '' : 'clickable' }}" @unless($isPublishedSnapshot) data-step-tab data-step-target="detailsPanel" @endunless type="button" aria-selected="{{ (! $isPublishedSnapshot && $errors->hasAny(['title', 'description', 'type', 'report_category', 'reporting_term', 'instructions'])) ? 'true' : 'false' }}" @disabled($isPublishedSnapshot)>
+        <button class="step-pill {{ $isPublishedSnapshot ? 'active' : 'clickable' }}" @unless($isPublishedSnapshot) data-step-tab data-step-target="detailsPanel" @endunless type="button" aria-selected="{{ ($isPublishedSnapshot || $errors->hasAny(['title', 'description', 'type', 'report_category', 'reporting_term', 'instructions'])) ? 'true' : 'false' }}">
             <span class="step-number">1</span>
             <div>
                 <p class="fw-bold mb-0" style="color: var(--psu-navy);">Details and Instructions</p>
@@ -269,6 +269,66 @@
             </div>
         </button>
     </section>
+
+    @if ($isPublishedSnapshot)
+        <section class="details-card mb-4" id="detailsPanel">
+            <div class="builder-header px-4 py-3">
+                <h2 class="h4 mb-0">Details and Instructions</h2>
+            </div>
+            <div class="p-4">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <p class="compact-label">Title</p>
+                        <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $assessment->title }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="compact-label">Type</p>
+                        <p class="mb-0">{{ $assessmentTypes[$assessment->type] ?? ucfirst($assessment->type) }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="compact-label">Report Category</p>
+                        <p class="mb-0">{{ $reportCategories[$assessment->report_category] ?? ucfirst($assessment->report_category) }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="compact-label">Reporting Term</p>
+                        <p class="mb-0">{{ $reportingTerms[$assessment->reporting_term] ?? ucfirst($assessment->reporting_term) }}</p>
+                    </div>
+                    <div class="col-12">
+                        <p class="compact-label">Description</p>
+                        <p class="mb-0 text-secondary">{{ $assessment->description ?: 'No description provided.' }}</p>
+                    </div>
+                    <div class="col-12">
+                        <p class="compact-label">Instructions</p>
+                        <p class="mb-0 text-secondary">{{ $assessment->instructions ?: 'No instructions provided.' }}</p>
+                    </div>
+                </div>
+
+                @if ($assessment->publishAssessments->isNotEmpty())
+                    <hr class="my-4">
+                    <p class="compact-label">Published Records</p>
+                    <div class="d-grid gap-2">
+                        @foreach ($assessment->publishAssessments as $publishAssessment)
+                            @php($publishedClass = $publishAssessment->classDetail?->class)
+                            <div class="border rounded p-3">
+                                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <p class="fw-bold mb-1" style="color: var(--psu-navy);">{{ $publishedClass?->displayName() ?? 'Class' }}</p>
+                                        <p class="small text-secondary mb-0">
+                                            {{ $publishedClass?->school_year ? 'AY '.$publishedClass->school_year : 'No academic year' }}
+                                            @if ($publishAssessment->due_at)
+                                                | Due {{ $publishAssessment->due_at->format('M d, Y h:i A') }}
+                                            @endif
+                                        </p>
+                                    </div>
+                                    <span class="badge text-bg-light border rounded-1">{{ $publishAssessment->attempt_limit }} attempt{{ $publishAssessment->attempt_limit === 1 ? '' : 's' }}</span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        </section>
+    @endif
 
     @unless($isPublishedSnapshot)
     <section class="details-card mb-4 {{ $errors->hasAny(['title', 'description', 'type', 'report_category', 'reporting_term', 'instructions']) ? '' : 'd-none' }}" id="detailsPanel" data-step-panel="detailsPanel">

@@ -9,7 +9,7 @@
                     @method('PUT')
                     <div class="modal-header">
                         <div>
-                            <h3 class="modal-title h4" id="reopenPublishedAssessmentModalLabel{{ $publishAssessment->publish_assessment_id }}">Reopen Assessment</h3>
+                            <h3 class="modal-title h4" id="reopenPublishedAssessmentModalLabel{{ $publishAssessment->publish_assessment_id }}">Republish Assessment</h3>
                             <p class="small text-white-50 mb-0">{{ $assessment?->title ?? 'Untitled Assessment' }} - {{ $class?->class_name ?? 'Class' }}</p>
                         </div>
                         <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
@@ -35,7 +35,7 @@
                         <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>
                         <button class="btn btn-psu d-inline-flex align-items-center gap-2 px-4" type="submit">
                             <span class="material-symbols-outlined fs-5">restart_alt</span>
-                            Reopen
+                            Republish
                         </button>
                     </div>
                 </form>

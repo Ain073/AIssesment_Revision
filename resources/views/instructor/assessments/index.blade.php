@@ -166,9 +166,9 @@
                                                 <span class="material-symbols-outlined fs-5">analytics</span>
                                                 View Results
                                             </a>
-                                            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" data-bs-target="#reopenPublishedAssessmentModal{{ $publishAssessment->publish_assessment_id }}" data-bs-toggle="modal" type="button" title="Reopen for missed students" aria-label="Reopen {{ $publishedAssessment?->title ?? 'assessment' }} for missed students">
+                                            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" data-bs-target="#reopenPublishedAssessmentModal{{ $publishAssessment->publish_assessment_id }}" data-bs-toggle="modal" type="button" title="Republish for missed students" aria-label="Republish {{ $publishedAssessment?->title ?? 'assessment' }} for missed students">
                                                 <span class="material-symbols-outlined fs-5">restart_alt</span>
-                                                Reopen
+                                                Republish
                                             </button>
                                         @else
                                             @if ($publishAssessment->submitted_count > 0)
@@ -189,6 +189,10 @@
                                                 </button>
                                             @endif
                                         @endif
+                                        <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" data-bs-target="#editPublishedAssessmentSettingsModal{{ $publishAssessment->publish_assessment_id }}" data-bs-toggle="modal" type="button" title="Edit publish settings" aria-label="Edit publish settings for {{ $publishedAssessment?->title ?? 'assessment' }}">
+                                            <span class="material-symbols-outlined fs-5">tune</span>
+                                            Settings
+                                        </button>
                                         @if ($publishedClass)
                                             <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('instructor.classes.show', $publishedClass) }}" title="View class" aria-label="View {{ $publishedClass->class_name }}">
                                                 <span class="material-symbols-outlined fs-5">school</span>
@@ -224,6 +228,7 @@
     </div>
 
     @include('instructor.assessments.delete-assessment-popups')
+    @include('instructor.assessments.edit-published-assessment-settings-popups')
     @include('instructor.assessments.reopen-published-assessment-popups')
     @include('instructor.assessments.delete-published-assessment-popups')
 @endsection
