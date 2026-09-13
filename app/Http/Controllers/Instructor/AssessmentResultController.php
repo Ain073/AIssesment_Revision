@@ -23,8 +23,6 @@ class AssessmentResultController extends BaseController
         $isCompleted = $ownedPublishAssessment->publish_status === PublishAssessment::STATUS_CLOSED
             || ($ownedPublishAssessment->due_at && $ownedPublishAssessment->due_at->isPast());
 
-        abort_unless($isCompleted, 404, 'Results are available after the assessment is completed.');
-
         $ownedPublishAssessment->load([
             'assessment.subject',
             'assessment.items.choices',
@@ -109,7 +107,7 @@ class AssessmentResultController extends BaseController
             ->where('completion_reason', Submission::COMPLETION_WARNING_LIMIT)
             ->count();
 
-        Log::info('Instructor viewed completed assessment results.', [
+        Log::info($isCompleted ? 'Instructor viewed assessment results.' : 'Instructor viewed live assessment submissions.', [
             'actor_id' => $user->id,
             'publish_assessment_id' => $ownedPublishAssessment->publish_assessment_id,
             'assessment_id' => $ownedPublishAssessment->assessment_id,
@@ -123,6 +121,7 @@ class AssessmentResultController extends BaseController
             'studentResults' => $studentResults,
             'analytics' => $analytics,
             'autoSubmittedCount' => $autoSubmittedCount,
+            'isCompleted' => $isCompleted,
         ]);
     }
 

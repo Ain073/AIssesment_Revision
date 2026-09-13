@@ -276,6 +276,7 @@
             <div class="d-grid gap-3">
                 @foreach ($publishAssessments as $publishAssessment)
                     @php($publishedAssessment = $publishAssessment->assessment)
+                    @php($submittedCount = $publishAssessment->submissions->count())
                     <section class="detail-card p-4">
                         <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
                             <div>
@@ -308,6 +309,11 @@
                                 <a class="btn btn-psu d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.results', $publishAssessment) }}">
                                     <span class="material-symbols-outlined fs-5">analytics</span>
                                     View Results
+                                </a>
+                            @elseif ($submittedCount > 0)
+                                <a class="btn btn-psu d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.results', $publishAssessment) }}">
+                                    <span class="material-symbols-outlined fs-5">fact_check</span>
+                                    View Submissions
                                 </a>
                             @endif
                         </div>

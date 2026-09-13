@@ -1,7 +1,7 @@
 @extends('layouts.portal')
 
-@section('title', ($assessment?->title ?? 'Assessment') . ' Results | AIssessment Instructor')
-@section('header', 'Assessment Results')
+@section('title', ($assessment?->title ?? 'Assessment') . ($isCompleted ? ' Results' : ' Submissions') . ' | AIssessment Instructor')
+@section('header', $isCompleted ? 'Assessment Results' : 'Assessment Submissions')
 
 @push('styles')
     <style>
@@ -101,7 +101,9 @@
             </p>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            <span class="badge text-bg-success rounded-1 align-self-center px-3 py-2">Completed</span>
+            <span class="badge {{ $isCompleted ? 'text-bg-success' : 'text-bg-warning' }} rounded-1 align-self-center px-3 py-2">
+                {{ $isCompleted ? 'Completed' : 'Pending' }}
+            </span>
             <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $assessment) }}">
                 <span class="material-symbols-outlined fs-5">description</span>
                 Assessment Content
@@ -127,7 +129,10 @@
     <section class="results-panel">
         <div class="results-panel-header d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
-                <h2 class="h5 mb-1">Student Results</h2>
+                <h2 class="h5 mb-1">{{ $isCompleted ? 'Student Results' : 'Live Student Submissions' }}</h2>
+                @if (! $isCompleted)
+                    <p class="small text-white-50 mb-0">This list updates the submissions received before the assessment closes.</p>
+                @endif
             </div>
             <span class="badge text-bg-light border">{{ $studentResults->count() }} students</span>
         </div>

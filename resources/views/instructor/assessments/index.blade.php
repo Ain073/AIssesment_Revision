@@ -171,6 +171,12 @@
                                                 Reopen
                                             </button>
                                         @else
+                                            @if ($publishAssessment->submitted_count > 0)
+                                                <a class="btn btn-psu d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.results', $publishAssessment) }}" title="View submissions" aria-label="View submitted attempts for {{ $publishedAssessment?->title ?? 'assessment' }}">
+                                                    <span class="material-symbols-outlined fs-5">fact_check</span>
+                                                    View Submissions
+                                                </a>
+                                            @endif
                                             @if ($publishedAssessment)
                                                 <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.assessments.show', $publishedAssessment) }}" title="View assessment" aria-label="View {{ $publishedAssessment->title }}">
                                                     <span class="material-symbols-outlined fs-5">visibility</span>

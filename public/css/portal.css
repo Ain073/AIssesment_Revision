@@ -879,17 +879,17 @@ h1, h2, h3, .brand-text {
 
 @media (max-width: 767.98px) {
     body {
-        padding-bottom: 74px;
+        padding-bottom: 82px;
     }
 
     .sidebar {
         inset: auto 0 0 0;
         width: 100%;
-        height: 74px;
+        height: 82px;
         display: flex !important;
         flex-direction: row !important;
         align-items: center;
-        padding: 0.35rem 0.45rem;
+        padding: 0.3rem 0.45rem 0.45rem;
         box-shadow: 0 -10px 26px rgba(0, 26, 112, 0.22);
     }
 
@@ -915,32 +915,41 @@ h1, h2, h3, .brand-text {
 
     .sidebar-link {
         min-width: 0;
-        height: 60px;
+        height: 68px;
         flex: 1 1 0;
         flex-direction: column;
         justify-content: center;
-        gap: 0.2rem;
-        padding: 0.35rem 0.15rem;
+        gap: 0.18rem;
+        padding: 0.28rem 0.08rem;
         border-radius: 0.5rem;
-        font-size: 0.64rem;
+        font-size: 0.56rem;
         line-height: 1.05;
         text-align: center;
         letter-spacing: 0;
     }
 
     .sidebar-link .material-symbols-outlined {
-        font-size: 1.45rem;
+        font-size: 1.38rem;
     }
 
     .sidebar nav .sidebar-text {
-        display: none;
+        display: block;
+        width: 100%;
+        overflow: hidden;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 0.56rem;
+        font-weight: 700;
+        line-height: 1.05;
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .sidebar-link.active {
         border-left: 0;
         border-bottom: 3px solid var(--psu-gold);
         padding-left: 0.25rem;
-        padding-bottom: calc(0.35rem - 3px);
+        padding-bottom: calc(0.28rem - 3px);
     }
 
     .profile-menu-shell {
@@ -953,11 +962,27 @@ h1, h2, h3, .brand-text {
     }
 
     .profile-menu-toggle {
-        height: 60px;
+        height: 68px;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: 0.18rem;
         border-radius: 0.5rem;
+    }
+
+    .profile-menu-toggle::after {
+        content: "Profile";
+        display: block;
+        max-width: 44px;
+        overflow: hidden;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 0.56rem;
+        font-weight: 700;
+        line-height: 1.05;
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .profile-menu-toggle > .d-flex {
@@ -965,9 +990,9 @@ h1, h2, h3, .brand-text {
     }
 
     .sidebar-profile-photo {
-        width: 36px;
-        height: 36px;
-        flex-basis: 36px;
+        width: 32px;
+        height: 32px;
+        flex-basis: 32px;
     }
 
     .profile-menu-panel {
