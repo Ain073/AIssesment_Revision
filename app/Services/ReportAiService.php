@@ -175,6 +175,7 @@ class ReportAiService
                 ->map(fn (Submission $submission): float => $this->submissionScore($submission, $items))
                 ->max())
             ->values();
+        $itemSummaries = collect($this->itemSummaries($items, $submissions));
 
         return [
             'assessment_title' => (string) ($assessment?->title ?? 'Assessment'),
@@ -187,7 +188,9 @@ class ReportAiService
             'max_score' => $maxScore,
             'mean_score' => $scores->isNotEmpty() ? round((float) $scores->avg(), 2) : 0,
             'passing_rate' => $this->passingRate($scores, $maxScore),
-            'items' => $this->itemSummaries($items, $submissions),
+            'items' => $itemSummaries->values()->all(),
+            'strongest_items' => $this->strongestItems($itemSummaries),
+            'weakest_items' => $this->weakestItems($itemSummaries),
         ];
     }
 
@@ -202,12 +205,61 @@ class ReportAiService
             $total = $submissions->count();
 
             return [
+                'item_number' => (int) $item->sort_order,
+                'item_type' => (string) $item->item_type,
                 'question' => Str::limit((string) $item->question_text, 120),
+                'correct_answer' => $this->correctAnswerText($item),
                 'correct_count' => $correctCount,
                 'response_count' => $total,
                 'correct_rate' => $total > 0 ? round(($correctCount / $total) * 100, 2) : 0,
             ];
         })->values()->all();
+    }
+
+    private function strongestItems(Collection $itemSummaries): array
+    {
+        $answeredItems = $itemSummaries
+            ->filter(fn (array $item): bool => (int) ($item['response_count'] ?? 0) > 0);
+
+        if ($answeredItems->isEmpty()) {
+            return [];
+        }
+
+        $highestRate = (float) $answeredItems->max('correct_rate');
+
+        return $answeredItems
+            ->filter(fn (array $item): bool => (float) ($item['correct_rate'] ?? 0) === $highestRate)
+            ->take(3)
+            ->values()
+            ->all();
+    }
+
+    private function weakestItems(Collection $itemSummaries): array
+    {
+        $answeredItems = $itemSummaries
+            ->filter(fn (array $item): bool => (int) ($item['response_count'] ?? 0) > 0);
+
+        if ($answeredItems->isEmpty()) {
+            return [];
+        }
+
+        $lowestRate = (float) $answeredItems->min('correct_rate');
+
+        return $answeredItems
+            ->filter(fn (array $item): bool => (float) ($item['correct_rate'] ?? 0) === $lowestRate)
+            ->take(3)
+            ->values()
+            ->all();
+    }
+
+    private function correctAnswerText($item): string
+    {
+        return $item->choices
+            ->where('is_correct', true)
+            ->pluck('choice_text')
+            ->map(fn ($choice): string => trim((string) $choice))
+            ->filter()
+            ->implode(', ');
     }
 
     private function prompt(array $data): string
@@ -225,6 +277,8 @@ Return valid JSON only with exactly these two string fields:
 
 Evidence rules:
 - Base every statement only on the assessment data, including performance patterns, assessment items, item results, scores, and concepts or skills connected to those items.
+- The system has already computed item-level performance. Use strongest_items as the main evidence for concepts_most_learned_skills and weakest_items as the main evidence for concepts_least_learned_skills.
+- Each item includes the question, correct_answer, correct_count, response_count, and correct_rate. Use the question and correct_answer to identify the actual concept; do not replace it with a different related topic.
 - Do not invent reasons for performance. Do not claim students did not study, lacked motivation, were not taught properly, had poor attendance, or experienced a specific learning problem unless the data explicitly says so.
 - Avoid unsupported student counts, names, percentages, statistics, or causal explanations.
 - Avoid wording that implies unsupported causes or strong statistical conclusions. Do not use phrases such as "significant drop", "diverted focus", "lack of effort", "poor preparation", "clearly proves", or similar explanations unless the data explicitly supports them.
@@ -234,11 +288,14 @@ Evidence rules:
 
 Most learned section:
 - Explain areas where students showed stronger performance.
+- Prioritize the item or items listed under strongest_items. Refer to their exact concept or correct_answer when identifying what students learned well.
 - Discuss concepts students understood well, skills applied correctly, competencies demonstrated, or patterns of strong performance across related items.
 - Do not only identify the highest-scoring topic. Interpret what students were generally able to understand, recognize, apply, analyze, or perform.
 
 Least learned section:
 - Explain areas where students showed weaker performance.
+- Prioritize the item or items listed under weakest_items. Refer to their exact concept or correct_answer when identifying what students struggled with.
+- If the weakest item is about a specific answer or topic, such as "La Liga Filipina", describe the difficulty as related to that answer or topic. Do not shift to another related event, person, or concept unless it is also present in the weakest item data.
 - Discuss concepts where difficulty appeared, skills applied incorrectly or inconsistently, patterns of lower performance, or competencies that may require reinforcement.
 - Do not exaggerate the result or make unsupported conclusions.
 - Include a recommendation only when it is useful and supported by the assessment results.
