@@ -309,13 +309,14 @@
                     <div class="d-grid gap-2">
                         @foreach ($assessment->publishAssessments as $publishAssessment)
                             @php($publishedClass = $publishAssessment->classDetail?->class)
+                            @php($publishedDisplayStatus = $publishAssessment->display_status ?? (($publishAssessment->publish_status === \App\Models\PublishAssessment::STATUS_CLOSED || ($publishAssessment->due_at && $publishAssessment->due_at->isPast())) ? 'completed' : 'pending'))
                             <div class="border rounded p-3">
                                 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
                                     <div>
                                         <p class="fw-bold mb-1" style="color: var(--psu-navy);">{{ $publishedClass?->displayName() ?? 'Class' }}</p>
                                         <p class="small text-secondary mb-0">
                                             {{ $publishedClass?->school_year ? 'AY '.$publishedClass->school_year : 'No academic year' }}
-                                            | {{ ucfirst($publishAssessment->display_status) }}
+                                            | {{ ucfirst($publishedDisplayStatus) }}
                                             @if ($publishAssessment->due_at)
                                                 | Due {{ $publishAssessment->due_at->format('M d, Y h:i A') }}
                                             @endif

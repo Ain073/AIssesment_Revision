@@ -97,6 +97,12 @@ class AssessmentController extends BaseController
             'items.choices',
             'publishAssessments.classDetail.class',
         ])->loadCount('items', 'publishAssessments');
+        $ownedAssessment->publishAssessments->each(function (PublishAssessment $publishAssessment) {
+            $publishAssessment->display_status = $publishAssessment->publish_status === PublishAssessment::STATUS_CLOSED
+                || ($publishAssessment->due_at && $publishAssessment->due_at->isPast())
+                    ? 'completed'
+                    : 'pending';
+        });
 
         $publishableClasses = $instructorProfile
             ? $instructorProfile->classes()
