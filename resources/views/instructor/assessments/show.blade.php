@@ -309,28 +309,18 @@
                     <div class="d-grid gap-2">
                         @foreach ($assessment->publishAssessments as $publishAssessment)
                             @php($publishedClass = $publishAssessment->classDetail?->class)
-                            @php($publishedDisplayStatus = $publishAssessment->display_status ?? (($publishAssessment->publish_status === \App\Models\PublishAssessment::STATUS_CLOSED || ($publishAssessment->due_at && $publishAssessment->due_at->isPast())) ? 'completed' : 'pending'))
                             <div class="border rounded p-3">
                                 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
                                     <div>
                                         <p class="fw-bold mb-1" style="color: var(--psu-navy);">{{ $publishedClass?->displayName() ?? 'Class' }}</p>
                                         <p class="small text-secondary mb-0">
                                             {{ $publishedClass?->school_year ? 'AY '.$publishedClass->school_year : 'No academic year' }}
-                                            | {{ ucfirst($publishedDisplayStatus) }}
                                             @if ($publishAssessment->due_at)
                                                 | Due {{ $publishAssessment->due_at->format('M d, Y h:i A') }}
                                             @endif
                                         </p>
                                     </div>
-                                    <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
-                                        <span class="badge text-bg-light border rounded-1">{{ $publishAssessment->attempt_limit }} attempt{{ (int) $publishAssessment->attempt_limit === 1 ? '' : 's' }}</span>
-                                        @if ($publishAssessment->getRouteKey())
-                                            <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" data-bs-target="#editPublishedAssessmentSettingsModal{{ $publishAssessment->publish_assessment_id }}" data-bs-toggle="modal" type="button">
-                                                <span class="material-symbols-outlined fs-6">tune</span>
-                                                Edit Settings
-                                            </button>
-                                        @endif
-                                    </div>
+                                    <span class="badge text-bg-light border rounded-1">{{ $publishAssessment->attempt_limit }} attempt{{ (int) $publishAssessment->attempt_limit === 1 ? '' : 's' }}</span>
                                 </div>
                             </div>
                         @endforeach
@@ -589,8 +579,6 @@
 
     @unless($isPublishedSnapshot)
         @include('instructor.assessments.question-form-popup')
-    @else
-        @include('instructor.assessments.edit-published-assessment-settings-popups', ['publishedAssessments' => $assessment->publishAssessments])
     @endunless
 @endsection
 
