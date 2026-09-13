@@ -318,6 +318,7 @@ Writing style:
 
 Writing variety:
 - Do not begin with generic setup phrases such as "It is evident from the data", "Based on the assessment results", "The assessment results indicate", "It appears that", or "The data shows that".
+- Do not begin either field with transition or contrast words such as "However", "Moreover", "Furthermore", "Additionally", "Meanwhile", or "On the other hand".
 - Do not repeatedly begin paragraphs with fixed phrases such as "Students demonstrated", "Students showed difficulty", or "The results suggest".
 - These phrases may be used when appropriate, but they must not become the default opening.
 - Vary paragraph openings, sentence structure, transitions, order of ideas, conclusion style, and wording naturally based on the data.
