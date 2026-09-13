@@ -310,7 +310,9 @@
                     <p class="compact-label">Published Records</p>
                     <div class="d-grid gap-2">
                         @foreach ($assessment->publishAssessments as $publishAssessment)
-                            @php($publishedClass = $publishAssessment->classDetail?->class)
+                            @php
+                                $publishedClass = $publishAssessment->classDetail?->class;
+                            @endphp
                             <div class="border rounded p-3">
                                 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
                                     <div>

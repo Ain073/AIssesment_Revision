@@ -1,7 +1,9 @@
 @foreach ($publishedAssessments as $publishAssessment)
     @if (($publishAssessment->display_status ?? null) === 'completed')
         @php($assessment = $publishAssessment->assessment)
-        @php($class = $publishAssessment->classDetail?->class)
+        @php
+            $class = $publishAssessment->classDetail?->class;
+        @endphp
         <div class="modal fade" id="reopenPublishedAssessmentModal{{ $publishAssessment->publish_assessment_id }}" tabindex="-1" aria-labelledby="reopenPublishedAssessmentModalLabel{{ $publishAssessment->publish_assessment_id }}" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <form action="{{ route('instructor.assessments.published.reopen', $publishAssessment) }}" class="modal-content" method="POST">
