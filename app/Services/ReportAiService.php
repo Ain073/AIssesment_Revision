@@ -279,6 +279,8 @@ Evidence rules:
 - Base every statement only on the assessment data, including performance patterns, assessment items, item results, scores, and concepts or skills connected to those items.
 - The system has already computed item-level performance. Use strongest_items as the main evidence for concepts_most_learned_skills and weakest_items as the main evidence for concepts_least_learned_skills.
 - Each item includes the question, correct_answer, correct_count, response_count, and correct_rate. Use the question and correct_answer to identify the actual concept; do not replace it with a different related topic.
+- When multiple strongest or weakest items are provided, summarize them as grouped concepts or skills instead of writing an item-by-item answer key.
+- If the strongest or weakest items cover different concepts, mention the main concepts briefly in one report-style paragraph.
 - Do not invent reasons for performance. Do not claim students did not study, lacked motivation, were not taught properly, had poor attendance, or experienced a specific learning problem unless the data explicitly says so.
 - Avoid unsupported student counts, names, percentages, statistics, or causal explanations.
 - Avoid wording that implies unsupported causes or strong statistical conclusions. Do not use phrases such as "significant drop", "diverted focus", "lack of effort", "poor preparation", "clearly proves", or similar explanations unless the data explicitly supports them.
@@ -309,9 +311,9 @@ Writing style:
 - Write each field as a short narrative paragraph, not a list of topics, scores, or percentages.
 - Keep each field to 2 to 4 concise sentences suitable for a narrow report table cell.
 - Do not include markdown, bullets, labels, or headings inside the JSON values.
-- Do not write like an answer key or quiz explanation.
+- Do not write like an answer key or quiz explanation. Avoid item-number phrasing such as "Item 1" or "Question 2" unless no other wording is possible.
 - Summarize item results into broader concepts or skills when the data supports it.
-- Do not focus on only one exact answer phrase unless the data only supports that topic.
+- Do not focus on only one exact answer phrase unless the data only supports that topic. When several tied items support different concepts, include those concepts concisely.
 - The paragraph should sound written specifically for the current assessment.
 
 Writing variety:
