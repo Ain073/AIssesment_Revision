@@ -569,11 +569,11 @@ class AssessmentController extends BaseController
 
     private function ownedAssessmentItem(Assessment $assessment, AssessmentItem $item): AssessmentItem
     {
-        abort_unless(
-            $item->assessment_id === $assessment->assessment_id,
-            404,
-            'Question not found under this assessment.'
-        );
+        if ($item->assessment_id !== $assessment->assessment_id) {
+            throw ValidationException::withMessages([
+                'item' => 'Question not found under this assessment.',
+            ]);
+        }
 
         return $item->loadMissing('choices');
     }

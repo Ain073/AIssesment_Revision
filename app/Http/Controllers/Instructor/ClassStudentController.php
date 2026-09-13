@@ -307,7 +307,20 @@ class ClassStudentController extends BaseController
         $ownedClass = $this->ownedClass($class, $instructorProfile);
         $this->ensureActiveClass($ownedClass);
 
-        abort_unless($joinRequest->class_id === $ownedClass->class_id, 404);
+        if ($joinRequest->class_id !== $ownedClass->class_id) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'This join request is no longer available for this class.',
+                    'errors' => [
+                        'join_request' => ['This join request is no longer available for this class.'],
+                    ],
+                ], 422);
+            }
+
+            return redirect()
+                ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
+                ->withErrors(['join_request' => 'This join request is no longer available for this class.']);
+        }
 
         if ($joinRequest->status !== ClassDetail::STATUS_PENDING) {
             if ($request->expectsJson()) {
@@ -390,7 +403,20 @@ class ClassStudentController extends BaseController
         $ownedClass = $this->ownedClass($class, $instructorProfile);
         $this->ensureActiveClass($ownedClass);
 
-        abort_unless($joinRequest->class_id === $ownedClass->class_id, 404);
+        if ($joinRequest->class_id !== $ownedClass->class_id) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'This join request is no longer available for this class.',
+                    'errors' => [
+                        'join_request' => ['This join request is no longer available for this class.'],
+                    ],
+                ], 422);
+            }
+
+            return redirect()
+                ->route('instructor.classes.show', ['class' => $ownedClass, 'tab' => 'students'])
+                ->withErrors(['join_request' => 'This join request is no longer available for this class.']);
+        }
 
         if ($joinRequest->status !== ClassDetail::STATUS_PENDING) {
             if ($request->expectsJson()) {

@@ -10,6 +10,7 @@ use App\Models\Submission;
 use App\Models\Subject;
 use App\Support\AssessmentScoring;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -55,9 +56,13 @@ class ReportController extends BaseController
         ]);
     }
 
-    public function show(PublishAssessment $publishAssessment, string $type): View
+    public function show(PublishAssessment $publishAssessment, string $type): View|RedirectResponse
     {
-        abort_unless(array_key_exists($type, $this->reportTypes()), 404);
+        if (! array_key_exists($type, $this->reportTypes())) {
+            return redirect()
+                ->route('department-chair.reports')
+                ->withErrors(['report' => 'The selected report type is not available.']);
+        }
 
         $user = $this->currentUser();
         $department = $this->scopedDepartment($user);
@@ -85,7 +90,14 @@ class ReportController extends BaseController
             ->where('publish_assessment_id', $publishAssessment->publish_assessment_id)
             ->where('report_type', $type)
             ->where('report_status', Report::STATUS_FINALIZED)
-            ->firstOrFail();
+            ->first();
+
+        if (! $report) {
+            return redirect()
+                ->route('department-chair.reports')
+                ->withErrors(['report' => 'No finalized report is available for that assessment yet.']);
+        }
+
         $rows = collect([
             [
                 'publishAssessment' => $publishAssessment,

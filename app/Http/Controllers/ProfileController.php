@@ -49,17 +49,34 @@ class ProfileController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        abort_unless(
-            $user->profile_photo_path === 'database' && filled($user->profile_photo_data),
-            404
-        );
+        if ($user->profile_photo_path !== 'database' || blank($user->profile_photo_data)) {
+            return $this->placeholderProfilePhotoResponse($user);
+        }
 
         $photo = base64_decode($user->profile_photo_data, true);
 
-        abort_if($photo === false, 404);
+        if ($photo === false) {
+            return $this->placeholderProfilePhotoResponse($user);
+        }
 
         return response($photo, 200)
             ->header('Content-Type', $user->profile_photo_mime ?: 'image/jpeg')
+            ->header('Cache-Control', 'private, max-age=3600');
+    }
+
+    private function placeholderProfilePhotoResponse(User $user): Response
+    {
+        $initial = Str::upper(Str::substr($user->first_name ?: $user->displayName(), 0, 1)) ?: 'U';
+        $escapedInitial = htmlspecialchars($initial, ENT_QUOTES, 'UTF-8');
+        $svg = <<<SVG
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <rect width="96" height="96" rx="48" fill="#ffda27"/>
+  <text x="48" y="58" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700" fill="#001a70">{$escapedInitial}</text>
+</svg>
+SVG;
+
+        return response($svg, 200)
+            ->header('Content-Type', 'image/svg+xml')
             ->header('Cache-Control', 'private, max-age=3600');
     }
 

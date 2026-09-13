@@ -196,10 +196,16 @@ class BaseController extends Controller
         StudentProfile $studentProfile
     ): Submission|RedirectResponse {
         return DB::transaction(function () use ($publishAssessment, $studentProfile): Submission|RedirectResponse {
-            PublishAssessment::query()
+            $lockedPublishAssessment = PublishAssessment::query()
                 ->whereKey($publishAssessment->publish_assessment_id)
                 ->lockForUpdate()
-                ->firstOrFail();
+                ->first();
+
+            if (! $lockedPublishAssessment) {
+                return redirect()
+                    ->route('student.assessments')
+                    ->withErrors(['assessment' => 'This assessment is no longer available.']);
+            }
 
             if ($this->isSubmittedStudentLockedAfterReopen($publishAssessment, $studentProfile)) {
                 return redirect()

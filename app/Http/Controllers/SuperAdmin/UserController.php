@@ -56,11 +56,15 @@ class UserController extends Controller
         ]);
     }
 
-    public function downloadStudentImportSample(StudentAccountImportService $importer): StreamedResponse
+    public function downloadStudentImportSample(StudentAccountImportService $importer): StreamedResponse|RedirectResponse
     {
         $program = Program::query()->orderBy('program_name')->first();
 
-        abort_unless($program, 404, 'No program is available for student account import.');
+        if (! $program) {
+            return redirect()
+                ->route('super-admin.users')
+                ->withErrors(['student_import' => 'Add at least one program before downloading the student import sample.']);
+        }
 
         return $importer->sampleCsv();
     }

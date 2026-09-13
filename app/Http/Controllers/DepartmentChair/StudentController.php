@@ -20,12 +20,16 @@ class StudentController extends BaseController
         );
     }
 
-    public function downloadImportSample(StudentAccountImportService $importer): StreamedResponse
+    public function downloadImportSample(StudentAccountImportService $importer): StreamedResponse|RedirectResponse
     {
         $user = $this->currentUser();
         $program = $this->scopedPrograms($this->scopedDepartment($user))->first();
 
-        abort_unless($program, 404, 'No program is available for student account import.');
+        if (! $program) {
+            return redirect()
+                ->route('department-chair.students')
+                ->withErrors(['student_import' => 'Add at least one department program before downloading the student import sample.']);
+        }
 
         return $importer->sampleCsv();
     }

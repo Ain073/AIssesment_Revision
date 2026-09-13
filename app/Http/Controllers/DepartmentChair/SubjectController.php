@@ -111,7 +111,20 @@ class SubjectController extends BaseController
         $programIds = $programs->pluck('program_id')->all();
 
         abort_if($programs->isEmpty(), 403, 'A department program is required before updating subjects.');
-        abort_unless(in_array((int) $subject->program_id, $programIds, true), 404);
+        if (! in_array((int) $subject->program_id, $programIds, true)) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'This subject is no longer available under your department.',
+                    'errors' => [
+                        'subject' => ['This subject is no longer available under your department.'],
+                    ],
+                ], 422);
+            }
+
+            return redirect()
+                ->route('department-chair.subjects')
+                ->withErrors(['subject' => 'This subject is no longer available under your department.']);
+        }
 
         $validated = $request->validate([
             'program_id' => ['required', 'integer', Rule::in($programIds)],
@@ -167,7 +180,20 @@ class SubjectController extends BaseController
         $subject->loadMissing('program');
 
         abort_if($programs->isEmpty(), 403, 'A department program is required before deleting subjects.');
-        abort_unless(in_array((int) $subject->program_id, $programIds, true), 404);
+        if (! in_array((int) $subject->program_id, $programIds, true)) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'This subject is no longer available under your department.',
+                    'errors' => [
+                        'subject' => ['This subject is no longer available under your department.'],
+                    ],
+                ], 422);
+            }
+
+            return redirect()
+                ->route('department-chair.subjects')
+                ->withErrors(['subject' => 'This subject is no longer available under your department.']);
+        }
 
         $program = $subject->program;
         $programId = $subject->program_id;

@@ -42,7 +42,13 @@ class ClassController extends BaseController
             ->with(['subject', 'instructorProfile.user', 'instructorProfile.department.college'])
             ->where('join_token', $token)
             ->whereNull('archived_at')
-            ->firstOrFail();
+            ->first();
+
+        if (! $class) {
+            return redirect()
+                ->route('student.classes')
+                ->withErrors(['join' => 'This class join link is no longer available.']);
+        }
 
         $existingRequest = ClassDetail::query()
             ->where('class_id', $class->class_id)
@@ -70,7 +76,22 @@ class ClassController extends BaseController
         $class = AcademicClass::query()
             ->where('join_token', $token)
             ->whereNull('archived_at')
-            ->firstOrFail();
+            ->first();
+
+        if (! $class) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'This class join link is no longer available.',
+                    'errors' => [
+                        'join' => ['This class join link is no longer available.'],
+                    ],
+                ], 422);
+            }
+
+            return redirect()
+                ->route('student.classes')
+                ->withErrors(['join' => 'This class join link is no longer available.']);
+        }
 
         return $this->submitClassJoinRequest($request, $class, $studentProfile, $user, 'link');
     }

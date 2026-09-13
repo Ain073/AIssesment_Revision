@@ -305,7 +305,13 @@ class AssessmentController extends BaseController
             $lockedSubmission = Submission::query()
                 ->whereKey($submission->submission_id)
                 ->lockForUpdate()
-                ->firstOrFail();
+                ->first();
+
+            if (! $lockedSubmission) {
+                throw ValidationException::withMessages([
+                    'assessment' => 'This assessment attempt is no longer available.',
+                ]);
+            }
 
             if ($lockedSubmission->status !== Submission::STATUS_IN_PROGRESS) {
                 throw ValidationException::withMessages([

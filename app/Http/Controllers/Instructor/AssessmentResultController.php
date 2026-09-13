@@ -125,7 +125,7 @@ class AssessmentResultController extends BaseController
         ]);
     }
 
-    public function gradeSubmission(Submission $submission): View
+    public function gradeSubmission(Submission $submission): View|RedirectResponse
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
@@ -141,7 +141,11 @@ class AssessmentResultController extends BaseController
 
         $ownedPublishAssessment = $this->ownedPublishAssessment($submission->publishAssessment, $instructorProfile);
 
-        abort_unless($submission->status === Submission::STATUS_SUBMITTED, 404, 'Only submitted attempts can be checked.');
+        if ($submission->status !== Submission::STATUS_SUBMITTED) {
+            return redirect()
+                ->route('instructor.assessments.results', $ownedPublishAssessment)
+                ->withErrors(['submission' => 'This attempt is not submitted yet.']);
+        }
 
         $items = $ownedPublishAssessment->assessment?->items ?? collect();
         $answers = $submission->answers->keyBy('assessment_item_id');
@@ -183,7 +187,11 @@ class AssessmentResultController extends BaseController
 
         $ownedPublishAssessment = $this->ownedPublishAssessment($submission->publishAssessment, $instructorProfile);
 
-        abort_unless($submission->status === Submission::STATUS_SUBMITTED, 404, 'Only submitted attempts can be checked.');
+        if ($submission->status !== Submission::STATUS_SUBMITTED) {
+            return redirect()
+                ->route('instructor.assessments.results', $ownedPublishAssessment)
+                ->withErrors(['submission' => 'This attempt is not submitted yet.']);
+        }
 
         $validated = $request->validate([
             'essay_scores' => ['nullable', 'array'],
