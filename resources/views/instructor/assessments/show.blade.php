@@ -324,10 +324,12 @@
                                     </div>
                                     <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
                                         <span class="badge text-bg-light border rounded-1">{{ $publishAssessment->attempt_limit }} attempt{{ (int) $publishAssessment->attempt_limit === 1 ? '' : 's' }}</span>
-                                        <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" data-bs-target="#editPublishedAssessmentSettingsModal{{ $publishAssessment->publish_assessment_id }}" data-bs-toggle="modal" type="button">
-                                            <span class="material-symbols-outlined fs-6">tune</span>
-                                            Edit Settings
-                                        </button>
+                                        @if ($publishAssessment->getRouteKey())
+                                            <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" data-bs-target="#editPublishedAssessmentSettingsModal{{ $publishAssessment->publish_assessment_id }}" data-bs-toggle="modal" type="button">
+                                                <span class="material-symbols-outlined fs-6">tune</span>
+                                                Edit Settings
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
                             </div>

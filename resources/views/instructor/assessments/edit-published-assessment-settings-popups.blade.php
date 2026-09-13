@@ -1,4 +1,5 @@
 @foreach ($publishedAssessments as $publishAssessment)
+    @continue(! $publishAssessment->getRouteKey())
     @php($publishedAssessment = $publishAssessment->assessment)
     @php($class = $publishAssessment->classDetail?->class)
     <div class="modal fade" id="editPublishedAssessmentSettingsModal{{ $publishAssessment->publish_assessment_id }}" tabindex="-1" aria-labelledby="editPublishedAssessmentSettingsModalLabel{{ $publishAssessment->publish_assessment_id }}" aria-hidden="true">
