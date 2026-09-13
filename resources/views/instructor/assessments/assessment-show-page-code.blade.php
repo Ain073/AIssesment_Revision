@@ -158,7 +158,7 @@
     })();
 </script>
 
-@if ($errors->any() && ! $errors->hasAny(['title', 'description', 'type', 'report_category', 'reporting_term', 'instructions']))
+@if ($errors->any() && ! $detailsHasErrors)
     <script>
         const questionBuilderModal = document.getElementById('questionBuilderModal');
 

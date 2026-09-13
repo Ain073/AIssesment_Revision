@@ -5,6 +5,8 @@
 
 @php
     $oldItems = old('items', []);
+    $detailsHasErrors = collect(['title', 'description', 'type', 'report_category', 'reporting_term', 'instructions'])
+        ->contains(fn ($field) => $errors->has($field));
 @endphp
 
 @push('styles')
@@ -256,7 +258,7 @@
     @endif
 
     <section class="step-track mb-4">
-        <button class="step-pill {{ $isPublishedSnapshot ? 'active' : 'clickable' }}" @unless($isPublishedSnapshot) data-step-tab data-step-target="detailsPanel" @endunless type="button" aria-selected="{{ ($isPublishedSnapshot || $errors->hasAny(['title', 'description', 'type', 'report_category', 'reporting_term', 'instructions'])) ? 'true' : 'false' }}">
+        <button class="step-pill {{ $isPublishedSnapshot ? 'active' : 'clickable' }}" @unless($isPublishedSnapshot) data-step-tab data-step-target="detailsPanel" @endunless type="button" aria-selected="{{ ($isPublishedSnapshot || $detailsHasErrors) ? 'true' : 'false' }}">
             <span class="step-number">1</span>
             <div>
                 <p class="fw-bold mb-0" style="color: var(--psu-navy);">Details and Instructions</p>
@@ -331,7 +333,7 @@
     @endif
 
     @unless($isPublishedSnapshot)
-    <section class="details-card mb-4 {{ $errors->hasAny(['title', 'description', 'type', 'report_category', 'reporting_term', 'instructions']) ? '' : 'd-none' }}" id="detailsPanel" data-step-panel="detailsPanel">
+    <section class="details-card mb-4 {{ $detailsHasErrors ? '' : 'd-none' }}" id="detailsPanel" data-step-panel="detailsPanel">
             <form action="{{ route('instructor.assessments.update', $assessment) }}" method="POST" class="p-4">
                 @csrf
                 @method('PUT')
