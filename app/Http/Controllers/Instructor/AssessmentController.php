@@ -380,9 +380,7 @@ class AssessmentController extends BaseController
             return response()->json(['message' => 'Published assessment settings updated.']);
         }
 
-        return redirect()
-            ->route('instructor.assessments', ['tab' => 'published'])
-            ->with('status', 'Published assessment settings updated.');
+        return back()->with('status', 'Published assessment settings updated.');
     }
 
     public function storeAssessmentItem(Request $request, Assessment $assessment): RedirectResponse

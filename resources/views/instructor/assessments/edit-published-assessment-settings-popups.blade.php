@@ -1,15 +1,15 @@
 @foreach ($publishedAssessments as $publishAssessment)
-    @php($assessment = $publishAssessment->assessment)
+    @php($publishedAssessment = $publishAssessment->assessment)
     @php($class = $publishAssessment->classDetail?->class)
     <div class="modal fade" id="editPublishedAssessmentSettingsModal{{ $publishAssessment->publish_assessment_id }}" tabindex="-1" aria-labelledby="editPublishedAssessmentSettingsModalLabel{{ $publishAssessment->publish_assessment_id }}" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <form action="{{ route('instructor.assessments.published.settings.update', $publishAssessment) }}" class="modal-content" method="POST">
+            <form action="{{ route('instructor.assessments.published.settings.update', $publishAssessment) }}" class="modal-content" method="POST" onsubmit="return confirm('Save changes to this published assessment settings?');">
                 @csrf
                 @method('PUT')
                 <div class="modal-header">
                     <div>
                         <h3 class="modal-title h4" id="editPublishedAssessmentSettingsModalLabel{{ $publishAssessment->publish_assessment_id }}">Edit Publish Settings</h3>
-                        <p class="small text-white-50 mb-0">{{ $assessment?->title ?? 'Untitled Assessment' }} - {{ $class?->class_name ?? 'Class' }}</p>
+                        <p class="small text-white-50 mb-0">{{ $publishedAssessment?->title ?? 'Untitled Assessment' }} - {{ $class?->class_name ?? 'Class' }}</p>
                     </div>
                     <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>

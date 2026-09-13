@@ -315,12 +315,19 @@
                                         <p class="fw-bold mb-1" style="color: var(--psu-navy);">{{ $publishedClass?->displayName() ?? 'Class' }}</p>
                                         <p class="small text-secondary mb-0">
                                             {{ $publishedClass?->school_year ? 'AY '.$publishedClass->school_year : 'No academic year' }}
+                                            | {{ ucfirst($publishAssessment->display_status) }}
                                             @if ($publishAssessment->due_at)
                                                 | Due {{ $publishAssessment->due_at->format('M d, Y h:i A') }}
                                             @endif
                                         </p>
                                     </div>
-                                    <span class="badge text-bg-light border rounded-1">{{ $publishAssessment->attempt_limit }} attempt{{ $publishAssessment->attempt_limit === 1 ? '' : 's' }}</span>
+                                    <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
+                                        <span class="badge text-bg-light border rounded-1">{{ $publishAssessment->attempt_limit }} attempt{{ (int) $publishAssessment->attempt_limit === 1 ? '' : 's' }}</span>
+                                        <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" data-bs-target="#editPublishedAssessmentSettingsModal{{ $publishAssessment->publish_assessment_id }}" data-bs-toggle="modal" type="button">
+                                            <span class="material-symbols-outlined fs-6">tune</span>
+                                            Edit Settings
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         @endforeach
@@ -579,6 +586,8 @@
 
     @unless($isPublishedSnapshot)
         @include('instructor.assessments.question-form-popup')
+    @else
+        @include('instructor.assessments.edit-published-assessment-settings-popups', ['publishedAssessments' => $assessment->publishAssessments])
     @endunless
 @endsection
 

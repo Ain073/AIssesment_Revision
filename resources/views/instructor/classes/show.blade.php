@@ -316,10 +316,6 @@
                                     View Submissions
                                 </a>
                             @endif
-                            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" data-bs-target="#editPublishedAssessmentSettingsModal{{ $publishAssessment->publish_assessment_id }}" data-bs-toggle="modal" type="button">
-                                <span class="material-symbols-outlined fs-5">tune</span>
-                                Settings
-                            </button>
                         </div>
                     </section>
                 @endforeach
@@ -362,5 +358,4 @@
         @endif
     @endif
 
-    @include('instructor.assessments.edit-published-assessment-settings-popups', ['publishedAssessments' => $publishAssessments])
 @endsection
