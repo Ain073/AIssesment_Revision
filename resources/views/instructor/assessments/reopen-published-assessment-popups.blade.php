@@ -1,7 +1,7 @@
 @foreach ($publishedAssessments as $publishAssessment)
     @if (($publishAssessment->display_status ?? null) === 'completed')
-        @php($assessment = $publishAssessment->assessment)
         @php
+            $assessment = $publishAssessment->assessment;
             $class = $publishAssessment->classDetail?->class;
         @endphp
         <div class="modal fade" id="reopenPublishedAssessmentModal{{ $publishAssessment->publish_assessment_id }}" tabindex="-1" aria-labelledby="reopenPublishedAssessmentModalLabel{{ $publishAssessment->publish_assessment_id }}" aria-hidden="true">
