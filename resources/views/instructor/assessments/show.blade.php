@@ -258,13 +258,13 @@
     @endif
 
     <section class="step-track mb-4">
-        <button class="step-pill {{ $isPublishedSnapshot ? 'active' : 'clickable' }}" @unless($isPublishedSnapshot) data-step-tab data-step-target="detailsPanel" @endunless type="button" aria-selected="{{ ($isPublishedSnapshot || $detailsHasErrors) ? 'true' : 'false' }}">
+        <button class="step-pill {{ $isPublishedSnapshot ? 'active clickable' : 'clickable' }}" data-step-tab data-step-target="detailsPanel" type="button" aria-selected="{{ ($isPublishedSnapshot || $detailsHasErrors) ? 'true' : 'false' }}">
             <span class="step-number">1</span>
             <div>
                 <p class="fw-bold mb-0" style="color: var(--psu-navy);">Details and Instructions</p>
             </div>
         </button>
-        <button class="step-pill {{ $isPublishedSnapshot ? '' : 'clickable' }}" @unless($isPublishedSnapshot) data-bs-target="#questionBuilderModal" data-bs-toggle="modal" @endunless type="button" aria-selected="false" @disabled($isPublishedSnapshot)>
+        <button class="step-pill clickable" @if($isPublishedSnapshot) data-step-tab data-step-target="questionsPanel" @else data-bs-target="#questionBuilderModal" data-bs-toggle="modal" @endif type="button" aria-selected="false">
             <span class="step-number">2</span>
             <div>
                 <p class="fw-bold mb-0" style="color: var(--psu-navy);">Question Builder</p>
@@ -273,7 +273,7 @@
     </section>
 
     @if ($isPublishedSnapshot)
-        <section class="details-card mb-4" id="detailsPanel">
+        <section class="details-card mb-4" id="detailsPanel" data-step-panel="detailsPanel">
             <div class="builder-header px-4 py-3">
                 <h2 class="h4 mb-0">Details and Instructions</h2>
             </div>
@@ -386,7 +386,7 @@
     </section>
     @endunless
 
-    <section class="saved-card overflow-hidden mb-4">
+    <section class="saved-card overflow-hidden mb-4 {{ $isPublishedSnapshot ? 'd-none' : '' }}" @if($isPublishedSnapshot) data-step-panel="questionsPanel" @endif>
         <div class="builder-header px-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
                 <h2 class="h4 mb-0">Saved Questions</h2>
