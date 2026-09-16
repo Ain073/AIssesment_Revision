@@ -351,36 +351,39 @@ class AssessmentController extends BaseController
             'items.*.accepted_answer' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $itemErrors = [];
+
         foreach ($validated['items'] as $index => $itemData) {
+            $questionNumber = $index + 1;
             $itemType = $itemData['item_type'];
             $choices = collect($itemData['choices'] ?? [])
-                ->map(fn ($choice) => trim((string) $choice))
-                ->filter()
-                ->values();
+                ->map(fn ($choice) => trim((string) $choice));
+            $filledChoices = $choices->filter(fn ($choice) => $choice !== '');
 
-            if ($itemType === 'multiple_choice' && $choices->count() < 2) {
-                throw ValidationException::withMessages([
-                    "items.{$index}.choices" => 'Multiple choice items need at least two choices.',
-                ]);
+            if ($itemType === 'multiple_choice' && $filledChoices->count() < 2) {
+                $itemErrors["items.{$index}.choices"] = "Question {$questionNumber}: Multiple choice items need at least two choices.";
             }
 
-            if ($itemType === 'multiple_choice' && ! $choices->has((int) ($itemData['correct_choice'] ?? -1))) {
-                throw ValidationException::withMessages([
-                    "items.{$index}.correct_choice" => 'Please select the correct choice.',
-                ]);
+            if ($itemType === 'multiple_choice') {
+                $correctChoice = $itemData['correct_choice'] ?? null;
+                $correctChoiceIndex = $correctChoice === null ? null : (int) $correctChoice;
+
+                if ($correctChoiceIndex === null || ! $choices->has($correctChoiceIndex) || $choices->get($correctChoiceIndex) === '') {
+                    $itemErrors["items.{$index}.correct_choice"] = "Question {$questionNumber}: Please select a filled correct choice.";
+                }
             }
 
             if ($itemType === 'true_false' && empty($itemData['true_false_answer'])) {
-                throw ValidationException::withMessages([
-                    "items.{$index}.true_false_answer" => 'Please select True or False as the correct answer.',
-                ]);
+                $itemErrors["items.{$index}.true_false_answer"] = "Question {$questionNumber}: Please select True or False as the correct answer.";
             }
 
             if ($itemType === 'identification' && blank($itemData['accepted_answer'] ?? null)) {
-                throw ValidationException::withMessages([
-                    "items.{$index}.accepted_answer" => 'Please enter the accepted answer for identification.',
-                ]);
+                $itemErrors["items.{$index}.accepted_answer"] = "Question {$questionNumber}: Please enter the accepted answer for identification.";
             }
+        }
+
+        if ($itemErrors !== []) {
+            throw ValidationException::withMessages($itemErrors);
         }
 
         DB::transaction(function () use ($ownedAssessment, $validated) {
@@ -402,16 +405,18 @@ class AssessmentController extends BaseController
                 if ($itemType === 'multiple_choice') {
                     $choices = collect($itemData['choices'] ?? [])
                         ->map(fn ($choice) => trim((string) $choice))
-                        ->filter()
-                        ->values();
+                        ->filter(fn ($choice) => $choice !== '');
                     $correctChoice = (int) ($itemData['correct_choice'] ?? -1);
+                    $sortOrder = 1;
 
-                    foreach ($choices as $index => $choiceText) {
+                    foreach ($choices as $choiceIndex => $choiceText) {
                         $item->choices()->create([
                             'choice_text' => $choiceText,
-                            'is_correct' => $index === $correctChoice,
-                            'sort_order' => $index + 1,
+                            'is_correct' => (int) $choiceIndex === $correctChoice,
+                            'sort_order' => $sortOrder,
                         ]);
+
+                        $sortOrder++;
                     }
                 }
 

@@ -2,9 +2,11 @@
     (() => {
         const typeLabels = {{ Illuminate\Support\Js::from($itemTypes) }};
         const oldItems = Object.values({{ Illuminate\Support\Js::from($oldItems) }} ?? {});
+        const validationErrors = {{ Illuminate\Support\Js::from($errors->getMessages()) }};
         const stepButtons = document.querySelectorAll('[data-step-tab]');
         const stepTriggers = document.querySelectorAll('[data-step-target]');
         const stepPanels = document.querySelectorAll('[data-step-panel]');
+        const form = document.getElementById('questionBuilderForm');
         const typeSelect = document.getElementById('item_type');
         const pointsInput = document.getElementById('points');
         const addButton = document.getElementById('addQuestionButton');
@@ -12,6 +14,7 @@
         const emptyState = document.getElementById('emptyBuilderState');
         const saveButton = document.getElementById('saveQuestionsButton');
         const countBadge = document.getElementById('questionCountBadge');
+        const errorSummary = document.getElementById('questionBuilderErrors');
         let questionIndex = 0;
 
         const showPanel = (target) => {
@@ -37,6 +40,50 @@
 
         const inputName = (index, field) => `items[${index}][${field}]`;
 
+        const fieldErrors = (index) => Object.entries(validationErrors)
+            .filter(([field]) => field.startsWith(`items.${index}.`))
+            .flatMap(([, messages]) => messages);
+
+        const clearBlockErrors = () => {
+            questionBlocks.querySelectorAll('[data-question-block]').forEach((block) => {
+                block.classList.remove('question-block-invalid');
+                block.querySelector('[data-question-errors]')?.remove();
+            });
+        };
+
+        const showBlockErrors = (block, messages) => {
+            if (messages.length === 0) {
+                return;
+            }
+
+            block.classList.add('question-block-invalid');
+
+            const errorBox = document.createElement('div');
+            errorBox.className = 'question-error-list';
+            errorBox.dataset.questionErrors = 'true';
+            errorBox.innerHTML = `<ul>${messages.map((message) => `<li>${escapeHtml(message)}</li>`).join('')}</ul>`;
+
+            block.querySelector('.question-block-body')?.prepend(errorBox);
+        };
+
+        const showErrorSummary = (messages) => {
+            if (! errorSummary) {
+                return;
+            }
+
+            if (messages.length === 0) {
+                errorSummary.classList.add('d-none');
+                errorSummary.innerHTML = '';
+                return;
+            }
+
+            errorSummary.classList.remove('d-none');
+            errorSummary.innerHTML = `
+                <p class="fw-bold mb-2">Please review the highlighted question fields.</p>
+                <ul class="mb-0">${messages.map((message) => `<li>${escapeHtml(message)}</li>`).join('')}</ul>
+            `;
+        };
+
         const refreshState = () => {
             const count = questionBlocks.querySelectorAll('[data-question-block]').length;
             questionBlocks.classList.toggle('d-none', count === 0);
@@ -47,7 +94,10 @@
 
         const choiceFields = (index, oldItem = {}) => {
             const choices = oldItem.choices ?? [];
-            const selected = String(oldItem.correct_choice ?? 0);
+            const hasSelectedChoice = Object.prototype.hasOwnProperty.call(oldItem, 'correct_choice')
+                && oldItem.correct_choice !== null
+                && oldItem.correct_choice !== '';
+            const selected = hasSelectedChoice ? String(oldItem.correct_choice) : null;
             let html = '<p class="compact-label">Choices and Correct Answer</p><div class="choice-grid">';
 
             for (let choiceIndex = 0; choiceIndex < 4; choiceIndex++) {
@@ -134,6 +184,7 @@
             `;
 
             questionBlocks.appendChild(block);
+            showBlockErrors(block, fieldErrors(index));
             refreshState();
         };
 
@@ -148,6 +199,90 @@
 
             removeButton.closest('[data-question-block]')?.remove();
             refreshState();
+        });
+
+        questionBlocks.addEventListener('input', (event) => {
+            const block = event.target.closest('[data-question-block]');
+
+            if (block) {
+                block.classList.remove('question-block-invalid');
+                block.querySelector('[data-question-errors]')?.remove();
+            }
+        });
+
+        questionBlocks.addEventListener('change', (event) => {
+            const block = event.target.closest('[data-question-block]');
+
+            if (block) {
+                block.classList.remove('question-block-invalid');
+                block.querySelector('[data-question-errors]')?.remove();
+            }
+        });
+
+        form.addEventListener('submit', (event) => {
+            clearBlockErrors();
+
+            const messages = [];
+            let firstInvalidBlock = null;
+
+            questionBlocks.querySelectorAll('[data-question-block]').forEach((block, order) => {
+                const questionNumber = order + 1;
+                const blockMessages = [];
+                const type = block.querySelector('input[name$="[item_type]"]')?.value;
+                const questionText = block.querySelector('textarea[name$="[question_text]"]')?.value.trim();
+                const points = Number(block.querySelector('input[name$="[points]"]')?.value);
+
+                if (! questionText) {
+                    blockMessages.push(`Question ${questionNumber}: Enter the question text.`);
+                }
+
+                if (! Number.isFinite(points) || points <= 0) {
+                    blockMessages.push(`Question ${questionNumber}: Enter a valid point value.`);
+                }
+
+                if (type === 'multiple_choice') {
+                    const choices = Array.from(block.querySelectorAll('input[name$="[choices][]"]'));
+                    const filledChoices = choices.filter((choice) => choice.value.trim() !== '');
+                    const selectedChoice = block.querySelector('input[name$="[correct_choice]"]:checked');
+
+                    if (filledChoices.length < 2) {
+                        blockMessages.push(`Question ${questionNumber}: Enter at least two choices.`);
+                    }
+
+                    if (! selectedChoice) {
+                        blockMessages.push(`Question ${questionNumber}: Select the correct choice.`);
+                    } else {
+                        const selectedChoiceInput = choices[Number(selectedChoice.value)];
+
+                        if (! selectedChoiceInput || selectedChoiceInput.value.trim() === '') {
+                            blockMessages.push(`Question ${questionNumber}: The selected correct choice must have text.`);
+                        }
+                    }
+                }
+
+                if (type === 'true_false' && ! block.querySelector('input[name$="[true_false_answer]"]:checked')) {
+                    blockMessages.push(`Question ${questionNumber}: Select True or False as the correct answer.`);
+                }
+
+                if (type === 'identification' && ! block.querySelector('input[name$="[accepted_answer]"]')?.value.trim()) {
+                    blockMessages.push(`Question ${questionNumber}: Enter the accepted answer.`);
+                }
+
+                if (blockMessages.length > 0) {
+                    firstInvalidBlock ??= block;
+                    messages.push(...blockMessages);
+                    showBlockErrors(block, blockMessages);
+                }
+            });
+
+            if (messages.length === 0) {
+                showErrorSummary([]);
+                return;
+            }
+
+            event.preventDefault();
+            showErrorSummary(messages);
+            firstInvalidBlock?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
 
         if (oldItems.length > 0) {

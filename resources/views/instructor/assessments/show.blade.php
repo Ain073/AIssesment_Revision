@@ -106,6 +106,32 @@
             overflow: hidden;
         }
 
+        .question-block-invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.08);
+        }
+
+        .question-block-invalid .question-block-header {
+            background: #fff1f2;
+            border-bottom-color: #f5b5bd;
+        }
+
+        .question-error-list {
+            border: 1px solid #f5b5bd;
+            border-radius: 0.5rem;
+            background: #fff5f6;
+            color: #b02a37;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding: 0.75rem 0.9rem;
+        }
+
+        .question-error-list ul {
+            margin: 0;
+            padding-left: 1.1rem;
+        }
+
         .question-block-header {
             display: flex;
             justify-content: space-between;

@@ -9,6 +9,17 @@
             </div>
 
             <div class="modal-body">
+                <div class="alert alert-danger {{ ($errors->any() && ! $detailsHasErrors) ? '' : 'd-none' }}" id="questionBuilderErrors">
+                    @if ($errors->any() && ! $detailsHasErrors)
+                        <p class="fw-bold mb-2">Please review the highlighted question fields.</p>
+                        <ul class="mb-0">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+
                 <section class="setup-card p-4 mb-4">
                     <div class="setup-grid">
                         <div>
