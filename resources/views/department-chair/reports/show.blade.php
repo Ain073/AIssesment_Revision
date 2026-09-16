@@ -266,6 +266,10 @@
             overflow-wrap: anywhere;
         }
 
+        .report-print-grid-sheet {
+            display: none;
+        }
+
         @media print {
             @page {
                 size: {{ $paper['width'] }} {{ $paper['height'] }};
@@ -331,63 +335,134 @@
             }
 
             .report-table {
-                border-collapse: separate !important;
-                border-spacing: 0 !important;
+                display: none !important;
+            }
+
+            .report-print-grid-sheet {
+                display: block !important;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                visibility: visible !important;
+                opacity: 1 !important;
+            }
+
+            .report-print-grid {
+                display: grid;
+                grid-template-columns: 12fr 6fr 6fr 6fr 9fr 18fr 18fr 13fr 12fr;
+                align-items: stretch;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                color: #111827;
+                font-size: 0.68rem;
+                line-height: 1.18;
+                break-inside: auto;
+                page-break-inside: auto;
+                visibility: visible !important;
+                opacity: 1 !important;
+            }
+
+            .report-print-cell {
+                min-width: 0;
+                margin: -1px 0 0 -1px;
+                padding: 0.22rem 0.3rem;
+                border: 1px solid #111827;
+                box-sizing: border-box;
+                overflow-wrap: anywhere;
+                word-break: normal;
+                white-space: normal;
+                break-inside: auto;
+                page-break-inside: auto;
+                -webkit-box-decoration-break: clone;
+                box-decoration-break: clone;
+                box-shadow: inset 0 0 0 0.5px #111827;
+            }
+
+            .report-print-data-row {
+                display: grid;
+                grid-column: 1 / 10;
+                grid-template-columns: 12fr 6fr 6fr 6fr 9fr 18fr 18fr 13fr 12fr;
+                margin: -1px 0 0 -1px;
+                border: 1px solid #111827;
+                box-sizing: border-box;
+                break-inside: auto;
+                page-break-inside: auto;
                 -webkit-box-decoration-break: clone;
                 box-decoration-break: clone;
             }
 
-            .report-table th,
-            .report-table td {
-                border: 0 !important;
-                border-right: 1px solid #111827 !important;
-                border-bottom: 1px solid #111827 !important;
-                -webkit-box-decoration-break: clone;
-                box-decoration-break: clone;
+            .report-print-data-row .report-print-cell {
+                margin: -1px 0 -1px -1px;
+                border-top: 0;
+                border-bottom: 0;
             }
 
-            .report-table tr > :first-child {
-                border-left: 1px solid #111827 !important;
+            .report-print-label,
+            .report-print-column {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                font-weight: 800;
+                text-transform: uppercase;
             }
 
-            .report-table tr:first-child > * {
-                border-top: 2px solid #111827 !important;
-                border-bottom-width: 2px !important;
+            .report-print-title-cell,
+            .report-print-period-cell,
+            .report-print-note-cell {
+                text-align: center;
             }
 
-            .report-table tr:nth-child(2) > *,
-            .report-table tr:nth-child(5) > *,
-            .report-matrix-head > * {
-                border-bottom-width: 2px !important;
+            .report-print-logo-cell {
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
 
-            .report-note {
-                border-top-width: 2px !important;
-                border-bottom: 3px double #111827 !important;
+            .report-print-grid .report-logo {
+                width: 0.62in;
+                height: 0.62in;
             }
 
-            .report-table tr:last-child > * {
-                border-bottom-width: 2px !important;
+            .report-print-grid .report-title {
+                font-size: 0.9rem;
+                line-height: 1.05;
             }
 
-            .report-table {
-                break-inside: auto;
-                page-break-inside: auto;
+            .report-print-grid .report-subtitle {
+                font-size: 0.5rem;
             }
 
-            .report-table tr:nth-child(n + 8) {
-                break-inside: avoid;
-                page-break-inside: avoid;
+            .report-print-grid .report-period {
+                font-size: 0.62rem !important;
+                font-weight: 800;
             }
 
-            .report-table td,
-            .report-table th {
-                break-inside: auto;
-                page-break-inside: auto;
+            .report-print-note-cell {
+                font-size: 0.56rem;
+                font-style: italic;
+                line-height: 1.12;
+                border-top-width: 2px;
+                border-bottom: 3px double #111827;
             }
 
-            .report-takers-cell {
-                min-height: 0.85in;
+            .report-print-row-title {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 0.5in;
+                text-align: center;
+                color: #4b5563;
+                text-transform: uppercase;
+            }
+
+            .report-print-grid-text {
+                display: block;
+                font-size: 0.64rem;
+                line-height: 1.2;
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
             }
         }
     </style>
@@ -514,6 +589,88 @@
                     @endforeach
                 </tbody>
             </table>
+
+            <div class="report-print-grid-sheet" aria-hidden="true">
+                <div class="report-print-grid">
+                    <div class="report-print-cell report-print-logo-cell" style="grid-column: 1 / 2; grid-row: 1 / span 2;">
+                        <img alt="PSU logo" class="report-logo" src="{{ asset('images/psu-logo-transparent.png') }}">
+                    </div>
+                    <div class="report-print-cell report-print-title-cell" style="grid-column: 2 / 10; grid-row: 1;">
+                        <div class="report-title">STUDENTS PERFORMANCE MONITORING ({{ strtoupper($reportTypeLabel) }} ASSESSMENTS)</div>
+                        <div class="report-subtitle">PANGASINAN STATE UNIVERSITY</div>
+                    </div>
+                    <div class="report-print-cell report-print-period-cell" style="grid-column: 2 / 10; grid-row: 2;">
+                        <div class="report-period">{{ $reportMeta['semester'] }} AY {{ $reportMeta['school_year'] }}</div>
+                    </div>
+
+                    <div class="report-print-cell report-print-label" style="grid-column: 1 / 2;">Campus</div>
+                    <div class="report-print-cell" style="grid-column: 2 / 10;">{{ strtoupper($reportMeta['campus']) }}</div>
+
+                    <div class="report-print-cell report-print-label" style="grid-column: 1 / 2;">College</div>
+                    <div class="report-print-cell" style="grid-column: 2 / 6;">{{ strtoupper($reportMeta['college']) }}</div>
+                    <div class="report-print-cell report-print-label" style="grid-column: 6 / 7;">Course Code/Title</div>
+                    <div class="report-print-cell" style="grid-column: 7 / 10;">{{ $reportMeta['course_code_title'] }}</div>
+
+                    <div class="report-print-cell report-print-label" style="grid-column: 1 / 2;">Department</div>
+                    <div class="report-print-cell" style="grid-column: 2 / 6;">{{ strtoupper($reportMeta['department']) }}</div>
+                    <div class="report-print-cell report-print-label" style="grid-column: 6 / 7;">No. of Students</div>
+                    <div class="report-print-cell" style="grid-column: 7 / 10;">{{ $reportMeta['students_count'] }}</div>
+
+                    <div class="report-print-cell report-print-note-cell" style="grid-column: 1 / 10;">{{ $reportMeta['note'] }}</div>
+
+                    <div class="report-print-cell report-print-column">Total Number of Students Who Took the Assessment</div>
+                    <div class="report-print-cell report-print-column">Number of Items</div>
+                    <div class="report-print-cell report-print-column">Highest Score</div>
+                    <div class="report-print-cell report-print-column">Lowest Score</div>
+                    <div class="report-print-cell report-print-column">{{ $reportType === \App\Models\Report::TYPE_FORMATIVE ? 'Mean Score and Percentage of Students Who Passed' : 'Mean Score' }}</div>
+                    <div class="report-print-cell report-print-column">Concepts / Skills Most Learned</div>
+                    <div class="report-print-cell report-print-column">Concepts / Skills Least Learned</div>
+                    <div class="report-print-cell report-print-column">Issues / Concerns Encountered</div>
+                    <div class="report-print-cell report-print-column">{{ $reportType === \App\Models\Report::TYPE_FORMATIVE ? 'Interventions Done' : 'Future Plans to Improve the Curriculum' }}</div>
+
+                    @foreach ($rows as $row)
+                        @php
+                            $assessment = $row['assessment'];
+                            $analytics = $row['analytics'];
+                            $rowReport = $row['report'];
+                            $reference = strtoupper(($assessment?->reporting_term ?: 'Assessment').' '.($assessment?->title ?? 'Untitled assessment'));
+                            $lastColumn = $reportType === \App\Models\Report::TYPE_FORMATIVE
+                                ? $rowReport->interventions_done
+                                : $rowReport->future_plans_curriculum;
+                        @endphp
+                        <div class="report-print-data-row">
+                            <div class="report-print-cell">
+                                <div class="report-print-row-title">{{ $reference }}: {{ $analytics['takers_count'] }}</div>
+                            </div>
+                            <div class="report-print-cell text-center">{{ $analytics['item_count'] }}</div>
+                            <div class="report-print-cell text-center">{{ $analytics['highest_score'] }}</div>
+                            <div class="report-print-cell text-center">{{ $analytics['lowest_score'] }}</div>
+                            <div class="report-print-cell">
+                                <div class="report-score-stack">
+                                    <strong>{{ $analytics['mean_score'] }}</strong>
+                                    @if ($reportType === \App\Models\Report::TYPE_FORMATIVE)
+                                        <small>{{ $analytics['passing_rate'] }}% passed</small>
+                                    @else
+                                        <small>{{ $analytics['mean_percentage'] }}%</small>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="report-print-cell">
+                                <div class="report-print-grid-text">{{ $rowReport->concept_most_learned_skills }}</div>
+                            </div>
+                            <div class="report-print-cell">
+                                <div class="report-print-grid-text">{{ $rowReport->concept_least_learned_skills }}</div>
+                            </div>
+                            <div class="report-print-cell">
+                                <div class="report-print-grid-text">{{ $rowReport->issues_concern }}</div>
+                            </div>
+                            <div class="report-print-cell">
+                                <div class="report-print-grid-text">{{ $lastColumn }}</div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
         </section>
     </div>
 @endsection

@@ -191,9 +191,7 @@ class ReportController extends BaseController
     private function reportAnalytics(PublishAssessment $publishAssessment): array
     {
         $items = $publishAssessment->assessment?->items ?? collect();
-        $submissions = $publishAssessment->submissions
-            ->where('status', Submission::STATUS_SUBMITTED)
-            ->values();
+        $submissions = $this->reportableSubmissions($publishAssessment->submissions);
         $maxScore = (float) $items->sum(fn ($item) => (float) $item->points);
         $studentScores = $submissions
             ->groupBy('student_profile_id')
@@ -225,6 +223,14 @@ class ReportController extends BaseController
     private function submissionScore(Submission $submission, Collection $items): float
     {
         return AssessmentScoring::scoreSubmission($submission, $items);
+    }
+
+    private function reportableSubmissions(Collection $submissions): Collection
+    {
+        return $submissions
+            ->where('status', Submission::STATUS_SUBMITTED)
+            ->reject(fn (Submission $submission): bool => $submission->completion_reason === Submission::COMPLETION_WARNING_LIMIT)
+            ->values();
     }
 
     private function formatNumber(float $value): string

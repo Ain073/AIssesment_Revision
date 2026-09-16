@@ -152,9 +152,7 @@ trait InstructorReportHelper
     protected function publishAssessmentReportAnalytics(PublishAssessment $publishAssessment): array
     {
         $items = $publishAssessment->assessment?->items ?? collect();
-        $submissions = $publishAssessment->submissions
-            ->where('status', Submission::STATUS_SUBMITTED)
-            ->values();
+        $submissions = $this->reportableSubmissions($publishAssessment->submissions);
         $maxScore = (float) $items->sum(fn ($item) => (float) $item->points);
         $studentScores = $submissions
             ->groupBy('student_profile_id')
@@ -224,7 +222,7 @@ trait InstructorReportHelper
             $totalPercentage = $scoreableAssessments->sum(function (PublishAssessment $publishAssessment) use ($student): float {
                 $items = $publishAssessment->assessment->items;
                 $maxScore = (float) $items->sum('points');
-                $bestScore = $publishAssessment->submissions
+                $bestScore = $this->reportableSubmissions($publishAssessment->submissions)
                     ->where('student_profile_id', $student->student_profile_id)
                     ->map(fn (Submission $submission): float => $this->submissionScore($submission, $items))
                     ->max() ?? 0;
@@ -244,6 +242,14 @@ trait InstructorReportHelper
     protected function submissionScore(Submission $submission, Collection $items): float
     {
         return AssessmentScoring::scoreSubmission($submission, $items);
+    }
+
+    protected function reportableSubmissions(Collection $submissions): Collection
+    {
+        return $submissions
+            ->where('status', Submission::STATUS_SUBMITTED)
+            ->reject(fn (Submission $submission): bool => $submission->completion_reason === Submission::COMPLETION_WARNING_LIMIT)
+            ->values();
     }
 
     protected function isSubmissionAnswerCorrect($item, $answer): bool

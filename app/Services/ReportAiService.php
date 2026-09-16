@@ -165,9 +165,7 @@ class ReportAiService
 
         $assessment = $publishAssessment->assessment;
         $items = $assessment?->items ?? collect();
-        $submissions = $publishAssessment->submissions
-            ->where('status', Submission::STATUS_SUBMITTED)
-            ->values();
+        $submissions = $this->reportableSubmissions($publishAssessment->submissions);
         $maxScore = (float) $items->sum(fn ($item) => (float) $item->points);
         $scores = $submissions
             ->groupBy('student_profile_id')
@@ -214,6 +212,14 @@ class ReportAiService
                 'correct_rate' => $total > 0 ? round(($correctCount / $total) * 100, 2) : 0,
             ];
         })->values()->all();
+    }
+
+    private function reportableSubmissions(Collection $submissions): Collection
+    {
+        return $submissions
+            ->where('status', Submission::STATUS_SUBMITTED)
+            ->reject(fn (Submission $submission): bool => $submission->completion_reason === Submission::COMPLETION_WARNING_LIMIT)
+            ->values();
     }
 
     private function strongestItems(Collection $itemSummaries): array

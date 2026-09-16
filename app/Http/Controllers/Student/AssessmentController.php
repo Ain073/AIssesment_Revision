@@ -146,7 +146,9 @@ class AssessmentController extends BaseController
 
         if ($publishAssessment->shuffle_choices) {
             $items->each(function ($item) {
-                $item->setRelation('choices', $item->choices->shuffle()->values());
+                if ($item->item_type === 'multiple_choice') {
+                    $item->setRelation('choices', $item->choices->shuffle()->values());
+                }
             });
         }
 
