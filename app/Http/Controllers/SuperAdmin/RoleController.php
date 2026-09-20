@@ -22,7 +22,7 @@ class RoleController extends Controller
 
     public function index(): View
     {
-        $teachers = User::with('roles')
+        $teachers = User::with(['roles', 'instructorProfile.department.college'])
             ->whereHas('roles', function ($query) {
                 $query->where('role_name', 'instructor');
             })
@@ -35,11 +35,19 @@ class RoleController extends Controller
             ->get();
 
         $adminDeans = $teachers->filter->hasRole('admin_dean')->values();
+        $deanCollegeIds = $adminDeans
+            ->pluck('instructorProfile.department.college_id')
+            ->filter()
+            ->unique()
+            ->values();
+
         return view('super-admin.roles.index', [
             'teachers' => $teachers,
             'adminDeans' => $adminDeans,
             'availableAdminDeanTeachers' => $teachers
                 ->reject(fn (User $user) => $user->hasRole('admin_dean') || $user->hasRole('department_chair'))
+                ->reject(fn (User $user) => ! $user->instructorProfile?->department?->college_id)
+                ->reject(fn (User $user) => $deanCollegeIds->contains($user->instructorProfile?->department?->college_id))
                 ->values(),
         ]);
     }
@@ -52,7 +60,7 @@ class RoleController extends Controller
             'form_mode' => ['nullable', 'string'],
         ]);
 
-        $user = User::with('roles')->findOrFail($validated['user_id']);
+        $user = User::with(['roles', 'instructorProfile.department.college'])->findOrFail($validated['user_id']);
 
         if (! $user->hasRole('instructor') || $user->hasRole('super_admin')) {
             return redirect()
@@ -66,6 +74,20 @@ class RoleController extends Controller
                 ->withErrors(new MessageBag([
                     'role' => 'A teacher can only have one designation. Ask the Dean to remove the current Department Chair designation first.',
                 ]));
+        }
+
+        $collegeId = $user->instructorProfile?->department?->college_id;
+
+        if (! $collegeId) {
+            return redirect()
+                ->route('super-admin.roles')
+                ->withErrors(new MessageBag(['role' => 'Teacher must have an assigned college before receiving Dean designation.']));
+        }
+
+        if ($this->collegeHasDean($collegeId, $user->id)) {
+            return redirect()
+                ->route('super-admin.roles')
+                ->withErrors(new MessageBag(['role' => 'This college already has a Dean. Remove the current designation first.']));
         }
 
         $roleId = Role::where('role_name', $validated['role_name'])->value('role_id');
@@ -116,5 +138,17 @@ class RoleController extends Controller
         return redirect()
             ->route('super-admin.roles')
             ->with('status', 'Designation removed successfully.');
+    }
+
+    private function collegeHasDean(int $collegeId, int $exceptUserId): bool
+    {
+        return User::query()
+            ->whereKeyNot($exceptUserId)
+            ->whereHas('roles', fn ($query) => $query->where('role_name', 'admin_dean'))
+            ->whereHas(
+                'instructorProfile.department',
+                fn ($query) => $query->where('college_id', $collegeId)
+            )
+            ->exists();
     }
 }

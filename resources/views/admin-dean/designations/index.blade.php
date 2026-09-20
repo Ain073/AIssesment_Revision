@@ -55,6 +55,31 @@
             background: var(--psu-gold-soft);
             color: var(--psu-navy);
         }
+
+        .designation-toolbar {
+            align-items: flex-end;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .designation-filter {
+            width: min(100%, 520px);
+        }
+
+        @media (max-width: 767.98px) {
+            .designation-toolbar {
+                align-items: stretch;
+            }
+
+            .designation-action-row,
+            .designation-action-row .btn,
+            .designation-filter {
+                width: 100%;
+            }
+        }
     </style>
 @endpush
 
@@ -73,11 +98,25 @@
         </div>
     @endif
 
-    <div class="designation-action-row">
-        <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#grantDepartmentChairModal" data-bs-toggle="modal" type="button">
-            <span class="material-symbols-outlined fs-5">add</span>
-            Designation
-        </button>
+    <div class="designation-toolbar">
+        <form action="{{ route('admin-dean.designations') }}" class="designation-filter" method="GET" data-ajax-page-form>
+            <label class="form-label fw-bold text-uppercase small" for="departmentDesignationFilter">Department</label>
+            <select class="form-select" id="departmentDesignationFilter" name="department_id" onchange="this.form.submit()">
+                <option value="">All departments</option>
+                @foreach ($departments as $department)
+                    <option value="{{ $department->department_id }}" @selected((int) $selectedDepartmentId === (int) $department->department_id)>
+                        {{ $department->dept_name }}
+                    </option>
+                @endforeach
+            </select>
+        </form>
+
+        <div class="designation-action-row mb-0">
+            <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#grantDepartmentChairModal" data-bs-toggle="modal" type="button">
+                <span class="material-symbols-outlined fs-5">add</span>
+                Designation
+            </button>
+        </div>
     </div>
 
     <section class="directory-card shadow-sm">
@@ -154,7 +193,9 @@
                     <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="small text-secondary mb-3">Choose a teacher from your college.</p>
+                    <p class="small text-secondary mb-3">
+                        Choose a teacher from your college{{ $selectedDepartmentId ? ' and selected department' : '' }}.
+                    </p>
                     <div class="designation-picker-list">
                         @forelse ($availableDepartmentChairTeachers as $teacher)
                             <form action="{{ route('admin-dean.teachers.department-chair.grant', $teacher) }}" class="designation-picker-form" method="POST">

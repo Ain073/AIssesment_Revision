@@ -89,6 +89,15 @@ class UserController extends BaseController
                 ]));
         }
 
+        if ($managedRoles->contains('department_chair') && $this->departmentHasChair((int) $validated['department_id'])) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(new MessageBag([
+                    'authorizations' => 'This department already has a Department Chair. Remove the current designation first.',
+                ]));
+        }
+
         $initialPassword = $accounts->initialPasswordFor($validated);
         $validated['password'] = $initialPassword;
 
@@ -194,6 +203,18 @@ class UserController extends BaseController
             ->values()
             ->all();
 
+        if (
+            in_array('department_chair', $managedRoles, true)
+            && $this->departmentHasChair((int) $validated['department_id'], $targetUser->id)
+        ) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(new MessageBag([
+                    'authorizations' => 'This department already has a Department Chair. Remove the current designation first.',
+                ]));
+        }
+
         DB::transaction(function () use ($targetUser, $validated, $actor, $scopedCollege, $accounts, $managedRoles) {
             $accounts->updateAccount($targetUser, $validated, $managedRoles);
 
@@ -265,5 +286,14 @@ class UserController extends BaseController
         }
 
         return null;
+    }
+
+    private function departmentHasChair(int $departmentId, ?int $exceptUserId = null): bool
+    {
+        return User::query()
+            ->when($exceptUserId, fn ($query) => $query->whereKeyNot($exceptUserId))
+            ->whereHas('roles', fn ($query) => $query->where('role_name', 'department_chair'))
+            ->whereHas('instructorProfile', fn ($query) => $query->where('department_id', $departmentId))
+            ->exists();
     }
 }

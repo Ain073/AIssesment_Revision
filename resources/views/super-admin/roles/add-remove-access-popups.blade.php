@@ -17,11 +17,12 @@
                                 <input name="user_id" type="hidden" value="{{ $user->id }}">
                                 <button class="designation-picker-card" type="submit">
                                     <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
-                                    <span class="designation-picker-info">
-                                        <span class="fw-bold d-block" style="color: var(--psu-navy);">{{ $user->displayName() }}</span>
-                                        <span class="small text-secondary d-block">{{ $user->email }}</span>
-                                        <span class="small text-secondary d-block">Teacher Account</span>
-                                    </span>
+                                        <span class="designation-picker-info">
+                                            <span class="fw-bold d-block" style="color: var(--psu-navy);">{{ $user->displayName() }}</span>
+                                            <span class="small text-secondary d-block">{{ $user->email }}</span>
+                                            <span class="small text-secondary d-block">{{ $user->instructorProfile?->department?->college?->college_name ?? 'No college' }}</span>
+                                            <span class="small text-secondary d-block">{{ $user->instructorProfile?->department?->dept_name ?? 'No department' }}</span>
+                                        </span>
                                     <span class="designation-picker-action" aria-hidden="true">
                                         <span class="material-symbols-outlined fs-5">add</span>
                                     </span>
@@ -68,6 +69,14 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold text-uppercase small">Status</label>
                                 <div class="form-control bg-light">{{ ucfirst($user->status) }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-uppercase small">College</label>
+                                <div class="form-control bg-light">{{ $user->instructorProfile?->department?->college?->college_name ?? 'Not assigned' }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-uppercase small">Department</label>
+                                <div class="form-control bg-light">{{ $user->instructorProfile?->department?->dept_name ?? 'Not assigned' }}</div>
                             </div>
                         </div>
                     </div>

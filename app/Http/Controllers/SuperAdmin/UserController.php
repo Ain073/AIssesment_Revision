@@ -159,6 +159,15 @@ class UserController extends Controller
                 ]));
         }
 
+        if ($managedRoles->contains('admin_dean') && $this->collegeHasDeanForDepartment((int) $validated['department_id'])) {
+            return redirect()
+                ->route('super-admin.users')
+                ->withInput()
+                ->withErrors(new MessageBag([
+                    'authorizations' => 'This college already has a Dean. Remove the current designation first.',
+                ]));
+        }
+
         $initialPassword = $accounts->initialPasswordFor($validated);
         $validated['password'] = $initialPassword;
 
@@ -261,6 +270,32 @@ class UserController extends Controller
             $managedRoles = $managedRoles->push('department_chair');
         }
 
+        if (
+            $validated['base_role'] === 'instructor'
+            && $managedRoles->contains('admin_dean')
+            && $this->collegeHasDeanForDepartment((int) $validated['department_id'], $user->id)
+        ) {
+            return redirect()
+                ->route('super-admin.users')
+                ->withInput()
+                ->withErrors(new MessageBag([
+                    'authorizations' => 'This college already has a Dean. Remove the current designation first.',
+                ]));
+        }
+
+        if (
+            $validated['base_role'] === 'instructor'
+            && $managedRoles->contains('department_chair')
+            && $this->departmentHasChair((int) $validated['department_id'], $user->id)
+        ) {
+            return redirect()
+                ->route('super-admin.users')
+                ->withInput()
+                ->withErrors(new MessageBag([
+                    'authorizations' => 'This department already has a Department Chair. Remove the current designation first.',
+                ]));
+        }
+
         DB::transaction(function () use ($user, $validated, $accounts, $managedRoles) {
             $accounts->updateAccount($user, $validated, $managedRoles->all());
 
@@ -304,4 +339,32 @@ class UserController extends Controller
             ->with('status', 'User account deleted successfully.');
     }
 
+    private function collegeHasDeanForDepartment(int $departmentId, ?int $exceptUserId = null): bool
+    {
+        $collegeId = Department::query()
+            ->where('department_id', $departmentId)
+            ->value('college_id');
+
+        if (! $collegeId) {
+            return false;
+        }
+
+        return User::query()
+            ->when($exceptUserId, fn ($query) => $query->whereKeyNot($exceptUserId))
+            ->whereHas('roles', fn ($query) => $query->where('role_name', 'admin_dean'))
+            ->whereHas(
+                'instructorProfile.department',
+                fn ($query) => $query->where('college_id', $collegeId)
+            )
+            ->exists();
+    }
+
+    private function departmentHasChair(int $departmentId, ?int $exceptUserId = null): bool
+    {
+        return User::query()
+            ->when($exceptUserId, fn ($query) => $query->whereKeyNot($exceptUserId))
+            ->whereHas('roles', fn ($query) => $query->where('role_name', 'department_chair'))
+            ->whereHas('instructorProfile', fn ($query) => $query->where('department_id', $departmentId))
+            ->exists();
+    }
 }

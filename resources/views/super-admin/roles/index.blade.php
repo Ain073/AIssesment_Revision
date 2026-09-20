@@ -52,6 +52,7 @@
                                 <tr>
                                     <th>Teacher</th>
                                     <th>Email</th>
+                                    <th>College</th>
                                     <th>Status</th>
                                     <th class="text-end">Action</th>
                                 </tr>
@@ -69,6 +70,10 @@
                                             </div>
                                         </td>
                                         <td data-label="Email">{{ $user->email }}</td>
+                                        <td data-label="College">
+                                            <div class="fw-semibold">{{ $user->instructorProfile?->department?->college?->college_name ?? 'Not assigned' }}</div>
+                                            <div class="small text-secondary">{{ $user->instructorProfile?->department?->dept_name ?? 'No department' }}</div>
+                                        </td>
                                         <td data-label="Status">
                                             <span class="badge {{ $user->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">
                                                 {{ ucfirst($user->status) }}
@@ -83,7 +88,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="text-center py-5 mobile-empty-cell" colspan="4">
+                                        <td class="text-center py-5 mobile-empty-cell" colspan="5">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">supervisor_account</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">No Dean designation yet</h4>
                                             <p class="text-secondary mb-4">Assign a teacher account when you are ready to delegate dean-level access.</p>
