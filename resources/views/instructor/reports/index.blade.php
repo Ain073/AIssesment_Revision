@@ -38,7 +38,7 @@
 
         .instructor-report-filter {
             width: min(100%, 620px);
-            margin-left: auto;
+            margin-left: 0;
             margin-bottom: 1rem;
             padding: 1rem;
             border: 1px solid var(--psu-line);

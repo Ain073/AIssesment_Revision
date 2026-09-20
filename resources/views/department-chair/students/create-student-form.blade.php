@@ -11,13 +11,6 @@
             </div>
 
             <div class="modal-body">
-                <div class="student-create-mode" role="group" aria-label="Student account creation method">
-                    <button class="btn active" type="button" aria-current="true">
-                        <span class="material-symbols-outlined fs-5">person</span>
-                        Manual Entry
-                    </button>
-                </div>
-
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label fw-bold text-uppercase small" for="student_first_name">First Name</label>

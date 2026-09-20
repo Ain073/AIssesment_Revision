@@ -60,8 +60,8 @@
 
         .result-list {
             display: grid;
-            gap: 1rem;
-            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 1.15rem;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
         }
 
         .assessment-result-card {
@@ -86,7 +86,7 @@
         .result-card-title {
             color: var(--psu-navy);
             font-family: var(--psu-heading-font);
-            font-size: clamp(1.35rem, 2vw, 1.75rem);
+            font-size: clamp(1.3rem, 1.4vw, 1.65rem);
             font-weight: 800;
             line-height: 1.2;
             margin-bottom: 0.2rem;
@@ -149,6 +149,10 @@
             padding-top: 0.9rem;
         }
 
+        .result-card-actions .btn {
+            flex-shrink: 0;
+        }
+
         .result-release-note {
             color: #6b7689;
             font-size: 0.86rem;
@@ -164,6 +168,18 @@
             height: 58px;
             justify-content: center;
             width: 58px;
+        }
+
+        @media (max-width: 1399.98px) {
+            .result-list {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            .result-list {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
 
         @media (max-width: 767.98px) {
@@ -198,6 +214,10 @@
             .assessment-result-card {
                 min-height: 0;
                 padding: 1rem;
+            }
+
+            .result-list {
+                grid-template-columns: 1fr;
             }
 
             .result-card-top {
