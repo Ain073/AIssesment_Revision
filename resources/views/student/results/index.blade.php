@@ -59,94 +59,79 @@
         }
 
         .result-list {
-            display: grid;
-            gap: 1.15rem;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            --bs-gutter-x: 1.5rem;
+            --bs-gutter-y: 1.75rem;
         }
 
         .assessment-result-card {
             background: #fff;
-            border: 1px solid #d8e1f4;
+            border: 1px solid var(--psu-line);
             border-radius: 0.5rem;
             box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
             display: flex;
             flex-direction: column;
-            min-height: 245px;
-            padding: 1rem;
+            min-height: 100%;
+            overflow: hidden;
         }
 
-        .result-card-top,
-        .result-card-actions {
-            align-items: flex-start;
+        .result-card-header {
+            background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 100%);
+            color: #fff;
             display: flex;
-            gap: 0.75rem;
+            gap: 1rem;
             justify-content: space-between;
+            padding: 1rem 1.5rem;
         }
 
         .result-card-title {
-            color: var(--psu-navy);
+            color: #fff;
             font-family: var(--psu-heading-font);
-            font-size: clamp(1.3rem, 1.4vw, 1.65rem);
+            font-size: 1.5rem;
             font-weight: 800;
             line-height: 1.2;
-            margin-bottom: 0.2rem;
+            margin-bottom: 0.25rem;
             overflow-wrap: anywhere;
         }
 
         .result-card-code {
-            color: #5f6f87;
+            color: rgba(255, 255, 255, 0.68);
             font-size: 0.86rem;
             font-weight: 800;
-            letter-spacing: 0.03em;
-            margin-bottom: 0.35rem;
-            text-transform: uppercase;
+            margin-bottom: 0;
         }
 
-        .result-card-meta {
-            color: #66758b;
+        .result-card-body {
             display: flex;
-            flex-wrap: wrap;
-            font-size: 0.9rem;
-            gap: 0.4rem 0.6rem;
+            flex: 1;
+            flex-direction: column;
+            padding: 1.5rem;
         }
 
         .result-detail-list {
-            display: grid;
-            gap: 0.75rem 1rem;
-            grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
-            margin-top: 1rem;
-            padding-block: 0.3rem 0.85rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
         }
 
-        .result-detail-pill {
-            min-width: 0;
-        }
-
-        .result-detail-label {
-            color: #6b7689;
-            display: block;
-            font-size: 0.72rem;
+        .result-detail-badge {
+            background: #fff;
+            border: 1px solid #d8e1f4;
+            border-radius: 0.25rem;
+            color: #001a70;
+            display: inline-flex;
+            font-size: 0.86rem;
             font-weight: 800;
-            letter-spacing: 0.02em;
-            margin-bottom: 0.2rem;
-            text-transform: uppercase;
-        }
-
-        .result-detail-value {
-            color: var(--psu-navy);
-            display: block;
-            font-size: 0.98rem;
-            font-weight: 800;
-            line-height: 1.2;
-            overflow-wrap: anywhere;
+            line-height: 1;
+            padding: 0.38rem 0.55rem;
         }
 
         .result-card-actions {
             align-items: center;
-            border-top: 1px solid #e6edf8;
+            display: flex;
+            flex-wrap: wrap;
             gap: 0.75rem;
             margin-top: auto;
-            padding-top: 0.9rem;
         }
 
         .result-card-actions .btn {
@@ -155,8 +140,8 @@
 
         .result-release-note {
             color: #6b7689;
-            font-size: 0.86rem;
-            margin-bottom: 0;
+            font-size: 1rem;
+            margin-bottom: 1rem;
         }
 
         .empty-icon {
@@ -168,18 +153,6 @@
             height: 58px;
             justify-content: center;
             width: 58px;
-        }
-
-        @media (max-width: 1399.98px) {
-            .result-list {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-            }
-        }
-
-        @media (max-width: 991.98px) {
-            .result-list {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
         }
 
         @media (max-width: 767.98px) {
@@ -213,24 +186,19 @@
 
             .assessment-result-card {
                 min-height: 0;
+            }
+
+            .result-card-header {
+                align-items: flex-start;
                 padding: 1rem;
             }
 
-            .result-list {
-                grid-template-columns: 1fr;
-            }
-
-            .result-card-top {
-                align-items: flex-start;
-            }
-
-            .result-card-meta {
-                font-size: 0.9rem;
+            .result-card-body {
+                padding: 1rem;
             }
 
             .result-detail-list {
                 gap: 0.45rem;
-                grid-template-columns: repeat(3, minmax(0, 1fr));
             }
 
             .result-card-actions {
@@ -311,7 +279,7 @@
 
     <section class="results-panel">
         @if ($results->isNotEmpty())
-            <div class="result-list">
+            <div class="result-list row g-4">
                 @foreach ($results as $result)
                     @php
                         $assessment = $result['assessment'];
@@ -321,71 +289,66 @@
                         $scoreVisible = $result['score_visible'];
                         $canViewResult = $scoreVisible || $result['answer_visible'];
                     @endphp
-                    <article class="assessment-result-card">
-                        <div class="result-card-top">
-                            <div>
-                                <p class="result-card-code">{{ $assessment?->subject?->subject_code ?? $class?->subject?->subject_code ?? 'No subject' }}</p>
-                                <h3 class="result-card-title">{{ $assessment?->title ?? 'Untitled Assessment' }}</h3>
-                                <div class="result-card-meta">
-                                    <span>{{ $class?->class_name ?? 'Class removed' }}</span>
-                                    <span aria-hidden="true">|</span>
-                                    <span>{{ $class?->instructorProfile?->user?->displayName() ?? 'No instructor' }}</span>
+                    <div class="col-xl-6">
+                        <article class="assessment-result-card">
+                            <div class="result-card-header">
+                                <div>
+                                    <h3 class="result-card-title">{{ $assessment?->title ?? 'Untitled Assessment' }}</h3>
+                                    <p class="result-card-code">{{ $assessment?->subject?->subject_code ?? $class?->subject?->subject_code ?? 'No subject' }} - {{ $class?->class_name ?? 'Class removed' }}</p>
+                                </div>
+                                <div class="text-end flex-shrink-0">
+                                    @if (! $scoreVisible || ! $bestAttempt)
+                                        <span class="badge text-bg-light rounded-1 d-block">Hidden</span>
+                                    @elseif ($result['passed'])
+                                        <span class="badge text-bg-success rounded-1 d-block">Passed</span>
+                                    @else
+                                        <span class="badge text-bg-danger rounded-1 d-block">Failed</span>
+                                    @endif
                                 </div>
                             </div>
-                            <div class="text-end flex-shrink-0">
-                                @if (! $scoreVisible || ! $bestAttempt)
-                                    <span class="badge text-bg-secondary rounded-1 d-block">Hidden</span>
-                                @elseif ($result['passed'])
-                                    <span class="badge text-bg-success rounded-1 d-block">Passed</span>
-                                @else
-                                    <span class="badge text-bg-danger rounded-1 d-block">Failed</span>
-                                @endif
-                            </div>
-                        </div>
 
-                        <div class="result-detail-list">
-                            <div class="result-detail-pill">
-                                <span class="result-detail-label">Best Score</span>
-                                @if ($scoreVisible && $bestAttempt)
-                                    <span class="result-detail-value">{{ $bestAttempt['score_text'] }} / {{ $result['max_score_text'] }}</span>
-                                @else
-                                    <span class="result-detail-value text-secondary">Not released</span>
-                                @endif
-                            </div>
-                            <div class="result-detail-pill">
-                                <span class="result-detail-label">Attempts</span>
-                                <span class="result-detail-value">{{ $result['attempt_count'] }}</span>
-                            </div>
-                            <div class="result-detail-pill">
-                                <span class="result-detail-label">Submitted</span>
-                                @if ($bestAttempt && $bestAttempt['submitted_at'])
-                                    <span class="result-detail-value">{{ $bestAttempt['submitted_at']->format('M d, Y') }}</span>
-                                @else
-                                    <span class="result-detail-value text-secondary">-</span>
-                                @endif
-                            </div>
-                        </div>
+                            <div class="result-card-body">
+                                <div class="result-detail-list">
+                                    @if ($scoreVisible && $bestAttempt)
+                                        <span class="result-detail-badge">Best Score {{ $bestAttempt['score_text'] }} / {{ $result['max_score_text'] }}</span>
+                                    @else
+                                        <span class="result-detail-badge">Score Not Released</span>
+                                    @endif
+                                    <span class="result-detail-badge">{{ $result['attempt_count'] }} attempt{{ $result['attempt_count'] === 1 ? '' : 's' }}</span>
+                                    @if ($bestAttempt && $bestAttempt['submitted_at'])
+                                        <span class="result-detail-badge">Submitted {{ $bestAttempt['submitted_at']->format('M d, Y') }}</span>
+                                    @else
+                                        <span class="result-detail-badge">Submitted -</span>
+                                    @endif
+                                </div>
 
-                        <div class="result-card-actions">
-                            <p class="result-release-note">
-                                @if ($scoreVisible && $bestAttempt)
-                                    {{ $bestAttempt['warning_count'] }} warning{{ $bestAttempt['warning_count'] === 1 ? '' : 's' }} recorded
-                                @else
-                                    Results will appear when your instructor releases them.
-                                @endif
-                            </p>
-                            @if ($canViewResult && $publishAssessment)
-                                <a
-                                    class="btn btn-outline-primary d-inline-flex align-items-center gap-2"
-                                    href="{{ route('student.assessments.submitted', ['publishAssessment' => $publishAssessment, 'show_results' => 1]) }}"
-                                    data-no-ajax="true"
-                                >
-                                    <span class="material-symbols-outlined fs-5">visibility</span>
-                                    View Results
-                                </a>
-                            @endif
-                        </div>
-                    </article>
+                                <p class="text-secondary mb-3">
+                                    Instructor: {{ $class?->instructorProfile?->user?->displayName() ?? 'No instructor' }}
+                                </p>
+
+                                <p class="result-release-note">
+                                    @if ($scoreVisible && $bestAttempt)
+                                        {{ $bestAttempt['warning_count'] }} warning{{ $bestAttempt['warning_count'] === 1 ? '' : 's' }} recorded
+                                    @else
+                                        Results will appear when your instructor releases them.
+                                    @endif
+                                </p>
+
+                                <div class="result-card-actions">
+                                    @if ($canViewResult && $publishAssessment)
+                                        <a
+                                            class="btn btn-psu d-inline-flex align-items-center gap-2"
+                                            href="{{ route('student.assessments.submitted', ['publishAssessment' => $publishAssessment, 'show_results' => 1]) }}"
+                                            data-no-ajax="true"
+                                        >
+                                            <span class="material-symbols-outlined fs-5">visibility</span>
+                                            View Results
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        </article>
+                    </div>
                 @endforeach
             </div>
         @else
