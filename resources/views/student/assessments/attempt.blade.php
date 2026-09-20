@@ -501,7 +501,7 @@
                         </div>
                     </div>
 
-                    <div class="d-flex flex-column flex-sm-row justify-content-end gap-2">
+                    <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
                         <button class="btn btn-psu px-4 d-inline-flex align-items-center justify-content-center gap-2" id="confirmSubmitAssessment" type="button">
                             <span class="material-symbols-outlined fs-5">check_circle</span>
                             Submit Assessment

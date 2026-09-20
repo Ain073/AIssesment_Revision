@@ -46,7 +46,7 @@
 
         .instructor-report-filter-form {
             display: grid;
-            grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
+            grid-template-columns: minmax(220px, 1fr) auto;
             gap: 0.75rem;
             align-items: end;
         }
@@ -238,21 +238,6 @@
             <input data-report-type-input name="type" type="hidden" value="{{ $activeReportType }}">
 
             <div class="instructor-report-filter-field">
-                <label class="instructor-report-filter-label" for="instructorReportSubjectFilter">
-                    <span class="material-symbols-outlined fs-6">menu_book</span>
-                    Subject
-                </label>
-                <select class="form-select" id="instructorReportSubjectFilter" name="subject" onchange="this.form.submit()" @disabled($subjects->isEmpty())>
-                    <option value="">All subjects</option>
-                    @foreach ($subjects as $subject)
-                        <option value="{{ $subject->subject_id }}" @selected($selectedSubjectId === (int) $subject->subject_id)>
-                            {{ $subject->subject_code }} - {{ $subject->subject_name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="instructor-report-filter-field">
                 <label class="instructor-report-filter-label" for="instructorReportClassFilter">
                     <span class="material-symbols-outlined fs-6">school</span>
                     Class
@@ -270,7 +255,7 @@
                 </select>
             </div>
 
-            @if ($selectedSubjectId || $selectedClassId)
+            @if ($selectedClassId)
                 <div class="instructor-report-filter-actions">
                     <a
                         aria-label="Clear report filters"

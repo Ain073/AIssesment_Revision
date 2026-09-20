@@ -21,32 +21,14 @@ class ReportController extends BaseController
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $completedAssessments = $this->completedReportableAssessments($instructorProfile);
-        $subjects = $completedAssessments
-            ->map(fn ($publishAssessment) => $publishAssessment->assessment?->subject ?: $publishAssessment->class?->subject)
-            ->filter(fn ($subject): bool => (bool) $subject?->subject_id)
-            ->unique('subject_id')
-            ->sortBy(fn ($subject): string => Str::lower(trim($subject->subject_code.' '.$subject->subject_name)))
-            ->values();
         $classes = $completedAssessments
             ->map(fn ($publishAssessment) => $publishAssessment->class)
             ->filter(fn ($class): bool => (bool) $class?->class_id)
             ->unique('class_id')
             ->sortBy(fn ($class): string => Str::lower(trim($class->displayName().' '.$class->class_name)))
             ->values();
-        $subjectId = $request->integer('subject');
-        $selectedSubjectId = $subjects->contains('subject_id', $subjectId) ? $subjectId : null;
         $classId = $request->integer('class');
         $selectedClassId = $classes->contains('class_id', $classId) ? $classId : null;
-
-        if ($selectedSubjectId) {
-            $completedAssessments = $completedAssessments
-                ->filter(function ($publishAssessment) use ($selectedSubjectId): bool {
-                    $subject = $publishAssessment->assessment?->subject ?: $publishAssessment->class?->subject;
-
-                    return (int) $subject?->subject_id === $selectedSubjectId;
-                })
-                ->values();
-        }
 
         if ($selectedClassId) {
             $completedAssessments = $completedAssessments
@@ -62,9 +44,7 @@ class ReportController extends BaseController
             'formativeAssessments' => $formativeAssessments,
             'summativeAssessments' => $summativeAssessments,
             'reportCategories' => $this->reportCategories(),
-            'subjects' => $subjects,
             'classes' => $classes,
-            'selectedSubjectId' => $selectedSubjectId,
             'selectedClassId' => $selectedClassId,
         ]);
     }
