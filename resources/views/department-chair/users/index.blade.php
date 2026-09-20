@@ -77,6 +77,36 @@
         .teacher-subtext {
             white-space: normal;
         }
+
+        .users-directory-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .users-directory-toolbar .table-switch-tabs {
+            margin-bottom: 0;
+        }
+
+        .users-directory-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        @media (max-width: 767.98px) {
+            .users-directory-toolbar {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .users-directory-actions {
+                justify-content: flex-end;
+            }
+        }
     </style>
 @endpush
 
@@ -115,28 +145,30 @@
     @endif
 
     <div data-table-tabs-root data-table-tabs-param="tab" data-table-tabs-default="{{ $activeUserTab }}">
-        <div class="table-switch-tabs mb-4" role="tablist" aria-label="User directory views">
-            <button class="btn btn-outline-primary table-switch-button {{ $activeUserTab === 'teachers' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="teachers" type="button" role="tab" aria-pressed="{{ $activeUserTab === 'teachers' ? 'true' : 'false' }}">
-                <span class="material-symbols-outlined fs-5">badge</span>
-                Teachers
-                <span class="table-switch-count">{{ $teachers->count() }}</span>
-            </button>
-            <button class="btn btn-outline-primary table-switch-button {{ $activeUserTab === 'students' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="students" type="button" role="tab" aria-pressed="{{ $activeUserTab === 'students' ? 'true' : 'false' }}">
-                <span class="material-symbols-outlined fs-5">groups</span>
-                Students
-                <span class="table-switch-count">{{ $students->count() }}</span>
-            </button>
-        </div>
+        <div class="users-directory-toolbar">
+            <div class="table-switch-tabs" role="tablist" aria-label="User directory views">
+                <button class="btn btn-outline-primary table-switch-button {{ $activeUserTab === 'teachers' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="teachers" type="button" role="tab" aria-pressed="{{ $activeUserTab === 'teachers' ? 'true' : 'false' }}">
+                    <span class="material-symbols-outlined fs-5">badge</span>
+                    Teachers
+                    <span class="table-switch-count">{{ $teachers->count() }}</span>
+                </button>
+                <button class="btn btn-outline-primary table-switch-button {{ $activeUserTab === 'students' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="students" type="button" role="tab" aria-pressed="{{ $activeUserTab === 'students' ? 'true' : 'false' }}">
+                    <span class="material-symbols-outlined fs-5">groups</span>
+                    Students
+                    <span class="table-switch-count">{{ $students->count() }}</span>
+                </button>
+            </div>
 
-        <div class="d-flex flex-wrap justify-content-end gap-2 mb-4">
-            <button class="btn btn-psu d-inline-flex align-items-center gap-2 {{ $activeUserTab === 'teachers' ? '' : 'd-none' }}" data-table-tab-panel="teachers" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button" @disabled(! $scopedDepartment) @if ($activeUserTab !== 'teachers') hidden @endif>
-                <span class="material-symbols-outlined fs-5">add</span>
-                Instructor
-            </button>
-            <button class="btn btn-psu d-inline-flex align-items-center gap-2 {{ $activeUserTab === 'students' ? '' : 'd-none' }}" data-table-tab-panel="students" data-bs-target="#createStudentModal" data-bs-toggle="modal" type="button" @disabled($scopedPrograms->isEmpty()) @if ($activeUserTab !== 'students') hidden @endif>
-                <span class="material-symbols-outlined fs-5">add</span>
-                Student
-            </button>
+            <div class="users-directory-actions">
+                <button class="btn btn-psu d-inline-flex align-items-center gap-2 {{ $activeUserTab === 'teachers' ? '' : 'd-none' }}" data-table-tab-panel="teachers" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button" @disabled(! $scopedDepartment) @if ($activeUserTab !== 'teachers') hidden @endif>
+                    <span class="material-symbols-outlined fs-5">add</span>
+                    Instructor
+                </button>
+                <button class="btn btn-psu d-inline-flex align-items-center gap-2 {{ $activeUserTab === 'students' ? '' : 'd-none' }}" data-table-tab-panel="students" data-bs-target="#createStudentModal" data-bs-toggle="modal" type="button" @disabled($scopedPrograms->isEmpty()) @if ($activeUserTab !== 'students') hidden @endif>
+                    <span class="material-symbols-outlined fs-5">add</span>
+                    Student
+                </button>
+            </div>
         </div>
 
         <section class="directory-card shadow-sm {{ $activeUserTab === 'teachers' ? '' : 'd-none' }}" data-table-tab-panel="teachers" role="tabpanel" @if ($activeUserTab !== 'teachers') hidden @endif>

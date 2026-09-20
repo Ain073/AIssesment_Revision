@@ -37,6 +37,8 @@
         }
 
         .instructor-report-filter {
+            width: min(100%, 620px);
+            margin-left: auto;
             margin-bottom: 1rem;
             padding: 1rem;
             border: 1px solid var(--psu-line);
@@ -147,6 +149,11 @@
         }
 
         @media (max-width: 767.98px) {
+            .instructor-report-filter {
+                width: 100%;
+                margin-left: 0;
+            }
+
             .instructor-report-filter-form {
                 grid-template-columns: minmax(0, 1fr);
             }

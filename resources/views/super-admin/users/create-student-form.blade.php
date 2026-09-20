@@ -15,10 +15,6 @@
                         <span class="material-symbols-outlined fs-5">person</span>
                         Manual Entry
                     </button>
-                    <button class="btn" data-bs-target="#importStudentsModal" data-bs-toggle="modal" type="button">
-                        <span class="material-symbols-outlined fs-5">upload_file</span>
-                        Import File
-                    </button>
                 </div>
 
                 <div class="row g-3">
