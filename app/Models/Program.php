@@ -15,7 +15,6 @@ class Program extends Model
     protected $primaryKey = 'program_id';
 
     protected $fillable = [
-        'college_id',
         'department_id',
         'program_name',
         'is_active',
@@ -25,11 +24,6 @@ class Program extends Model
         'is_active' => 'boolean',
     ];
 
-    public function college(): BelongsTo
-    {
-        return $this->belongsTo(College::class, 'college_id', 'college_id');
-    }
-
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class, 'department_id', 'department_id');
@@ -38,6 +32,11 @@ class Program extends Model
     public function studentProfiles(): HasMany
     {
         return $this->hasMany(StudentProfile::class, 'program_id', 'program_id');
+    }
+
+    public function classes(): HasMany
+    {
+        return $this->hasMany(AcademicClass::class, 'program_id', 'program_id');
     }
 
     public function subjects(): HasMany

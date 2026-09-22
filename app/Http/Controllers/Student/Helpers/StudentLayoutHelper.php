@@ -27,10 +27,10 @@ trait StudentLayoutHelper
     {
         return [
             'user' => $user,
-            'portalSubtitle' => 'Student',
+            'portalSubtitle' => $user->portalSubtitle(),
             'profileInitials' => strtoupper(Str::substr($user->first_name ?? $user->displayName(), 0, 1)),
             'profileName' => $user->displayName(),
-            'profileMeta' => 'Student Account',
+            'profileMeta' => $user->portalProfileMeta(),
             'navItems' => $this->navItems($activeNav),
             'showTopbarSearch' => true,
             'topbarSearchPlaceholder' => 'Search classes or assessments...',

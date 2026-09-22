@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Instructor\Helpers;
 
 use App\Models\AcademicClass;
+use App\Models\PassingRateSetting;
 use App\Models\PublishAssessment;
 use App\Models\InstructorProfile;
 use App\Models\Report;
@@ -162,7 +163,9 @@ trait InstructorReportHelper
                     ->max();
             })
             ->values();
-        $passingScore = $maxScore > 0 ? $maxScore * 0.75 : 0;
+        $passingScore = $maxScore > 0
+            ? PassingRateSetting::passingScore($maxScore, $publishAssessment->class?->year_level)
+            : 0;
 
         return [
             'students_count' => $publishAssessment->class?->enrolledStudentsCount() ?? 0,
@@ -234,7 +237,7 @@ trait InstructorReportHelper
             return [$student->student_profile_id => [
                 'has_results' => true,
                 'percentage' => $percentage,
-                'passed' => $percentage >= 75,
+                'passed' => $percentage >= PassingRateSetting::rateForYearLevel($class->year_level),
             ]];
         });
     }

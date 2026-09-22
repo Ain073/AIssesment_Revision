@@ -45,6 +45,7 @@ class PublishAssessment extends Model
         'shuffle_choices',
         'warning_limit',
         'display_mode',
+        'question_time_limit_seconds',
     ];
 
     protected function casts(): array
@@ -61,6 +62,7 @@ class PublishAssessment extends Model
             'screenshot_protection' => 'boolean',
             'shuffle_items' => 'boolean',
             'shuffle_choices' => 'boolean',
+            'question_time_limit_seconds' => 'integer',
         ];
     }
 

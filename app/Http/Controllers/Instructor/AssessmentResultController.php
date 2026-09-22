@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Instructor;
 
+use App\Models\PassingRateSetting;
 use App\Models\PublishAssessment;
 use App\Models\StudentProfile;
 use App\Models\Submission;
@@ -34,7 +35,7 @@ class AssessmentResultController extends BaseController
 
         $items = $ownedPublishAssessment->assessment?->items ?? collect();
         $maxScore = (float) $items->sum(fn ($item) => (float) $item->points);
-        $passingScore = $maxScore * 0.75;
+        $passingScore = PassingRateSetting::passingScore($maxScore, $ownedPublishAssessment->class?->year_level);
         $submissions = $ownedPublishAssessment->submissions;
         $students = $ownedPublishAssessment->class?->enrolledStudentsCollection(['user']) ?? collect();
         $submissionStudents = $submissions

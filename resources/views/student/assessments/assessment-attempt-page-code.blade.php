@@ -6,6 +6,8 @@
     const detectTabSwitch = Boolean(@json($publishAssessment->detect_tab_switch));
     const screenshotProtection = Boolean(@json($publishAssessment->screenshot_protection));
     const oneQuestionMode = Boolean(@json($isOneQuestionMode));
+    const questionTimeLimitSeconds = Number(@json($questionTimeLimitSeconds));
+    const questionTimerEnabled = oneQuestionMode && questionTimeLimitSeconds > 0;
     const securityEventUrl = @json(route('student.assessments.security-events.store', $publishAssessment));
     const dueAt = @json($dueIso);
     const countdownTarget = dueAt ? new Date(dueAt).getTime() : Date.now() + (60 * 60 * 1000);
@@ -14,6 +16,10 @@
     let isAutoSubmitting = false;
     let isFinalSubmitting = false;
     let isSubmitConfirmOpen = false;
+    let questionTimerInterval = null;
+    let currentQuestionSecondsLeft = questionTimeLimitSeconds;
+    const questionSecondsLeft = new Map(cards.map((card, index) => [index, questionTimeLimitSeconds]));
+    const expiredQuestions = new Set();
     const lastSecurityIncidentByType = new Map();
     const textAnswerSelector = 'input[type="text"], textarea';
     const isTextAnswerField = (element = document.activeElement) => Boolean(element?.matches?.(textAnswerSelector));
@@ -86,11 +92,134 @@
         );
     };
 
+    const formatQuestionTime = (seconds) => {
+        const safeSeconds = Math.max(0, Number(seconds) || 0);
+        const minutes = Math.floor(safeSeconds / 60);
+        const remainingSeconds = safeSeconds % 60;
+
+        return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+    };
+
+    const updateQuestionTimerDisplay = () => {
+        const questionTimer = document.getElementById('questionTimeRemaining');
+        const questionTimerBar = document.getElementById('questionTimeBar');
+
+        if (questionTimer) {
+            questionTimer.textContent = expiredQuestions.has(currentIndex)
+                ? 'Time is up'
+                : formatQuestionTime(currentQuestionSecondsLeft);
+        }
+
+        if (questionTimerBar) {
+            const percent = questionTimeLimitSeconds > 0
+                ? Math.max(0, Math.min((currentQuestionSecondsLeft / questionTimeLimitSeconds) * 100, 100))
+                : 0;
+
+            questionTimerBar.style.width = `${percent}%`;
+            questionTimerBar.classList.toggle('warning', percent <= 50 && percent > 20);
+            questionTimerBar.classList.toggle('danger', percent <= 20);
+        }
+    };
+
+    const stopQuestionTimer = () => {
+        if (questionTimerInterval) {
+            window.clearInterval(questionTimerInterval);
+            questionTimerInterval = null;
+        }
+    };
+
+    const saveCurrentQuestionTime = () => {
+        if (! questionTimerEnabled || expiredQuestions.has(currentIndex)) {
+            return;
+        }
+
+        questionSecondsLeft.set(currentIndex, Math.max(0, currentQuestionSecondsLeft));
+    };
+
+    const lockQuestion = (index) => {
+        expiredQuestions.add(index);
+
+        const card = cards[index];
+        card?.classList.add('question-expired');
+        card?.querySelectorAll('textarea, input[type="text"]').forEach((field) => {
+            field.readOnly = true;
+        });
+        card?.querySelectorAll('input[type="radio"]').forEach((field) => {
+            field.tabIndex = -1;
+        });
+
+        jumps[index]?.classList.add('expired');
+    };
+
+    const submitAfterQuestionTimer = () => {
+        if (isFinalSubmitting) {
+            return;
+        }
+
+        isFinalSubmitting = true;
+
+        const questionTimer = document.getElementById('questionTimeRemaining');
+
+        if (questionTimer) {
+            questionTimer.textContent = 'Submitting...';
+        }
+
+        document.getElementById('assessmentAttemptForm')?.submit();
+    };
+
+    const handleQuestionTimerExpired = () => {
+        stopQuestionTimer();
+        questionSecondsLeft.set(currentIndex, 0);
+        lockQuestion(currentIndex);
+        updateProgress();
+        updateQuestionTimerDisplay();
+
+        if (currentIndex < cards.length - 1) {
+            window.setTimeout(() => setCurrentQuestion(currentIndex + 1), 700);
+        } else {
+            window.setTimeout(submitAfterQuestionTimer, 900);
+        }
+    };
+
+    const startQuestionTimer = () => {
+        stopQuestionTimer();
+
+        if (! questionTimerEnabled || cards.length === 0) {
+            return;
+        }
+
+        if (expiredQuestions.has(currentIndex)) {
+            currentQuestionSecondsLeft = 0;
+            updateQuestionTimerDisplay();
+            return;
+        }
+
+        currentQuestionSecondsLeft = Number(questionSecondsLeft.get(currentIndex) ?? questionTimeLimitSeconds);
+        updateQuestionTimerDisplay();
+
+        if (currentQuestionSecondsLeft <= 0) {
+            handleQuestionTimerExpired();
+            return;
+        }
+
+        questionTimerInterval = window.setInterval(() => {
+            currentQuestionSecondsLeft -= 1;
+            questionSecondsLeft.set(currentIndex, currentQuestionSecondsLeft);
+            updateQuestionTimerDisplay();
+
+            if (currentQuestionSecondsLeft <= 0) {
+                handleQuestionTimerExpired();
+            }
+        }, 1000);
+    };
+
     const setCurrentQuestion = (index) => {
         if (! oneQuestionMode || cards.length === 0) {
             return;
         }
 
+        saveCurrentQuestionTime();
+        stopQuestionTimer();
         currentIndex = Math.min(Math.max(index, 0), Math.max(cards.length - 1, 0));
         document.getElementById('currentQuestion').textContent = String(currentIndex + 1);
 
@@ -107,6 +236,7 @@
         document.getElementById('nextQuestion').innerHTML = currentIndex === cards.length - 1
             ? 'Last Question <span class="material-symbols-outlined">checklist</span>'
             : 'Next Question <span class="material-symbols-outlined">chevron_right</span>';
+        startQuestionTimer();
     };
 
     const answeredQuestions = () => {

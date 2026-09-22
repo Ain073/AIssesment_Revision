@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\UsesPublicId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -22,6 +23,8 @@ class AcademicClass extends Model
     protected $primaryKey = 'class_id';
 
     protected $fillable = [
+        'program_id',
+        'semester_id',
         'year_level',
         'section_name',
         'school_year',
@@ -47,6 +50,16 @@ class AcademicClass extends Model
     public function yearLevelLabel(): string
     {
         return YearLevel::label($this->year_level);
+    }
+
+    public function program(): BelongsTo
+    {
+        return $this->belongsTo(Program::class, 'program_id', 'program_id');
+    }
+
+    public function semester(): BelongsTo
+    {
+        return $this->belongsTo(Semester::class, 'semester_id', 'semester_id');
     }
 
     public function contextDetail(): HasOne

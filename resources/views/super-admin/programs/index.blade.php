@@ -12,6 +12,7 @@
         ['label' => 'Colleges & Departments', 'icon' => 'account_balance', 'href' => route('super-admin.colleges'), 'active' => false],
         ['label' => 'Programs', 'icon' => 'school', 'href' => route('super-admin.programs'), 'active' => true],
         ['label' => 'Dean Designation', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active' => false],
+        ['label' => 'Passing Rates', 'icon' => 'percent', 'href' => route('super-admin.passing-rates'), 'active' => false],
         ['label' => 'Users', 'icon' => 'person_search', 'href' => route('super-admin.users'), 'active' => false],
     ];
 @endphp

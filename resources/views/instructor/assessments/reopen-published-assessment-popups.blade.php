@@ -1,3 +1,7 @@
+@php
+    $minimumReopenTime = now()->format('Y-m-d\TH:i');
+@endphp
+
 @foreach ($publishedAssessments as $publishAssessment)
     @if (($publishAssessment->display_status ?? null) === 'completed')
         @php
@@ -25,12 +29,12 @@
                         @endif
                         <div class="mb-3">
                             <label class="form-label fw-bold text-uppercase small" for="reopen_available_at_{{ $publishAssessment->publish_assessment_id }}">Available At</label>
-                            <input class="form-control" id="reopen_available_at_{{ $publishAssessment->publish_assessment_id }}" name="available_at" type="datetime-local" value="{{ now()->format('Y-m-d\TH:i') }}">
+                            <input class="form-control" id="reopen_available_at_{{ $publishAssessment->publish_assessment_id }}" min="{{ $minimumReopenTime }}" name="available_at" type="datetime-local" value="{{ $minimumReopenTime }}">
                             <div class="form-text">Leave as current time if students should access it immediately.</div>
                         </div>
                         <div>
                             <label class="form-label fw-bold text-uppercase small" for="reopen_due_at_{{ $publishAssessment->publish_assessment_id }}">New Due Date</label>
-                            <input class="form-control" id="reopen_due_at_{{ $publishAssessment->publish_assessment_id }}" name="due_at" required type="datetime-local" value="{{ now()->addDay()->format('Y-m-d\TH:i') }}">
+                            <input class="form-control" id="reopen_due_at_{{ $publishAssessment->publish_assessment_id }}" min="{{ $minimumReopenTime }}" name="due_at" required type="datetime-local" value="{{ now()->addDay()->format('Y-m-d\TH:i') }}">
                         </div>
                     </div>
                     <div class="modal-footer">

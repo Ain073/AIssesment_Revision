@@ -54,7 +54,7 @@ class ReportController extends BaseController
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
 
-        abort_unless($instructorProfile, 403, 'Instructor profile is required before preparing reports.');
+        abort_unless($instructorProfile, 403, 'Instructor profile is required before generating reports.');
 
         $validated = $request->validate([
             'report_type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
@@ -101,7 +101,7 @@ class ReportController extends BaseController
                 'type' => $validated['report_type'],
                 'publish_assessment_keys' => $publishAssessmentKeys->all(),
             ])
-            ->with('status', 'Selected completed assessments are ready for report review.');
+            ->with('status', 'Report is ready for review.');
     }
 
     public function showReportSheet(Request $request, ReportAiService $aiService): View

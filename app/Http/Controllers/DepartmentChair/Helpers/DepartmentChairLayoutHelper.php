@@ -11,10 +11,10 @@ trait DepartmentChairLayoutHelper
     {
         return [
             'user' => $user,
-            'portalSubtitle' => 'Department Chair',
+            'portalSubtitle' => $user->portalSubtitle(),
             'profileInitials' => strtoupper(Str::substr($user->first_name ?? $user->displayName(), 0, 1)),
             'profileName' => $user->displayName(),
-            'profileMeta' => 'Department Chair Account',
+            'profileMeta' => $user->portalProfileMeta(),
             'navItems' => $this->navItems($user),
             'showTopbarSearch' => true,
             'topbarSearchPlaceholder' => 'Search records...',
@@ -43,6 +43,7 @@ trait DepartmentChairLayoutHelper
 
         if ($user->hasRole('department_chair')) {
             $items = array_merge($items, [
+                ['label' => 'Programs', 'icon' => 'school', 'href' => route('department-chair.programs'), 'active_route' => 'department-chair.programs*'],
                 ['label' => 'Users', 'icon' => 'groups', 'href' => route('department-chair.teachers'), 'active_route' => ['department-chair.teachers', 'department-chair.students*']],
                 ['label' => 'Subjects', 'icon' => 'menu_book', 'href' => route('department-chair.subjects'), 'active_route' => 'department-chair.subjects*'],
             ]);

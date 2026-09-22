@@ -98,12 +98,15 @@ class SearchController extends Controller
         }
 
         return Subject::query()
-            ->with(['semester', 'program'])
-            ->whereHas('program', fn ($programQuery) => $programQuery->where('department_id', $departmentId))
+            ->with(['semester', 'department', 'program.department'])
+            ->where(function ($scope) use ($departmentId): void {
+                $scope->where('department_id', $departmentId)
+                    ->orWhereHas('program', fn ($programQuery) => $programQuery->where('department_id', $departmentId));
+            })
             ->where(function ($search) use ($query): void {
                 $search->where('subject_code', 'like', "%{$query}%")
                     ->orWhere('subject_name', 'like', "%{$query}%")
-                    ->orWhereHas('program', fn ($programQuery) => $programQuery->where('program_name', 'like', "%{$query}%"));
+                    ->orWhereHas('department', fn ($departmentQuery) => $departmentQuery->where('dept_name', 'like', "%{$query}%"));
             })
             ->orderBy('year_level')
             ->limit(5)
@@ -111,13 +114,9 @@ class SearchController extends Controller
             ->toBase()
             ->map(fn (Subject $subject): array => [
                 'title' => $subject->subject_code,
-                'subtitle' => trim($subject->subject_name.' - '.($subject->program?->program_name ?? 'Program'), ' -'),
+                'subtitle' => trim($subject->subject_name.' - '.($subject->department?->dept_name ?? $subject->program?->department?->dept_name ?? 'Department'), ' -'),
                 'type' => 'Subject',
-                'url' => route('department-chair.subjects', array_filter([
-                    'program' => $subject->program?->public_id,
-                    'year_level' => $subject->year_level,
-                    'semester' => $subject->semester?->semester_name,
-                ])),
+                'url' => route('department-chair.subjects'),
             ]);
     }
 

@@ -78,14 +78,26 @@ class ClassController extends BaseController
         abort_unless($instructorProfile, 403, 'Instructor profile is required before creating classes.');
 
         $validated = $request->validate([
-            'subject_id' => ['required', 'integer', Rule::in($this->activeSubjectIds()->all())],
+            'program_id' => ['required', 'integer', Rule::in($this->activeClassPrograms($instructorProfile)->pluck('program_id')->all())],
+            'semester_id' => ['required', 'integer', Rule::exists('semesters', 'semester_id')],
+            'subject_id' => ['required', 'integer', Rule::in($this->activeSubjectIds($instructorProfile)->all())],
             'year_level' => ['required', 'integer', Rule::in([1, 2, 3, 4])],
             'section_name' => ['required', 'string', 'max:255'],
-            'school_year' => ['required', 'string', 'max:20', 'regex:/^\d{4}-\d{4}$/'],
+            'school_year_start' => ['required', 'digits:2'],
+            'school_year_end' => ['required', 'digits:2'],
+        ], [
+            'school_year_start.digits' => 'Enter the first 2 digits of the academic year.',
+            'school_year_end.digits' => 'Enter the last 2 digits of the academic year.',
         ]);
+
+        $validated['section_name'] = $this->normalizeSectionName($validated['section_name']);
+        $validated['school_year'] = $this->schoolYearFromParts($validated['school_year_start'], $validated['school_year_end']);
+        $this->ensureClassIsUnique($instructorProfile->instructor_profile_id, $validated);
 
         $class = DB::transaction(function () use ($instructorProfile, $validated): AcademicClass {
             $class = AcademicClass::query()->create([
+                'program_id' => $validated['program_id'],
+                'semester_id' => $validated['semester_id'],
                 'year_level' => $validated['year_level'],
                 'section_name' => $validated['section_name'],
                 'school_year' => $validated['school_year'],
@@ -102,6 +114,8 @@ class ClassController extends BaseController
             'actor_id' => $user->id,
             'class_id' => $class->class_id,
             'instructor_profile_id' => $instructorProfile->instructor_profile_id,
+            'program_id' => $class->program_id,
+            'semester_id' => $class->semester_id,
             'subject_id' => $class->subject_id,
             'year_level' => $class->year_level,
             'section_name' => $class->section_name,
@@ -124,21 +138,39 @@ class ClassController extends BaseController
         $ownedClass = $this->ownedClass($class, $instructorProfile);
         $this->ensureActiveClass($ownedClass);
 
-        $allowedSubjectIds = $this->activeSubjectIds()
+        $allowedSubjectIds = $this->activeSubjectIds($instructorProfile)
             ->push($ownedClass->subject_id)
+            ->filter()
+            ->unique()
+            ->all();
+        $allowedProgramIds = $this->activeClassPrograms($instructorProfile)
+            ->pluck('program_id')
+            ->push($ownedClass->program_id)
             ->filter()
             ->unique()
             ->all();
 
         $validated = $request->validate([
+            'program_id' => ['required', 'integer', Rule::in($allowedProgramIds)],
+            'semester_id' => ['required', 'integer', Rule::exists('semesters', 'semester_id')],
             'subject_id' => ['required', 'integer', Rule::in($allowedSubjectIds)],
             'year_level' => ['required', 'integer', Rule::in([1, 2, 3, 4])],
             'section_name' => ['required', 'string', 'max:255'],
-            'school_year' => ['required', 'string', 'max:20', 'regex:/^\d{4}-\d{4}$/'],
+            'school_year_start' => ['required', 'digits:2'],
+            'school_year_end' => ['required', 'digits:2'],
+        ], [
+            'school_year_start.digits' => 'Enter the first 2 digits of the academic year.',
+            'school_year_end.digits' => 'Enter the last 2 digits of the academic year.',
         ]);
+
+        $validated['section_name'] = $this->normalizeSectionName($validated['section_name']);
+        $validated['school_year'] = $this->schoolYearFromParts($validated['school_year_start'], $validated['school_year_end']);
+        $this->ensureClassIsUnique($instructorProfile->instructor_profile_id, $validated, $ownedClass->class_id);
 
         DB::transaction(function () use ($ownedClass, $instructorProfile, $validated): void {
             $ownedClass->update([
+                'program_id' => $validated['program_id'],
+                'semester_id' => $validated['semester_id'],
                 'year_level' => $validated['year_level'],
                 'section_name' => $validated['section_name'],
                 'school_year' => $validated['school_year'],
@@ -153,6 +185,8 @@ class ClassController extends BaseController
             'actor_id' => $user->id,
             'class_id' => $ownedClass->class_id,
             'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
+            'program_id' => $ownedClass->program_id,
+            'semester_id' => $ownedClass->semester_id,
             'subject_id' => $ownedClass->subject_id,
             'year_level' => $ownedClass->year_level,
             'section_name' => $ownedClass->section_name,
@@ -260,6 +294,8 @@ class ClassController extends BaseController
 
         $ownedClass->load([
             'subject',
+            'program.department.college',
+            'semester',
             'instructorProfile.department.college',
             'students.user.roles',
             'students.program.department.college',
@@ -304,6 +340,49 @@ class ClassController extends BaseController
             'publishAssessments' => $ownedClass->publishAssessments,
             'studentPerformance' => $this->studentPerformanceByStudent($ownedClass),
             'importPreview' => $this->pullImportPreview($request, $ownedClass),
+        ]);
+    }
+
+    private function normalizeSectionName(string $sectionName): string
+    {
+        return strtoupper(preg_replace('/\s+/', ' ', trim($sectionName)));
+    }
+
+    private function schoolYearFromParts(string $startYearShort, string $endYearShort): string
+    {
+        $startYear = 2000 + (int) $startYearShort;
+        $endYear = 2000 + (int) $endYearShort;
+
+        if ($endYear !== $startYear + 1) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'school_year_end' => 'The academic year must be consecutive, such as 2026-2027.',
+            ]);
+        }
+
+        return sprintf('%d-%d', $startYear, $endYear);
+    }
+
+    private function ensureClassIsUnique(int $instructorProfileId, array $classData, ?int $exceptClassId = null): void
+    {
+        $duplicateExists = AcademicClass::query()
+            ->when($exceptClassId, fn ($query) => $query->where('class_id', '!=', $exceptClassId))
+            ->where('year_level', $classData['year_level'])
+            ->where('program_id', $classData['program_id'])
+            ->where('semester_id', $classData['semester_id'])
+            ->where('school_year', $classData['school_year'])
+            ->whereRaw('LOWER(TRIM(section_name)) = ?', [strtolower($classData['section_name'])])
+            ->whereHas('contextDetail', function ($query) use ($instructorProfileId, $classData): void {
+                $query->where('instructor_id', $instructorProfileId)
+                    ->where('subject_id', $classData['subject_id']);
+            })
+            ->exists();
+
+        if (! $duplicateExists) {
+            return;
+        }
+
+        throw \Illuminate\Validation\ValidationException::withMessages([
+            'section_name' => 'This class already exists for the selected subject, section, and academic year.',
         ]);
     }
 

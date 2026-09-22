@@ -269,10 +269,10 @@ SVG;
     private function layoutData(User $user): array
     {
         return [
-            'portalSubtitle' => $this->portalSubtitle($user),
+            'portalSubtitle' => $user->portalSubtitle(),
             'profileInitials' => strtoupper(Str::substr($user->first_name ?? $user->displayName(), 0, 1)),
             'profileName' => $user->displayName(),
-            'profileMeta' => $this->profileMeta($user),
+            'profileMeta' => $user->portalProfileMeta(),
             'navItems' => $this->navItems($user),
             'showTopbarSearch' => false,
         ];
@@ -406,49 +406,4 @@ SVG;
         ];
     }
 
-    private function portalSubtitle(User $user): string
-    {
-        if ($user->hasRole('super_admin')) {
-            return 'Admin Panel';
-        }
-
-        if ($user->hasRole('admin_dean')) {
-            return 'Dean';
-        }
-
-        if ($user->hasRole('department_chair')) {
-            return 'Department Chair';
-        }
-
-        if ($user->hasRole('instructor')) {
-            return 'Instructor';
-        }
-
-        return 'Student';
-    }
-
-    private function profileMeta(User $user): string
-    {
-        if ($user->hasRole('super_admin')) {
-            return 'Admin Account';
-        }
-
-        return $this->roleLabel($user).' Account';
-    }
-
-    private function roleLabel(User $user): string
-    {
-        $labels = [
-            'super_admin' => 'Admin',
-            'admin_dean' => 'Dean',
-            'department_chair' => 'Department Chair',
-            'instructor' => 'Instructor',
-            'student' => 'Student',
-        ];
-
-        return $user->roles
-            ->pluck('role_name')
-            ->map(fn (string $role) => $labels[$role] ?? Str::headline($role))
-            ->join(', ');
-    }
 }

@@ -31,8 +31,8 @@
                             <div class="fw-bold">{{ $program->student_profiles_count }}</div>
                         </div>
                         <div class="col-md-6">
-                            <div class="program-detail-label mb-1">Subjects</div>
-                            <div class="fw-bold">{{ $program->subjects_count }}</div>
+                            <div class="program-detail-label mb-1">Classes</div>
+                            <div class="fw-bold">{{ $program->classes_count }}</div>
                         </div>
                     </div>
                 </div>

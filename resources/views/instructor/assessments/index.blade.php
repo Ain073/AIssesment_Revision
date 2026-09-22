@@ -24,6 +24,10 @@
             gap: 0.5rem;
         }
 
+        .assessment-filter-control {
+            max-width: min(420px, 100%);
+        }
+
         .empty-icon {
             width: 56px;
             height: 56px;
@@ -38,6 +42,21 @@
 @endpush
 
 @section('content')
+    @php
+        $draftSubjectOptions = $assessments
+            ->pluck('subject')
+            ->filter()
+            ->unique('subject_id')
+            ->sortBy('subject_code')
+            ->values();
+        $publishedClassOptions = $publishedAssessments
+            ->map(fn ($publishAssessment) => $publishAssessment->classDetail?->class)
+            ->filter()
+            ->unique('class_id')
+            ->sortBy(fn ($class) => $class->class_name)
+            ->values();
+    @endphp
+
     @if (session('status'))
         <div class="alert alert-success">{{ session('status') }}</div>
     @endif
@@ -53,7 +72,7 @@
         </a>
     </div>
 
-    <div data-table-tabs-root data-table-tabs-param="tab" data-table-tabs-default="{{ $activeAssessmentTab }}">
+    <div data-table-tabs-root data-table-tabs-param="tab" data-table-tabs-default="{{ $activeAssessmentTab }}" data-assessment-filter-root>
         <div class="table-switch-tabs assessment-switch-tabs">
             <button class="btn btn-outline-primary assessment-tab-button table-switch-button {{ $activeAssessmentTab === 'draft' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="draft" type="button" aria-pressed="{{ $activeAssessmentTab === 'draft' ? 'true' : 'false' }}">
                 <span class="material-symbols-outlined fs-5">inventory_2</span>
@@ -67,11 +86,33 @@
             </button>
         </div>
 
+        <div class="assessment-filter-bar d-flex flex-wrap align-items-end gap-3 mb-4">
+            <div class="assessment-filter-control flex-grow-1">
+                <label class="form-label small fw-bold text-uppercase mb-1" data-assessment-filter-label for="draftAssessmentFilter">Filter by Subject</label>
+                <select class="form-select {{ $activeAssessmentTab === 'draft' ? '' : 'd-none' }}" id="draftAssessmentFilter" data-assessment-filter-select="draft">
+                    <option value="">All Subjects</option>
+                    @foreach ($draftSubjectOptions as $subject)
+                        <option value="{{ $subject->subject_id }}">
+                            {{ $subject->subject_code }} - {{ $subject->subject_name }}
+                        </option>
+                    @endforeach
+                </select>
+                <select class="form-select {{ $activeAssessmentTab === 'published' ? '' : 'd-none' }}" id="publishedAssessmentFilter" data-assessment-filter-select="published">
+                    <option value="">All Classes</option>
+                    @foreach ($publishedClassOptions as $class)
+                        <option value="{{ $class->class_id }}">
+                            {{ $class->class_name }}{{ $class->school_year ? ' - AY '.$class->school_year : '' }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
         <section class="{{ $activeAssessmentTab === 'draft' ? '' : 'd-none' }}" data-table-tab-panel="draft" @if ($activeAssessmentTab !== 'draft') hidden @endif>
             @if ($assessments->isNotEmpty())
                 <div class="row g-4">
                     @foreach ($assessments as $assessment)
-                        <div class="col-xl-6">
+                        <div class="col-xl-6" data-assessment-filter-card data-subject-id="{{ $assessment->subject_id }}">
                             <section class="assessment-card h-100" id="assessmentCard{{ $assessment->assessment_id }}">
                                 <div class="directory-header px-4 py-3 d-flex justify-content-between gap-3">
                                     <div>
@@ -111,6 +152,9 @@
                         </div>
                     @endforeach
                 </div>
+                <div class="alert alert-info d-none mt-4" data-assessment-filter-empty="draft">
+                    No draft assessments match the selected subject.
+                </div>
             @else
                 <section class="directory-card p-5 text-center">
                     <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">assignment</span></div>
@@ -131,7 +175,7 @@
                             $publishedAssessment = $publishAssessment->assessment;
                             $publishedClass = $publishAssessment->classDetail?->class;
                         @endphp
-                        <div class="col-xl-6">
+                        <div class="col-xl-6" data-assessment-filter-card data-class-id="{{ $publishedClass?->class_id }}">
                             <section class="assessment-card h-100" id="publishedAssessmentCard{{ $publishAssessment->publish_assessment_id }}">
                                 <div class="directory-header px-4 py-3 d-flex justify-content-between gap-3">
                                     <div>
@@ -215,6 +259,9 @@
                             </section>
                         </div>
                     @endforeach
+                </div>
+                <div class="alert alert-info d-none mt-4" data-assessment-filter-empty="published">
+                    No published assessments match the selected class.
                 </div>
             @else
                 <section class="directory-card p-5 text-center">

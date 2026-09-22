@@ -12,7 +12,7 @@
                         <div>
                             <div class="dashboard-list-title">{{ $row['program']->program_name }}</div>
                             <div class="dashboard-list-meta">
-                                {{ $row['students_count'] }} students &middot; {{ $row['subjects_count'] }} subjects
+                                {{ $row['students_count'] }} students &middot; {{ $row['classes_count'] }} classes
                             </div>
                         </div>
                         <span class="badge {{ $row['program']->is_active ? 'text-bg-success' : 'text-bg-secondary' }} rounded-1">

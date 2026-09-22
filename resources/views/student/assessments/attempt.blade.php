@@ -50,6 +50,30 @@
             font-weight: 700;
         }
 
+        .question-timer-track {
+            width: min(170px, 100%);
+            height: 0.45rem;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #dbe4ff;
+        }
+
+        .question-timer-fill {
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            background: var(--psu-navy);
+            transition: width 0.3s linear, background-color 0.2s ease;
+        }
+
+        .question-timer-fill.warning {
+            background: #ffc107;
+        }
+
+        .question-timer-fill.danger {
+            background: #dc3545;
+        }
+
         .monitoring-badge {
             display: inline-flex;
             align-items: center;
@@ -113,9 +137,38 @@
             border-color: var(--psu-navy-2);
         }
 
+        .question-jump.expired {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+
         .question-card {
             padding: 1.5rem;
             scroll-margin-top: 5.5rem;
+        }
+
+        .question-card.question-expired {
+            border-color: #f3b8bf;
+            background: #fff8f8;
+        }
+
+        .question-expired-note {
+            display: none;
+            border-left: 4px solid #dc3545;
+            border-radius: 0.5rem;
+            background: #fff1f2;
+            color: #842029;
+            padding: 0.75rem 0.9rem;
+            font-weight: 700;
+        }
+
+        .question-card.question-expired .question-expired-note {
+            display: block;
+        }
+
+        .question-card.question-expired .option-label {
+            pointer-events: none;
+            opacity: 0.78;
         }
 
         .question-card .form-control {
@@ -435,6 +488,7 @@
     @php
         $itemCount = $items->count();
         $isOneQuestionMode = $publishAssessment->display_mode === \App\Models\PublishAssessment::DISPLAY_ONE_QUESTION;
+        $questionTimeLimitSeconds = $isOneQuestionMode ? (int) ($publishAssessment->question_time_limit_seconds ?? 0) : 0;
         $dueIso = $publishAssessment->due_at?->toIso8601String();
         $enabledSecurities = collect([
             ['enabled' => $publishAssessment->prevent_copy_paste, 'icon' => 'content_paste_off', 'label' => 'No copy / paste'],
@@ -531,6 +585,15 @@
                     <span class="stat-value" id="currentQuestion">{{ $isOneQuestionMode ? 1 : $itemCount }}</span>
                     <span class="stat-sub">/ {{ $itemCount }}</span>
                 </div>
+                @if ($questionTimeLimitSeconds > 0)
+                    <div class="small fw-bold text-danger mt-1">
+                        <span>Question Time:</span>
+                        <span id="questionTimeRemaining">--</span>
+                    </div>
+                    <div class="question-timer-track mt-2" aria-hidden="true">
+                        <div class="question-timer-fill" id="questionTimeBar"></div>
+                    </div>
+                @endif
             </div>
 
             <div class="col-6 col-md-3 col-lg-3">
@@ -588,6 +651,10 @@
         <div class="d-grid gap-4 {{ $publishAssessment->prevent_copy_paste ? 'no-select' : '' }} {{ $isOneQuestionMode ? 'one-question-mode' : '' }}" data-copy-protected>
             @foreach ($items as $item)
                 <article class="question-card {{ $isOneQuestionMode && $loop->first ? 'active-question' : '' }}" id="questionCard{{ $loop->iteration }}" data-question-card data-question-index="{{ $loop->index }}">
+                    <div class="question-expired-note mb-3">
+                        Time is up for this question. Your saved answer is locked.
+                    </div>
+
                     <div class="mb-3 d-flex flex-wrap gap-2">
                         <span class="badge rounded-pill px-3 py-2" style="background: var(--psu-navy);">Question {{ $loop->iteration }}</span>
                         <span class="badge bg-light text-primary border rounded-pill px-3 py-2">{{ ucfirst(str_replace('_', ' ', $item->item_type)) }}</span>

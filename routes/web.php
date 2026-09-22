@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordSetupController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\DepartmentChair\DashboardController as DepartmentChairDashboardController;
+use App\Http\Controllers\DepartmentChair\ProgramController as DepartmentChairProgramController;
 use App\Http\Controllers\DepartmentChair\ReportController as DepartmentChairReportController;
 use App\Http\Controllers\DepartmentChair\StudentController as DepartmentChairStudentController;
 use App\Http\Controllers\DepartmentChair\SubjectController as DepartmentChairSubjectController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\Student\DashboardController as StudentDashboardControll
 use App\Http\Controllers\Student\ResultController as StudentResultController;
 use App\Http\Controllers\SuperAdmin\CollegeDepartmentController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
+use App\Http\Controllers\SuperAdmin\PassingRateController;
 use App\Http\Controllers\SuperAdmin\ProgramController;
 use App\Http\Controllers\SuperAdmin\RoleController;
 use App\Http\Controllers\SuperAdmin\UserController;
@@ -83,6 +85,8 @@ Route::middleware(['super_admin', 'password_changed', 'no_cache'])
         Route::get('/roles', [RoleController::class, 'index'])->name('roles');
         Route::post('/designation/grant', [RoleController::class, 'grant'])->name('roles.grant');
         Route::delete('/designation/revoke', [RoleController::class, 'revoke'])->name('roles.revoke');
+        Route::get('/passing-rates', [PassingRateController::class, 'index'])->name('passing-rates');
+        Route::put('/passing-rates', [PassingRateController::class, 'update'])->name('passing-rates.update');
         Route::get('/users', [UserController::class, 'index'])->name('users');
         Route::get('/users/student-import-sample', [UserController::class, 'downloadStudentImportSample'])->name('users.students.import.sample');
         Route::post('/users/student-import-preview', [UserController::class, 'previewStudentImport'])->middleware('throttle:10,1')->name('users.students.import.preview');
@@ -159,6 +163,10 @@ Route::middleware(['department_chair', 'password_changed', 'no_cache'])
     ->name('department-chair.')
     ->group(function () {
         Route::get('/dashboard', [DepartmentChairDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/programs', [DepartmentChairProgramController::class, 'index'])->name('programs');
+        Route::post('/programs', [DepartmentChairProgramController::class, 'store'])->name('programs.store');
+        Route::put('/programs/{program}', [DepartmentChairProgramController::class, 'update'])->name('programs.update');
+        Route::delete('/programs/{program}', [DepartmentChairProgramController::class, 'destroy'])->name('programs.destroy');
         Route::get('/teachers', [DepartmentChairTeacherController::class, 'index'])->name('teachers');
         Route::get('/students', [DepartmentChairStudentController::class, 'index'])->name('students');
         Route::get('/subjects', [DepartmentChairSubjectController::class, 'index'])->name('subjects');

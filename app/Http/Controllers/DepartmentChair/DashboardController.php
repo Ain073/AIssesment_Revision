@@ -24,6 +24,7 @@ class DashboardController extends BaseController
         $scopedPrograms = $this->scopedPrograms($scopedDepartment);
         $scopedProgramIds = $scopedPrograms->pluck('program_id');
         $teachingSummary = $this->teachingSummary($user);
+        $reportCounts = $this->finalizedReportCounts($scopedDepartmentId);
         $teacherQuery = User::query()
             ->whereHas('roles', fn ($query) => $query->where('role_name', 'instructor'))
             ->when(
@@ -58,14 +59,27 @@ class DashboardController extends BaseController
                 ],
                 [
                     'label' => 'Subjects',
-                    'value' => $scopedProgramIds->isNotEmpty()
-                        ? Subject::query()->whereIn('program_id', $scopedProgramIds)->count()
+                    'value' => $scopedDepartmentId
+                        ? Subject::query()
+                            ->where(function ($query) use ($scopedDepartmentId, $scopedProgramIds): void {
+                                $query->where('department_id', $scopedDepartmentId);
+
+                                if ($scopedProgramIds->isNotEmpty()) {
+                                    $query->orWhereIn('program_id', $scopedProgramIds);
+                                }
+                            })
+                            ->count()
                         : 0,
                     'icon' => 'menu_book',
                 ],
                 [
-                    'label' => 'Reports',
-                    'value' => $this->finalizedReportsCount($scopedDepartmentId),
+                    'label' => 'Formative Reports',
+                    'value' => $reportCounts[Report::TYPE_FORMATIVE] ?? 0,
+                    'icon' => 'summarize',
+                ],
+                [
+                    'label' => 'Summative Reports',
+                    'value' => $reportCounts[Report::TYPE_SUMMATIVE] ?? 0,
                     'icon' => 'summarize',
                 ],
             ],
@@ -92,18 +106,13 @@ class DashboardController extends BaseController
     private function programRows(Collection $programs): Collection
     {
         $programIds = $programs->pluck('program_id');
-        $subjectCounts = $programIds->isNotEmpty()
-            ? Subject::query()
-                ->whereIn('program_id', $programIds)
-                ->select('program_id', DB::raw('count(*) as subjects_count'))
-                ->groupBy('program_id')
-                ->pluck('subjects_count', 'program_id')
-            : collect();
-
         return $programs->map(fn ($program): array => [
             'program' => $program,
             'students_count' => $program->student_profiles_count,
-            'subjects_count' => (int) ($subjectCounts[$program->program_id] ?? 0),
+            'classes_count' => AcademicClass::query()
+                ->where('program_id', $program->program_id)
+                ->whereNull('archived_at')
+                ->count(),
         ]);
     }
 
@@ -176,15 +185,20 @@ class DashboardController extends BaseController
         ];
     }
 
-    private function finalizedReportsCount(?int $departmentId): int
+    private function finalizedReportCounts(?int $departmentId): Collection
     {
         if (! $departmentId) {
-            return 0;
+            return collect([
+                Report::TYPE_FORMATIVE => 0,
+                Report::TYPE_SUMMATIVE => 0,
+            ]);
         }
 
         return Report::query()
             ->where('report_status', Report::STATUS_FINALIZED)
             ->whereHas('publishAssessment.assessment.instructorProfile', fn ($query) => $query->where('department_id', $departmentId))
-            ->count();
+            ->select('report_type', DB::raw('count(*) as reports_count'))
+            ->groupBy('report_type')
+            ->pluck('reports_count', 'report_type');
     }
 }

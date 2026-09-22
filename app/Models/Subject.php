@@ -16,6 +16,7 @@ class Subject extends Model
     protected $primaryKey = 'subject_id';
 
     protected $fillable = [
+        'department_id',
         'program_id',
         'semester_id',
         'subject_code',
@@ -32,6 +33,11 @@ class Subject extends Model
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class, 'program_id', 'program_id');
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'department_id', 'department_id');
     }
 
     public function semester(): BelongsTo

@@ -351,7 +351,7 @@
                                         {{ ucfirst($report->report_status) }}
                                     </span>
                                 @else
-                                    <span class="report-badge none">Not Prepared</span>
+                                    <span class="report-badge none">Not Generated</span>
                                 @endif
                             </label>
                         @endforeach
@@ -359,8 +359,8 @@
 
                     <div class="d-flex justify-content-end mt-4">
                         <button class="btn btn-psu d-inline-flex align-items-center gap-2" type="submit" data-report-submit="{{ $type }}" disabled>
-                            <span class="material-symbols-outlined fs-5">post_add</span>
-                            Prepare Selected
+                            <span class="material-symbols-outlined fs-5">summarize</span>
+                            Generate Report
                         </button>
                     </div>
                 @else

@@ -297,9 +297,18 @@ class AssessmentController extends BaseController
             ]);
         }
 
+        $currentDateTimeFloor = now()->startOfMinute()->toDateTimeString();
+
         $validated = $request->validate([
-            'available_at' => ['nullable', 'date', 'before:due_at'],
-            'due_at' => ['required', 'date', 'after:now'],
+            'available_at' => ['nullable', 'date', 'after_or_equal:'.$currentDateTimeFloor, 'before:due_at'],
+            'due_at' => ['required', 'date', 'after_or_equal:'.$currentDateTimeFloor],
+        ], [
+            'available_at.date' => 'Enter a valid available date and time.',
+            'available_at.after_or_equal' => 'The available date and time cannot be in the past.',
+            'available_at.before' => 'The available date and time must be earlier than the due date and time.',
+            'due_at.required' => 'Enter a new due date before republishing.',
+            'due_at.date' => 'Enter a valid due date and time.',
+            'due_at.after_or_equal' => 'The due date and time cannot be in the past.',
         ]);
 
         $previousDueAt = $ownedPublishAssessment->due_at;

@@ -8,12 +8,38 @@
         const selectedClassCount = document.getElementById('selectedClassCount');
         const classDropdownLabel = document.getElementById('classDropdownLabel');
         const publishForm = document.getElementById('publishAssessmentForm');
+        const availableAtInput = document.getElementById('available_at');
+        const dueAtInput = document.getElementById('due_at');
+        const displayModeSelect = document.getElementById('display_mode');
+        const questionTimeLimitField = document.getElementById('questionTimeLimitField');
+        const questionTimeLimitInput = document.getElementById('question_time_limit_seconds');
         const publishConfirmModalElement = document.getElementById('publishConfirmModal');
         const publishConfirmModal = publishConfirmModalElement
             ? new bootstrap.Modal(publishConfirmModalElement)
             : null;
         const confirmPublishButton = document.getElementById('confirmPublishAssessment');
         let publishConfirmed = false;
+
+        const syncDueDateMinimum = () => {
+            if (dueAtInput && availableAtInput?.value) {
+                dueAtInput.min = availableAtInput.value;
+            }
+        };
+
+        const syncQuestionTimeLimit = () => {
+            const isOneQuestionMode = displayModeSelect?.value === 'one_question';
+
+            questionTimeLimitField?.classList.toggle('d-none', ! isOneQuestionMode);
+
+            if (questionTimeLimitInput) {
+                questionTimeLimitInput.disabled = ! isOneQuestionMode;
+                questionTimeLimitInput.required = isOneQuestionMode;
+
+                if (isOneQuestionMode && ! questionTimeLimitInput.value) {
+                    questionTimeLimitInput.value = '10';
+                }
+            }
+        };
 
         const filterSelect = (select, subjectId) => {
             Array.from(select.options).forEach((option) => {
@@ -37,18 +63,19 @@
 
             classOptions.forEach((option) => {
                 const matchesSubject = option.dataset.subjectId === subjectId;
+                const hasStudents = option.dataset.hasStudents === '1';
                 const checkbox = option.querySelector('.class-checkbox');
 
                 option.classList.toggle('d-none', ! matchesSubject);
 
                 if (checkbox) {
-                    checkbox.disabled = ! matchesSubject;
+                    checkbox.disabled = ! matchesSubject || ! hasStudents;
 
-                    if (! matchesSubject) {
+                    if (! matchesSubject || ! hasStudents) {
                         checkbox.checked = false;
                     }
 
-                    if (matchesSubject && checkbox.checked) {
+                    if (matchesSubject && hasStudents && checkbox.checked) {
                         selectedCount++;
                         selectedNames.push(checkbox.dataset.className);
                     }
@@ -86,8 +113,12 @@
         classCheckboxes.forEach((checkbox) => {
             checkbox.addEventListener('change', () => syncClassOptions(subjectSelect.value));
         });
+        availableAtInput?.addEventListener('change', syncDueDateMinimum);
+        displayModeSelect?.addEventListener('change', syncQuestionTimeLimit);
 
         publishForm?.addEventListener('submit', (event) => {
+            syncDueDateMinimum();
+
             if (publishConfirmed) {
                 return;
             }
@@ -114,5 +145,7 @@
         });
 
         syncSubjectChoices();
+        syncDueDateMinimum();
+        syncQuestionTimeLimit();
     })();
 </script>

@@ -198,6 +198,12 @@
                 @if ($class->school_year)
                     <span class="mx-1">|</span> AY {{ $class->school_year }}
                 @endif
+                @if ($class->semester)
+                    <span class="mx-1">|</span> {{ $class->semester->semester_name }}
+                @endif
+                @if ($class->program || $class->subject?->program)
+                    <span class="mx-1">|</span> {{ $class->program?->program_name ?? $class->subject?->program?->program_name }}
+                @endif
                 @if ($class->archived_at)
                     <span class="badge text-bg-secondary rounded-1 ms-2">Archived</span>
                 @endif
@@ -243,6 +249,14 @@
                             <p class="small text-secondary mb-1">Subject</p>
                             <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $class->subject?->subject_code ?? 'Not assigned' }}</p>
                             <p class="text-secondary mb-0">{{ $class->subject?->subject_name ?? 'No subject selected yet' }}</p>
+                        </div>
+                        <div>
+                            <p class="small text-secondary mb-1">Program</p>
+                            <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $class->program?->program_name ?? $class->subject?->program?->program_name ?? 'Not assigned' }}</p>
+                        </div>
+                        <div>
+                            <p class="small text-secondary mb-1">Semester</p>
+                            <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $class->semester?->semester_name ?? 'Not assigned' }}</p>
                         </div>
                         <div>
                             <p class="small text-secondary mb-1">Department</p>

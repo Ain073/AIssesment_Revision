@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\PassingRateSetting;
 use App\Models\PublishAssessment;
 use App\Models\Submission;
 use App\Support\AssessmentScoring;
@@ -185,7 +186,7 @@ class ReportAiService
             'items_count' => $items->count(),
             'max_score' => $maxScore,
             'mean_score' => $scores->isNotEmpty() ? round((float) $scores->avg(), 2) : 0,
-            'passing_rate' => $this->passingRate($scores, $maxScore),
+            'passing_rate' => $this->passingRate($scores, $maxScore, $publishAssessment->class?->year_level),
             'items' => $itemSummaries->values()->all(),
             'strongest_items' => $this->strongestItems($itemSummaries),
             'weakest_items' => $this->weakestItems($itemSummaries),
@@ -375,13 +376,13 @@ PROMPT;
             ->implode("\n");
     }
 
-    private function passingRate(Collection $scores, float $maxScore): float
+    private function passingRate(Collection $scores, float $maxScore, ?int $yearLevel): float
     {
         if ($scores->isEmpty() || $maxScore <= 0) {
             return 0;
         }
 
-        $passingScore = $maxScore * 0.75;
+        $passingScore = PassingRateSetting::passingScore($maxScore, $yearLevel);
 
         return round(($scores->filter(fn (float $score): bool => $score >= $passingScore)->count() / $scores->count()) * 100, 2);
     }

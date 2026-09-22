@@ -28,7 +28,9 @@ class PasswordResetController extends Controller
         ]);
 
         $email = Str::lower($validated['email']);
-        $user = User::query()->where('email', $email)->first();
+        $user = User::query()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
 
         if (! $user || $user->status !== 'active') {
             Log::notice('Password reset link requested for unavailable account.', [
@@ -44,7 +46,7 @@ class PasswordResetController extends Controller
         }
 
         try {
-            $status = Password::sendResetLink(['email' => $email]);
+            $status = Password::sendResetLink(['email' => $user->email]);
         } catch (\Throwable $exception) {
             Log::warning('Password reset link email could not be sent.', [
                 'email' => $email,

@@ -67,7 +67,7 @@ class LoginController extends Controller
                 ->onlyInput('email');
         }
 
-        $remember = (bool) ($validated['remember'] ?? false);
+        $remember = $request->boolean('remember');
 
         if (! Auth::attempt($credentials, $remember)) {
             RateLimiter::hit($throttleKey, self::LOGIN_DECAY_SECONDS);

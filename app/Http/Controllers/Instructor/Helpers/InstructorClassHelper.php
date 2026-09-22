@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Instructor\Helpers;
 
 use App\Models\AcademicClass;
 use App\Models\InstructorProfile;
+use App\Models\Program;
+use App\Models\Semester;
 use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -16,7 +18,7 @@ trait InstructorClassHelper
         $instructorProfile = $this->instructorProfile($user);
         $baseClassesQuery = $instructorProfile
             ? $instructorProfile->classes()
-                ->with(['contextDetail', 'subject'])
+                ->with(['contextDetail', 'subject', 'program', 'semester'])
             : null;
         $activeClasses = $baseClassesQuery
             ? (clone $baseClassesQuery)
@@ -39,18 +41,34 @@ trait InstructorClassHelper
         $archivedClassesCount = $baseClassesQuery
             ? (clone $baseClassesQuery)->whereNotNull('classes.archived_at')->count()
             : 0;
-        $activeSubjectIds = $this->activeSubjectIds();
+        $activeSubjectIds = $this->activeSubjectIds($instructorProfile);
         $existingSubjectIds = $activeClasses->merge($archivedClasses)->pluck('subject_id')->filter();
         $activeSubjects = Subject::query()
+            ->with(['program'])
             ->whereIn('subject_id', $activeSubjectIds)
             ->orderBy('subject_code')
             ->orderBy('subject_name')
             ->get();
         $subjects = Subject::query()
+            ->with(['program'])
             ->whereIn('subject_id', $activeSubjectIds->merge($existingSubjectIds)->unique())
             ->orderBy('subject_code')
             ->orderBy('subject_name')
             ->get();
+        $activePrograms = $this->activeClassPrograms($instructorProfile);
+        $programs = Program::query()
+            ->with('department.college')
+            ->whereIn('program_id', $activePrograms->pluck('program_id')
+                ->merge($activeClasses->merge($archivedClasses)->pluck('program_id')->filter())
+                ->unique())
+            ->orderBy('program_name')
+            ->get();
+        $semesters = Semester::query()
+            ->orderBy('semester_id')
+            ->get();
+        $activeSemester = Semester::query()
+            ->where('is_active', true)
+            ->first(['semester_id', 'semester_name']);
 
         return [
             'instructorProfile' => $instructorProfile,
@@ -59,6 +77,11 @@ trait InstructorClassHelper
             'archivedClasses' => $archivedClasses,
             'subjects' => $subjects,
             'activeSubjects' => $activeSubjects,
+            'programs' => $programs,
+            'activePrograms' => $activePrograms,
+            'semesters' => $semesters,
+            'activeSemesterId' => $activeSemester?->semester_id,
+            'activeSemesterName' => $activeSemester?->semester_name,
             'activeClassTab' => $activeClassTab,
             'activeClassesCount' => $activeClassesCount,
             'archivedClassesCount' => $archivedClassesCount,
@@ -117,5 +140,19 @@ trait InstructorClassHelper
         throw ValidationException::withMessages([
             'class' => 'Archived classes are records only. Restore the class before making changes.',
         ]);
+    }
+
+    protected function activeClassPrograms(?InstructorProfile $instructorProfile): \Illuminate\Support\Collection
+    {
+        if (! $instructorProfile?->department_id) {
+            return collect();
+        }
+
+        return Program::query()
+            ->with('department.college')
+            ->where('department_id', $instructorProfile->department_id)
+            ->where('is_active', true)
+            ->orderBy('program_name')
+            ->get();
     }
 }

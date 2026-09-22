@@ -34,4 +34,8 @@ class Department extends Model
         return $this->hasMany(Program::class, 'department_id', 'department_id');
     }
 
+    public function subjects(): HasMany
+    {
+        return $this->hasMany(Subject::class, 'department_id', 'department_id');
+    }
 }

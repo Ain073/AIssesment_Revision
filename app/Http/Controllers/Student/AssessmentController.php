@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Models\PassingRateSetting;
 use App\Models\PublishAssessment;
 use App\Models\Submission;
 use App\Models\SubmissionSecurityEvent;
@@ -92,7 +93,7 @@ class AssessmentController extends BaseController
         $maxScore = (float) $items->sum(fn ($item): float => (float) $item->points);
         $score = $this->submissionScore($submission, $items);
         $percentage = $maxScore > 0 ? round(($score / $maxScore) * 100, 1) : 0;
-        $passingScore = $maxScore * 0.75;
+        $passingScore = PassingRateSetting::passingScore($maxScore, $publishAssessment->class?->year_level);
 
         return view('student.assessments.submitted', $this->sharedData($user, 'assessments') + [
             'publishAssessment' => $publishAssessment,

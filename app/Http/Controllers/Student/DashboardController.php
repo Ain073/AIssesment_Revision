@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Models\AcademicClass;
 use App\Models\AssessmentItem;
+use App\Models\PassingRateSetting;
 use App\Models\PublishAssessment;
 use App\Models\StudentProfile;
 use App\Models\Submission;
@@ -125,6 +126,7 @@ class DashboardController extends BaseController
                 'passed_count' => $releasedResults->where('passed', true)->count(),
                 'failed_count' => $releasedResults->where('passed', false)->count(),
                 'average_percentage' => $average,
+                'passing_percentage' => PassingRateSetting::rateForYearLevel($class->year_level),
             ];
         });
     }
@@ -134,7 +136,7 @@ class DashboardController extends BaseController
         $assessment = $publishAssessment->assessment;
         $items = $assessment?->items ?? collect();
         $maxScore = (float) $items->sum(fn (AssessmentItem $item) => (float) $item->points);
-        $passingScore = $maxScore * 0.75;
+        $passingScore = PassingRateSetting::passingScore($maxScore, $publishAssessment->class?->year_level);
         $submittedAttempts = $publishAssessment->submissions
             ->where('status', Submission::STATUS_SUBMITTED);
 

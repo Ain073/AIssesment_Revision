@@ -5,8 +5,8 @@ namespace App\Http\Controllers\DepartmentChair;
 use App\Models\Program;
 use App\Models\Semester;
 use App\Models\Subject;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -27,27 +27,23 @@ class SubjectController extends BaseController
 
     public function store(Request $request): RedirectResponse|JsonResponse
     {
-        $programs = $this->scopedPrograms($this->scopedDepartment($this->currentUser()));
-        $programIds = $programs->pluck('program_id')->all();
+        $department = $this->scopedDepartment($this->currentUser());
 
-        abort_if($programs->isEmpty(), 403, 'A department program is required before creating subjects.');
+        abort_if(! $department, 403, 'Department assignment is required before creating subjects.');
 
         $validated = $request->validate([
-            'program_id' => ['required', 'integer', Rule::in($programIds)],
             'subject_code' => ['required', 'string', 'max:255', Rule::unique('subjects', 'subject_code')],
             'subject_name' => ['required', 'string', 'max:255'],
-            'year_level' => ['required', Rule::in([1, 2, 3, 4])],
-            'semester' => ['required', Rule::in(Semester::names())],
             'is_active' => ['required', 'boolean'],
         ]);
-        $semester = $this->semesterByName($validated['semester']);
 
         $subject = Subject::create([
-            'program_id' => $validated['program_id'],
-            'semester_id' => $semester->semester_id,
+            'department_id' => $department->department_id,
+            'program_id' => null,
+            'semester_id' => null,
             'subject_code' => $validated['subject_code'],
             'subject_name' => $validated['subject_name'],
-            'year_level' => $validated['year_level'],
+            'year_level' => null,
             'is_active' => $validated['is_active'],
         ]);
 
@@ -55,23 +51,15 @@ class SubjectController extends BaseController
             'actor_id' => Auth::id(),
             'subject_id' => $subject->subject_id,
             'subject_code' => $subject->subject_code,
-            'program_id' => $validated['program_id'],
-            'year_level' => $validated['year_level'],
-            'semester' => $validated['semester'],
+            'department_id' => $department->department_id,
         ]);
 
-        $filters = [
-            'program' => Program::query()->whereKey($validated['program_id'])->value('public_id'),
-            'year_level' => $validated['year_level'],
-            'semester' => $validated['semester'],
-        ];
-
         if ($request->expectsJson()) {
-            return $this->subjectAjaxResponse($filters, 'Subject saved successfully.');
+            return $this->subjectAjaxResponse([], 'Subject saved successfully.');
         }
 
         return redirect()
-            ->route('department-chair.subjects', $filters)
+            ->route('department-chair.subjects')
             ->with('status', 'Subject saved successfully.');
     }
 
@@ -80,38 +68,33 @@ class SubjectController extends BaseController
         abort_unless($this->scopedDepartment($this->currentUser()), 403, 'Department assignment is required before managing subjects.');
 
         $validated = $request->validate([
-            'semester' => ['required', Rule::in(Semester::names())],
+            'semester_name' => ['required', 'string', Rule::in(Semester::names())],
         ]);
 
-        Semester::activate($validated['semester']);
+        $semester = Semester::activate($validated['semester_name']);
 
-        Log::info('Active academic semester changed by department chair.', [
+        Log::info('Active semester updated by department chair.', [
             'actor_id' => Auth::id(),
-            'semester_name' => $validated['semester'],
+            'semester_id' => $semester->semester_id,
+            'semester_name' => $semester->semester_name,
         ]);
-
-        $filters = [
-            'program' => $request->query('program'),
-            'year_level' => $request->query('year_level'),
-            'semester' => $validated['semester'],
-        ];
 
         if ($request->expectsJson()) {
-            return $this->subjectAjaxResponse($filters, "{$validated['semester']} is now the active semester.");
+            return $this->subjectAjaxResponse([], 'Active semester updated successfully.');
         }
 
         return redirect()
-            ->route('department-chair.subjects', array_filter($filters))
-            ->with('status', "{$validated['semester']} is now the active semester.");
+            ->route('department-chair.subjects')
+            ->with('status', 'Active semester updated successfully.');
     }
 
     public function update(Request $request, Subject $subject): RedirectResponse|JsonResponse
     {
-        $programs = $this->scopedPrograms($this->scopedDepartment($this->currentUser()));
-        $programIds = $programs->pluck('program_id')->all();
+        $department = $this->scopedDepartment($this->currentUser());
+        $programs = $this->scopedPrograms($department);
 
-        abort_if($programs->isEmpty(), 403, 'A department program is required before updating subjects.');
-        if (! in_array((int) $subject->program_id, $programIds, true)) {
+        abort_if(! $department, 403, 'Department assignment is required before updating subjects.');
+        if (! $this->subjectBelongsToDepartment($subject, $department->department_id, $programs)) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'This subject is no longer available under your department.',
@@ -127,7 +110,6 @@ class SubjectController extends BaseController
         }
 
         $validated = $request->validate([
-            'program_id' => ['required', 'integer', Rule::in($programIds)],
             'subject_code' => [
                 'required',
                 'string',
@@ -135,19 +117,17 @@ class SubjectController extends BaseController
                 Rule::unique('subjects', 'subject_code')->ignore($subject->subject_id, 'subject_id'),
             ],
             'subject_name' => ['required', 'string', 'max:255'],
-            'year_level' => ['required', Rule::in([1, 2, 3, 4])],
-            'semester' => ['required', Rule::in(Semester::names())],
             'is_active' => ['required', 'boolean'],
         ]);
-        $semester = $this->semesterByName($validated['semester']);
 
-        DB::transaction(function () use ($subject, $validated, $semester): void {
+        DB::transaction(function () use ($subject, $department, $validated): void {
             $subject->update([
-                'program_id' => $validated['program_id'],
-                'semester_id' => $semester->semester_id,
+                'department_id' => $department->department_id,
+                'program_id' => null,
+                'semester_id' => null,
                 'subject_code' => $validated['subject_code'],
                 'subject_name' => $validated['subject_name'],
-                'year_level' => $validated['year_level'],
+                'year_level' => null,
                 'is_active' => $validated['is_active'],
             ]);
         });
@@ -155,32 +135,26 @@ class SubjectController extends BaseController
         Log::info('Subject updated by department chair.', [
             'actor_id' => Auth::id(),
             'subject_id' => $subject->subject_id,
-            'program_id' => $validated['program_id'],
+            'department_id' => $department->department_id,
         ]);
 
-        $filters = [
-            'program' => Program::query()->whereKey($validated['program_id'])->value('public_id'),
-            'year_level' => $validated['year_level'],
-            'semester' => $validated['semester'],
-        ];
-
         if ($request->expectsJson()) {
-            return $this->subjectAjaxResponse($filters, 'Subject updated successfully.');
+            return $this->subjectAjaxResponse([], 'Subject updated successfully.');
         }
 
         return redirect()
-            ->route('department-chair.subjects', $filters)
+            ->route('department-chair.subjects')
             ->with('status', 'Subject updated successfully.');
     }
 
     public function destroy(Request $request, Subject $subject): RedirectResponse|JsonResponse
     {
-        $programs = $this->scopedPrograms($this->scopedDepartment($this->currentUser()));
-        $programIds = $programs->pluck('program_id')->all();
-        $subject->loadMissing('program');
+        $department = $this->scopedDepartment($this->currentUser());
+        $programs = $this->scopedPrograms($department);
+        $subject->loadMissing('program', 'department');
 
-        abort_if($programs->isEmpty(), 403, 'A department program is required before deleting subjects.');
-        if (! in_array((int) $subject->program_id, $programIds, true)) {
+        abort_if(! $department, 403, 'Department assignment is required before deleting subjects.');
+        if (! $this->subjectBelongsToDepartment($subject, $department->department_id, $programs)) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'This subject is no longer available under your department.',
@@ -195,16 +169,8 @@ class SubjectController extends BaseController
                 ->withErrors(['subject' => 'This subject is no longer available under your department.']);
         }
 
-        $program = $subject->program;
-        $programId = $subject->program_id;
-        $selectedProgram = $programs->firstWhere('public_id', $request->query('program'));
-        $yearLevel = $request->integer('year_level');
-        $semester = $request->query('semester');
-        $redirectFilters = [
-            'program' => $selectedProgram?->public_id ?? $program?->public_id,
-            'year_level' => in_array($yearLevel, [1, 2, 3, 4], true) ? $yearLevel : null,
-            'semester' => in_array($semester, Semester::names(), true) ? $semester : null,
-        ];
+        $legacyProgramId = $subject->program_id;
+        $redirectFilters = [];
 
         try {
             $subjectDeleted = DB::transaction(function () use ($subject): bool {
@@ -251,7 +217,8 @@ class SubjectController extends BaseController
         Log::info('Subject deleted by department chair.', [
             'actor_id' => Auth::id(),
             'subject_id' => $subject->subject_id,
-            'program_id' => $programId,
+            'legacy_program_id' => $legacyProgramId,
+            'department_id' => $department->department_id,
         ]);
 
         if ($request->expectsJson()) {
@@ -266,60 +233,48 @@ class SubjectController extends BaseController
     /**
      * @param  Collection<int, Program>  $programs
      */
-    private function subjects(Collection $programs, ?int $programId = null, ?int $yearLevel = null, ?string $semester = null)
+    private function subjects(?int $departmentId, Collection $programs): Collection
     {
         $programIds = $programs->pluck('program_id')->all();
 
-        return Subject::with(['program.department.college', 'semester'])
-            ->whereIn('program_id', $programIds)
-            ->when($programId, fn ($query) => $query->where('program_id', $programId))
-            ->when($yearLevel, fn ($query) => $query->where('year_level', $yearLevel))
-            ->when($semester, fn ($query) => $query->whereHas('semester', fn ($semesterQuery) => $semesterQuery->where('semester_name', $semester)))
-            ->orderBy(
-                Program::select('program_name')
-                    ->whereColumn('programs.program_id', 'subjects.program_id')
-            )
-            ->orderBy('year_level')
-            ->orderBy('semester_id')
+        if (! $departmentId && empty($programIds)) {
+            return collect();
+        }
+
+        return Subject::with(['department.college', 'program.department.college', 'semester'])
+            ->where(function ($query) use ($departmentId, $programIds): void {
+                if ($departmentId) {
+                    $query->where('department_id', $departmentId);
+                }
+
+                if (! empty($programIds)) {
+                    $method = $departmentId ? 'orWhereIn' : 'whereIn';
+                    $query->{$method}('program_id', $programIds);
+                }
+            })
             ->orderBy('subject_code')
             ->get();
-    }
-
-    private function semesterByName(string $semesterName): Semester
-    {
-        return Semester::query()->firstOrCreate(
-            ['semester_name' => $semesterName],
-            ['is_active' => false],
-        );
     }
 
     private function subjectViewData(array $filters = []): array
     {
         $department = $this->scopedDepartment($this->currentUser());
         $programs = $this->scopedPrograms($department);
-        $selectedProgram = $programs->firstWhere('public_id', $filters['program'] ?? null);
-        $selectedProgramId = $selectedProgram?->program_id;
-        $selectedYearLevel = filter_var($filters['year_level'] ?? null, FILTER_VALIDATE_INT) ?: null;
-        $selectedSemester = $filters['semester'] ?? null;
-
-        if (! in_array($selectedYearLevel, [1, 2, 3, 4], true)) {
-            $selectedYearLevel = null;
-        }
-
-        if (! in_array($selectedSemester, Semester::names(), true)) {
-            $selectedSemester = null;
-        }
+        $semesters = Semester::query()
+            ->orderBy('semester_id')
+            ->get();
+        $activeSemester = $semesters->firstWhere('is_active', true);
 
         return [
             'programs' => $programs,
-            'subjects' => $this->subjects($programs, $selectedProgramId, $selectedYearLevel, $selectedSemester),
-            'selectedProgramId' => $selectedProgramId,
-            'selectedProgramKey' => $selectedProgram?->public_id,
-            'selectedYearLevel' => $selectedYearLevel,
-            'selectedSemester' => $selectedSemester,
-            'hasSubjectFilters' => $selectedProgramId || $selectedYearLevel || $selectedSemester,
-            'activeSemester' => Semester::activeName(),
-            'semesters' => Semester::names(),
+            'subjects' => $this->subjects($department?->department_id, $programs),
+            'selectedProgramId' => null,
+            'selectedProgramKey' => null,
+            'selectedYearLevel' => null,
+            'selectedSemester' => null,
+            'hasSubjectFilters' => false,
+            'activeSemester' => $activeSemester,
+            'semesters' => $semesters,
             'scopedDepartment' => $department,
             'subjectRoutePrefix' => 'department-chair',
         ];
@@ -334,10 +289,20 @@ class SubjectController extends BaseController
             'message' => $message,
             'url' => route('department-chair.subjects', $filters),
             'fragments' => [
-                '[data-subjects-term-toolbar]' => view('department-chair.subjects.partials.term-toolbar', $data)->render(),
                 '[data-subjects-workspace]' => view('department-chair.subjects.partials.workspace', $data)->render(),
                 '[data-subjects-modals]' => view('department-chair.subjects.partials.modals', $data)->render(),
             ],
         ]);
+    }
+
+    private function subjectBelongsToDepartment(Subject $subject, int $departmentId, Collection $programs): bool
+    {
+        if ((int) $subject->department_id === $departmentId) {
+            return true;
+        }
+
+        return $programs
+            ->pluck('program_id')
+            ->contains((int) $subject->program_id);
     }
 }

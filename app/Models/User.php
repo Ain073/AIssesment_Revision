@@ -99,6 +99,37 @@ class User extends Authenticatable
         return $fullName !== '' ? $fullName : $this->name;
     }
 
+    public function portalRoleLabel(): string
+    {
+        if ($this->hasRole('super_admin')) {
+            return 'Admin';
+        }
+
+        if ($this->hasRole('admin_dean')) {
+            return 'Dean';
+        }
+
+        if ($this->hasRole('department_chair')) {
+            return 'Department Chair';
+        }
+
+        if ($this->hasRole('instructor')) {
+            return 'Instructor';
+        }
+
+        return 'Student';
+    }
+
+    public function portalSubtitle(): string
+    {
+        return $this->hasRole('super_admin') ? 'Admin Panel' : $this->portalRoleLabel();
+    }
+
+    public function portalProfileMeta(): string
+    {
+        return $this->portalRoleLabel().' Account';
+    }
+
     public function profilePhotoUrl(): ?string
     {
         if (! $this->profile_photo_path) {

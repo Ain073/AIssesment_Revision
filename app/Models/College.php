@@ -6,6 +6,7 @@ use App\Models\Concerns\UsesPublicId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class College extends Model
 {
@@ -22,8 +23,15 @@ class College extends Model
         return $this->hasMany(Department::class, 'college_id', 'college_id');
     }
 
-    public function programs(): HasMany
+    public function programs(): HasManyThrough
     {
-        return $this->hasMany(Program::class, 'college_id', 'college_id');
+        return $this->hasManyThrough(
+            Program::class,
+            Department::class,
+            'college_id',
+            'department_id',
+            'college_id',
+            'department_id'
+        );
     }
 }

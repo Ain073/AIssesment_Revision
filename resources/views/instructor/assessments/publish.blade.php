@@ -5,6 +5,7 @@
 
 @php
     $selectedClassKeys = collect(old('class_keys', []))->map(fn ($key) => (string) $key)->all();
+    $minimumScheduleTime = now()->format('Y-m-d\TH:i');
 @endphp
 
 @push('styles')
@@ -137,6 +138,15 @@
             margin-bottom: 0;
         }
 
+        .class-option.is-disabled {
+            background: #f4f6fb;
+            color: var(--psu-muted);
+        }
+
+        .class-option.is-disabled .fw-bold {
+            color: var(--psu-muted) !important;
+        }
+
         .class-empty {
             border: 1px dashed #b9c5e7;
             border-radius: 0.5rem;
@@ -178,10 +188,6 @@
 @section('content')
     @if (session('status'))
         <div class="alert alert-success">{{ session('status') }}</div>
-    @endif
-
-    @if ($errors->any())
-        <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
@@ -263,9 +269,14 @@
 
                                 <div class="dropdown-menu class-dropdown-menu shadow-sm" aria-labelledby="classDropdownButton">
                                     @foreach ($classes as $class)
+                                        @php
+                                            $studentCount = (int) ($class->students_count ?? $class->enrolledStudentsCount());
+                                            $hasStudents = $studentCount > 0;
+                                        @endphp
                                         <label
-                                            class="class-option"
+                                            class="class-option {{ $hasStudents ? '' : 'is-disabled' }}"
                                             data-subject-id="{{ $class->subject_id }}"
+                                            data-has-students="{{ $hasStudents ? '1' : '0' }}"
                                         >
                                             <input
                                                 class="form-check-input mt-1 class-checkbox"
@@ -274,10 +285,16 @@
                                                 value="{{ $class->public_id }}"
                                                 data-class-name="{{ $class->class_name }}"
                                                 @checked(in_array((string) $class->public_id, $selectedClassKeys, true))
+                                                @disabled(! $hasStudents)
                                             >
                                             <span>
                                                 <span class="fw-bold d-block" style="color: var(--psu-navy);">{{ $class->class_name }}</span>
-                                                <span class="small text-secondary">{{ $class->school_year }}{{ $class->subject ? ' - '.$class->subject->subject_code : '' }}</span>
+                                                <span class="small text-secondary">
+                                                    {{ $class->school_year }}{{ $class->subject ? ' - '.$class->subject->subject_code : '' }}
+                                                    @if (! $hasStudents)
+                                                        <span class="d-block text-danger fw-semibold">No students yet</span>
+                                                    @endif
+                                                </span>
                                             </span>
                                         </label>
                                     @endforeach
@@ -296,11 +313,17 @@
                         <div class="setting-grid">
                         <div>
                             <label class="form-label fw-bold text-uppercase small" for="available_at">Available At</label>
-                            <input class="form-control compact-input" id="available_at" name="available_at" type="datetime-local" value="{{ old('available_at') }}">
+                            <input class="form-control compact-input @error('available_at') is-invalid @enderror" id="available_at" min="{{ $minimumScheduleTime }}" name="available_at" type="datetime-local" value="{{ old('available_at', $minimumScheduleTime) }}">
+                            @error('available_at')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div>
                             <label class="form-label fw-bold text-uppercase small" for="due_at">Due At</label>
-                            <input class="form-control compact-input" id="due_at" name="due_at" type="datetime-local" value="{{ old('due_at') }}">
+                            <input class="form-control compact-input @error('due_at') is-invalid @enderror" id="due_at" min="{{ $minimumScheduleTime }}" name="due_at" type="datetime-local" value="{{ old('due_at') }}">
+                            @error('due_at')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div>
                             <label class="form-label fw-bold text-uppercase small" for="attempt_limit">Attempt Limit</label>
@@ -315,7 +338,7 @@
 
                     <div class="publish-section mt-3">
                         <div class="row g-3 align-items-end">
-                            <div class="col-lg-5">
+                            <div class="col-lg-4">
                                 <label class="form-label fw-bold text-uppercase small" for="display_mode">Question Display</label>
                                 <select class="form-select compact-select" id="display_mode" name="display_mode" required>
                                     <option value="all_questions" @selected(old('display_mode', 'all_questions') === 'all_questions')>Show all questions</option>
@@ -323,7 +346,15 @@
                                 </select>
                             </div>
 
-                            <div class="col-lg-7">
+                            <div class="col-lg-3" id="questionTimeLimitField">
+                                <label class="form-label fw-bold text-uppercase small" for="question_time_limit_seconds">Seconds Per Question</label>
+                                <input class="form-control compact-input @error('question_time_limit_seconds') is-invalid @enderror" id="question_time_limit_seconds" min="5" max="3600" name="question_time_limit_seconds" type="number" value="{{ old('question_time_limit_seconds', 10) }}">
+                                @error('question_time_limit_seconds')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-lg-5">
                                 <div class="toggle-row">
                                     <label class="toggle-box d-flex align-items-center gap-2 mb-0">
                                         <input class="form-check-input mt-0" name="score_visibility" type="checkbox" value="1" @checked(old('score_visibility'))>

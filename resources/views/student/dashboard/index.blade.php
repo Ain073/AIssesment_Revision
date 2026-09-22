@@ -270,9 +270,10 @@
                     @php
                         $percentage = $performance['average_percentage'];
                         $hasScore = $percentage !== null;
+                        $passingPercentage = $performance['passing_percentage'] ?? 50;
                         $barColor = ! $hasScore
                             ? '#94a3b8'
-                            : ($percentage >= 75 ? '#198754' : '#dc3545');
+                            : ($percentage >= $passingPercentage ? '#198754' : '#dc3545');
                     @endphp
                     <article class="performance-card">
                         <div class="d-flex justify-content-between align-items-start gap-3 mb-3">

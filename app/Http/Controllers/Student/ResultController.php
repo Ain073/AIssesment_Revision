@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Models\PassingRateSetting;
 use App\Models\Submission;
 use App\Support\AssessmentScoring;
 use Illuminate\Http\Request;
@@ -69,7 +70,7 @@ class ResultController extends BaseController
                 $assessment = $publishAssessment?->assessment;
                 $items = $assessment?->items ?? collect();
                 $maxScore = (float) $items->sum(fn ($item) => (float) $item->points);
-                $passingScore = $maxScore * 0.75;
+                $passingScore = PassingRateSetting::passingScore($maxScore, $publishAssessment?->class?->year_level);
                 $attemptRows = $attempts
                     ->sortBy('attempt_number')
                     ->map(function (Submission $submission) use ($items, $maxScore, $passingScore): array {

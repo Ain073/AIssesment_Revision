@@ -32,6 +32,12 @@
                                     @if ($class->school_year)
                                         <div class="small text-secondary">AY {{ $class->school_year }}</div>
                                     @endif
+                                    @if ($class->semester)
+                                        <div class="small text-secondary">{{ $class->semester->semester_name }}</div>
+                                    @endif
+                                    @if ($class->program || $class->subject?->program)
+                                        <div class="small text-secondary">{{ $class->program?->program_name ?? $class->subject?->program?->program_name }}</div>
+                                    @endif
                                 </div>
                             </div>
                         </td>
@@ -117,7 +123,7 @@
                             <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">school</span></div>
                             <h4 class="h4" style="color: var(--psu-navy);">{{ $emptyHeading }}</h4>
                             @if ($tabKey === 'active')
-                                <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#classModal" data-bs-toggle="modal" type="button" @disabled(! $instructorProfile || $subjects->isEmpty())>
+                                <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#classModal" data-bs-toggle="modal" type="button" @disabled(! $instructorProfile || $subjects->isEmpty() || $activePrograms->isEmpty())>
                                     <span class="material-symbols-outlined fs-5">add</span>
                                     Class
                                 </button>

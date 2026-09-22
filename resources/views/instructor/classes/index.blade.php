@@ -81,6 +81,83 @@
             border-radius: 0.25rem;
         }
 
+        .class-form-dialog {
+            max-width: min(820px, calc(100vw - 2rem));
+        }
+
+        .class-subject-field {
+            max-width: 640px;
+        }
+
+        .class-readonly-field {
+            background: #f8f9fa;
+            color: var(--psu-text);
+            cursor: default;
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .school-year-fields {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            min-height: 48px;
+            width: auto;
+            max-width: 100%;
+            padding: 0.35rem 0.55rem;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .school-year-fields.is-disabled {
+            background: #e9ecef;
+            opacity: 0.72;
+        }
+
+        .school-year-prefix,
+        .school-year-separator {
+            color: var(--psu-text);
+            font-size: 1.05rem;
+            font-weight: 600;
+        }
+
+        .school-year-part {
+            flex: 0 0 36px;
+            width: 36px;
+            min-width: 0;
+            height: 36px;
+            padding: 0;
+            border: 0;
+            border-bottom: 2px solid var(--psu-line);
+            border-radius: 0;
+            box-shadow: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .class-school-year-field {
+            flex: 0 0 auto;
+            width: auto;
+            min-width: 220px;
+        }
+
+        .modal-footer .btn {
+            white-space: nowrap;
+        }
+
+        .school-year-fields .school-year-part {
+            background: transparent;
+        }
+
+        .school-year-part:focus {
+            border-color: var(--psu-navy-2);
+            box-shadow: none;
+        }
+
     </style>
 @endpush
 

@@ -34,12 +34,10 @@ class AcademicStructureSeeder extends Seeder
 
         Program::query()->updateOrCreate(
             [
-                'college_id' => $college->college_id,
                 'department_id' => $informationTechnologyDepartment->department_id,
                 'program_name' => 'Bachelor of Science in Information Technology',
             ],
             [
-                'college_id' => $college->college_id,
                 'department_id' => $informationTechnologyDepartment->department_id,
                 'is_active' => true,
             ],
@@ -47,12 +45,10 @@ class AcademicStructureSeeder extends Seeder
 
         Program::query()->updateOrCreate(
             [
-                'college_id' => $college->college_id,
                 'department_id' => $hospitalityManagementDepartment->department_id,
                 'program_name' => 'Bachelor of Science in Hospitality Management',
             ],
             [
-                'college_id' => $college->college_id,
                 'department_id' => $hospitalityManagementDepartment->department_id,
                 'is_active' => true,
             ],

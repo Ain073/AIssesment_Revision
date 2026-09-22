@@ -43,12 +43,21 @@ trait InstructorAssessmentHelper
             ]);
         }
 
+        $emptyClass = $ownedClasses
+            ->first(fn ($class) => $class->enrolledStudentsCount() < 1);
+
+        if ($emptyClass) {
+            throw ValidationException::withMessages([
+                'class_keys' => 'Add at least one student to '.$emptyClass->displayName().' before publishing an assessment.',
+            ]);
+        }
+
         $missingClassDetail = $ownedClasses
             ->first(fn ($class) => ! $class->publishContextClassDetail());
 
         if ($missingClassDetail) {
             throw ValidationException::withMessages([
-                'class_keys' => 'Add at least one enrolled student to '.$missingClassDetail->displayName().' before publishing an assessment.',
+                'class_keys' => 'Set up '.$missingClassDetail->displayName().' before publishing an assessment.',
             ]);
         }
 
@@ -76,6 +85,7 @@ trait InstructorAssessmentHelper
                     'shuffle_choices' => $request->boolean('shuffle_choices'),
                     'warning_limit' => $validated['warning_limit'] ?? 3,
                     'display_mode' => $validated['display_mode'],
+                    'question_time_limit_seconds' => $validated['question_time_limit_seconds'] ?? null,
                 ]);
             }
         });
@@ -171,17 +181,21 @@ trait InstructorAssessmentHelper
                 ->whereHas('class', fn ($query) => $query->whereNull('classes.archived_at'))
                 ->select('subject_id'))
             ->where('is_active', true)
-            ->whereHas('semester', fn ($query) => $query->where('is_active', true))
             ->orderBy('subject_code')
             ->orderBy('subject_name')
             ->get();
     }
 
-    protected function activeSubjectIds(): Collection
+    protected function activeSubjectIds(?InstructorProfile $instructorProfile = null): Collection
     {
         return Subject::query()
+            ->when($instructorProfile?->department_id, function ($query) use ($instructorProfile): void {
+                $query->where(function ($scope) use ($instructorProfile): void {
+                    $scope->where('department_id', $instructorProfile->department_id)
+                        ->orWhereHas('program', fn ($programQuery) => $programQuery->where('department_id', $instructorProfile->department_id));
+                });
+            })
             ->where('is_active', true)
-            ->whereHas('semester', fn ($query) => $query->where('is_active', true))
             ->pluck('subject_id');
     }
 

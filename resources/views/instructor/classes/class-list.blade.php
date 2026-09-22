@@ -1,7 +1,9 @@
-@if (! $instructorProfile || $subjects->isEmpty())
+@if (! $instructorProfile || $subjects->isEmpty() || $activePrograms->isEmpty())
     <div class="alert alert-warning border-0 shadow-sm mb-4">
         @if (! $instructorProfile)
             This account does not have an instructor profile yet, so class creation is temporarily unavailable.
+        @elseif ($activePrograms->isEmpty())
+            No active programs are available under your department yet. Add or enable a program before creating classes.
         @else
             No active subjects are available yet. Add subjects first from the Department Chair portal before creating classes.
         @endif
@@ -9,7 +11,7 @@
 @endif
 
 <div class="class-toolbar d-flex justify-content-end gap-2 mb-3">
-    <button class="btn btn-psu d-flex align-items-center gap-2 {{ $activeClassTab === 'active' ? '' : 'd-none' }}" data-table-tab-panel="active" data-bs-target="#classModal" data-bs-toggle="modal" type="button" @disabled(! $instructorProfile || $subjects->isEmpty()) @if ($activeClassTab !== 'active') hidden @endif>
+    <button class="btn btn-psu d-flex align-items-center gap-2 {{ $activeClassTab === 'active' ? '' : 'd-none' }}" data-table-tab-panel="active" data-bs-target="#classModal" data-bs-toggle="modal" type="button" @disabled(! $instructorProfile || $subjects->isEmpty() || $activePrograms->isEmpty()) @if ($activeClassTab !== 'active') hidden @endif>
         <span class="material-symbols-outlined fs-5">add</span>
         Class
     </button>

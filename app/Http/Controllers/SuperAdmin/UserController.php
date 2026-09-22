@@ -34,7 +34,10 @@ class UserController extends Controller
             ->get();
 
         $programs = Program::with('department.college')
-            ->orderBy('college_id')
+            ->orderBy(
+                Department::select('college_id')
+                    ->whereColumn('departments.department_id', 'programs.department_id')
+            )
             ->orderBy('department_id')
             ->orderBy('program_name')
             ->get();

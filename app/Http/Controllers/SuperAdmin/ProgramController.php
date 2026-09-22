@@ -46,14 +46,13 @@ class ProgramController extends Controller
         ]);
 
         $department = Department::query()->findOrFail($validated['department_id']);
-        $validated['college_id'] = $department->college_id;
         $program = Program::create($validated);
 
         Log::info('Program created by super admin.', [
             'actor_id' => Auth::id(),
             'program_id' => $program->program_id,
             'program_name' => $program->program_name,
-            'college_id' => $program->college_id,
+            'college_id' => $department->college_id,
             'department_id' => $program->department_id,
             'is_active' => $program->is_active,
         ]);
@@ -79,36 +78,35 @@ class ProgramController extends Controller
         ]);
 
         $department = Department::query()->findOrFail($validated['department_id']);
-        $validated['college_id'] = $department->college_id;
         $program->update($validated);
 
         Log::info('Program updated by super admin.', [
             'actor_id' => Auth::id(),
             'program_id' => $program->program_id,
             'program_name' => $program->program_name,
-            'college_id' => $program->college_id,
+            'college_id' => $department->college_id,
             'department_id' => $program->department_id,
             'is_active' => $program->is_active,
         ]);
 
         return redirect()
-            ->route('super-admin.programs', ['department' => $program->department?->public_id])
+            ->route('super-admin.programs', ['department' => $department->public_id])
             ->with('status', 'Program updated successfully.');
     }
 
     public function destroy(Request $request, Program $program): RedirectResponse
     {
         $program->loadMissing('department.college');
-        $program->loadCount(['studentProfiles', 'subjects']);
+        $program->loadCount(['studentProfiles', 'classes']);
         $selectedDepartment = Department::query()
             ->where('public_id', $request->query('department'))
             ->first();
         $redirectDepartmentKey = $selectedDepartment?->public_id ?? $program->department?->public_id;
 
-        if ($program->student_profiles_count > 0 || $program->subjects_count > 0) {
+        if ($program->student_profiles_count > 0 || $program->classes_count > 0) {
             return redirect()
                 ->route('super-admin.programs', ['department' => $redirectDepartmentKey])
-                ->withErrors('This program still has linked students or subjects. Remove those links before deleting it.');
+                ->withErrors('This program still has linked students or classes. Remove those links before deleting it.');
         }
 
         $programName = $program->program_name;
@@ -130,7 +128,7 @@ class ProgramController extends Controller
     private function programsList(?int $departmentId = null)
     {
         return Program::with(['department.college'])
-            ->withCount(['studentProfiles', 'subjects'])
+            ->withCount(['studentProfiles', 'classes'])
             ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
             ->orderBy('program_name')
             ->get();

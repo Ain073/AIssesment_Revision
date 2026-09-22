@@ -32,10 +32,6 @@
         </div>
     @endif
 
-    <div data-subjects-term-toolbar>
-        @include('department-chair.subjects.partials.term-toolbar')
-    </div>
-
     <div data-subjects-workspace>
         @include('department-chair.subjects.partials.workspace')
     </div>

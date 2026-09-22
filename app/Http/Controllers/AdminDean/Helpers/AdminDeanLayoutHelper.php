@@ -13,10 +13,10 @@ trait AdminDeanLayoutHelper
 
         return [
             'user' => $user,
-            'portalSubtitle' => 'Dean',
+            'portalSubtitle' => $user->portalSubtitle(),
             'profileInitials' => strtoupper(Str::substr($user->first_name ?? $user->displayName(), 0, 1)),
             'profileName' => $user->displayName(),
-            'profileMeta' => 'Dean Account',
+            'profileMeta' => $user->portalProfileMeta(),
             'navItems' => $this->navItems($user),
             'showTopbarSearch' => true,
             'topbarSearchPlaceholder' => 'Search records...',

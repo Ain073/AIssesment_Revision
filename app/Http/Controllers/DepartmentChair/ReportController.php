@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\DepartmentChair;
 
+use App\Models\PassingRateSetting;
 use App\Models\PublishAssessment;
 use App\Models\Department;
 use App\Models\InstructorProfile;
@@ -201,7 +202,9 @@ class ReportController extends BaseController
                     ->max();
             })
             ->values();
-        $passingScore = $maxScore > 0 ? $maxScore * 0.75 : 0;
+        $passingScore = $maxScore > 0
+            ? PassingRateSetting::passingScore($maxScore, $publishAssessment->class?->year_level)
+            : 0;
 
         return [
             'students_count' => $publishAssessment->class?->enrolledStudentsCount() ?? 0,
