@@ -39,7 +39,6 @@
 
         .brand-title,
         .login-title,
-        .btn-login,
         .footer-brand {
             font-family: "Oswald", sans-serif;
         }
@@ -118,8 +117,16 @@
             background: var(--psu-navy);
             color: var(--psu-gold);
             border: 0;
-            font-size: 1.5rem;
+            font-family: "Open Sans", sans-serif;
+            font-size: 1.22rem;
+            font-weight: 800;
+            letter-spacing: 0;
             line-height: 1.2;
+        }
+
+        .btn-login .material-symbols-outlined {
+            font-size: 1.45rem;
+            font-variation-settings: "FILL" 0, "wght" 600, "GRAD" 0, "opsz" 24;
         }
 
         .btn-login:hover,
@@ -223,7 +230,7 @@
             }
 
             .btn-login {
-                font-size: 1.15rem;
+                font-size: 1.05rem;
                 padding-top: 0.75rem !important;
                 padding-bottom: 0.75rem !important;
             }
