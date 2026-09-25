@@ -153,9 +153,19 @@
                         $maxPoints = (float) $item->points;
                         $earnedPoints = $row['earned_points'];
                         $isEssay = $item->item_type === 'essay';
+                        $isEnumeration = $item->item_type === 'enumeration';
                         $hasChoiceReview = in_array($item->item_type, ['multiple_choice', 'true_false'], true);
                         $scoreField = $answerId ? "essay_scores.{$answerId}" : null;
                         $feedbackField = $answerId ? "essay_feedback.{$answerId}" : null;
+                        // Parse enumeration student answers from JSON
+                        $enumStudentAnswers = $isEnumeration
+                            ? (is_array(json_decode((string) ($answer?->answer_text ?? ''), true))
+                                ? collect(json_decode($answer->answer_text, true))->map(fn ($s) => trim((string) $s))
+                                : collect([trim((string) ($answer?->answer_text ?? ''))]))
+                            : collect();
+                        $enumCorrectAnswers = $isEnumeration
+                            ? $item->choices->where('is_correct', true)->sortBy('sort_order')->values()
+                            : collect();
                     @endphp
 
                     <article class="border rounded-2 overflow-hidden">
@@ -166,8 +176,12 @@
                                 <span class="badge text-bg-light border rounded-pill px-3 py-2">{{ $maxPoints }} pts</span>
                             </div>
 
-                            @if (! $isEssay)
+                            @if (! $isEssay && ! $isEnumeration)
                                 <span class="badge {{ $row['is_correct'] ? 'text-bg-success' : 'text-bg-danger' }} rounded-1 px-3 py-2">
+                                    {{ $earnedPoints }} / {{ $maxPoints }}
+                                </span>
+                            @elseif ($isEnumeration)
+                                <span class="badge {{ $earnedPoints >= $maxPoints ? 'text-bg-success' : ($earnedPoints > 0 ? 'text-bg-warning' : 'text-bg-danger') }} rounded-1 px-3 py-2">
                                     {{ $earnedPoints }} / {{ $maxPoints }}
                                 </span>
                             @elseif ($answer?->earned_points !== null)
@@ -218,6 +232,53 @@
                                             <span class="choice-review-text text-secondary">No answer selected</span>
                                         </div>
                                     @endif
+                                </div>
+                            @elseif ($isEnumeration)
+                                @php
+                                    $enumTotal = $enumCorrectAnswers->count();
+                                    $enumPointsEach = $enumTotal > 0 ? round($maxPoints / $enumTotal, 2) : 0;
+                                    $remainingPool = $item->order_sensitive ? null : $enumCorrectAnswers->pluck('choice_text')->values()->toArray();
+                                @endphp
+                                <p class="small fw-bold text-secondary text-uppercase mb-2">
+                                    Enumeration Answers
+                                    @if ($item->order_sensitive)
+                                        <span class="badge text-bg-light border rounded-1 ms-1">Order matters</span>
+                                    @endif
+                                </p>
+                                <div class="choice-review-list">
+                                    @foreach ($enumCorrectAnswers as $slot => $correctSlot)
+                                        @php
+                                            $studentSlot = $enumStudentAnswers->get($slot, '');
+                                            if ($item->order_sensitive) {
+                                                $slotCorrect = $studentSlot !== '' && $studentSlot === $correctSlot->choice_text;
+                                            } else {
+                                                $matchIdx = $remainingPool !== null ? array_search($studentSlot, $remainingPool, true) : false;
+                                                $slotCorrect = $studentSlot !== '' && $matchIdx !== false;
+                                                if ($slotCorrect && $remainingPool !== null) {
+                                                    array_splice($remainingPool, $matchIdx, 1);
+                                                }
+                                            }
+                                            $slotClass = $studentSlot === ''
+                                                ? ''
+                                                : ($slotCorrect ? 'choice-review-correct' : 'choice-review-wrong');
+                                        @endphp
+                                        <div class="choice-review-option {{ $slotClass }}">
+                                            <span class="choice-review-text">
+                                                <span class="text-secondary me-1">{{ $slot + 1 }}.</span>
+                                                {{ $studentSlot !== '' ? $studentSlot : '—' }}
+                                            </span>
+                                            <span class="choice-review-badges">
+                                                @if ($slotCorrect)
+                                                    <span class="badge text-bg-success rounded-1">+{{ $enumPointsEach }} pt{{ $enumPointsEach == 1 ? '' : 's' }}</span>
+                                                @elseif ($studentSlot !== '')
+                                                    <span class="badge text-bg-danger rounded-1">Wrong</span>
+                                                @else
+                                                    <span class="badge text-bg-secondary rounded-1">No answer</span>
+                                                @endif
+                                                <span class="badge text-bg-light border rounded-1">Expected: {{ $correctSlot->choice_text }}</span>
+                                            </span>
+                                        </div>
+                                    @endforeach
                                 </div>
                             @else
                                 <div class="row g-3">

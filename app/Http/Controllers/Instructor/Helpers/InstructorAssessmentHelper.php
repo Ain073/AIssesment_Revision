@@ -166,6 +166,7 @@ trait InstructorAssessmentHelper
             'identification' => 'Identification',
             'essay' => 'Essay',
             'true_false' => 'True/False',
+            'enumeration' => 'Enumeration',
         ];
     }
 

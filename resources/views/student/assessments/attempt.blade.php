@@ -677,6 +677,26 @@
                                 </label>
                             @endforeach
                         </div>
+                    @elseif ($item->item_type === 'enumeration')
+                        @php $enumCount = $item->choices->where('is_correct', true)->count() ?: 1; @endphp
+                        <p class="small fw-semibold text-secondary mb-2">
+                            Write {{ $enumCount }} answer{{ $enumCount === 1 ? '' : 's' }}, one per box.
+                            @if ($item->order_sensitive)
+                                <span class="badge text-bg-light border rounded-1 ms-1">Order matters</span>
+                            @endif
+                        </p>
+                        <div class="d-grid gap-2">
+                            @for ($ei = 0; $ei < $enumCount; $ei++)
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-bold text-secondary" style="min-width:1.5rem;">{{ $ei + 1 }}.</span>
+                                    <input class="form-control"
+                                        name="answers[{{ $item->assessment_item_id }}][]"
+                                        type="text"
+                                        placeholder="Answer {{ $ei + 1 }}"
+                                        autocomplete="off">
+                                </div>
+                            @endfor
+                        </div>
                     @elseif ($item->item_type === 'essay')
                         <textarea class="form-control" name="answers[{{ $item->assessment_item_id }}]" rows="6" placeholder="Type your answer"></textarea>
                     @else

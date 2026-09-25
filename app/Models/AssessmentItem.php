@@ -20,12 +20,14 @@ class AssessmentItem extends Model
         'points',
         'is_required',
         'sort_order',
+        'order_sensitive',
     ];
 
     protected function casts(): array
     {
         return [
             'is_required' => 'boolean',
+            'order_sensitive' => 'boolean',
             'points' => 'decimal:2',
         ];
     }

@@ -358,6 +358,9 @@ class AssessmentController extends BaseController
             'items.*.correct_choice' => ['nullable', 'integer', 'min:0', 'max:5'],
             'items.*.true_false_answer' => ['nullable', Rule::in(['true', 'false'])],
             'items.*.accepted_answer' => ['nullable', 'string', 'max:1000'],
+            'items.*.enum_answers' => ['nullable', 'array', 'min:1', 'max:20'],
+            'items.*.enum_answers.*' => ['nullable', 'string', 'max:500'],
+            'items.*.order_sensitive' => ['nullable', 'in:1,0,true,false'],
         ]);
 
         $itemErrors = [];
@@ -388,6 +391,16 @@ class AssessmentController extends BaseController
 
             if ($itemType === 'identification' && blank($itemData['accepted_answer'] ?? null)) {
                 $itemErrors["items.{$index}.accepted_answer"] = "Question {$questionNumber}: Please enter the accepted answer for identification.";
+            }
+
+            if ($itemType === 'enumeration') {
+                $filledEnumAnswers = collect($itemData['enum_answers'] ?? [])
+                    ->map(fn ($a) => trim((string) $a))
+                    ->filter(fn ($a) => $a !== '');
+
+                if ($filledEnumAnswers->count() < 1) {
+                    $itemErrors["items.{$index}.enum_answers"] = "Question {$questionNumber}: Enter at least one accepted answer for enumeration.";
+                }
             }
         }
 
@@ -445,6 +458,23 @@ class AssessmentController extends BaseController
                         'is_correct' => true,
                         'sort_order' => 1,
                     ]);
+                }
+
+                if ($itemType === 'enumeration') {
+                    $orderSensitive = filter_var($itemData['order_sensitive'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                    $item->update(['order_sensitive' => $orderSensitive]);
+                    $enumAnswers = collect($itemData['enum_answers'] ?? [])
+                        ->map(fn ($a) => trim((string) $a))
+                        ->filter(fn ($a) => $a !== '')
+                        ->values();
+
+                    foreach ($enumAnswers as $i => $answerText) {
+                        $item->choices()->create([
+                            'choice_text' => $answerText,
+                            'is_correct' => true,
+                            'sort_order' => $i + 1,
+                        ]);
+                    }
                 }
             }
         });
@@ -565,6 +595,9 @@ class AssessmentController extends BaseController
             'correct_choice' => ['nullable', 'integer', 'min:0', 'max:5'],
             'true_false_answer' => ['nullable', Rule::in(['true', 'false'])],
             'accepted_answer' => ['nullable', 'string', 'max:1000'],
+            'enum_answers' => ['nullable', 'array', 'min:1', 'max:20'],
+            'enum_answers.*' => ['nullable', 'string', 'max:500'],
+            'order_sensitive' => ['nullable', 'in:1,0,true,false'],
         ]);
 
         $choices = collect($validated['choices'] ?? [])
@@ -594,6 +627,20 @@ class AssessmentController extends BaseController
             throw ValidationException::withMessages([
                 'accepted_answer' => 'Please enter the accepted answer for identification.',
             ]);
+        }
+
+        if ($item->item_type === 'enumeration') {
+            $filledEnumAnswers = collect($validated['enum_answers'] ?? [])
+                ->map(fn ($a) => trim((string) $a))
+                ->filter(fn ($a) => $a !== '');
+
+            if ($filledEnumAnswers->count() < 1) {
+                throw ValidationException::withMessages([
+                    'enum_answers' => 'Enter at least one accepted answer for enumeration.',
+                ]);
+            }
+
+            $validated['enum_answers'] = $filledEnumAnswers->values()->all();
         }
 
         $validated['choices'] = $choices->all();
@@ -635,6 +682,23 @@ class AssessmentController extends BaseController
                 'is_correct' => true,
                 'sort_order' => 1,
             ]);
+        }
+
+        if ($item->item_type === 'enumeration') {
+            $orderSensitive = filter_var($validated['order_sensitive'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $item->update(['order_sensitive' => $orderSensitive]);
+            $enumAnswers = collect($validated['enum_answers'] ?? [])
+                ->map(fn ($a) => trim((string) $a))
+                ->filter(fn ($a) => $a !== '')
+                ->values();
+
+            foreach ($enumAnswers as $i => $answerText) {
+                $item->choices()->create([
+                    'choice_text' => $answerText,
+                    'is_correct' => true,
+                    'sort_order' => $i + 1,
+                ]);
+            }
         }
     }
 }

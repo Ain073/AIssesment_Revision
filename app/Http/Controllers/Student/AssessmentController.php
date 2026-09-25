@@ -286,6 +286,7 @@ class AssessmentController extends BaseController
 
         $validated = $request->validate([
             'answers' => ['nullable', 'array'],
+            'answers.*' => ['nullable'],
         ]);
 
         $answers = collect($validated['answers'] ?? []);
@@ -333,6 +334,12 @@ class AssessmentController extends BaseController
                         ->contains((int) $rawAnswer)
                             ? (int) $rawAnswer
                             : null;
+                } elseif ($item->item_type === 'enumeration') {
+                    // Enumeration answers arrive as an array of strings; store as JSON
+                    $enumSlots = is_array($rawAnswer) ? $rawAnswer : [];
+                    $answerText = json_encode(
+                        array_map(fn ($s) => trim((string) $s), $enumSlots)
+                    );
                 } else {
                     $answerText = is_scalar($rawAnswer) ? trim((string) $rawAnswer) : null;
                 }

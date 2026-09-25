@@ -144,6 +144,37 @@
                 `;
             }
 
+            if (type === 'enumeration') {
+                const enumAnswers = oldItem.enum_answers ?? [''];
+                const orderSensitive = oldItem.order_sensitive == '1' || oldItem.order_sensitive === true || oldItem.order_sensitive === 'true';
+                let rows = '';
+                const count = Math.max(enumAnswers.length, 1);
+
+                for (let ei = 0; ei < count; ei++) {
+                    rows += `
+                        <div class="enum-answer-row d-flex gap-2 mb-2" data-enum-row>
+                            <span class="input-group-text bg-light border rounded px-2" style="min-width:2.2rem;justify-content:center;">${ei + 1}</span>
+                            <input class="form-control" name="items[${index}][enum_answers][]" type="text" placeholder="Answer ${ei + 1}" value="${escapeHtml(enumAnswers[ei] ?? '')}">
+                            <button class="btn btn-sm btn-outline-danger" type="button" data-remove-enum-row title="Remove">&times;</button>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="mb-2 d-flex align-items-center justify-content-between">
+                        <p class="compact-label mb-0">Accepted Answers (one per slot)</p>
+                        <div class="form-check form-switch ms-auto me-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="order_sensitive_${index}" name="items[${index}][order_sensitive]" value="1" ${orderSensitive ? 'checked' : ''}>
+                            <label class="form-check-label small fw-semibold" for="order_sensitive_${index}">Order matters</label>
+                        </div>
+                    </div>
+                    <div data-enum-rows-${index}>${rows}</div>
+                    <button class="btn btn-sm btn-outline-secondary mt-2" type="button" data-add-enum-row="${index}">
+                        + Add Answer Slot
+                    </button>
+                `;
+            }
+
             return '<div class="alert alert-primary border-0 mb-0">Essay items are saved for manual checking.</div>';
         };
 
@@ -199,6 +230,62 @@
 
             removeButton.closest('[data-question-block]')?.remove();
             refreshState();
+        });
+
+        // Enumeration: add answer slot
+        questionBlocks.addEventListener('click', (event) => {
+            const addRowBtn = event.target.closest('[data-add-enum-row]');
+
+            if (! addRowBtn) {
+                return;
+            }
+
+            const blockIndex = addRowBtn.dataset.addEnumRow;
+            const container = questionBlocks.querySelector(`[data-enum-rows-${blockIndex}]`);
+
+            if (! container) {
+                return;
+            }
+
+            const rowCount = container.querySelectorAll('[data-enum-row]').length + 1;
+            const row = document.createElement('div');
+            row.className = 'enum-answer-row d-flex gap-2 mb-2';
+            row.dataset.enumRow = 'true';
+            row.innerHTML = `
+                <span class="input-group-text bg-light border rounded px-2" style="min-width:2.2rem;justify-content:center;">${rowCount}</span>
+                <input class="form-control" name="items[${blockIndex}][enum_answers][]" type="text" placeholder="Answer ${rowCount}">
+                <button class="btn btn-sm btn-outline-danger" type="button" data-remove-enum-row title="Remove">&times;</button>
+            `;
+            container.appendChild(row);
+        });
+
+        // Enumeration: remove answer slot
+        questionBlocks.addEventListener('click', (event) => {
+            const removeRowBtn = event.target.closest('[data-remove-enum-row]');
+
+            if (! removeRowBtn) {
+                return;
+            }
+
+            const row = removeRowBtn.closest('[data-enum-row]');
+            const container = row?.parentElement;
+            row?.remove();
+
+            // Renumber remaining rows
+            if (container) {
+                container.querySelectorAll('[data-enum-row]').forEach((r, i) => {
+                    const label = r.querySelector('span');
+                    const input = r.querySelector('input');
+
+                    if (label) {
+                        label.textContent = String(i + 1);
+                    }
+
+                    if (input) {
+                        input.placeholder = `Answer ${i + 1}`;
+                    }
+                });
+            }
         });
 
         questionBlocks.addEventListener('input', (event) => {
@@ -266,6 +353,15 @@
 
                 if (type === 'identification' && ! block.querySelector('input[name$="[accepted_answer]"]')?.value.trim()) {
                     blockMessages.push(`Question ${questionNumber}: Enter the accepted answer.`);
+                }
+
+                if (type === 'enumeration') {
+                    const enumInputs = Array.from(block.querySelectorAll('input[name$="[enum_answers][]"]'));
+                    const filledEnumAnswers = enumInputs.filter((inp) => inp.value.trim() !== '');
+
+                    if (filledEnumAnswers.length < 1) {
+                        blockMessages.push(`Question ${questionNumber}: Enter at least one accepted answer for enumeration.`);
+                    }
                 }
 
                 if (blockMessages.length > 0) {

@@ -549,6 +549,39 @@
                                                     <label class="form-label fw-bold text-uppercase small" for="edit_accepted_answer_{{ $item->assessment_item_id }}">Accepted Answer</label>
                                                     <input class="form-control" id="edit_accepted_answer_{{ $item->assessment_item_id }}" name="accepted_answer" type="text" value="{{ $correctChoice?->choice_text }}">
                                                 </div>
+                                            @elseif ($item->item_type === 'enumeration')
+                                                <div class="col-12">
+                                                    <div class="mb-2 d-flex align-items-center justify-content-between">
+                                                        <p class="compact-label mb-0">Accepted Answers (one per slot)</p>
+                                                        <div class="form-check form-switch ms-auto me-0">
+                                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                                id="edit_order_sensitive_{{ $item->assessment_item_id }}"
+                                                                name="order_sensitive" value="1"
+                                                                @checked($item->order_sensitive)>
+                                                            <label class="form-check-label small fw-semibold" for="edit_order_sensitive_{{ $item->assessment_item_id }}">Order matters</label>
+                                                        </div>
+                                                    </div>
+                                                    <div id="editEnumRows{{ $item->assessment_item_id }}">
+                                                        @foreach ($item->choices->where('is_correct', true)->sortBy('sort_order') as $ei => $enumChoice)
+                                                            <div class="enum-answer-row d-flex gap-2 mb-2" data-enum-row>
+                                                                <span class="input-group-text bg-light border rounded px-2" style="min-width:2.2rem;justify-content:center;">{{ $loop->iteration }}</span>
+                                                                <input class="form-control" name="enum_answers[]" type="text" value="{{ $enumChoice->choice_text }}" placeholder="Answer {{ $loop->iteration }}">
+                                                                <button class="btn btn-sm btn-outline-danger" type="button" data-edit-remove-enum-row title="Remove">&times;</button>
+                                                            </div>
+                                                        @endforeach
+                                                        @if ($item->choices->where('is_correct', true)->isEmpty())
+                                                            <div class="enum-answer-row d-flex gap-2 mb-2" data-enum-row>
+                                                                <span class="input-group-text bg-light border rounded px-2" style="min-width:2.2rem;justify-content:center;">1</span>
+                                                                <input class="form-control" name="enum_answers[]" type="text" placeholder="Answer 1">
+                                                                <button class="btn btn-sm btn-outline-danger" type="button" data-edit-remove-enum-row title="Remove">&times;</button>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                    <button class="btn btn-sm btn-outline-secondary mt-2" type="button"
+                                                        data-add-edit-enum-row="{{ $item->assessment_item_id }}">
+                                                        + Add Answer Slot
+                                                    </button>
+                                                </div>
                                             @else
                                                 <div class="col-12">
                                                     <div class="alert alert-primary border-0 mb-0">Essay items are saved for manual checking.</div>
@@ -639,4 +672,51 @@
     @unless($isPublishedSnapshot)
         @include('instructor.assessments.assessment-show-page-code')
     @endunless
+
+    {{-- Edit modal: enumeration row add/remove --}}
+    <script>
+        (() => {
+            document.addEventListener('click', (event) => {
+                // Add row in edit modal
+                const addBtn = event.target.closest('[data-add-edit-enum-row]');
+
+                if (addBtn) {
+                    const itemId = addBtn.dataset.addEditEnumRow;
+                    const container = document.getElementById(`editEnumRows${itemId}`);
+
+                    if (! container) { return; }
+
+                    const rowCount = container.querySelectorAll('[data-enum-row]').length + 1;
+                    const row = document.createElement('div');
+                    row.className = 'enum-answer-row d-flex gap-2 mb-2';
+                    row.dataset.enumRow = 'true';
+                    row.innerHTML = `
+                        <span class="input-group-text bg-light border rounded px-2" style="min-width:2.2rem;justify-content:center;">${rowCount}</span>
+                        <input class="form-control" name="enum_answers[]" type="text" placeholder="Answer ${rowCount}">
+                        <button class="btn btn-sm btn-outline-danger" type="button" data-edit-remove-enum-row title="Remove">&times;</button>
+                    `;
+                    container.appendChild(row);
+                    return;
+                }
+
+                // Remove row in edit modal
+                const removeBtn = event.target.closest('[data-edit-remove-enum-row]');
+
+                if (removeBtn) {
+                    const row = removeBtn.closest('[data-enum-row]');
+                    const container = row?.parentElement;
+                    row?.remove();
+
+                    if (container) {
+                        container.querySelectorAll('[data-enum-row]').forEach((r, i) => {
+                            const label = r.querySelector('span');
+                            const input = r.querySelector('input');
+                            if (label) { label.textContent = String(i + 1); }
+                            if (input) { input.placeholder = `Answer ${i + 1}`; }
+                        });
+                    }
+                }
+            });
+        })();
+    </script>
 @endpush
