@@ -56,17 +56,36 @@
             </div>
 
             <div data-table-tabs-root data-table-tabs-param="tab" data-table-tabs-default="{{ $activeUserTab }}">
-            <div class="table-switch-tabs" id="userTabs" role="tablist">
-                <button class="btn btn-outline-primary table-switch-button {{ $activeUserTab === 'teachers' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="teachers" type="button" role="tab" aria-pressed="{{ $activeUserTab === 'teachers' ? 'true' : 'false' }}">
-                    <span class="material-symbols-outlined fs-5">badge</span>
-                    Teachers
-                    <span class="table-switch-count">{{ $teachers->count() }}</span>
-                </button>
-                <button class="btn btn-outline-primary table-switch-button {{ $activeUserTab === 'students' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="students" type="button" role="tab" aria-pressed="{{ $activeUserTab === 'students' ? 'true' : 'false' }}">
-                    <span class="material-symbols-outlined fs-5">groups</span>
-                    Students
-                    <span class="table-switch-count">{{ $students->count() }}</span>
-                </button>
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
+                <div class="table-switch-tabs mb-0" id="userTabs" role="tablist">
+                    <button class="btn btn-outline-primary table-switch-button {{ $activeUserTab === 'teachers' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="teachers" type="button" role="tab" aria-pressed="{{ $activeUserTab === 'teachers' ? 'true' : 'false' }}">
+                        <span class="material-symbols-outlined fs-5">badge</span>
+                        Teachers
+                        <span class="table-switch-count" id="teachersTabCount">{{ $teachers->count() }}</span>
+                    </button>
+                    <button class="btn btn-outline-primary table-switch-button {{ $activeUserTab === 'students' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="students" type="button" role="tab" aria-pressed="{{ $activeUserTab === 'students' ? 'true' : 'false' }}">
+                        <span class="material-symbols-outlined fs-5">groups</span>
+                        Students
+                        <span class="table-switch-count" id="studentsTabCount">{{ $students->count() }}</span>
+                    </button>
+                </div>
+
+                {{-- Department Filter --}}
+                <div class="d-flex align-items-center gap-2 bg-white border rounded px-3 py-2 shadow-sm" style="min-width: 280px; max-width: 440px;">
+                    <span class="material-symbols-outlined fs-5 text-secondary">domain</span>
+                    <label for="departmentFilterSelect" class="small fw-bold text-secondary text-nowrap mb-0">Department:</label>
+                    <select class="form-select form-select-sm border-0 bg-transparent fw-semibold" id="departmentFilterSelect" aria-label="Filter by department">
+                        <option value="">All Departments</option>
+                        @foreach ($departments as $dept)
+                            <option value="{{ $dept->department_id }}" {{ (string) request('department_id') === (string) $dept->department_id ? 'selected' : '' }}>
+                                {{ $dept->dept_name }} ({{ $dept->college?->college_code ?? $dept->college?->college_name }})
+                            </option>
+                        @endforeach
+                    </select>
+                    <button class="btn btn-sm btn-link text-secondary p-0 d-none" id="clearDeptFilterBtn" type="button" title="Clear filter">
+                        <span class="material-symbols-outlined fs-6">close</span>
+                    </button>
+                </div>
             </div>
 
             <div>
@@ -98,7 +117,10 @@
                             </thead>
                             <tbody>
                                 @forelse ($teachers as $user)
-                                    <tr>
+                                    @php
+                                        $teacherDeptId = $user->instructorProfile?->department_id;
+                                    @endphp
+                                    <tr data-user-row data-department-id="{{ $teacherDeptId ?? '' }}">
                                         <td class="mobile-primary-cell" data-label="User">
                                             <div class="d-flex align-items-center gap-3">
                                                 <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
@@ -159,12 +181,18 @@
                                         </td>
                                     </tr>
                                 @endforelse
+                                <tr class="d-none" data-no-results-row>
+                                    <td class="text-center py-5 mobile-empty-cell" colspan="6">
+                                        <div class="empty-icon mb-2"><span class="material-symbols-outlined fs-2 text-muted">domain_disabled</span></div>
+                                        <p class="text-secondary fw-semibold mb-0">No teachers found in the selected department.</p>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
 
                     <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #eff4ff;">
-                        <span class="small text-secondary">Showing {{ $teachers->count() }} {{ $teachers->count() === 1 ? 'entry' : 'entries' }}</span>
+                        <span class="small text-secondary" data-entries-count>Showing {{ $teachers->count() }} {{ $teachers->count() === 1 ? 'entry' : 'entries' }}</span>
                     </div>
                 </section>
 
@@ -194,7 +222,10 @@
                             </thead>
                             <tbody>
                                 @forelse ($students as $user)
-                                    <tr>
+                                    @php
+                                        $studentDeptId = $user->studentProfile?->program?->department_id;
+                                    @endphp
+                                    <tr data-user-row data-department-id="{{ $studentDeptId ?? '' }}">
                                         <td class="mobile-primary-cell" data-label="User">
                                             <div class="d-flex align-items-center gap-3">
                                                 <span class="avatar">{{ strtoupper(substr($user->displayName(), 0, 1)) }}</span>
@@ -244,12 +275,18 @@
                                         </td>
                                     </tr>
                                 @endforelse
+                                <tr class="d-none" data-no-results-row>
+                                    <td class="text-center py-5 mobile-empty-cell" colspan="5">
+                                        <div class="empty-icon mb-2"><span class="material-symbols-outlined fs-2 text-muted">domain_disabled</span></div>
+                                        <p class="text-secondary fw-semibold mb-0">No students found in programs under the selected department.</p>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
 
                     <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #eff4ff;">
-                        <span class="small text-secondary">Showing {{ $students->count() }} {{ $students->count() === 1 ? 'entry' : 'entries' }}</span>
+                        <span class="small text-secondary" data-entries-count>Showing {{ $students->count() }} {{ $students->count() === 1 ? 'entry' : 'entries' }}</span>
                     </div>
                 </section>
 
