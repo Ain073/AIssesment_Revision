@@ -144,6 +144,10 @@ class ReportController extends BaseController
 
         $rows = $this->reportSheetRows($publishAssessments, $validated['type']);
 
+        $isFinalized = $rows->isNotEmpty() && $rows->every(function ($row): bool {
+            return ($row['report']?->report_status ?? null) === Report::STATUS_FINALIZED;
+        });
+
         return view('instructor.reports.sheet', $this->sharedData($user, 'reports') + [
             'reportType' => $validated['type'],
             'reportTypeLabel' => $this->reportCategories()[$validated['type']],
@@ -152,6 +156,7 @@ class ReportController extends BaseController
             'reportMeta' => $this->reportSheetMeta($publishAssessments, $rows),
             'aiCandidates' => $aiService->candidateOptions(),
             'selectedAiProvider' => (string) config('services.ai_report.provider', 'openai'),
+            'isFinalized' => $isFinalized,
         ]);
     }
 

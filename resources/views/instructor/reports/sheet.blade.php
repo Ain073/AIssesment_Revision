@@ -356,6 +356,19 @@
             background: #f8fbff;
         }
 
+        .report-sheet-wrap.is-locked .report-edit-textarea,
+        .report-sheet-wrap.is-locked .report-header-input {
+            cursor: default;
+            user-select: text;
+            background: transparent !important;
+        }
+
+        .report-sheet-wrap.is-locked .report-edit-textarea:focus,
+        .report-sheet-wrap.is-locked .report-header-input:focus {
+            outline: none !important;
+            background: transparent !important;
+        }
+
         .report-print-text {
             display: none;
             white-space: pre-wrap;
@@ -693,12 +706,21 @@
 
 @section('content')
     @if (session('status'))
-        <div class="alert alert-success report-toolbar">{{ session('status') }}</div>
+        <div class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
+            <span class="material-symbols-outlined fs-5">check_circle</span>
+            <div>{{ session('status') }}</div>
+        </div>
     @endif
 
     <div class="report-toolbar">
         <div>
-            <h1 class="brand-text mb-1" style="color: var(--psu-navy);">{{ $reportTypeLabel }} Report</h1>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h1 class="brand-text mb-0" style="color: var(--psu-navy);">{{ $reportTypeLabel }} Report</h1>
+                <span class="report-status-badge badge {{ $isFinalized ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' }} d-inline-flex align-items-center gap-1 px-2.5 py-1 fs-7 fw-bold" id="reportStatusBadge">
+                    <span class="material-symbols-outlined fs-6" id="reportStatusBadgeIcon">{{ $isFinalized ? 'lock' : 'edit_document' }}</span>
+                    <span id="reportStatusBadgeText">{{ $isFinalized ? 'Finalized' : 'Draft' }}</span>
+                </span>
+            </div>
             <p class="text-secondary mb-0">Calculated details are from completed submissions. AI draft is only for most and least learned concepts.</p>
         </div>
         <div class="report-toolbar-actions">
@@ -731,7 +753,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="report-paper-control">
+            <div class="report-paper-control" id="aiProviderControl" @if ($isFinalized) style="display: none;" @endif>
                 <label for="aiProvider">AI Candidate</label>
                 <select class="form-select form-select-sm" id="aiProvider">
                     @foreach ($aiCandidates as $candidate)
@@ -739,22 +761,37 @@
                     @endforeach
                 </select>
             </div>
-            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#confirmAiDraftModal">
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" id="aiDraftButton" type="button" data-bs-toggle="modal" data-bs-target="#confirmAiDraftModal" @if ($isFinalized) style="display: none;" @endif>
                 <span class="material-symbols-outlined fs-5">auto_awesome</span>
                 AI Draft
             </button>
-            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" form="reportSheetForm" name="save_action" value="draft" type="submit">
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" id="saveDraftButton" form="reportSheetForm" name="save_action" value="draft" type="submit" @if ($isFinalized) style="display: none;" @endif>
                 <span class="material-symbols-outlined fs-5">save</span>
                 Save Draft
             </button>
-            <button class="btn btn-psu d-inline-flex align-items-center gap-2" form="reportSheetForm" name="save_action" value="finalized" type="submit">
+            <button class="btn btn-psu d-inline-flex align-items-center gap-2" id="finalizeButton" form="reportSheetForm" name="save_action" value="finalized" type="submit" @if ($isFinalized) style="display: none;" @endif>
                 <span class="material-symbols-outlined fs-5">task_alt</span>
                 Finalize
+            </button>
+            <button class="btn btn-primary d-inline-flex align-items-center gap-2" id="editReportButton" type="button" @if (! $isFinalized) style="display: none;" @endif>
+                <span class="material-symbols-outlined fs-5">edit</span>
+                Edit
+            </button>
+            <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" id="cancelEditButton" type="button" style="display: none;">
+                <span class="material-symbols-outlined fs-5">close</span>
+                Cancel
             </button>
             <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" onclick="window.print()" type="button">
                 <span class="material-symbols-outlined fs-5">print</span>
                 Export
             </button>
+        </div>
+    </div>
+
+    <div class="alert alert-light border d-flex align-items-center justify-content-between p-2.5 mb-3" id="reportLockedNotice" @if (! $isFinalized) style="display: none;" @endif>
+        <div class="d-flex align-items-center gap-2 small text-secondary">
+            <span class="material-symbols-outlined text-success fs-5">verified</span>
+            <span>This report is <strong>finalized</strong> and locked. Click <strong>Edit</strong> if you need to modify it.</span>
         </div>
     </div>
 
@@ -794,7 +831,7 @@
             <input name="publish_assessment_keys[]" type="hidden" value="{{ $publishAssessmentKey }}">
         @endforeach
 
-        <div class="report-sheet-wrap">
+        <div class="report-sheet-wrap {{ $isFinalized ? 'is-locked' : '' }}">
         <section class="report-sheet">
             <table class="report-header">
                 <colgroup>
@@ -830,7 +867,7 @@
                         <td colspan="4">{{ strtoupper($reportMeta['college']) }}</td>
                         <th colspan="2">Course Code/Title</th>
                         <td colspan="2">
-                            <input class="report-header-input" name="course_code_title" type="text" value="{{ old('course_code_title', $reportMeta['course_code_title']) }}">
+                            <input class="report-header-input" name="course_code_title" type="text" value="{{ old('course_code_title', $reportMeta['course_code_title']) }}" @if ($isFinalized) readonly tabindex="-1" @endif>
                         </td>
                     </tr>
                     <tr>
@@ -906,22 +943,22 @@
                                 </div>
                             </td>
                             <td>
-                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_most_learned_skills]" data-assessment-key="{{ $publishAssessmentKey }}" data-ai-field="concepts_most_learned_skills">{{ old('reports.'.$publishAssessmentKey.'.concept_most_learned_skills', $mostLearned) }}</textarea>
+                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_most_learned_skills]" data-assessment-key="{{ $publishAssessmentKey }}" data-ai-field="concepts_most_learned_skills" @if ($isFinalized) readonly tabindex="-1" @endif>{{ old('reports.'.$publishAssessmentKey.'.concept_most_learned_skills', $mostLearned) }}</textarea>
                                 <div class="report-print-text"></div>
                             </td>
                             <td>
-                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_least_learned_skills]" data-assessment-key="{{ $publishAssessmentKey }}" data-ai-field="concepts_least_learned_skills">{{ old('reports.'.$publishAssessmentKey.'.concept_least_learned_skills', $leastLearned) }}</textarea>
+                                <textarea class="report-edit-textarea" name="{{ $rowName }}[concept_least_learned_skills]" data-assessment-key="{{ $publishAssessmentKey }}" data-ai-field="concepts_least_learned_skills" @if ($isFinalized) readonly tabindex="-1" @endif>{{ old('reports.'.$publishAssessmentKey.'.concept_least_learned_skills', $leastLearned) }}</textarea>
                                 <div class="report-print-text"></div>
                             </td>
                             <td>
-                                <textarea class="report-edit-textarea" name="{{ $rowName }}[issues_concern]">{{ old('reports.'.$publishAssessmentKey.'.issues_concern', $report->issues_concern) }}</textarea>
+                                <textarea class="report-edit-textarea" name="{{ $rowName }}[issues_concern]" @if ($isFinalized) readonly tabindex="-1" @endif>{{ old('reports.'.$publishAssessmentKey.'.issues_concern', $report->issues_concern) }}</textarea>
                                 <div class="report-print-text"></div>
                             </td>
                             <td>
                                 @if ($reportType === 'formative')
-                                    <textarea class="report-edit-textarea" name="{{ $rowName }}[interventions_done]">{{ old('reports.'.$publishAssessmentKey.'.interventions_done', $lastColumn) }}</textarea>
+                                    <textarea class="report-edit-textarea" name="{{ $rowName }}[interventions_done]" @if ($isFinalized) readonly tabindex="-1" @endif>{{ old('reports.'.$publishAssessmentKey.'.interventions_done', $lastColumn) }}</textarea>
                                 @else
-                                    <textarea class="report-edit-textarea" name="{{ $rowName }}[future_plans_curriculum]">{{ old('reports.'.$publishAssessmentKey.'.future_plans_curriculum', $lastColumn) }}</textarea>
+                                    <textarea class="report-edit-textarea" name="{{ $rowName }}[future_plans_curriculum]" @if ($isFinalized) readonly tabindex="-1" @endif>{{ old('reports.'.$publishAssessmentKey.'.future_plans_curriculum', $lastColumn) }}</textarea>
                                 @endif
                                 <div class="report-print-text"></div>
                             </td>

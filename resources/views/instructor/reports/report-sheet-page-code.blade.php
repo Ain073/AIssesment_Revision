@@ -74,8 +74,101 @@
             applyReportContentStyle();
         };
 
+        const isReportFinalized = @json($isFinalized);
+        const reportSheetWrap = document.querySelector('.report-sheet-wrap');
+        const editReportButton = document.getElementById('editReportButton');
+        const cancelEditButton = document.getElementById('cancelEditButton');
+        const saveDraftButton = document.getElementById('saveDraftButton');
+        const finalizeButton = document.getElementById('finalizeButton');
+        const aiDraftButton = document.getElementById('aiDraftButton');
+        const aiProviderControl = document.getElementById('aiProviderControl');
+        const reportStatusBadge = document.getElementById('reportStatusBadge');
+        const reportStatusBadgeIcon = document.getElementById('reportStatusBadgeIcon');
+        const reportStatusBadgeText = document.getElementById('reportStatusBadgeText');
+        const reportLockedNotice = document.getElementById('reportLockedNotice');
+
+        let initialValuesSnapshot = {};
+
+        const takeSnapshot = () => {
+            initialValuesSnapshot = {};
+            reportDraftFields().forEach((field) => {
+                if (field.name) {
+                    initialValuesSnapshot[field.name] = field.value;
+                }
+            });
+        };
+
+        const setReportLocked = (locked) => {
+            reportDraftFields().forEach((field) => {
+                if (locked) {
+                    field.setAttribute('readonly', 'readonly');
+                    field.setAttribute('tabindex', '-1');
+                } else {
+                    field.removeAttribute('readonly');
+                    field.removeAttribute('tabindex');
+                }
+            });
+
+            if (locked) {
+                reportSheetWrap?.classList.add('is-locked');
+                if (editReportButton) editReportButton.style.display = 'inline-flex';
+                if (cancelEditButton) cancelEditButton.style.display = 'none';
+                if (saveDraftButton) saveDraftButton.style.display = 'none';
+                if (finalizeButton) finalizeButton.style.display = 'none';
+                if (aiDraftButton) aiDraftButton.style.display = 'none';
+                if (aiProviderControl) aiProviderControl.style.display = 'none';
+                if (reportLockedNotice) reportLockedNotice.style.display = 'flex';
+
+                if (reportStatusBadge) {
+                    reportStatusBadge.className = 'report-status-badge badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1 px-2.5 py-1 fs-7 fw-bold';
+                    if (reportStatusBadgeIcon) reportStatusBadgeIcon.textContent = 'lock';
+                    if (reportStatusBadgeText) reportStatusBadgeText.textContent = 'Finalized';
+                }
+            } else {
+                reportSheetWrap?.classList.remove('is-locked');
+                if (editReportButton) editReportButton.style.display = 'none';
+                if (cancelEditButton) cancelEditButton.style.display = 'inline-flex';
+                if (saveDraftButton) saveDraftButton.style.display = 'inline-flex';
+                if (finalizeButton) finalizeButton.style.display = 'inline-flex';
+                if (aiDraftButton) aiDraftButton.style.display = 'inline-flex';
+                if (aiProviderControl) aiProviderControl.style.display = 'flex';
+                if (reportLockedNotice) reportLockedNotice.style.display = 'none';
+
+                if (reportStatusBadge) {
+                    reportStatusBadge.className = 'report-status-badge badge bg-warning-subtle text-warning-emphasis border border-warning-subtle d-inline-flex align-items-center gap-1 px-2.5 py-1 fs-7 fw-bold';
+                    if (reportStatusBadgeIcon) reportStatusBadgeIcon.textContent = 'edit';
+                    if (reportStatusBadgeText) reportStatusBadgeText.textContent = 'Editing';
+                }
+            }
+        };
+
+        if (editReportButton) {
+            editReportButton.addEventListener('click', () => {
+                takeSnapshot();
+                setReportLocked(false);
+                const firstField = document.querySelector('.report-edit-textarea, .report-header-input');
+                firstField?.focus();
+            });
+        }
+
+        if (cancelEditButton) {
+            cancelEditButton.addEventListener('click', () => {
+                reportDraftFields().forEach((field) => {
+                    if (field.name && Object.prototype.hasOwnProperty.call(initialValuesSnapshot, field.name)) {
+                        field.value = initialValuesSnapshot[field.name];
+                        syncPrintText(field);
+                        if (field.classList.contains('report-edit-textarea')) {
+                            autosize(field);
+                        }
+                    }
+                });
+                clearReportDraft();
+                setReportLocked(true);
+            });
+        }
+
         const saveReportDraft = () => {
-            if (! reportDraftStorageKey) {
+            if (! reportDraftStorageKey || reportSheetWrap?.classList.contains('is-locked')) {
                 return;
             }
 
@@ -171,7 +264,11 @@
         };
 
         restoreReportContentStyle();
-        restoreReportDraft();
+        if (isReportFinalized) {
+            clearReportDraft();
+        } else {
+            restoreReportDraft();
+        }
 
         document.querySelectorAll('.report-edit-textarea').forEach((textarea) => {
             autosize(textarea);
@@ -220,7 +317,7 @@
         });
 
         window.addEventListener('beforeunload', () => {
-            if (! reportFormSubmitting) {
+            if (! reportFormSubmitting && ! reportSheetWrap?.classList.contains('is-locked')) {
                 saveReportDraft();
             }
         });
