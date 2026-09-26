@@ -736,6 +736,9 @@
                 table-layout: fixed !important;
                 visibility: visible !important;
                 opacity: 1 !important;
+                /* outer shadow completes the 0.5px gap on leftmost/rightmost edges
+                   so outer cells (0.5px inset) + table shadow (0.5px outside) = 1px visible */
+                box-shadow: 0 0 0 0.5px #111827 !important;
             }
 
             [data-ff-print] .report-print-table tbody,
