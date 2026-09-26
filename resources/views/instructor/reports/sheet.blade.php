@@ -750,30 +750,20 @@
                 page-break-inside: auto !important;
             }
 
-            /* Each cell gets right + bottom border only; left/top come from neighbors or table edge */
+            /* Use box-shadow instead of border so box-decoration-break:clone repeats
+               borders on page 2 when a tall cell breaks across pages — same trick as Chrome's grid */
             [data-ff-print] .report-print-table th,
             [data-ff-print] .report-print-table td {
                 display: table-cell !important;
-                border-top: 0 !important;
-                border-left: 0 !important;
-                border-right: 1px solid #111827 !important;
-                border-bottom: 1px solid #111827 !important;
+                border: 0 !important;
+                /* 0.5px on each side — adjacent cells share 0.5+0.5 = 1px visible line */
+                box-shadow: inset 0 0 0 0.5px #111827 !important;
+                -webkit-box-decoration-break: clone !important;
+                box-decoration-break: clone !important;
                 padding: 0.22rem 0.3rem !important;
                 font-size: 0.64rem !important;
                 line-height: 1.2 !important;
                 vertical-align: top !important;
-            }
-
-            /* First row of every tbody/thead gets top border */
-            [data-ff-print] .report-print-table tr:first-child > th,
-            [data-ff-print] .report-print-table tr:first-child > td {
-                border-top: 1px solid #111827 !important;
-            }
-
-            /* First cell in every row gets left border */
-            [data-ff-print] .report-print-table th:first-child,
-            [data-ff-print] .report-print-table td:first-child {
-                border-left: 1px solid #111827 !important;
             }
 
             [data-ff-print] .report-print-table th {
@@ -784,12 +774,12 @@
 
             /* Thicker borders for header separator rows */
             [data-ff-print] .report-print-table .report-matrix-head th {
-                border-bottom: 2px solid #111827 !important;
-                border-top: 2px solid #111827 !important;
+                box-shadow: inset 0 2px 0 0 #111827, inset 0 -2px 0 0 #111827,
+                            inset 0.5px 0 0 0 #111827, inset -0.5px 0 0 0 #111827 !important;
             }
 
             [data-ff-print] .report-print-table .report-note {
-                border-bottom: 3px double #111827 !important;
+                box-shadow: inset 0 0 0 0.5px #111827, inset 0 -2px 0 0 #111827 !important;
             }
 
             [data-ff-print] .report-print-table .report-logo {
