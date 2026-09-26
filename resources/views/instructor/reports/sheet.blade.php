@@ -718,13 +718,17 @@
             [data-ff-print] .report-print-table {
                 display: table !important;
                 width: 100% !important;
-                border-collapse: collapse !important;
+                /* Use separate instead of collapse — Firefox has a known bug where
+                   border-collapse:collapse drops vertical borders inside tall rows */
+                border-collapse: separate !important;
+                border-spacing: 0 !important;
                 table-layout: fixed !important;
                 visibility: visible !important;
                 opacity: 1 !important;
             }
 
-            [data-ff-print] .report-print-table tbody {
+            [data-ff-print] .report-print-table tbody,
+            [data-ff-print] .report-print-table thead {
                 display: table-row-group !important;
             }
 
@@ -734,14 +738,30 @@
                 page-break-inside: avoid !important;
             }
 
+            /* Each cell gets right + bottom border only; left/top come from neighbors or table edge */
             [data-ff-print] .report-print-table th,
             [data-ff-print] .report-print-table td {
                 display: table-cell !important;
-                border: 1px solid #111827 !important;
+                border-top: 0 !important;
+                border-left: 0 !important;
+                border-right: 1px solid #111827 !important;
+                border-bottom: 1px solid #111827 !important;
                 padding: 0.22rem 0.3rem !important;
                 font-size: 0.64rem !important;
                 line-height: 1.2 !important;
                 vertical-align: top !important;
+            }
+
+            /* First row of every tbody/thead gets top border */
+            [data-ff-print] .report-print-table tr:first-child > th,
+            [data-ff-print] .report-print-table tr:first-child > td {
+                border-top: 1px solid #111827 !important;
+            }
+
+            /* First cell in every row gets left border */
+            [data-ff-print] .report-print-table th:first-child,
+            [data-ff-print] .report-print-table td:first-child {
+                border-left: 1px solid #111827 !important;
             }
 
             [data-ff-print] .report-print-table th {
@@ -750,18 +770,10 @@
                 font-weight: 700 !important;
             }
 
+            /* Thicker borders for header separator rows */
             [data-ff-print] .report-print-table .report-matrix-head th {
                 border-bottom: 2px solid #111827 !important;
                 border-top: 2px solid #111827 !important;
-            }
-
-            [data-ff-print] .report-print-table tr:first-child > * {
-                border-top: 2px solid #111827 !important;
-            }
-
-            [data-ff-print] .report-print-table tr:nth-child(2) > *,
-            [data-ff-print] .report-print-table tr:nth-child(5) > * {
-                border-bottom: 2px solid #111827 !important;
             }
 
             [data-ff-print] .report-print-table .report-note {
