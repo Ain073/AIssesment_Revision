@@ -272,7 +272,7 @@
 
         @media print {
             @page {
-                size: {{ $paper['width'] }} {{ $paper['height'] }};
+                size: landscape;
                 margin: {{ $paper['margin'] }};
             }
 
