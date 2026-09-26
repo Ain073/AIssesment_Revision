@@ -13,6 +13,7 @@
             'height' => '8.27in',
             'margin' => '0.18in',
             'preview_ratio' => '0.9',
+            'page_size' => 'a4 landscape',
         ],
         'short' => [
             'label' => 'Short / Letter',
@@ -21,6 +22,7 @@
             'height' => '8.5in',
             'margin' => '0.18in',
             'preview_ratio' => '0.846',
+            'page_size' => 'letter landscape',
         ],
         'long' => [
             'label' => 'Long / Legal',
@@ -29,6 +31,7 @@
             'height' => '8.5in',
             'margin' => '0.2in',
             'preview_ratio' => '1',
+            'page_size' => 'legal landscape',
         ],
     ];
     $selectedPaper = array_key_exists(request('paper'), $paperOptions) ? request('paper') : 'long';
@@ -391,7 +394,7 @@
 
         @media print {
             @page {
-                size: {{ $paper['width'] }} {{ $paper['height'] }};
+                size: {{ $paper['page_size'] }};
                 margin: {{ $paper['margin'] }};
             }
 
