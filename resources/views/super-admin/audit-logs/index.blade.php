@@ -61,6 +61,14 @@
                 @endforeach
             </select>
 
+            {{-- Action --}}
+            <select class="form-select" id="auditAction" name="action" style="width: auto;" onchange="this.form.submit()">
+                <option value="">All Actions</option>
+                @foreach ($actions as $a)
+                    <option value="{{ $a }}" @selected(request('action') === $a)>{{ ucwords(strtolower(str_replace('_', ' ', $a))) }}</option>
+                @endforeach
+            </select>
+
             {{-- Date range --}}
             <div class="d-flex align-items-center gap-1">
                 <input class="form-control" id="auditFrom" name="from" type="date" value="{{ request('from') }}" title="From" style="width: 148px;" onchange="this.form.submit()">
@@ -74,7 +82,7 @@
                 Search
             </button>
 
-            @if (request()->hasAny(['search', 'role', 'module', 'from', 'to']))
+            @if (request()->hasAny(['search', 'role', 'module', 'action', 'from', 'to']))
                 <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('super-admin.audit-logs') }}">
                     <span class="material-symbols-outlined fs-6">close</span>
                     Clear
@@ -135,7 +143,7 @@
 
                             {{-- Action --}}
                             <td data-label="Action">
-                                <span class="fw-semibold text-dark">{{ ucfirst(strtolower($log->action)) }}</span>
+                                <span class="fw-semibold text-dark">{{ ucwords(strtolower(str_replace('_', ' ', $log->action))) }}</span>
                             </td>
 
                             {{-- Module --}}

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Instructor;
 
 use App\Models\Report;
+use App\Services\AuditLogger;
 use App\Services\ReportAiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -95,6 +96,17 @@ class ReportController extends BaseController
             'report_type' => $validated['report_type'],
             'publish_assessment_ids' => $ownedCompletedAssessments->pluck('publish_assessment_id')->all(),
         ]);
+
+        $reportTypeLabel = $this->reportCategories()[$validated['report_type']] ?? ucfirst($validated['report_type']);
+        $assessmentTitles = $ownedCompletedAssessments->map(fn ($p) => $p->assessment?->title)->filter()->unique()->join(', ');
+        $titleSnippet = $assessmentTitles ? ' for assessment/s: '.Str::limit($assessmentTitles, 80) : '';
+
+        AuditLogger::log(
+            'CREATE',
+            'Reports',
+            "Prepared {$reportTypeLabel} report draft{$titleSnippet}",
+            $ownedCompletedAssessments->first()
+        );
 
         return redirect()
             ->route('instructor.reports.build', [
@@ -221,6 +233,25 @@ class ReportController extends BaseController
             'publish_assessment_ids' => $ownedCompletedAssessments->pluck('publish_assessment_id')->all(),
         ]);
 
+        $reportTypeLabel = $this->reportCategories()[$validated['report_type']] ?? ucfirst($validated['report_type']);
+        $assessmentCount = $ownedCompletedAssessments->count();
+
+        if ($validated['save_action'] === 'finalized') {
+            AuditLogger::log(
+                'FINALIZE',
+                'Reports',
+                "Finalized {$reportTypeLabel} report for '{$courseCodeTitle}' ({$assessmentCount} assessment/s)",
+                $ownedCompletedAssessments->first()
+            );
+        } else {
+            AuditLogger::log(
+                'UPDATE',
+                'Reports',
+                "Saved draft of {$reportTypeLabel} report for '{$courseCodeTitle}' ({$assessmentCount} assessment/s)",
+                $ownedCompletedAssessments->first()
+            );
+        }
+
         return redirect()
             ->route('instructor.reports.build', [
                 'type' => $validated['report_type'],
@@ -280,6 +311,16 @@ class ReportController extends BaseController
             'ai_provider' => $validated['ai_provider'],
             'source' => $drafts->pluck('source')->unique()->values()->all(),
         ]);
+
+        $providerName = strtoupper($validated['ai_provider']);
+        $reportTypeLabel = $this->reportCategories()[$validated['report_type']] ?? ucfirst($validated['report_type']);
+
+        AuditLogger::log(
+            'GENERATE',
+            'Reports',
+            "Generated AI report suggestions using {$providerName} for {$ownedCompletedAssessments->count()} assessment/s ({$reportTypeLabel})",
+            $ownedCompletedAssessments->first()
+        );
 
         return response()->json([
             'drafts' => $drafts,

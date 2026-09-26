@@ -66,6 +66,8 @@ class AuditLogController extends Controller
             'Assessments',
             'Grading',
             'Passing Rates',
+            'Reports',
+            'Subjects',
         ])
             ->merge(AuditLog::distinct()->pluck('module')->filter())
             ->unique()
@@ -90,6 +92,10 @@ class AuditLogController extends Controller
             'APPROVE',
             'REJECT',
             'IMPORT',
+            'FINALIZE',
+            'GENERATE',
+            'REOPEN',
+            'ADD_ITEM',
         ])
             ->merge(AuditLog::distinct()->pluck('action')->filter())
             ->unique()
