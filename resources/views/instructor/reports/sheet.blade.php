@@ -11,7 +11,7 @@
             'description' => '11.69 x 8.27 in',
             'width' => '11.69in',
             'height' => '8.27in',
-            'margin' => '0.18in',
+            'margin' => '0.35in 0.25in',
             'preview_ratio' => '0.9',
         ],
         'short' => [
@@ -19,7 +19,7 @@
             'description' => '11 x 8.5 in',
             'width' => '11in',
             'height' => '8.5in',
-            'margin' => '0.18in',
+            'margin' => '0.35in 0.25in',
             'preview_ratio' => '0.846',
         ],
         'long' => [
@@ -27,7 +27,7 @@
             'description' => '13 x 8.5 in',
             'width' => '13in',
             'height' => '8.5in',
-            'margin' => '0.2in',
+            'margin' => '0.35in 0.25in',
             'preview_ratio' => '1',
         ],
     ];
@@ -438,7 +438,7 @@
                 min-width: 100%;
                 height: auto !important;
                 min-height: 0 !important;
-                padding: 0;
+                padding: 4px 1px 0 1px;
                 break-inside: auto;
                 page-break-inside: auto;
             }
@@ -454,7 +454,8 @@
                 display: block !important;
                 width: 100%;
                 margin: 0;
-                padding: 0;
+                padding: 4px 1px 0 1px;
+                box-sizing: border-box;
                 visibility: visible !important;
                 opacity: 1 !important;
             }
