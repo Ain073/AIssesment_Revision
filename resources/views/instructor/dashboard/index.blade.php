@@ -37,19 +37,26 @@
 
         .hero-actions {
             display: grid;
-            gap: 0.75rem;
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+            min-width: 180px;
+            max-width: 240px;
+            justify-self: end;
         }
 
         .hero-action-link {
             display: flex;
             align-items: center;
-            gap: 0.85rem;
-            padding: 0.8rem 0.95rem;
+            gap: 0.65rem;
+            padding: 0.55rem 0.8rem;
+            min-height: 42px;
             border: 1px solid rgba(255, 255, 255, 0.22);
             border-radius: 0.45rem;
             background: rgba(255, 255, 255, 0.1);
             color: #fff;
+            font-weight: 700;
             text-decoration: none;
+            justify-content: flex-start;
         }
 
         .hero-action-link:hover,
@@ -59,15 +66,19 @@
         }
 
         .hero-action-icon {
-            width: 40px;
-            height: 40px;
+            width: 28px;
+            height: 28px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            flex: 0 0 40px;
+            flex: 0 0 28px;
             border-radius: 0.35rem;
             background: rgba(255, 245, 191, 0.2);
             color: var(--psu-gold);
+        }
+
+        .hero-action-icon .material-symbols-outlined {
+            font-size: 1.15rem;
         }
 
         .stat-card,
