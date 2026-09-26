@@ -856,6 +856,7 @@
                 <span class="material-symbols-outlined fs-5">arrow_back</span>
                 Back
             </a>
+            {{-- Paper Size Control (commented out - paper size is set directly in the print dialog; defaults to Long / Legal)
             <div class="report-paper-control">
                 <label for="paperSize">Paper</label>
                 <select class="form-select form-select-sm" id="paperSize">
@@ -865,6 +866,7 @@
                 </select>
                 <span class="report-paper-caption" id="paperSizeCaption">{{ $paper['description'] }}</span>
             </div>
+            --}}
             <div class="report-paper-control report-font-family-control">
                 <label for="reportContentFontFamily">Font</label>
                 <select class="form-select form-select-sm" id="reportContentFontFamily">
