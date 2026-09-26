@@ -680,6 +680,9 @@
 
             .report-print-data-cell {
                 display: block;
+                font-family: var(--report-content-font-family);
+                font-size: var(--report-content-font-size);
+                line-height: 1.2;
                 white-space: pre-wrap;
                 overflow-wrap: anywhere;
             }
@@ -703,6 +706,33 @@
 
             .report-header-input {
                 outline: 0 !important;
+            }
+        }
+
+        @supports (-moz-appearance: none) {
+            @media print {
+                .report-print-grid-sheet {
+                    display: none !important;
+                }
+
+                .report-print-table {
+                    display: table !important;
+                    width: 100% !important;
+                    border-collapse: collapse !important;
+                    table-layout: fixed !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                }
+
+                .report-print-table thead,
+                .report-print-table tbody {
+                    display: table-row-group !important;
+                }
+
+                .report-print-table tr {
+                    break-inside: avoid !important;
+                    page-break-inside: avoid !important;
+                }
             }
         }
     </style>

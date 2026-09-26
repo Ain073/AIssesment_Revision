@@ -465,6 +465,28 @@
                 overflow-wrap: anywhere;
             }
         }
+
+        @supports (-moz-appearance: none) {
+            @media print {
+                .report-print-grid-sheet {
+                    display: none !important;
+                }
+
+                .report-table {
+                    display: table !important;
+                    width: 100% !important;
+                    border-collapse: collapse !important;
+                    table-layout: fixed !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                }
+
+                .report-table tr {
+                    break-inside: avoid !important;
+                    page-break-inside: avoid !important;
+                }
+            }
+        }
     </style>
 @endpush
 
