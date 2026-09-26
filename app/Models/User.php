@@ -122,7 +122,7 @@ class User extends Authenticatable
 
     public function portalSubtitle(): string
     {
-        return $this->hasRole('super_admin') ? 'Admin Panel' : $this->portalRoleLabel();
+        return $this->hasRole('super_admin') ? 'Admin Portal' : $this->portalRoleLabel();
     }
 
     public function portalProfileMeta(): string

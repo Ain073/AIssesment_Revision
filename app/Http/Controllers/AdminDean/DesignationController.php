@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\AdminDean;
 
 use App\Models\Department;
+use App\Models\DesignationDetail;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -41,6 +43,12 @@ class DesignationController extends BaseController
             ->values();
         $teachers = $this->scopedTeachers($selectedDepartmentId);
 
+        $designationHistory = DesignationDetail::with(['instructor.user', 'department', 'designatedByUser'])
+            ->where('designation_id', 2) // Department Chair
+            ->when($scopedCollege, fn ($query) => $query->where('college_id', $scopedCollege->college_id))
+            ->orderByDesc('created_at')
+            ->get();
+
         return view('admin-dean.designations.index', $this->sharedData('designations') + [
             'scopedCollege' => $scopedCollege,
             'departments' => $departments,
@@ -50,12 +58,12 @@ class DesignationController extends BaseController
                 ->values(),
             'availableDepartmentChairTeachers' => $teachers
                 ->reject(fn (User $teacher) => $teacher->hasRole('admin_dean') || $teacher->hasRole('department_chair'))
-                ->reject(fn (User $teacher) => $chairDepartmentIds->contains($teacher->instructorProfile?->department_id))
                 ->values(),
+            'designationHistory' => $designationHistory,
         ]);
     }
 
-    public function grantDepartmentChair(User $user): RedirectResponse
+    public function grantDepartmentChair(Request $request, User $user): RedirectResponse
     {
         $actor = $this->currentUser();
         $teacher = $this->scopedTeacher($user);
@@ -74,13 +82,28 @@ class DesignationController extends BaseController
                 ->withErrors(new MessageBag(['designation' => 'Teacher must have an assigned department before receiving Department Chair designation.']));
         }
 
-        if ($this->departmentHasChair($departmentId, $teacher->id)) {
-            return redirect()
-                ->back()
-                ->withErrors(new MessageBag(['designation' => 'This department already has a Department Chair. Remove the current designation first.']));
+        $roleId = Role::query()->where('role_name', 'department_chair')->value('role_id');
+
+        // Conclude any prior active Department Chair appointment for this department
+        $priorChairs = User::query()
+            ->whereKeyNot($teacher->id)
+            ->whereHas('roles', fn ($query) => $query->where('role_name', 'department_chair'))
+            ->whereHas('instructorProfile', fn ($query) => $query->where('department_id', $departmentId))
+            ->get();
+
+        foreach ($priorChairs as $priorChair) {
+            DB::table('user_roles')->where('user_id', $priorChair->id)->where('role_id', $roleId)->delete();
         }
 
-        $roleId = Role::query()->where('role_name', 'department_chair')->value('role_id');
+        DesignationDetail::query()
+            ->where('department_id', $departmentId)
+            ->where('designation_id', 2)
+            ->where('status', 'active')
+            ->update([
+                'end_date' => now()->toDateString(),
+                'status' => 'completed',
+                'updated_at' => now(),
+            ]);
 
         DB::table('user_roles')->updateOrInsert(
             [
@@ -93,12 +116,37 @@ class DesignationController extends BaseController
             ],
         );
 
+        // Record the new appointment in designation_details
+        $currentYear = (int) date('Y');
+        $defaultAy = date('n') >= 8 ? "{$currentYear}-" . ($currentYear + 1) : ($currentYear - 1) . "-{$currentYear}";
+        $academicYear = $request->input('academic_year') ?: $defaultAy;
+        $effectivityDate = $request->input('effectivity_date') ?: now()->toDateString();
+        $remarks = $request->input('remarks') ?: 'Designated as Department Chair by College Dean';
+
+        if ($teacher->instructorProfile) {
+            DesignationDetail::create([
+                'instructor_id' => $teacher->instructorProfile->instructor_profile_id,
+                'designation_id' => 2, // Department Chair
+                'department_id' => $departmentId,
+                'college_id' => $this->scopedCollege($actor)?->college_id,
+                'academic_year' => $academicYear,
+                'effectivity_date' => $effectivityDate,
+                'end_date' => null,
+                'status' => 'active',
+                'designated_by' => Auth::id(),
+                'remarks' => $remarks,
+            ]);
+        }
+
         Log::info('Department Chair designation granted by dean.', [
             'actor_id' => Auth::id(),
             'college_id' => $this->scopedCollege($actor)?->college_id,
             'user_id' => $teacher->id,
             'email' => $teacher->email,
         ]);
+
+        $deptName = $teacher->instructorProfile?->department?->dept_name ?? 'Unknown Dept';
+        AuditLogger::log('DESIGNATE', 'Designations', "Designated {$teacher->displayName()} as Department Chair of {$deptName}", $teacher);
 
         return redirect()
             ->back()
@@ -116,12 +164,27 @@ class DesignationController extends BaseController
             ->where('role_id', $roleId)
             ->delete();
 
+        // Mark active designation as concluded with end_date
+        if ($teacher->instructorProfile) {
+            DesignationDetail::query()
+                ->where('instructor_id', $teacher->instructorProfile->instructor_profile_id)
+                ->where('designation_id', 2)
+                ->where('status', 'active')
+                ->update([
+                    'end_date' => now()->toDateString(),
+                    'status' => 'completed',
+                    'updated_at' => now(),
+                ]);
+        }
+
         Log::info('Department Chair designation removed by dean.', [
             'actor_id' => Auth::id(),
             'college_id' => $this->scopedCollege($actor)?->college_id,
             'user_id' => $teacher->id,
             'email' => $teacher->email,
         ]);
+
+        AuditLogger::log('REVOKE', 'Designations', "Revoked Department Chair designation from {$teacher->displayName()}");
 
         return redirect()
             ->back()

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\College;
 use App\Models\Department;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -42,6 +43,8 @@ class CollegeDepartmentController extends Controller
             'college_name' => $college->college_name,
         ]);
 
+        AuditLogger::log('CREATE', 'Colleges', "Created college '{$college->college_name}'", $college);
+
         return redirect()
             ->route('super-admin.colleges')
             ->with('status', 'College added successfully.');
@@ -69,6 +72,8 @@ class CollegeDepartmentController extends Controller
             'college_id' => $department->college_id,
         ]);
 
+        AuditLogger::log('CREATE', 'Colleges', "Created department '{$department->dept_name}' in {$department->college?->college_name}", $department);
+
         return redirect()
             ->route('super-admin.colleges')
             ->with('status', 'Department added successfully.');
@@ -93,6 +98,8 @@ class CollegeDepartmentController extends Controller
             'college_id' => $college->college_id,
             'college_name' => $college->college_name,
         ]);
+
+        AuditLogger::log('UPDATE', 'Colleges', "Updated college '{$college->college_name}'", $college);
 
         return redirect()
             ->route('super-admin.colleges')
@@ -121,6 +128,8 @@ class CollegeDepartmentController extends Controller
             'department_name' => $department->dept_name,
             'college_id' => $department->college_id,
         ]);
+
+        AuditLogger::log('UPDATE', 'Colleges', "Updated department '{$department->dept_name}'", $department);
 
         return redirect()
             ->route('super-admin.colleges')
@@ -155,6 +164,8 @@ class CollegeDepartmentController extends Controller
             'programs_removed' => $programCount,
         ]);
 
+        AuditLogger::log('DELETE', 'Colleges', "Deleted college '{$collegeName}'");
+
         return redirect()
             ->route('super-admin.colleges')
             ->with('status', "{$collegeName} deleted successfully.");
@@ -185,6 +196,8 @@ class CollegeDepartmentController extends Controller
             'department_name' => $departmentName,
             'instructor_profiles_affected' => $instructorCount,
         ]);
+
+        AuditLogger::log('DELETE', 'Colleges', "Deleted department '{$departmentName}'");
 
         return redirect()
             ->route('super-admin.colleges')

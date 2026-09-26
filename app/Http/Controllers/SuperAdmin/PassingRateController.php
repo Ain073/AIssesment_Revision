@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PassingRateSetting;
+use App\Services\AuditLogger;
 use App\Support\YearLevel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,6 +43,8 @@ class PassingRateController extends Controller
         });
 
         PassingRateSetting::clearRateCache();
+
+        AuditLogger::log('UPDATE', 'Passing Rates', 'Updated passing rate benchmarks for 1st-4th year levels');
 
         return redirect()
             ->route('super-admin.passing-rates')

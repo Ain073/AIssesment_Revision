@@ -1,7 +1,7 @@
 @extends('layouts.portal')
 
 @php
-    $portalSubtitle = 'Admin Panel';
+    $portalSubtitle = 'Admin Portal';
     $profileInitials = 'A';
     $profileName = 'Admin';
     $profileMeta = 'Admin Account';
@@ -14,6 +14,7 @@
         ['label' => 'Dean Designation', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active' => request()->routeIs('super-admin.roles')],
         ['label' => 'Passing Rates', 'icon' => 'percent', 'href' => route('super-admin.passing-rates'), 'active' => request()->routeIs('super-admin.passing-rates')],
         ['label' => 'Users', 'icon' => 'person_search', 'href' => route('super-admin.users'), 'active' => request()->routeIs('super-admin.users')],
+        ['label' => 'Audit Trail', 'icon' => 'fact_check', 'href' => route('super-admin.audit-logs'), 'active' => request()->routeIs('super-admin.audit-logs')],
     ];
 @endphp
 

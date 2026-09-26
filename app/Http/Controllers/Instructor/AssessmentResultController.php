@@ -6,6 +6,7 @@ use App\Models\PassingRateSetting;
 use App\Models\PublishAssessment;
 use App\Models\StudentProfile;
 use App\Models\Submission;
+use App\Services\AuditLogger;
 use App\Support\AssessmentScoring;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -235,6 +236,8 @@ class AssessmentResultController extends BaseController
         if ($errors !== []) {
             throw ValidationException::withMessages($errors);
         }
+
+        AuditLogger::log('GRADE', 'Grading', "Graded essay answers for submission #{$submission->submission_id} in assessment '{$ownedPublishAssessment->assessment?->title}'", $submission);
 
         Log::info('Instructor manually checked essay answers.', [
             'actor_id' => $user->id,

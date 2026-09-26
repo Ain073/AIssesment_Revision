@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,49 @@ class ProfileController extends Controller
         return view('profile.index', $this->layoutData($user) + [
             'user' => $user,
             'detailRows' => $this->detailRows($user),
+        ]);
+    }
+
+    public function activityLog(Request $request): View
+    {
+        $user = $this->profileUser();
+
+        if ($user->hasRole('student')) {
+            abort(403, 'Activity logs are not available for student accounts.');
+        }
+
+        $query = AuditLog::query()->where('user_id', $user->id);
+
+        if ($request->filled('module')) {
+            $query->where('module', $request->module);
+        }
+
+        if ($request->filled('from')) {
+            $query->whereDate('created_at', '>=', $request->from);
+        }
+
+        if ($request->filled('to')) {
+            $query->whereDate('created_at', '<=', $request->to);
+        }
+
+        if ($request->filled('search')) {
+            $term = '%' . $request->search . '%';
+            $query->where(function ($q) use ($term) {
+                $q->where('action', 'like', $term)
+                    ->orWhere('module', 'like', $term)
+                    ->orWhere('description', 'like', $term)
+                    ->orWhere('ip_address', 'like', $term);
+            });
+        }
+
+        $logs = $query->latest('created_at')->paginate(15)->withQueryString();
+
+        $modules = AuditLog::where('user_id', $user->id)->distinct()->pluck('module')->sort()->values();
+
+        return view('profile.activity-log', $this->layoutData($user) + [
+            'user' => $user,
+            'logs' => $logs,
+            'modules' => $modules,
         ]);
     }
 
@@ -323,6 +367,7 @@ SVG;
                 ['label' => 'Programs', 'icon' => 'school', 'href' => route('super-admin.programs'), 'active_route' => 'super-admin.programs'],
                 ['label' => 'Dean Designation', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active_route' => 'super-admin.roles'],
                 ['label' => 'Users', 'icon' => 'person_search', 'href' => route('super-admin.users'), 'active_route' => 'super-admin.users*'],
+                ['label' => 'Audit Trail', 'icon' => 'history', 'href' => route('super-admin.audit-logs'), 'active_route' => 'super-admin.audit-logs*'],
             ]);
         }
 

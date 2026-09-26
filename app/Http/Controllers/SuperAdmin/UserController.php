@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Program;
 use App\Models\User;
+use App\Services\AuditLogger;
 use App\Services\StudentAccountImportService;
 use App\Services\UserAccountService;
 use Illuminate\Http\RedirectResponse;
@@ -90,6 +91,7 @@ class UserController extends Controller
         abort_if($programs->isEmpty(), 403);
 
         $result = $importer->confirm($request, $programs, 'super-admin');
+        AuditLogger::log('IMPORT', 'Users', "Imported {$result['created_count']} student account/s via CSV");
         $redirect = redirect()
             ->route('super-admin.users')
             ->with('status', $result['created_count'].' student accounts created successfully.');
@@ -194,6 +196,8 @@ class UserController extends Controller
 
         $accounts->sendAccountCreatedNotification($createdUser);
         $passwordEmailSent = $accounts->sendInitialPasswordEmail($createdUser, $initialPassword);
+
+        AuditLogger::log('CREATE', 'Users', "Created {$validated['base_role']} account for {$createdUser->displayName()} ({$createdUser->email})", $createdUser);
 
         $redirect = redirect()
             ->route('super-admin.users')
@@ -315,6 +319,8 @@ class UserController extends Controller
                 'status' => $validated['status'],
             ]);
         });
+
+        AuditLogger::log('UPDATE', 'Users', "Updated {$validated['base_role']} account for {$user->displayName()} (Status: {$validated['status']})", $user);
 
         return redirect()
             ->route('super-admin.users')

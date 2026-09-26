@@ -51,4 +51,15 @@ class InstructorProfile extends Model
     {
         return $this->hasMany(Assessment::class, 'instructor_id', 'instructor_profile_id');
     }
+
+    public function designationDetails(): HasMany
+    {
+        return $this->hasMany(DesignationDetail::class, 'instructor_id', 'instructor_profile_id');
+    }
+
+    public function activeDesignation(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(DesignationDetail::class, 'instructor_id', 'instructor_profile_id')
+            ->where('status', 'active');
+    }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -107,6 +108,8 @@ class LoginController extends Controller
             'ip' => $request->ip(),
         ]);
 
+        AuditLogger::log('LOGIN', 'Auth', 'User logged in successfully.');
+
         $redirectPath = $this->redirectPath();
 
         if ($redirectPath === null) {
@@ -139,6 +142,8 @@ class LoginController extends Controller
             'email' => Auth::user()?->email,
             'ip' => $request->ip(),
         ]);
+
+        AuditLogger::log('LOGOUT', 'Auth', 'User logged out.');
 
         Auth::logout();
 

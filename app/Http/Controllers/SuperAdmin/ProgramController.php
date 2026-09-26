@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Program;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -57,6 +58,8 @@ class ProgramController extends Controller
             'is_active' => $program->is_active,
         ]);
 
+        AuditLogger::log('CREATE', 'Programs', "Created program '{$program->program_name}' under {$department->dept_name}", $program);
+
         return redirect()
             ->route('super-admin.programs', ['department' => $department->public_id])
             ->with('status', 'Program added successfully.');
@@ -89,6 +92,8 @@ class ProgramController extends Controller
             'is_active' => $program->is_active,
         ]);
 
+        AuditLogger::log('UPDATE', 'Programs', "Updated program '{$program->program_name}' (Status: ".($program->is_active ? 'Active' : 'Inactive').")", $program);
+
         return redirect()
             ->route('super-admin.programs', ['department' => $department->public_id])
             ->with('status', 'Program updated successfully.');
@@ -119,6 +124,8 @@ class ProgramController extends Controller
             'program_id' => $programId,
             'program_name' => $programName,
         ]);
+
+        AuditLogger::log('DELETE', 'Programs', "Deleted program '{$programName}'");
 
         return redirect()
             ->route('super-admin.programs', ['department' => $redirectDepartmentKey])

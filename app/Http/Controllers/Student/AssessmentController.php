@@ -6,6 +6,7 @@ use App\Models\PassingRateSetting;
 use App\Models\PublishAssessment;
 use App\Models\Submission;
 use App\Models\SubmissionSecurityEvent;
+use App\Services\AuditLogger;
 use App\Services\NotificationService;
 use App\Support\AssessmentScoring;
 use Illuminate\Http\JsonResponse;
@@ -248,6 +249,8 @@ class AssessmentController extends BaseController
 
             $publishAssessment->loadMissing('assessment', 'classDetail.class.instructorProfile.user');
 
+        AuditLogger::log('SUBMIT', 'Assessments', "Submitted attempt for '{$publishAssessment->assessment?->title}' ({$publishAssessment->classDetail?->class?->class_name})", $publishAssessment->assessment);
+
             if ($publishAssessment->class?->instructorProfile?->user) {
                 app(NotificationService::class)->send(
                     $publishAssessment->class->instructorProfile->user,
@@ -372,6 +375,8 @@ class AssessmentController extends BaseController
         ]);
 
         $publishAssessment->loadMissing('assessment', 'classDetail.class.instructorProfile.user');
+
+        AuditLogger::log('SUBMIT', 'Assessments', "Submitted attempt for '{$publishAssessment->assessment?->title}' ({$publishAssessment->classDetail?->class?->class_name})", $publishAssessment->assessment);
 
         if ($publishAssessment->class?->instructorProfile?->user) {
             app(NotificationService::class)->send(

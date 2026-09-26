@@ -64,10 +64,16 @@
             </button>
             <div class="collapse profile-menu-panel" id="sidebarProfileMenu">
                 <div class="d-grid gap-2">
-                    <a class="profile-menu-link" href="{{ route('profile.show') }}">
+                    <a class="profile-menu-link {{ request()->routeIs('profile.show') ? 'active' : '' }}" href="{{ route('profile.show') }}">
                         <span class="material-symbols-outlined">account_circle</span>
                         <span class="sidebar-text">Profile</span>
                     </a>
+                    @if (! auth()->user()?->hasRole('student'))
+                        <a class="profile-menu-link {{ request()->routeIs('profile.activity') ? 'active' : '' }}" href="{{ route('profile.activity') }}">
+                            <span class="material-symbols-outlined">history</span>
+                            <span class="sidebar-text">Activity Log</span>
+                        </a>
+                    @endif
                     <form action="{{ route('logout') }}" class="profile-menu-form" method="POST">
                         @csrf
                         <button class="profile-logout-btn" type="submit">

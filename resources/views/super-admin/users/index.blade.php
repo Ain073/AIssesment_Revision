@@ -1,7 +1,7 @@
 @extends('layouts.portal')
 
 @php
-    $portalSubtitle = 'Admin Panel';
+    $portalSubtitle = 'Admin Portal';
     $profileInitials = 'A';
     $profileName = 'Admin';
     $profileMeta = 'Admin Account';
@@ -15,6 +15,7 @@
         ['label' => 'Dean Designation', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active' => request()->routeIs('super-admin.roles')],
         ['label' => 'Passing Rates', 'icon' => 'percent', 'href' => route('super-admin.passing-rates'), 'active' => request()->routeIs('super-admin.passing-rates')],
         ['label' => 'Users', 'icon' => 'person_search', 'href' => route('super-admin.users'), 'active' => request()->routeIs('super-admin.users')],
+        ['label' => 'Audit Trail', 'icon' => 'fact_check', 'href' => route('super-admin.audit-logs'), 'active' => request()->routeIs('super-admin.audit-logs')],
     ];
 @endphp
 
@@ -124,10 +125,10 @@
                                         <td class="text-center" data-label="Designation">
                                             <div class="d-flex flex-wrap justify-content-center gap-2">
                                                 @if ($user->hasRole('admin_dean'))
-                                                    <span class="badge text-bg-primary rounded-1">Dean</span>
+                                                    <span class="badge text-bg-light border text-secondary rounded-1 fw-medium">Dean</span>
                                                 @endif
                                                 @if ($user->hasRole('department_chair'))
-                                                    <span class="badge text-bg-info rounded-1">Department Chair</span>
+                                                    <span class="badge text-bg-light border text-secondary rounded-1 fw-medium">Department Chair</span>
                                                 @endif
                                                 @if (! $user->hasRole('admin_dean') && ! $user->hasRole('department_chair'))
                                                     <span class="text-secondary fst-italic">No designation</span>

@@ -136,7 +136,15 @@
         questionSecondsLeft.set(currentIndex, Math.max(0, currentQuestionSecondsLeft));
     };
 
-    const lockQuestion = (index) => {
+    const isQuestionAnswered = (card) => {
+        if (! card) return false;
+        const checked = card.querySelector('input[type="radio"]:checked');
+        const textFields = Array.from(card.querySelectorAll('textarea, input[type="text"]'));
+        const hasText = textFields.some(tf => tf.value.trim() !== '');
+        return Boolean(checked || hasText);
+    };
+
+    const lockQuestion = (index, wasExpired = false) => {
         expiredQuestions.add(index);
 
         const card = cards[index];
@@ -148,7 +156,15 @@
             field.tabIndex = -1;
         });
 
-        jumps[index]?.classList.add('expired');
+        const jump = jumps[index];
+        if (jump) {
+            jump.classList.remove('active');
+            if (wasExpired && ! isQuestionAnswered(card)) {
+                jump.classList.add('expired');
+            } else {
+                jump.classList.add('completed');
+            }
+        }
     };
 
     const submitAfterQuestionTimer = () => {
@@ -170,7 +186,7 @@
     const handleQuestionTimerExpired = () => {
         stopQuestionTimer();
         questionSecondsLeft.set(currentIndex, 0);
-        lockQuestion(currentIndex);
+        lockQuestion(currentIndex, true);
         updateProgress();
         updateQuestionTimerDisplay();
 
@@ -232,10 +248,15 @@
         });
 
         cards[currentIndex]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        document.getElementById('previousQuestion').disabled = currentIndex === 0;
-        document.getElementById('nextQuestion').innerHTML = currentIndex === cards.length - 1
-            ? 'Last Question <span class="material-symbols-outlined">checklist</span>'
-            : 'Next Question <span class="material-symbols-outlined">chevron_right</span>';
+        const nextBtn = document.getElementById('nextQuestion');
+        if (nextBtn) {
+            if (currentIndex === cards.length - 1) {
+                nextBtn.style.display = 'none';
+            } else {
+                nextBtn.style.display = '';
+                nextBtn.innerHTML = 'Next Question <span class="material-symbols-outlined">chevron_right</span>';
+            }
+        }
         startQuestionTimer();
     };
 
@@ -255,9 +276,11 @@
         document.getElementById('answeredCount').textContent = String(answered.length);
         document.getElementById('progressBar').style.width = `${percent}%`;
 
-        jumps.forEach((jump, index) => {
-            jump.classList.toggle('answered', Boolean(answered.find((card) => Number(card.dataset.questionIndex) === index)));
-        });
+        if (! oneQuestionMode) {
+            jumps.forEach((jump, index) => {
+                jump.classList.toggle('answered', Boolean(answered.find((card) => Number(card.dataset.questionIndex) === index)));
+            });
+        }
     };
 
     const autoSubmitAssessment = () => {
@@ -376,12 +399,15 @@
     document.getElementById('closeSecurityWarning')?.addEventListener('click', closeSecurityWarning);
 
     if (oneQuestionMode) {
-        jumps.forEach((jump) => {
-            jump.addEventListener('click', () => setCurrentQuestion(Number(jump.dataset.questionJump)));
+        document.getElementById('nextQuestion')?.addEventListener('click', () => {
+            if (currentIndex < cards.length - 1) {
+                stopQuestionTimer();
+                questionSecondsLeft.set(currentIndex, 0);
+                lockQuestion(currentIndex, false);
+                updateProgress();
+                setCurrentQuestion(currentIndex + 1);
+            }
         });
-
-        document.getElementById('previousQuestion')?.addEventListener('click', () => setCurrentQuestion(currentIndex - 1));
-        document.getElementById('nextQuestion')?.addEventListener('click', () => setCurrentQuestion(currentIndex + 1));
     }
 
     if (preventCopyPaste) {

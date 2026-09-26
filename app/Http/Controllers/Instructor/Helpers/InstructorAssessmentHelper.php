@@ -7,6 +7,7 @@ use App\Models\PublishAssessment;
 use App\Models\InstructorProfile;
 use App\Models\Subject;
 use App\Models\User;
+use App\Services\AuditLogger;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -96,6 +97,9 @@ trait InstructorAssessmentHelper
             'published_assessment_ids' => $publishedAssessmentIds,
             'class_ids' => $ownedClasses->pluck('class_id')->all(),
         ]);
+
+        $classNames = $ownedClasses->pluck('section_name')->implode(', ');
+        AuditLogger::log('PUBLISH', 'Assessments', "Published '{$ownedAssessment->title}' to {$ownedClasses->count()} class/es", $ownedAssessment);
 
         $students = $ownedClasses
             ->map(fn ($class) => $class->enrolledStudentsCollection(['user']))

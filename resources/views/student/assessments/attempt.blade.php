@@ -125,20 +125,30 @@
             background: #fff;
             color: var(--psu-navy);
             font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            cursor: default;
         }
 
         .question-jump.active {
             border-color: var(--psu-navy);
             background: var(--psu-navy);
             color: var(--psu-gold);
+            box-shadow: 0 0 0 3px rgba(0, 26, 112, 0.18);
         }
 
-        .question-jump.answered {
-            border-color: var(--psu-navy-2);
+        .question-jump.answered,
+        .question-jump.completed {
+            border-color: #198754;
+            background: #e8f5e9;
+            color: #198754;
         }
 
         .question-jump.expired {
             border-color: #dc3545;
+            background: #ffebee;
             color: #dc3545;
         }
 
@@ -494,6 +504,7 @@
             ['enabled' => $publishAssessment->prevent_copy_paste, 'icon' => 'content_paste_off', 'label' => 'No copy / paste'],
             ['enabled' => $publishAssessment->detect_tab_switch, 'icon' => 'tab', 'label' => 'Tab/floating monitor'],
             ['enabled' => $publishAssessment->screenshot_protection, 'icon' => 'screenshot_monitor', 'label' => 'Screenshot deterrent'],
+            ['enabled' => $isOneQuestionMode, 'icon' => 'lock', 'label' => 'No backtracking (One-way)'],
         ])->where('enabled');
     @endphp
 
@@ -636,12 +647,23 @@
     </div>
 
     @if ($isOneQuestionMode)
-        <div class="d-flex gap-2 overflow-auto pb-3 mb-4 {{ $publishAssessment->prevent_copy_paste ? 'no-select' : '' }}" data-copy-protected>
-            @foreach ($items as $item)
-                <button class="question-jump {{ $loop->first ? 'active' : '' }}" data-question-jump="{{ $loop->index }}" type="button">
-                    {{ $loop->iteration }}
-                </button>
-            @endforeach
+        <div class="mb-4 {{ $publishAssessment->prevent_copy_paste ? 'no-select' : '' }}" data-copy-protected>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="small fw-bold text-secondary text-uppercase d-flex align-items-center gap-1">
+                    <span class="material-symbols-outlined fs-6">linear_scale</span>
+                    Question Progress
+                </span>
+                <span class="badge text-bg-warning border rounded-1 d-inline-flex align-items-center gap-1 small">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">lock</span> No Backtracking
+                </span>
+            </div>
+            <div class="d-flex gap-2 overflow-auto pb-2">
+                @foreach ($items as $item)
+                    <div class="question-jump {{ $loop->first ? 'active' : '' }}" data-question-jump="{{ $loop->index }}">
+                        {{ $loop->iteration }}
+                    </div>
+                @endforeach
+            </div>
         </div>
     @endif
 
@@ -682,7 +704,7 @@
                         <p class="small fw-semibold text-secondary mb-2">
                             Write {{ $enumCount }} answer{{ $enumCount === 1 ? '' : 's' }}, one per box.
                             @if ($item->order_sensitive)
-                                <span class="badge text-bg-light border rounded-1 ms-1">Order matters</span>
+                                <span class="badge text-bg-light border rounded-1 ms-1">In order</span>
                             @endif
                         </p>
                         <div class="d-grid gap-2">
@@ -709,17 +731,17 @@
 
     @if ($isOneQuestionMode)
         <div class="sticky-action-bar py-3">
-            <div class="container d-flex flex-column flex-sm-row justify-content-between gap-2">
-                <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" id="previousQuestion" type="button">
-                    <span class="material-symbols-outlined">chevron_left</span>
-                    Previous
-                </button>
+            <div class="container d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+                <div class="text-secondary small d-flex align-items-center gap-1">
+                    <span class="material-symbols-outlined fs-6 text-muted">lock_clock</span>
+                    <span>No backtracking: Questions cannot be reopened once you move forward or time expires.</span>
+                </div>
                 <div class="d-flex flex-column flex-sm-row gap-2">
                     <button class="btn btn-outline-primary d-inline-flex align-items-center justify-content-center gap-2" id="nextQuestion" type="button">
                         Next Question
                         <span class="material-symbols-outlined">chevron_right</span>
                     </button>
-                    <button class="btn btn-psu shadow-sm d-inline-flex align-items-center justify-content-center gap-2" form="assessmentAttemptForm" type="submit">
+                    <button class="btn btn-psu shadow-sm d-inline-flex align-items-center justify-content-center gap-2" form="assessmentAttemptForm" id="submitAssessmentBtn" type="submit">
                         <span class="material-symbols-outlined">send</span>
                         Submit Assessment
                     </button>

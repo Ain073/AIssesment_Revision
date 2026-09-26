@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Instructor;
 use App\Models\AcademicClass;
 use App\Models\ClassDetail;
 use App\Models\StudentProfile;
+use App\Services\AuditLogger;
 use App\Services\NotificationService;
 use App\Services\TabularFileReader;
 use Illuminate\Http\JsonResponse;
@@ -85,6 +86,8 @@ class ClassStudentController extends BaseController
 
         $ownedClass->addStudentWithMethod($studentProfile, ClassDetail::METHOD_MANUAL_ADD);
         $this->markJoinRequestApproved($ownedClass, $studentProfile, $user->id);
+
+        AuditLogger::log('ENROLL', 'Classes', "Enrolled student {$studentProfile->user?->displayName()} ({$studentProfile->student_number}) into {$ownedClass->class_name}", $ownedClass);
 
         Log::info('Student enrolled into class by instructor.', [
             'actor_id' => $user->id,
@@ -372,6 +375,8 @@ class ClassStudentController extends BaseController
 
         $this->markJoinRequestApproved($ownedClass, $studentProfile, $user->id);
 
+        AuditLogger::log('ENROLL', 'Classes', "Enrolled student {$studentProfile->user?->displayName()} ({$studentProfile->student_number}) into {$ownedClass->class_name}", $ownedClass);
+
         Log::info('Class join request approved by instructor.', [
             'actor_id' => $user->id,
             'class_id' => $ownedClass->class_id,
@@ -436,6 +441,8 @@ class ClassStudentController extends BaseController
         $joinRequest->update([
             'status' => ClassDetail::STATUS_REJECTED,
         ]);
+
+        AuditLogger::log('REJECT', 'Classes', "Rejected join request for student in {$ownedClass->class_name}", $ownedClass);
 
         $joinRequest->loadMissing('studentProfile.user');
 

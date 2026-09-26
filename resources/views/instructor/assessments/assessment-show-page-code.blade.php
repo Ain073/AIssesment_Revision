@@ -165,7 +165,7 @@
                         <p class="compact-label mb-0">Accepted Answers (one per slot)</p>
                         <div class="form-check form-switch ms-auto me-3">
                             <input class="form-check-input" type="checkbox" role="switch" id="order_sensitive_${index}" name="items[${index}][order_sensitive]" value="1" ${orderSensitive ? 'checked' : ''}>
-                            <label class="form-check-label small fw-semibold" for="order_sensitive_${index}">Order matters</label>
+                            <label class="form-check-label small fw-semibold" for="order_sensitive_${index}">In order</label>
                         </div>
                     </div>
                     <div data-enum-rows-${index}>${rows}</div>

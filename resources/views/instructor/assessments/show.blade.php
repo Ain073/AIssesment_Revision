@@ -558,7 +558,7 @@
                                                                 id="edit_order_sensitive_{{ $item->assessment_item_id }}"
                                                                 name="order_sensitive" value="1"
                                                                 @checked($item->order_sensitive)>
-                                                            <label class="form-check-label small fw-semibold" for="edit_order_sensitive_{{ $item->assessment_item_id }}">Order matters</label>
+                                                            <label class="form-check-label small fw-semibold" for="edit_order_sensitive_{{ $item->assessment_item_id }}">In order</label>
                                                         </div>
                                                     </div>
                                                     <div id="editEnumRows{{ $item->assessment_item_id }}">

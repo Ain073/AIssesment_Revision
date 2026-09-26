@@ -242,7 +242,7 @@
                                 <p class="small fw-bold text-secondary text-uppercase mb-2">
                                     Enumeration Answers
                                     @if ($item->order_sensitive)
-                                        <span class="badge text-bg-light border rounded-1 ms-1">Order matters</span>
+                                        <span class="badge text-bg-light border rounded-1 ms-1">In order</span>
                                     @endif
                                 </p>
                                 <div class="choice-review-list">

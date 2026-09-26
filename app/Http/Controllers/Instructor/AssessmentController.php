@@ -6,6 +6,7 @@ use App\Models\Assessment;
 use App\Models\AssessmentItem;
 use App\Models\PublishAssessment;
 use App\Models\Submission;
+use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -151,6 +152,8 @@ class AssessmentController extends BaseController
             'subject_id' => $assessment->subject_id,
         ]);
 
+        AuditLogger::log('CREATE', 'Assessments', "Created assessment '{$assessment->title}'", $assessment);
+
         return redirect()
             ->route('instructor.assessments.show', $assessment)
             ->with('status', 'Assessment saved as draft. You can now add items.');
@@ -179,6 +182,8 @@ class AssessmentController extends BaseController
             'assessment_id' => $ownedAssessment->assessment_id,
         ]);
 
+        AuditLogger::log('UPDATE', 'Assessments', "Updated assessment '{$ownedAssessment->title}'", $ownedAssessment);
+
         return redirect()
             ->route('instructor.assessments.show', $ownedAssessment)
             ->with('status', 'Assessment details updated.');
@@ -205,6 +210,8 @@ class AssessmentController extends BaseController
                 'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
             ]);
 
+            AuditLogger::log('ARCHIVE', 'Assessments', "Archived assessment '{$assessmentTitle}' (has published copies)");
+
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Assessment removed from Draft / Stored. Published records remain available.']);
             }
@@ -225,6 +232,8 @@ class AssessmentController extends BaseController
             'assessment_title' => $assessmentTitle,
             'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
         ]);
+
+        AuditLogger::log('DELETE', 'Assessments', "Deleted assessment '{$assessmentTitle}'");
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Assessment deleted successfully.']);
@@ -272,6 +281,8 @@ class AssessmentController extends BaseController
             'submission_count' => $submissionCount,
             'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
         ]);
+
+        AuditLogger::log('DELETE', 'Assessments', "Deleted published assessment '{$assessmentTitle}' from class {$className} ({$submissionCount} submission/s)");
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Published assessment deleted. You can publish the stored assessment again.']);
@@ -329,6 +340,8 @@ class AssessmentController extends BaseController
             'new_due_at' => $ownedPublishAssessment->fresh()->due_at?->toDateTimeString(),
             'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
         ]);
+
+        AuditLogger::log('REOPEN', 'Assessments', "Reopened published assessment with new due date: {$validated['due_at']}");
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Assessment republished for students who have not submitted yet.']);
@@ -486,6 +499,8 @@ class AssessmentController extends BaseController
             'item_count' => count($validated['items']),
         ]);
 
+        AuditLogger::log('ADD_ITEM', 'Assessments', count($validated['items']).' question/s added to assessment \''.$ownedAssessment->title."'", $ownedAssessment);
+
         return redirect()
             ->route('instructor.assessments.show', $ownedAssessment)
             ->with('status', count($validated['items']).' question'.(count($validated['items']) === 1 ? '' : 's').' added.');
@@ -517,6 +532,8 @@ class AssessmentController extends BaseController
             'assessment_id' => $ownedAssessment->assessment_id,
             'assessment_item_id' => $ownedItem->assessment_item_id,
         ]);
+
+        AuditLogger::log('UPDATE', 'Assessments', "Updated question #{$ownedItem->sort_order} in assessment '{$ownedAssessment->title}'", $ownedItem);
 
         return redirect()
             ->route('instructor.assessments.show', $ownedAssessment)
@@ -550,6 +567,8 @@ class AssessmentController extends BaseController
             'assessment_id' => $ownedAssessment->assessment_id,
             'assessment_item_id' => $ownedItem->assessment_item_id,
         ]);
+
+        AuditLogger::log('DELETE', 'Assessments', "Deleted question #{$ownedItem->sort_order} from assessment '{$ownedAssessment->title}'", $ownedAssessment);
 
         return redirect()
             ->route('instructor.assessments.show', $ownedAssessment)

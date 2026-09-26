@@ -7,6 +7,7 @@ use App\Models\PublishAssessment;
 use App\Models\ClassDetail;
 use App\Models\StudentProfile;
 use App\Models\Submission;
+use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -122,6 +123,8 @@ class ClassController extends BaseController
             'school_year' => $class->school_year,
         ]);
 
+        AuditLogger::log('CREATE', 'Classes', "Created class '{$class->class_name}' ({$class->join_code})", $class);
+
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Class added successfully.']);
         }
@@ -193,6 +196,8 @@ class ClassController extends BaseController
             'school_year' => $ownedClass->school_year,
         ]);
 
+        AuditLogger::log('UPDATE', 'Classes', "Updated class '{$ownedClass->class_name}'", $ownedClass);
+
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Class updated successfully.']);
         }
@@ -224,6 +229,8 @@ class ClassController extends BaseController
             'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
         ]);
 
+        AuditLogger::log('DELETE', 'Classes', "Deleted class '{$className}'");
+
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Class deleted successfully.']);
         }
@@ -249,6 +256,8 @@ class ClassController extends BaseController
             'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
         ]);
 
+        AuditLogger::log('ARCHIVE', 'Classes', "Archived class '{$ownedClass->class_name}'", $ownedClass);
+
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Class archived successfully.']);
         }
@@ -272,6 +281,8 @@ class ClassController extends BaseController
             'class_name' => $ownedClass->class_name,
             'instructor_profile_id' => $instructorProfile?->instructor_profile_id,
         ]);
+
+        AuditLogger::log('RESTORE', 'Classes', "Restored class '{$ownedClass->class_name}'", $ownedClass);
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Class restored successfully.']);

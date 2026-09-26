@@ -715,9 +715,15 @@ h1, h2, h3, .brand-text {
 }
 
 .profile-menu-link:hover,
-.profile-menu-link:focus {
+.profile-menu-link:focus,
+.profile-menu-link.active {
     background: #edf2ff;
     color: var(--psu-navy);
+}
+
+.profile-menu-link.active {
+    font-weight: 700;
+    border-color: #b8c8f8;
 }
 
 .profile-menu-link.disabled {

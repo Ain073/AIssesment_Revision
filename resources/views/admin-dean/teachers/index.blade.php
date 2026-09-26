@@ -171,10 +171,10 @@
                             <td data-label="Designation">
                                 <div class="d-flex flex-wrap gap-2">
                                     @if ($teacher->hasRole('admin_dean'))
-                                        <span class="badge text-bg-primary rounded-1">Dean</span>
+                                        <span class="badge text-bg-light border text-secondary rounded-1 fw-medium">Dean</span>
                                     @endif
                                     @if ($teacher->hasRole('department_chair'))
-                                        <span class="badge text-bg-info rounded-1">Department Chair</span>
+                                        <span class="badge text-bg-light border text-secondary rounded-1 fw-medium">Department Chair</span>
                                     @endif
                                     @if (! $teacher->hasRole('admin_dean') && ! $teacher->hasRole('department_chair'))
                                         <span class="text-secondary fst-italic">Teacher only</span>
