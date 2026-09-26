@@ -134,90 +134,16 @@
 
     syncExclusiveAuthorizations();
 
-    // Live Department Filtering for Teachers and Students
-    (() => {
-        const deptSelect = document.getElementById('departmentFilterSelect');
-        const clearBtn = document.getElementById('clearDeptFilterBtn');
-        if (! deptSelect) return;
-
-        function applyDepartmentFilter(deptId) {
-            let teachersVisible = 0;
-            let studentsVisible = 0;
-
-            document.querySelectorAll('table.teachers-table tbody tr[data-user-row]').forEach((row) => {
-                const rowDept = row.dataset.departmentId || '';
-                const matches = ! deptId || rowDept === deptId;
-                row.style.display = matches ? '' : 'none';
-                if (matches) teachersVisible++;
-            });
-
-            document.querySelectorAll('table.students-table tbody tr[data-user-row]').forEach((row) => {
-                const rowDept = row.dataset.departmentId || '';
-                const matches = ! deptId || rowDept === deptId;
-                row.style.display = matches ? '' : 'none';
-                if (matches) studentsVisible++;
-            });
-
-            // Update tab count badges
-            const teachersTabCount = document.getElementById('teachersTabCount');
-            const studentsTabCount = document.getElementById('studentsTabCount');
-            if (teachersTabCount) teachersTabCount.textContent = teachersVisible;
-            if (studentsTabCount) studentsTabCount.textContent = studentsVisible;
-
-            // Toggle clear button
-            if (clearBtn) {
-                clearBtn.classList.toggle('d-none', ! deptId);
+    // Keep active tab in sync with department filter form
+    document.querySelectorAll('[data-table-tab-button]').forEach((tabBtn) => {
+        tabBtn.addEventListener('click', () => {
+            const tabName = tabBtn.dataset.tableTabButton;
+            const activeTabInput = document.getElementById('activeTabInput');
+            if (activeTabInput && tabName) {
+                activeTabInput.value = tabName;
             }
-
-            // Toggle empty rows and update entries footer
-            document.querySelectorAll('[data-table-tab-panel="teachers"]').forEach((panel) => {
-                const emptyRow = panel.querySelector('[data-no-results-row]');
-                if (emptyRow) {
-                    emptyRow.classList.toggle('d-none', teachersVisible > 0);
-                }
-                const countText = panel.querySelector('[data-entries-count]');
-                if (countText) {
-                    countText.textContent = `Showing ${teachersVisible} ${teachersVisible === 1 ? 'entry' : 'entries'}`;
-                }
-            });
-
-            document.querySelectorAll('[data-table-tab-panel="students"]').forEach((panel) => {
-                const emptyRow = panel.querySelector('[data-no-results-row]');
-                if (emptyRow) {
-                    emptyRow.classList.toggle('d-none', studentsVisible > 0);
-                }
-                const countText = panel.querySelector('[data-entries-count]');
-                if (countText) {
-                    countText.textContent = `Showing ${studentsVisible} ${studentsVisible === 1 ? 'entry' : 'entries'}`;
-                }
-            });
-
-            // Sync URL parameter without full page reload
-            const url = new URL(window.location.href);
-            if (deptId) {
-                url.searchParams.set('department_id', deptId);
-            } else {
-                url.searchParams.delete('department_id');
-            }
-            window.history.replaceState({}, '', url.toString());
-        }
-
-        deptSelect.addEventListener('change', () => {
-            applyDepartmentFilter(deptSelect.value);
         });
-
-        if (clearBtn) {
-            clearBtn.addEventListener('click', () => {
-                deptSelect.value = '';
-                applyDepartmentFilter('');
-            });
-        }
-
-        // Apply immediately if a department is pre-selected on page load
-        if (deptSelect.value) {
-            applyDepartmentFilter(deptSelect.value);
-        }
-    })();
+    });
 </script>
 
 @if ($errors->any())

@@ -23,11 +23,35 @@ class UserController extends Controller
 {
     public function index(Request $request, StudentAccountImportService $importer): View
     {
-        $users = User::with(['roles', 'instructorProfile.department.college', 'studentProfile.program.department.college'])
+        $departmentKey = $request->query('department') ?? $request->query('department_id');
+        $selectedDepartment = null;
+
+        if (filled($departmentKey)) {
+            $selectedDepartment = Department::query()
+                ->where('public_id', $departmentKey)
+                ->orWhere('department_id', $departmentKey)
+                ->first();
+        }
+
+        $selectedDepartmentId = $selectedDepartment?->department_id;
+
+        $usersQuery = User::with(['roles', 'instructorProfile.department.college', 'studentProfile.program.department.college'])
             ->orderBy('last_name')
             ->orderBy('first_name')
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
+
+        if ($selectedDepartmentId) {
+            $usersQuery->where(function ($q) use ($selectedDepartmentId) {
+                $q->whereHas('instructorProfile', function ($iq) use ($selectedDepartmentId) {
+                    $iq->where('department_id', $selectedDepartmentId);
+                })
+                ->orWhereHas('studentProfile.program', function ($sq) use ($selectedDepartmentId) {
+                    $sq->where('department_id', $selectedDepartmentId);
+                });
+            });
+        }
+
+        $users = $usersQuery->get();
 
         $departments = Department::with('college')
             ->orderBy('college_id')
@@ -56,6 +80,8 @@ class UserController extends Controller
             'departmentChairs' => $departmentChairs,
             'departments' => $departments,
             'programs' => $programs,
+            'selectedDepartmentId' => $selectedDepartmentId,
+            'selectedDepartmentKey' => $selectedDepartment?->public_id ?? ($selectedDepartment ? (string) $selectedDepartment->department_id : ''),
             'studentImportPreview' => $importer->previewForRequest($request, 'super-admin'),
         ]);
     }

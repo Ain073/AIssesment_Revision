@@ -43,50 +43,49 @@
                 </div>
             @endif
 
-            {{-- Page actions --}}
-            <div class="d-flex flex-wrap justify-content-end gap-2 mb-4 super-admin-toolbar">
-                <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button">
-                    <span class="material-symbols-outlined fs-5">add</span>
-                    Instructor
-                </button>
-                <button class="btn btn-outline-primary d-flex align-items-center gap-2" data-bs-target="#createStudentModal" data-bs-toggle="modal" type="button">
-                    <span class="material-symbols-outlined fs-5">add</span>
-                    Student
-                </button>
+            {{-- Filters and actions --}}
+            <div class="program-toolbar super-admin-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+                <form action="{{ route('super-admin.users') }}" method="GET" id="departmentFilterForm">
+                    <input type="hidden" name="tab" id="activeTabInput" value="{{ $activeUserTab }}">
+                    <label class="form-label small fw-bold text-uppercase mb-1" for="department-filter">View Department</label>
+                    <select class="form-select department-filter-select" id="department-filter" name="department" onchange="this.form.submit()">
+                        <option value="">All Departments</option>
+                        @foreach ($departments as $department)
+                            <option value="{{ $department->public_id ?? $department->department_id }}" @selected($selectedDepartmentKey === ($department->public_id ?? (string) $department->department_id))>
+                                {{ $department->dept_name }} ({{ $department->college?->college_code ?? $department->college?->college_name }})
+                            </option>
+                        @endforeach
+                    </select>
+                    <noscript>
+                        <button class="btn btn-outline-primary mt-2" type="submit">View</button>
+                    </noscript>
+                </form>
+
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button">
+                        <span class="material-symbols-outlined fs-5">add</span>
+                        Instructor
+                    </button>
+                    <button class="btn btn-outline-primary d-flex align-items-center gap-2" data-bs-target="#createStudentModal" data-bs-toggle="modal" type="button">
+                        <span class="material-symbols-outlined fs-5">add</span>
+                        Student
+                    </button>
+                </div>
             </div>
 
             <div data-table-tabs-root data-table-tabs-param="tab" data-table-tabs-default="{{ $activeUserTab }}">
-            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
-                <div class="table-switch-tabs mb-0" id="userTabs" role="tablist">
+                <div class="table-switch-tabs mb-3" id="userTabs" role="tablist">
                     <button class="btn btn-outline-primary table-switch-button {{ $activeUserTab === 'teachers' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="teachers" type="button" role="tab" aria-pressed="{{ $activeUserTab === 'teachers' ? 'true' : 'false' }}">
                         <span class="material-symbols-outlined fs-5">badge</span>
                         Teachers
-                        <span class="table-switch-count" id="teachersTabCount">{{ $teachers->count() }}</span>
+                        <span class="table-switch-count">{{ $teachers->count() }}</span>
                     </button>
                     <button class="btn btn-outline-primary table-switch-button {{ $activeUserTab === 'students' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="students" type="button" role="tab" aria-pressed="{{ $activeUserTab === 'students' ? 'true' : 'false' }}">
                         <span class="material-symbols-outlined fs-5">groups</span>
                         Students
-                        <span class="table-switch-count" id="studentsTabCount">{{ $students->count() }}</span>
+                        <span class="table-switch-count">{{ $students->count() }}</span>
                     </button>
                 </div>
-
-                {{-- Department Filter --}}
-                <div class="d-flex align-items-center gap-2 bg-white border rounded px-3 py-2 shadow-sm" style="min-width: 280px; max-width: 440px;">
-                    <span class="material-symbols-outlined fs-5 text-secondary">domain</span>
-                    <label for="departmentFilterSelect" class="small fw-bold text-secondary text-nowrap mb-0">Department:</label>
-                    <select class="form-select form-select-sm border-0 bg-transparent fw-semibold" id="departmentFilterSelect" aria-label="Filter by department">
-                        <option value="">All Departments</option>
-                        @foreach ($departments as $dept)
-                            <option value="{{ $dept->department_id }}" {{ (string) request('department_id') === (string) $dept->department_id ? 'selected' : '' }}>
-                                {{ $dept->dept_name }} ({{ $dept->college?->college_code ?? $dept->college?->college_name }})
-                            </option>
-                        @endforeach
-                    </select>
-                    <button class="btn btn-sm btn-link text-secondary p-0 d-none" id="clearDeptFilterBtn" type="button" title="Clear filter">
-                        <span class="material-symbols-outlined fs-6">close</span>
-                    </button>
-                </div>
-            </div>
 
             <div>
                 {{-- Teachers table --}}
@@ -173,20 +172,20 @@
                                     <tr>
                                         <td class="text-center py-5 mobile-empty-cell" colspan="6">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">school</span></div>
-                                            <h4 class="h4" style="color: var(--psu-navy);">No teacher accounts yet</h4>
-                                            <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button">
-                                                <span class="material-symbols-outlined fs-5">add</span>
-                                                Instructor
-                                            </button>
+                                            <h4 class="h4" style="color: var(--psu-navy);">{{ $selectedDepartmentKey ? 'No teacher accounts in this department' : 'No teacher accounts yet' }}</h4>
+                                            @if ($selectedDepartmentKey)
+                                                <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('super-admin.users', ['tab' => 'teachers']) }}">
+                                                    View All Departments
+                                                </a>
+                                            @else
+                                                <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button">
+                                                    <span class="material-symbols-outlined fs-5">add</span>
+                                                    Instructor
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforelse
-                                <tr class="d-none" data-no-results-row>
-                                    <td class="text-center py-5 mobile-empty-cell" colspan="6">
-                                        <div class="empty-icon mb-2"><span class="material-symbols-outlined fs-2 text-muted">domain_disabled</span></div>
-                                        <p class="text-secondary fw-semibold mb-0">No teachers found in the selected department.</p>
-                                    </td>
-                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -267,20 +266,20 @@
                                     <tr>
                                         <td class="text-center py-5 mobile-empty-cell" colspan="5">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
-                                            <h4 class="h4" style="color: var(--psu-navy);">No student accounts yet</h4>
-                                            <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createStudentModal" data-bs-toggle="modal" type="button">
-                                                <span class="material-symbols-outlined fs-5">add</span>
-                                                Student
-                                            </button>
+                                            <h4 class="h4" style="color: var(--psu-navy);">{{ $selectedDepartmentKey ? 'No student accounts in this department' : 'No student accounts yet' }}</h4>
+                                            @if ($selectedDepartmentKey)
+                                                <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('super-admin.users', ['tab' => 'students']) }}">
+                                                    View All Departments
+                                                </a>
+                                            @else
+                                                <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createStudentModal" data-bs-toggle="modal" type="button">
+                                                    <span class="material-symbols-outlined fs-5">add</span>
+                                                    Student
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforelse
-                                <tr class="d-none" data-no-results-row>
-                                    <td class="text-center py-5 mobile-empty-cell" colspan="5">
-                                        <div class="empty-icon mb-2"><span class="material-symbols-outlined fs-2 text-muted">domain_disabled</span></div>
-                                        <p class="text-secondary fw-semibold mb-0">No students found in programs under the selected department.</p>
-                                    </td>
-                                </tr>
                             </tbody>
                         </table>
                     </div>
