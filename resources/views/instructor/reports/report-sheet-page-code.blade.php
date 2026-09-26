@@ -98,6 +98,15 @@
             });
         };
 
+        const toggleElementVisibility = (element, show) => {
+            if (! element) return;
+            if (show) {
+                element.classList.remove('d-none');
+            } else {
+                element.classList.add('d-none');
+            }
+        };
+
         const setReportLocked = (locked) => {
             reportDraftFields().forEach((field) => {
                 if (locked) {
@@ -111,13 +120,13 @@
 
             if (locked) {
                 reportSheetWrap?.classList.add('is-locked');
-                if (editReportButton) editReportButton.style.display = 'inline-flex';
-                if (cancelEditButton) cancelEditButton.style.display = 'none';
-                if (saveDraftButton) saveDraftButton.style.display = 'none';
-                if (finalizeButton) finalizeButton.style.display = 'none';
-                if (aiDraftButton) aiDraftButton.style.display = 'none';
-                if (aiProviderControl) aiProviderControl.style.display = 'none';
-                if (reportLockedNotice) reportLockedNotice.style.display = 'flex';
+                toggleElementVisibility(editReportButton, true);
+                toggleElementVisibility(cancelEditButton, false);
+                toggleElementVisibility(saveDraftButton, false);
+                toggleElementVisibility(finalizeButton, false);
+                toggleElementVisibility(aiDraftButton, false);
+                toggleElementVisibility(aiProviderControl, false);
+                toggleElementVisibility(reportLockedNotice, true);
 
                 if (reportStatusBadge) {
                     reportStatusBadge.className = 'report-status-badge badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1 px-2.5 py-1 fs-7 fw-bold';
@@ -126,13 +135,13 @@
                 }
             } else {
                 reportSheetWrap?.classList.remove('is-locked');
-                if (editReportButton) editReportButton.style.display = 'none';
-                if (cancelEditButton) cancelEditButton.style.display = 'inline-flex';
-                if (saveDraftButton) saveDraftButton.style.display = 'inline-flex';
-                if (finalizeButton) finalizeButton.style.display = 'inline-flex';
-                if (aiDraftButton) aiDraftButton.style.display = 'inline-flex';
-                if (aiProviderControl) aiProviderControl.style.display = 'flex';
-                if (reportLockedNotice) reportLockedNotice.style.display = 'none';
+                toggleElementVisibility(editReportButton, false);
+                toggleElementVisibility(cancelEditButton, true);
+                toggleElementVisibility(saveDraftButton, true);
+                toggleElementVisibility(finalizeButton, true);
+                toggleElementVisibility(aiDraftButton, true);
+                toggleElementVisibility(aiProviderControl, true);
+                toggleElementVisibility(reportLockedNotice, false);
 
                 if (reportStatusBadge) {
                     reportStatusBadge.className = 'report-status-badge badge bg-warning-subtle text-warning-emphasis border border-warning-subtle d-inline-flex align-items-center gap-1 px-2.5 py-1 fs-7 fw-bold';

@@ -753,7 +753,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="report-paper-control" id="aiProviderControl" @if ($isFinalized) style="display: none;" @endif>
+            <div class="report-paper-control {{ $isFinalized ? 'd-none' : '' }}" id="aiProviderControl">
                 <label for="aiProvider">AI Candidate</label>
                 <select class="form-select form-select-sm" id="aiProvider">
                     @foreach ($aiCandidates as $candidate)
@@ -761,23 +761,23 @@
                     @endforeach
                 </select>
             </div>
-            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" id="aiDraftButton" type="button" data-bs-toggle="modal" data-bs-target="#confirmAiDraftModal" @if ($isFinalized) style="display: none;" @endif>
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2 {{ $isFinalized ? 'd-none' : '' }}" id="aiDraftButton" type="button" data-bs-toggle="modal" data-bs-target="#confirmAiDraftModal">
                 <span class="material-symbols-outlined fs-5">auto_awesome</span>
                 AI Draft
             </button>
-            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" id="saveDraftButton" form="reportSheetForm" name="save_action" value="draft" type="submit" @if ($isFinalized) style="display: none;" @endif>
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2 {{ $isFinalized ? 'd-none' : '' }}" id="saveDraftButton" form="reportSheetForm" name="save_action" value="draft" type="submit">
                 <span class="material-symbols-outlined fs-5">save</span>
                 Save Draft
             </button>
-            <button class="btn btn-psu d-inline-flex align-items-center gap-2" id="finalizeButton" form="reportSheetForm" name="save_action" value="finalized" type="submit" @if ($isFinalized) style="display: none;" @endif>
+            <button class="btn btn-psu d-inline-flex align-items-center gap-2 {{ $isFinalized ? 'd-none' : '' }}" id="finalizeButton" form="reportSheetForm" name="save_action" value="finalized" type="submit">
                 <span class="material-symbols-outlined fs-5">task_alt</span>
                 Finalize
             </button>
-            <button class="btn btn-primary d-inline-flex align-items-center gap-2" id="editReportButton" type="button" @if (! $isFinalized) style="display: none;" @endif>
+            <button class="btn btn-primary d-inline-flex align-items-center gap-2 {{ $isFinalized ? '' : 'd-none' }}" id="editReportButton" type="button">
                 <span class="material-symbols-outlined fs-5">edit</span>
                 Edit
             </button>
-            <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" id="cancelEditButton" type="button" style="display: none;">
+            <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 d-none" id="cancelEditButton" type="button">
                 <span class="material-symbols-outlined fs-5">close</span>
                 Cancel
             </button>
@@ -788,7 +788,7 @@
         </div>
     </div>
 
-    <div class="alert alert-light border d-flex align-items-center justify-content-between p-2.5 mb-3" id="reportLockedNotice" @if (! $isFinalized) style="display: none;" @endif>
+    <div class="alert alert-light border d-flex align-items-center justify-content-between p-2.5 mb-3 {{ $isFinalized ? '' : 'd-none' }}" id="reportLockedNotice">
         <div class="d-flex align-items-center gap-2 small text-secondary">
             <span class="material-symbols-outlined text-success fs-5">verified</span>
             <span>This report is <strong>finalized</strong> and locked. Click <strong>Edit</strong> if you need to modify it.</span>
