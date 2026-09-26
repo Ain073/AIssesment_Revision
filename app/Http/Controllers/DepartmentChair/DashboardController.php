@@ -85,19 +85,19 @@ class DashboardController extends BaseController
             ],
             'quickActions' => [
                 [
-                    'label' => 'User',
+                    'label' => 'Add Program',
+                    'href' => route('department-chair.programs', ['action' => 'create-program']),
+                    'icon' => 'add',
+                ],
+                [
+                    'label' => 'Add Teacher',
                     'href' => route('department-chair.teachers', ['tab' => 'teachers', 'action' => 'create-teacher']),
-                    'icon' => 'add',
+                    'icon' => 'person_add',
                 ],
                 [
-                    'label' => 'Subject',
+                    'label' => 'Add Subject',
                     'href' => route('department-chair.subjects', ['action' => 'create-subject']),
-                    'icon' => 'add',
-                ],
-                [
-                    'label' => 'Reports',
-                    'href' => route('department-chair.reports'),
-                    'icon' => 'summarize',
+                    'icon' => 'library_add',
                 ],
             ],
         ]);

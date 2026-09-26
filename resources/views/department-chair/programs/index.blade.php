@@ -139,3 +139,16 @@
     @include('department-chair.programs.partials.create-program-form')
     @include('department-chair.programs.partials.program-popups')
 @endsection
+
+@push('scripts')
+    @if (request('action') === 'create-program')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const modal = document.getElementById('programModal');
+                if (modal) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        </script>
+    @endif
+@endpush

@@ -57,14 +57,19 @@ class DashboardController extends Controller
                 ->get(['college_id', 'college_name']),
             'quickActions' => [
                 [
-                    'label' => 'Users',
-                    'href' => route('super-admin.users'),
-                    'icon' => 'person_search',
+                    'label' => 'Add Program',
+                    'href' => route('super-admin.programs', ['action' => 'create-program']),
+                    'icon' => 'add',
                 ],
                 [
-                    'label' => 'Programs',
-                    'href' => route('super-admin.programs'),
-                    'icon' => 'school',
+                    'label' => 'Add User',
+                    'href' => route('super-admin.users', ['action' => 'create-user']),
+                    'icon' => 'person_add',
+                ],
+                [
+                    'label' => 'Add College',
+                    'href' => route('super-admin.colleges', ['action' => 'create-college']),
+                    'icon' => 'add_business',
                 ],
             ],
         ]);

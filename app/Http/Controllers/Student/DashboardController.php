@@ -57,9 +57,9 @@ class DashboardController extends BaseController
             ],
             'quickActions' => [
                 [
-                    'label' => 'Open Classes',
-                    'href' => route('student.classes'),
-                    'icon' => 'school',
+                    'label' => 'Join Class',
+                    'href' => route('student.classes', ['action' => 'join-class']),
+                    'icon' => 'group_add',
                 ],
                 [
                     'label' => 'Take Assessments',

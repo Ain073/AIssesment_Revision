@@ -30,17 +30,17 @@ class DashboardController extends BaseController
             'teachingClasses' => $teachingSummary['classes'],
             'quickActions' => [
                 [
-                    'label' => 'Departments',
-                    'href' => route('admin-dean.departments'),
-                    'icon' => 'apartment',
+                    'label' => 'Add Department',
+                    'href' => route('admin-dean.departments', ['action' => 'create-department']),
+                    'icon' => 'add',
                 ],
                 [
-                    'label' => 'Users',
-                    'href' => route('admin-dean.teachers'),
-                    'icon' => 'groups',
+                    'label' => 'Add Teacher',
+                    'href' => route('admin-dean.teachers', ['action' => 'create-teacher']),
+                    'icon' => 'person_add',
                 ],
                 [
-                    'label' => 'Chair Designation',
+                    'label' => 'Designate Chair',
                     'href' => route('admin-dean.designations'),
                     'icon' => 'admin_panel_settings',
                 ],

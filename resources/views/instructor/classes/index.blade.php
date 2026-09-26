@@ -176,3 +176,16 @@
 
     @include('instructor.classes.create-class-form')
 @endsection
+
+@push('scripts')
+    @if (request('action') === 'create-class')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const modal = document.getElementById('classModal');
+                if (modal) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        </script>
+    @endif
+@endpush

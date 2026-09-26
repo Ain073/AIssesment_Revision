@@ -87,19 +87,14 @@ class DashboardController extends BaseController
             ],
             'quickActions' => [
                 [
-                    'label' => 'Open Classes',
-                    'href' => route('instructor.classes'),
-                    'icon' => 'school',
-                ],
-                [
-                    'label' => 'Create Assessment',
+                    'label' => 'Add Assessment',
                     'href' => route('instructor.assessments.create'),
                     'icon' => 'assignment_add',
                 ],
                 [
-                    'label' => 'Prepare Reports',
-                    'href' => route('instructor.reports'),
-                    'icon' => 'summarize',
+                    'label' => 'Add Class',
+                    'href' => route('instructor.classes', ['action' => 'create-class']),
+                    'icon' => 'add',
                 ],
             ],
             'activeClassPerformance' => $classes

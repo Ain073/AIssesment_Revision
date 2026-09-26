@@ -138,3 +138,16 @@
 
     @include('admin-dean.departments.create-department-form')
 @endsection
+
+@push('scripts')
+    @if (request('action') === 'create-department')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const modal = document.getElementById('departmentModal');
+                if (modal) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        </script>
+    @endif
+@endpush

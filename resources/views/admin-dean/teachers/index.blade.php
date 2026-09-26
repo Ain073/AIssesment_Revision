@@ -220,3 +220,16 @@
     @include('admin-dean.teachers.designation-popups', ['teachers' => $teachers])
     @include('admin-dean.teachers.create-instructor-form')
 @endsection
+
+@push('scripts')
+    @if (request('action') === 'create-teacher' || request('action') === 'create-instructor')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const modal = document.getElementById('createInstructorModal');
+                if (modal) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        </script>
+    @endif
+@endpush

@@ -160,4 +160,22 @@
             bootstrap.Modal.getOrCreateInstance(modalElement).show();
         }
     </script>
+@elseif (request('action') === 'create-user' || request('action') === 'create-instructor')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const modal = document.getElementById('createInstructorModal');
+            if (modal) {
+                bootstrap.Modal.getOrCreateInstance(modal).show();
+            }
+        });
+    </script>
+@elseif (request('action') === 'create-student')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const modal = document.getElementById('createStudentModal');
+            if (modal) {
+                bootstrap.Modal.getOrCreateInstance(modal).show();
+            }
+        });
+    </script>
 @endif
