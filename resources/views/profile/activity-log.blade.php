@@ -10,13 +10,10 @@
         <div class="d-flex flex-wrap align-items-end gap-2 mb-3">
 
             {{-- Search --}}
-            <div class="flex-grow-1" style="min-width: 200px; max-width: 340px;">
+            <div class="flex-grow-1" style="min-width: 220px; max-width: 340px;">
                 <div class="input-group">
-                    <span class="input-group-text bg-white border-end-0">
-                        <span class="material-symbols-outlined fs-6 text-secondary">search</span>
-                    </span>
                     <input
-                        class="form-control border-start-0 ps-0"
+                        class="form-control"
                         id="activitySearch"
                         name="search"
                         placeholder="Search action or description…"
@@ -24,13 +21,16 @@
                         value="{{ request('search') }}"
                         autocomplete="off"
                     >
+                    <button class="btn btn-psu d-inline-flex align-items-center justify-content-center px-3" type="submit" title="Search">
+                        <span class="material-symbols-outlined fs-6">search</span>
+                    </button>
                 </div>
             </div>
 
-            {{-- Module filter --}}
+            {{-- Feature filter --}}
             @if ($modules->isNotEmpty())
                 <select class="form-select" id="activityModule" name="module" style="width: auto;" onchange="this.form.submit()">
-                    <option value="">All Modules</option>
+                    <option value="">All Features</option>
                     @foreach ($modules as $m)
                         <option value="{{ $m }}" @selected(request('module') === $m)>{{ $m }}</option>
                     @endforeach
@@ -43,12 +43,6 @@
                 <span class="text-secondary small">–</span>
                 <input class="form-control" id="activityTo"   name="to"   type="date" value="{{ request('to') }}"   title="To"   style="width: 148px;" onchange="this.form.submit()">
             </div>
-
-            {{-- Buttons --}}
-            <button class="btn btn-psu d-inline-flex align-items-center gap-2" type="submit">
-                <span class="material-symbols-outlined fs-6">search</span>
-                Search
-            </button>
 
             @if (request()->hasAny(['search', 'module', 'from', 'to']))
                 <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('profile.activity') }}">
@@ -75,7 +69,7 @@
                     <tr>
                         <th class="ps-4" style="width: 170px;">Timestamp</th>
                         <th style="width: 130px;">Action</th>
-                        <th style="width: 160px;">Module</th>
+                        <th style="width: 160px;">Feature</th>
                         <th>Description</th>
                         <th class="pe-4" style="width: 140px;">IP Address</th>
                     </tr>
@@ -93,11 +87,11 @@
 
                             {{-- Action --}}
                             <td data-label="Action">
-                                <span class="fw-semibold text-dark">{{ ucfirst(strtolower($log->action)) }}</span>
+                                <span class="fw-semibold text-dark">{{ ucwords(strtolower(str_replace('_', ' ', $log->action))) }}</span>
                             </td>
 
-                            {{-- Module --}}
-                            <td class="text-secondary" data-label="Module">
+                            {{-- Feature --}}
+                            <td class="text-secondary" data-label="Feature">
                                 <span class="badge text-bg-light border text-secondary rounded-1 fw-medium">
                                     {{ $log->module }}
                                 </span>

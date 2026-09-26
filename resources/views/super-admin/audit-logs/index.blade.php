@@ -26,13 +26,10 @@
         <div class="d-flex flex-wrap align-items-end gap-2 mb-3">
 
             {{-- Search --}}
-            <div class="flex-grow-1" style="min-width: 200px; max-width: 320px;">
+            <div class="flex-grow-1" style="min-width: 220px; max-width: 340px;">
                 <div class="input-group">
-                    <span class="input-group-text bg-white border-end-0">
-                        <span class="material-symbols-outlined fs-6 text-secondary">search</span>
-                    </span>
                     <input
-                        class="form-control border-start-0 ps-0"
+                        class="form-control"
                         id="auditSearch"
                         name="search"
                         placeholder="Search actor or description…"
@@ -40,6 +37,9 @@
                         value="{{ request('search') }}"
                         autocomplete="off"
                     >
+                    <button class="btn btn-psu d-inline-flex align-items-center justify-content-center px-3" type="submit" title="Search">
+                        <span class="material-symbols-outlined fs-6">search</span>
+                    </button>
                 </div>
             </div>
 
@@ -53,9 +53,9 @@
                 @endforeach
             </select>
 
-            {{-- Module --}}
+            {{-- Feature --}}
             <select class="form-select" id="auditModule" name="module" style="width: auto;" onchange="this.form.submit()">
-                <option value="">All Modules</option>
+                <option value="">All Features</option>
                 @foreach ($modules as $m)
                     <option value="{{ $m }}" @selected(request('module') === $m)>{{ $m }}</option>
                 @endforeach
@@ -75,12 +75,6 @@
                 <span class="text-secondary small">–</span>
                 <input class="form-control" id="auditTo"   name="to"   type="date" value="{{ request('to') }}"   title="To"   style="width: 148px;" onchange="this.form.submit()">
             </div>
-
-            {{-- Buttons --}}
-            <button class="btn btn-psu d-inline-flex align-items-center gap-2" type="submit">
-                <span class="material-symbols-outlined fs-6">search</span>
-                Search
-            </button>
 
             @if (request()->hasAny(['search', 'role', 'module', 'action', 'from', 'to']))
                 <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('super-admin.audit-logs') }}">
@@ -109,7 +103,7 @@
                         <th>Actor</th>
                         <th>Role</th>
                         <th>Action</th>
-                        <th>Module</th>
+                        <th>Feature</th>
                         <th>Description</th>
                         <th class="pe-4">IP Address</th>
                     </tr>
@@ -146,8 +140,8 @@
                                 <span class="fw-semibold text-dark">{{ ucwords(strtolower(str_replace('_', ' ', $log->action))) }}</span>
                             </td>
 
-                            {{-- Module --}}
-                            <td class="text-secondary" data-label="Module">
+                            {{-- Feature --}}
+                            <td class="text-secondary" data-label="Feature">
                                 {{ $log->module }}
                             </td>
 
