@@ -303,10 +303,20 @@
             });
         });
 
+        const isFirefox = typeof InstallTrigger !== 'undefined' || navigator.userAgent.toLowerCase().includes('firefox');
+
         window.addEventListener('beforeprint', () => {
             applyReportContentStyle();
             document.querySelectorAll('.report-edit-textarea').forEach(autosize);
             reportDraftFields().forEach(syncPrintText);
+
+            if (isFirefox) {
+                document.documentElement.setAttribute('data-ff-print', '1');
+            }
+        });
+
+        window.addEventListener('afterprint', () => {
+            document.documentElement.removeAttribute('data-ff-print');
         });
 
         window.addEventListener('load', () => {

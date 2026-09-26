@@ -709,110 +709,107 @@
             }
         }
 
-        @supports (-moz-appearance: none) {
-            @media print {
-                .report-print-grid-sheet {
-                    display: none !important;
-                }
+        /* Firefox print fix: triggered via JS beforeprint setting data-ff-print on <html> */
+        @media print {
+            [data-ff-print] .report-print-grid-sheet {
+                display: none !important;
+            }
 
-                .report-print-table {
-                    display: table !important;
-                    width: 100% !important;
-                    border-collapse: collapse !important;
-                    table-layout: fixed !important;
-                    visibility: visible !important;
-                    opacity: 1 !important;
-                    border: 2px solid #111827 !important;
-                }
+            [data-ff-print] .report-print-table {
+                display: table !important;
+                width: 100% !important;
+                border-collapse: collapse !important;
+                table-layout: fixed !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+            }
 
-                .report-print-table thead,
-                .report-print-table tbody {
-                    display: table-row-group !important;
-                }
+            [data-ff-print] .report-print-table tbody {
+                display: table-row-group !important;
+            }
 
-                .report-print-table tr {
-                    display: table-row !important;
-                    break-inside: avoid !important;
-                    page-break-inside: avoid !important;
-                }
+            [data-ff-print] .report-print-table tr {
+                display: table-row !important;
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+            }
 
-                .report-print-table th,
-                .report-print-table td {
-                    display: table-cell !important;
-                    border: 1px solid #111827 !important;
-                    padding: 0.22rem 0.3rem !important;
-                    font-size: 0.64rem !important;
-                    line-height: 1.2 !important;
-                    vertical-align: top !important;
-                }
+            [data-ff-print] .report-print-table th,
+            [data-ff-print] .report-print-table td {
+                display: table-cell !important;
+                border: 1px solid #111827 !important;
+                padding: 0.22rem 0.3rem !important;
+                font-size: 0.64rem !important;
+                line-height: 1.2 !important;
+                vertical-align: top !important;
+            }
 
-                .report-print-table th {
-                    text-align: center !important;
-                    vertical-align: middle !important;
-                    font-weight: 700 !important;
-                }
+            [data-ff-print] .report-print-table th {
+                text-align: center !important;
+                vertical-align: middle !important;
+                font-weight: 700 !important;
+            }
 
-                .report-print-table .report-matrix-head th {
-                    border-bottom: 2px solid #111827 !important;
-                    border-top: 2px solid #111827 !important;
-                }
+            [data-ff-print] .report-print-table .report-matrix-head th {
+                border-bottom: 2px solid #111827 !important;
+                border-top: 2px solid #111827 !important;
+            }
 
-                .report-print-table tr:first-child > * {
-                    border-top: 2px solid #111827 !important;
-                }
+            [data-ff-print] .report-print-table tr:first-child > * {
+                border-top: 2px solid #111827 !important;
+            }
 
-                .report-print-table tr:nth-child(2) > *,
-                .report-print-table tr:nth-child(5) > * {
-                    border-bottom: 2px solid #111827 !important;
-                }
+            [data-ff-print] .report-print-table tr:nth-child(2) > *,
+            [data-ff-print] .report-print-table tr:nth-child(5) > * {
+                border-bottom: 2px solid #111827 !important;
+            }
 
-                .report-print-table .report-note {
-                    border-bottom: 3px double #111827 !important;
-                }
+            [data-ff-print] .report-print-table .report-note {
+                border-bottom: 3px double #111827 !important;
+            }
 
-                .report-print-table .report-logo {
-                    width: 0.62in !important;
-                    height: 0.62in !important;
-                }
+            [data-ff-print] .report-print-table .report-logo {
+                width: 0.62in !important;
+                height: 0.62in !important;
+            }
 
-                .report-print-table .report-title {
-                    font-size: 0.9rem !important;
-                    font-weight: 800 !important;
-                }
+            [data-ff-print] .report-print-table .report-title {
+                font-size: 0.9rem !important;
+                font-weight: 800 !important;
+            }
 
-                .report-print-table .report-subtitle {
-                    font-size: 0.5rem !important;
-                }
+            [data-ff-print] .report-print-table .report-subtitle {
+                font-size: 0.5rem !important;
+            }
 
-                .report-print-table .report-period {
-                    font-size: 0.62rem !important;
-                    font-weight: 800 !important;
-                    text-align: center !important;
-                }
+            [data-ff-print] .report-print-table .report-period {
+                font-size: 0.62rem !important;
+                font-weight: 800 !important;
+                text-align: center !important;
+            }
 
-                .report-print-table .report-print-data-cell {
-                    display: block !important;
-                    white-space: pre-wrap !important;
-                    overflow-wrap: anywhere !important;
-                    font-family: var(--report-content-font-family) !important;
-                    font-size: var(--report-content-font-size) !important;
-                    line-height: 1.2 !important;
-                }
+            [data-ff-print] .report-print-table .report-print-data-cell {
+                display: block !important;
+                white-space: pre-wrap !important;
+                overflow-wrap: anywhere !important;
+                font-family: var(--report-content-font-family) !important;
+                font-size: var(--report-content-font-size) !important;
+                line-height: 1.2 !important;
+            }
 
-                .report-print-table .report-print-takers-cell {
-                    display: flex !important;
-                    align-items: center !important;
-                    justify-content: center !important;
-                    text-align: center !important;
-                    min-height: 0.5in !important;
-                    color: #4b5563 !important;
-                    text-transform: uppercase !important;
-                }
+            [data-ff-print] .report-print-table .report-print-takers-cell {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                text-align: center !important;
+                min-height: 0.5in !important;
+                color: #4b5563 !important;
+                text-transform: uppercase !important;
+            }
 
-                .report-print-table .report-score-stack {
-                    display: grid !important;
-                    text-align: center !important;
-                }
+            [data-ff-print] .report-print-table .report-score-stack {
+                display: grid !important;
+                text-align: center !important;
             }
         }
     </style>
