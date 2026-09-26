@@ -195,11 +195,9 @@ class ReportController extends BaseController
             ]);
         }
 
-        $firstAssessment = $ownedCompletedAssessments->first();
-        $subject = $firstAssessment?->assessment?->subject ?: $firstAssessment?->class?->subject;
         $courseCodeTitle = $this->cleanReportCourseCodeTitle(
             $validated['course_code_title'] ?? null,
-            $this->defaultCourseCodeTitle($subject, $firstAssessment?->class),
+            $this->defaultCourseCodeTitle($ownedCompletedAssessments),
             $ownedCompletedAssessments,
         );
 

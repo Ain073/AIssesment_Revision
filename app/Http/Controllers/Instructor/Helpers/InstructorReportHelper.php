@@ -81,8 +81,14 @@ trait InstructorReportHelper
             ->filter()
             ->unique()
             ->values();
-        $studentCount = (int) ($rows->first()['analytics']['students_count'] ?? 0);
-        $defaultCourseCodeTitle = $this->defaultCourseCodeTitle($subject, $class);
+        $distinctClasses = $publishAssessments
+            ->map(fn (PublishAssessment $pa) => $pa->class)
+            ->filter()
+            ->unique(fn ($c) => $c->getKey());
+        $studentCount = $distinctClasses->isNotEmpty()
+            ? (int) $distinctClasses->sum(fn ($c) => $c->enrolledStudentsCount() ?? 0)
+            : (int) ($rows->first()['analytics']['students_count'] ?? 0);
+        $defaultCourseCodeTitle = $this->defaultCourseCodeTitle($publishAssessments);
         $savedCourseCodeTitle = $rows
             ->pluck('report.course_code_title')
             ->filter()
@@ -107,8 +113,42 @@ trait InstructorReportHelper
         ];
     }
 
-    protected function defaultCourseCodeTitle($subject, ?AcademicClass $class = null): string
+    protected function defaultCourseCodeTitle($publishAssessmentsOrSubject, $classes = null): string
     {
+        if ($publishAssessmentsOrSubject instanceof Collection) {
+            $publishAssessments = $publishAssessmentsOrSubject;
+
+            // Group by subject
+            $groupedBySubject = $publishAssessments->groupBy(function (PublishAssessment $pa) {
+                $subject = $pa->assessment?->subject ?: $pa->class?->subject;
+                return $subject?->getKey() ?? 'no_subject';
+            });
+
+            $parts = $groupedBySubject->map(function (Collection $group): string {
+                $first = $group->first();
+                $subject = $first?->assessment?->subject ?: $first?->class?->subject;
+                $subjectCode = $subject?->subject_code ?? 'No code';
+                $subjectName = $subject?->subject_name ?? 'No subject';
+
+                $classLabels = $group
+                    ->map(fn (PublishAssessment $pa) => $pa->class?->displayName())
+                    ->filter(fn ($label) => filled($label) && $label !== 'Class')
+                    ->unique()
+                    ->values();
+
+                if ($classLabels->isNotEmpty()) {
+                    return trim($subjectCode.' - '.$classLabels->implode(', ').' / '.$subjectName, ' -/');
+                }
+
+                return trim($subjectCode.' / '.$subjectName, ' /');
+            });
+
+            return $parts->filter()->implode(' | ');
+        }
+
+        // Backward-compatible fallback for ($subject, $class)
+        $subject = $publishAssessmentsOrSubject;
+        $class = $classes instanceof Collection ? $classes->first() : $classes;
         $subjectCode = $subject?->subject_code ?? 'No code';
         $subjectName = $subject?->subject_name ?? 'No subject';
         $classLabel = $class?->displayName();
@@ -145,6 +185,24 @@ trait InstructorReportHelper
 
         if ($classLabels->isNotEmpty() && ! $hasKnownClassLabel) {
             return $defaultCourseCodeTitle;
+        }
+
+        // If multiple distinct classes are in this report, check if they are all represented.
+        // If a previously saved title only has 1 of the classes, update to the default title with all classes.
+        $distinctClasses = $publishAssessments
+            ->map(fn (PublishAssessment $pa) => $pa->class)
+            ->filter()
+            ->unique(fn (AcademicClass $c) => $c->getKey());
+
+        if ($distinctClasses->count() > 1) {
+            $allClassesRepresented = $distinctClasses->every(function (AcademicClass $c) use ($normalizedCourseCodeTitle): bool {
+                $labels = array_filter([$c->displayName(), $c->class_name, $c->section_name]);
+                return collect($labels)->contains(fn ($l) => filled($l) && Str::contains($normalizedCourseCodeTitle, Str::lower((string) $l)));
+            });
+
+            if (! $allClassesRepresented) {
+                return $defaultCourseCodeTitle;
+            }
         }
 
         return $courseCodeTitle;
