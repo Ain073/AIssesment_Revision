@@ -450,6 +450,17 @@
                 display: none !important;
             }
 
+            /* Column widths matching the grid's 12:6:6:6:9:18:18:13:12 fr ratios */
+            .report-print-table .report-col-takers  { width: 12%; }
+            .report-print-table .report-col-items   { width:  6%; }
+            .report-print-table .report-col-high    { width:  6%; }
+            .report-print-table .report-col-low     { width:  6%; }
+            .report-print-table .report-col-mean    { width:  9%; }
+            .report-print-table .report-col-most    { width: 18%; }
+            .report-print-table .report-col-least   { width: 18%; }
+            .report-print-table .report-col-issues  { width: 13%; }
+            .report-print-table .report-col-action  { width: 12%; }
+
             .report-print-grid-sheet {
                 display: block !important;
                 width: 100%;
@@ -734,8 +745,9 @@
 
             [data-ff-print] .report-print-table tr {
                 display: table-row !important;
-                break-inside: avoid !important;
-                page-break-inside: avoid !important;
+                /* allow tall rows to break naturally across pages — avoidance causes blank gaps */
+                break-inside: auto !important;
+                page-break-inside: auto !important;
             }
 
             /* Each cell gets right + bottom border only; left/top come from neighbors or table edge */
