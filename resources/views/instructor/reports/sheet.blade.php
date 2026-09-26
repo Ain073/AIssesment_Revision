@@ -13,7 +13,6 @@
             'height' => '8.27in',
             'margin' => '0.18in',
             'preview_ratio' => '0.9',
-            'page_size' => 'a4 landscape',
         ],
         'short' => [
             'label' => 'Short / Letter',
@@ -22,7 +21,6 @@
             'height' => '8.5in',
             'margin' => '0.18in',
             'preview_ratio' => '0.846',
-            'page_size' => 'letter landscape',
         ],
         'long' => [
             'label' => 'Long / Legal',
@@ -31,7 +29,6 @@
             'height' => '8.5in',
             'margin' => '0.2in',
             'preview_ratio' => '1',
-            'page_size' => 'legal landscape',
         ],
     ];
     $selectedPaper = array_key_exists(request('paper'), $paperOptions) ? request('paper') : 'long';
@@ -394,15 +391,16 @@
 
         @media print {
             @page {
+                size: {{ $paper['width'] }} {{ $paper['height'] }};
                 margin: {{ $paper['margin'] }};
             }
 
-            html,
+            .report-ai-status,
+            #reportAiStatus {
+                display: none !important;
+            }
+
             body {
-                height: auto !important;
-                min-height: 0 !important;
-                margin: 0 !important;
-                padding: 0 !important;
                 background: #fff !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
@@ -410,33 +408,17 @@
 
             .sidebar,
             .topbar,
-            .report-toolbar,
-            .report-ai-status,
-            #reportAiStatus,
-            .portal-toast-stack,
-            .modal,
-            .modal-backdrop {
+            .report-toolbar {
                 display: none !important;
             }
 
             .main-content {
                 margin: 0 !important;
                 padding: 0 !important;
-                min-height: 0 !important;
-                height: auto !important;
             }
 
             .page-container {
                 max-width: none !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                min-height: 0 !important;
-                height: auto !important;
-            }
-
-            #reportSheetForm {
-                margin: 0 !important;
                 padding: 0 !important;
             }
 
@@ -444,24 +426,18 @@
                 border: 0 !important;
                 box-shadow: none !important;
                 padding: 0 !important;
-                margin: 0 !important;
                 overflow: visible !important;
-                background: transparent !important;
             }
 
             .report-sheet {
-                border: 0 !important;
-                width: 100% !important;
-                min-width: 100% !important;
-                max-width: 100% !important;
+                border: 0;
+                width: 100%;
+                min-width: 100%;
                 height: auto !important;
                 min-height: 0 !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                break-inside: avoid !important;
-                page-break-inside: avoid !important;
-                break-after: avoid !important;
-                page-break-after: avoid !important;
+                padding: 0;
+                break-inside: auto;
+                page-break-inside: auto;
             }
 
             .report-header,
@@ -473,15 +449,11 @@
 
             .report-print-grid-sheet {
                 display: block !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
+                width: 100%;
+                margin: 0;
+                padding: 0;
                 visibility: visible !important;
                 opacity: 1 !important;
-                break-inside: avoid !important;
-                page-break-inside: avoid !important;
-                break-after: avoid !important;
-                page-break-after: avoid !important;
             }
 
             .report-print-grid {
