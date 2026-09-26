@@ -44,6 +44,47 @@
             padding: 0.9rem 1rem;
         }
 
+        .choice-review-list {
+            display: grid;
+            gap: 0.65rem;
+        }
+
+        .choice-review-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            background: #f8faff;
+            border: 1px solid var(--psu-line);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+        }
+
+        .choice-review-option.choice-review-correct {
+            background: #ecfdf3;
+            border-color: #198754;
+            color: #0f5132;
+        }
+
+        .choice-review-option.choice-review-wrong {
+            background: #fff1f2;
+            border-color: #dc3545;
+            color: #842029;
+        }
+
+        .choice-review-text {
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .choice-review-badges {
+            display: inline-flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 0.4rem;
+            flex: 0 0 auto;
+        }
+
         .submitted-results-modal .modal-content {
             border: 0;
             border-radius: 0.5rem;
@@ -93,6 +134,16 @@
             .submitted-results-actions .badge {
                 padding: 0.45rem 0.6rem !important;
                 font-size: 0.72rem;
+            }
+
+            .choice-review-option {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .choice-review-badges {
+                justify-content: flex-start;
             }
         }
     </style>
@@ -196,7 +247,7 @@
                                                 <span class="badge text-bg-light border rounded-pill px-3 py-2">{{ ucfirst(str_replace('_', ' ', $item->item_type)) }}</span>
                                                 @if ($showScore)
                                                     <span class="badge text-bg-light border rounded-pill px-3 py-2">
-                                                        {{ $row['earned_points'] }} / {{ $item->points }} pts
+                                                        {{ number_format((float) $row['earned_points'], 2) }} / {{ number_format((float) $item->points, 2) }} pts
                                                     </span>
                                                 @endif
                                             </div>
@@ -204,6 +255,14 @@
                                                 <span class="badge text-bg-warning rounded-1 px-3 py-2">Pending check</span>
                                             @elseif ($isEssay)
                                                 <span class="badge text-bg-success rounded-1 px-3 py-2">Checked</span>
+                                            @elseif ($item->item_type === 'enumeration')
+                                                @if ((float) $row['earned_points'] >= (float) $item->points && (float) $item->points > 0)
+                                                    <span class="badge text-bg-success rounded-1 px-3 py-2">Correct</span>
+                                                @elseif ((float) $row['earned_points'] > 0)
+                                                    <span class="badge text-bg-warning rounded-1 px-3 py-2">Partial</span>
+                                                @else
+                                                    <span class="badge text-bg-danger rounded-1 px-3 py-2">Incorrect</span>
+                                                @endif
                                             @else
                                                 <span class="badge {{ $row['is_correct'] ? 'text-bg-success' : 'text-bg-danger' }} rounded-1 px-3 py-2">
                                                     {{ $row['is_correct'] ? 'Correct' : 'Incorrect' }}
@@ -213,16 +272,77 @@
 
                                         <h3 class="h5 fw-bold mb-3" style="color: var(--psu-navy);">{{ $item->question_text }}</h3>
 
-                                        <div class="row g-3">
-                                            <div class="col-lg-6">
-                                                <p class="small fw-bold text-secondary text-uppercase mb-2">Your Answer</p>
-                                                <div class="answer-text-box">{{ $row['student_answer'] }}</div>
+                                        @if ($item->item_type === 'enumeration')
+                                            @php
+                                                $enumCorrectAnswers = $item->choices->where('is_correct', true)->sortBy('sort_order')->values();
+                                                $rawStudentAnswers = is_array(json_decode((string) ($answer?->answer_text ?? ''), true))
+                                                    ? collect(json_decode($answer->answer_text, true))->map(fn ($s) => trim((string) $s))
+                                                    : collect([trim((string) ($answer?->answer_text ?? ''))]);
+                                                $remainingPool = $item->order_sensitive
+                                                    ? null
+                                                    : $enumCorrectAnswers->pluck('choice_text')->map(fn ($c) => trim((string) $c))->values()->toArray();
+                                            @endphp
+
+                                            <div class="mb-2">
+                                                <p class="small fw-bold text-secondary text-uppercase mb-2">Answer Breakdown (Per Box)</p>
+                                                <div class="choice-review-list">
+                                                    @foreach ($enumCorrectAnswers as $slot => $correctSlot)
+                                                        @php
+                                                            $studentSlot = $rawStudentAnswers->get($slot, '');
+                                                            if ($item->order_sensitive) {
+                                                                $slotCorrect = $studentSlot !== '' && strcasecmp(trim($studentSlot), trim((string) $correctSlot->choice_text)) === 0;
+                                                            } else {
+                                                                $matchIdx = false;
+                                                                if ($studentSlot !== '' && $remainingPool !== null) {
+                                                                    foreach ($remainingPool as $rIdx => $rVal) {
+                                                                        if (strcasecmp(trim($studentSlot), $rVal) === 0) {
+                                                                            $matchIdx = $rIdx;
+                                                                            break;
+                                                                        }
+                                                                    }
+                                                                }
+                                                                $slotCorrect = $studentSlot !== '' && $matchIdx !== false;
+                                                                if ($slotCorrect && $remainingPool !== null) {
+                                                                    array_splice($remainingPool, $matchIdx, 1);
+                                                                }
+                                                            }
+                                                            $slotClass = $studentSlot === ''
+                                                                ? ''
+                                                                : ($slotCorrect ? 'choice-review-correct' : 'choice-review-wrong');
+                                                        @endphp
+                                                        <div class="choice-review-option {{ $slotClass }}">
+                                                            <div class="choice-review-text">
+                                                                <span class="text-secondary fw-semibold me-2">Box {{ $slot + 1 }}:</span>
+                                                                <span class="{{ $studentSlot !== '' ? 'fw-bold' : 'text-muted fst-italic' }}">
+                                                                    {{ $studentSlot !== '' ? $studentSlot : 'No answer' }}
+                                                                </span>
+                                                            </div>
+                                                            <div class="choice-review-badges">
+                                                                @if ($slotCorrect)
+                                                                    <span class="badge text-bg-success rounded-1">+1.00 pt (Correct)</span>
+                                                                @elseif ($studentSlot !== '')
+                                                                    <span class="badge text-bg-danger rounded-1">0.00 pt (Wrong)</span>
+                                                                @else
+                                                                    <span class="badge text-bg-secondary rounded-1">0.00 pt (No answer)</span>
+                                                                @endif
+                                                                <span class="badge text-bg-light border rounded-1">Expected: {{ $correctSlot->choice_text }}</span>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
                                             </div>
-                                            <div class="col-lg-6">
-                                                <p class="small fw-bold text-secondary text-uppercase mb-2">Correct Answer</p>
-                                                <div class="answer-text-box">{{ $row['correct_answer'] }}</div>
+                                        @else
+                                            <div class="row g-3">
+                                                <div class="col-lg-6">
+                                                    <p class="small fw-bold text-secondary text-uppercase mb-2">Your Answer</p>
+                                                    <div class="answer-text-box">{{ $row['student_answer'] }}</div>
+                                                </div>
+                                                <div class="col-lg-6">
+                                                    <p class="small fw-bold text-secondary text-uppercase mb-2">Correct Answer</p>
+                                                    <div class="answer-text-box">{{ $row['correct_answer'] }}</div>
+                                                </div>
                                             </div>
-                                        </div>
+                                        @endif
                                     </article>
                                 @endforeach
                             </div>

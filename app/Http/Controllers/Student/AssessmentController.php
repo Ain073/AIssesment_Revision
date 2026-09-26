@@ -425,6 +425,11 @@ class AssessmentController extends BaseController
         }
 
         if (filled($answer->answer_text)) {
+            $decoded = json_decode((string) $answer->answer_text, true);
+            if (is_array($decoded)) {
+                return collect($decoded)->map(fn ($s) => trim((string) $s))->filter()->join(' / ');
+            }
+
             return (string) $answer->answer_text;
         }
 

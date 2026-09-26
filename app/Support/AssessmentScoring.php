@@ -54,7 +54,8 @@ class AssessmentScoring
         }
 
         if ($item->item_type === 'enumeration') {
-            $maxPoints = (float) $item->points;
+            $totalCorrect = $item->choices->where('is_correct', true)->count();
+            $maxPoints = (float) max($totalCorrect, (float) $item->points);
 
             return $maxPoints > 0 && self::enumerationScore($item, $answer) >= $maxPoints;
         }
@@ -88,9 +89,10 @@ class AssessmentScoring
     }
 
     /**
-     * Score an enumeration answer: each correct answer earns (total_points / total_answers) points.
-     * Matching is exact (case-sensitive). Order-sensitive mode matches by position;
+     * Score an enumeration answer: each correct box earns 1 point.
+     * Order-sensitive mode matches by position;
      * order-independent mode matches by pool membership.
+     * Comparison is case-insensitive and trims whitespace.
      */
     public static function enumerationScore(AssessmentItem $item, ?SubmissionAnswer $answer): float
     {
@@ -109,7 +111,8 @@ class AssessmentScoring
             return 0.0;
         }
 
-        $pointsPerAnswer = (float) $item->points / $totalCorrect;
+        $pointsPerAnswer = 1.0;
+        $maxPoints = (float) max($totalCorrect, (float) $item->points);
 
         // Student answers are stored as JSON array in answer_text
         $rawStudentAnswers = json_decode((string) $answer->answer_text, true);
@@ -130,20 +133,26 @@ class AssessmentScoring
             foreach ($correctChoices as $index => $correctChoice) {
                 $studentSlot = $studentAnswers->get($index, '');
 
-                if ($studentSlot !== '' && $studentSlot === $correctChoice->choice_text) {
+                if ($studentSlot !== '' && strcasecmp(trim($studentSlot), trim((string) $correctChoice->choice_text)) === 0) {
                     $earned += $pointsPerAnswer;
                 }
             }
         } else {
             // Order-independent: consume pool of correct answers to prevent duplicate credit
-            $remainingCorrect = $correctChoices->pluck('choice_text')->values()->toArray();
+            $remainingCorrect = $correctChoices->pluck('choice_text')->map(fn ($c) => trim((string) $c))->values()->toArray();
 
             foreach ($studentAnswers as $studentSlot) {
                 if ($studentSlot === '') {
                     continue;
                 }
 
-                $matchIndex = array_search($studentSlot, $remainingCorrect, true);
+                $matchIndex = false;
+                foreach ($remainingCorrect as $rIdx => $rVal) {
+                    if (strcasecmp(trim($studentSlot), $rVal) === 0) {
+                        $matchIndex = $rIdx;
+                        break;
+                    }
+                }
 
                 if ($matchIndex !== false) {
                     $earned += $pointsPerAnswer;
@@ -152,7 +161,7 @@ class AssessmentScoring
             }
         }
 
-        return self::clampPoints(round($earned, 2), (float) $item->points);
+        return self::clampPoints(round($earned, 2), $maxPoints);
     }
 
     public static function clampPoints(float $value, float $max): float

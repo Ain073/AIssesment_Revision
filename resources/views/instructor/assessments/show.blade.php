@@ -756,6 +756,10 @@
                         <button class="btn btn-sm btn-outline-danger" type="button" data-edit-remove-enum-row title="Remove">&times;</button>
                     `;
                     container.appendChild(row);
+                    const pointsInput = document.getElementById(`edit_points_${itemId}`);
+                    if (pointsInput) {
+                        pointsInput.value = rowCount;
+                    }
                     return;
                 }
 
@@ -768,12 +772,18 @@
                     row?.remove();
 
                     if (container) {
-                        container.querySelectorAll('[data-enum-row]').forEach((r, i) => {
+                        const remaining = container.querySelectorAll('[data-enum-row]');
+                        remaining.forEach((r, i) => {
                             const label = r.querySelector('span');
                             const input = r.querySelector('input');
                             if (label) { label.textContent = String(i + 1); }
                             if (input) { input.placeholder = `Answer ${i + 1}`; }
                         });
+                        const modal = container.closest('.modal');
+                        const pointsInput = modal?.querySelector('input[name="points"]');
+                        if (pointsInput) {
+                            pointsInput.value = Math.max(1, remaining.length);
+                        }
                     }
                 }
             });

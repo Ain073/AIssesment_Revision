@@ -200,7 +200,11 @@
 
         const addQuestion = (oldItem = null) => {
             const type = oldItem?.item_type ?? typeSelect.value;
-            const points = oldItem?.points ?? pointsInput.value;
+            let points = oldItem?.points ?? pointsInput.value;
+            if (type === 'enumeration') {
+                const enumAnswers = oldItem?.enum_answers ?? [''];
+                points = Math.max(1, enumAnswers.length);
+            }
             const index = questionIndex;
             questionIndex++;
 
@@ -277,6 +281,11 @@
                 <button class="btn btn-sm btn-outline-danger" type="button" data-remove-enum-row title="Remove">&times;</button>
             `;
             container.appendChild(row);
+
+            const pointsInput = questionBlocks.querySelector(`#points_${blockIndex}`);
+            if (pointsInput) {
+                pointsInput.value = rowCount;
+            }
         });
 
         // Identification: add alternative answer
@@ -320,9 +329,10 @@
             const container = row?.parentElement;
             row?.remove();
 
-            // Renumber remaining rows
+            // Renumber remaining rows and sync points
             if (container) {
-                container.querySelectorAll('[data-enum-row]').forEach((r, i) => {
+                const remaining = container.querySelectorAll('[data-enum-row]');
+                remaining.forEach((r, i) => {
                     const label = r.querySelector('span');
                     const input = r.querySelector('input');
 
@@ -334,6 +344,12 @@
                         input.placeholder = `Answer ${i + 1}`;
                     }
                 });
+
+                const block = container.closest('[data-question-block]');
+                const pointsInput = block?.querySelector('input[name$="[points]"]');
+                if (pointsInput) {
+                    pointsInput.value = Math.max(1, remaining.length);
+                }
             }
         });
 

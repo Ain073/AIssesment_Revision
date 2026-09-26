@@ -435,11 +435,20 @@ class AssessmentController extends BaseController
 
             foreach ($validated['items'] as $itemData) {
                 $itemType = $itemData['item_type'];
+                $itemPoints = $itemData['points'];
+
+                if ($itemType === 'enumeration') {
+                    $enumCount = count(array_filter(
+                        array_map('trim', (array) ($itemData['enum_answers'] ?? [])),
+                        fn ($a) => $a !== ''
+                    ));
+                    $itemPoints = max(1, $enumCount);
+                }
 
                 $item = $ownedAssessment->items()->create([
                     'question_text' => $itemData['question_text'],
                     'item_type' => $itemType,
-                    'points' => $itemData['points'],
+                    'points' => $itemPoints,
                     'is_required' => true,
                     'sort_order' => $nextOrder,
                 ]);
@@ -691,6 +700,7 @@ class AssessmentController extends BaseController
             }
 
             $validated['enum_answers'] = $filledEnumAnswers->values()->all();
+            $validated['points'] = $filledEnumAnswers->count();
         }
 
         $validated['choices'] = $choices->all();

@@ -42,4 +42,16 @@ class AssessmentItem extends Model
         return $this->hasMany(AssessmentItemChoice::class, 'assessment_item_id', 'assessment_item_id')
             ->orderBy('sort_order');
     }
+
+    public function getPointsAttribute($value): string
+    {
+        if ($this->item_type === 'enumeration' && $this->relationLoaded('choices')) {
+            $correctCount = $this->choices->where('is_correct', true)->count();
+            if ($correctCount > 0) {
+                return number_format(max((float) $value, (float) $correctCount), 2, '.', '');
+            }
+        }
+
+        return number_format((float) ($value ?? 1), 2, '.', '');
+    }
 }
