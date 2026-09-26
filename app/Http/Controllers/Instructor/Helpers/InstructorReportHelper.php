@@ -130,14 +130,14 @@ trait InstructorReportHelper
                 $subjectCode = $subject?->subject_code ?? 'No code';
                 $subjectName = $subject?->subject_name ?? 'No subject';
 
-                $classLabels = $group
-                    ->map(fn (PublishAssessment $pa) => $pa->class?->displayName())
+                $sectionLabels = $group
+                    ->map(fn (PublishAssessment $pa) => $pa->class?->section_name ?: $pa->class?->displayName())
                     ->filter(fn ($label) => filled($label) && $label !== 'Class')
                     ->unique()
                     ->values();
 
-                if ($classLabels->isNotEmpty()) {
-                    return trim($subjectCode.' - '.$classLabels->implode(', ').' / '.$subjectName, ' -/');
+                if ($sectionLabels->isNotEmpty()) {
+                    return trim($subjectCode.' - '.$sectionLabels->implode(', ').' / '.$subjectName, ' -/');
                 }
 
                 return trim($subjectCode.' / '.$subjectName, ' /');
@@ -151,10 +151,10 @@ trait InstructorReportHelper
         $class = $classes instanceof Collection ? $classes->first() : $classes;
         $subjectCode = $subject?->subject_code ?? 'No code';
         $subjectName = $subject?->subject_name ?? 'No subject';
-        $classLabel = $class?->displayName();
+        $sectionLabel = $class?->section_name ?: $class?->displayName();
 
-        if (filled($classLabel) && $classLabel !== 'Class') {
-            return trim($subjectCode.' - '.$classLabel.' / '.$subjectName, ' -/');
+        if (filled($sectionLabel) && $sectionLabel !== 'Class') {
+            return trim($subjectCode.' - '.$sectionLabel.' / '.$subjectName, ' -/');
         }
 
         return trim($subjectCode.' / '.$subjectName, ' /');
@@ -168,11 +168,14 @@ trait InstructorReportHelper
             return $defaultCourseCodeTitle;
         }
 
+        // Clean out legacy "1st Year - ", "2nd Year - ", "3rd Year - ", "4th Year - " if present
+        $courseCodeTitle = trim((string) preg_replace('/\b(?:1st|2nd|3rd|4th)\s+Year\s*-\s*/i', '', $courseCodeTitle));
+
         $classLabels = $publishAssessments
             ->map(fn (PublishAssessment $publishAssessment): array => [
+                $publishAssessment->class?->section_name,
                 $publishAssessment->class?->displayName(),
                 $publishAssessment->class?->class_name,
-                $publishAssessment->class?->section_name,
             ])
             ->flatten()
             ->filter(fn ($label): bool => filled($label) && $label !== 'Class')
@@ -196,7 +199,7 @@ trait InstructorReportHelper
 
         if ($distinctClasses->count() > 1) {
             $allClassesRepresented = $distinctClasses->every(function (AcademicClass $c) use ($normalizedCourseCodeTitle): bool {
-                $labels = array_filter([$c->displayName(), $c->class_name, $c->section_name]);
+                $labels = array_filter([$c->section_name, $c->displayName(), $c->class_name]);
                 return collect($labels)->contains(fn ($l) => filled($l) && Str::contains($normalizedCourseCodeTitle, Str::lower((string) $l)));
             });
 

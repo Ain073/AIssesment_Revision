@@ -256,11 +256,19 @@ class ReportController extends BaseController
             ->unique()
             ->values();
         $studentCount = (int) ($rows->first()['analytics']['students_count'] ?? 0);
-        $defaultCourseCodeTitle = trim(($subject?->subject_code ?? 'No code').' / '.($subject?->subject_name ?? 'No subject'), ' /');
+        $sectionName = $class?->section_name;
+        $subjectCode = $subject?->subject_code ?? 'No code';
+        $subjectName = $subject?->subject_name ?? 'No subject';
+        $defaultCourseCodeTitle = filled($sectionName)
+            ? trim($subjectCode.' - '.$sectionName.' / '.$subjectName, ' -/')
+            : trim($subjectCode.' / '.$subjectName, ' /');
         $savedCourseCodeTitle = $rows
             ->pluck('report.course_code_title')
             ->filter()
             ->first();
+        if (filled($savedCourseCodeTitle)) {
+            $savedCourseCodeTitle = trim((string) preg_replace('/\b(?:1st|2nd|3rd|4th)\s+Year\s*-\s*/i', '', $savedCourseCodeTitle));
+        }
 
         return [
             'campus' => 'SAN CARLOS',
