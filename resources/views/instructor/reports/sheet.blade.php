@@ -408,7 +408,10 @@
 
             .sidebar,
             .topbar,
-            .report-toolbar {
+            .report-toolbar,
+            #reportLockedNotice,
+            .alert,
+            .modal {
                 display: none !important;
             }
 
@@ -706,7 +709,7 @@
 
 @section('content')
     @if (session('status'))
-        <div class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
+        <div class="alert alert-success d-flex align-items-center gap-2 mb-3 d-print-none" role="alert">
             <span class="material-symbols-outlined fs-5">check_circle</span>
             <div>{{ session('status') }}</div>
         </div>
@@ -788,7 +791,7 @@
         </div>
     </div>
 
-    <div class="alert alert-light border d-flex align-items-center justify-content-between p-2.5 mb-3 {{ $isFinalized ? '' : 'd-none' }}" id="reportLockedNotice">
+    <div class="alert alert-light border d-flex align-items-center justify-content-between p-2.5 mb-3 d-print-none {{ $isFinalized ? '' : 'd-none' }}" id="reportLockedNotice">
         <div class="d-flex align-items-center gap-2 small text-secondary">
             <span class="material-symbols-outlined text-success fs-5">verified</span>
             <span>This report is <strong>finalized</strong> and locked. Click <strong>Edit</strong> if you need to modify it.</span>
