@@ -138,9 +138,29 @@
             }
 
             if (type === 'identification') {
+                const acceptedAnswers = oldItem.accepted_answers ?? (oldItem.accepted_answer ? [oldItem.accepted_answer] : ['']);
+                let rows = '';
+                const count = Math.max(acceptedAnswers.length, 1);
+
+                for (let ai = 0; ai < count; ai++) {
+                    rows += `
+                        <div class="ident-answer-row d-flex gap-2 mb-2" data-ident-row>
+                            <span class="input-group-text bg-light border rounded px-2 small fw-semibold" style="min-width:5.5rem;justify-content:center;">${ai === 0 ? 'Primary' : 'Alternative'}</span>
+                            <input class="form-control" name="items[${index}][accepted_answers][]" type="text" placeholder="${ai === 0 ? 'e.g. CPU' : 'e.g. Central Processing Unit'}" value="${escapeHtml(acceptedAnswers[ai] ?? '')}">
+                            ${ai > 0 ? '<button class="btn btn-sm btn-outline-danger" type="button" data-remove-ident-row title="Remove">&times;</button>' : ''}
+                        </div>
+                    `;
+                }
+
                 return `
-                    <label class="form-label fw-bold text-uppercase small" for="accepted_answer_${index}">Accepted Answer</label>
-                    <input class="form-control" id="accepted_answer_${index}" name="${inputName(index, 'accepted_answer')}" type="text" value="${escapeHtml(oldItem.accepted_answer ?? '')}">
+                    <div class="mb-2">
+                        <label class="compact-label mb-1">Accepted Answers</label>
+                        <p class="small text-secondary mb-2">Provide the primary answer and any accepted alternatives, aliases, or acronyms.</p>
+                    </div>
+                    <div data-ident-rows-${index}>${rows}</div>
+                    <button class="btn btn-sm btn-outline-secondary mt-1" type="button" data-add-ident-row="${index}">
+                        + Add Alternative Answer
+                    </button>
                 `;
             }
 
@@ -259,6 +279,35 @@
             container.appendChild(row);
         });
 
+        // Identification: add alternative answer
+        questionBlocks.addEventListener('click', (event) => {
+            const addRowBtn = event.target.closest('[data-add-ident-row]');
+            if (! addRowBtn) return;
+
+            const blockIndex = addRowBtn.dataset.addIdentRow;
+            const container = questionBlocks.querySelector(`[data-ident-rows-${blockIndex}]`);
+            if (! container) return;
+
+            const row = document.createElement('div');
+            row.className = 'ident-answer-row d-flex gap-2 mb-2';
+            row.dataset.identRow = 'true';
+            row.innerHTML = `
+                <span class="input-group-text bg-light border rounded px-2 small fw-semibold" style="min-width:5.5rem;justify-content:center;">Alternative</span>
+                <input class="form-control" name="items[${blockIndex}][accepted_answers][]" type="text" placeholder="e.g. Alternative answer / acronym">
+                <button class="btn btn-sm btn-outline-danger" type="button" data-remove-ident-row title="Remove">&times;</button>
+            `;
+            container.appendChild(row);
+        });
+
+        // Identification: remove alternative answer
+        questionBlocks.addEventListener('click', (event) => {
+            const removeRowBtn = event.target.closest('[data-remove-ident-row]');
+            if (! removeRowBtn) return;
+
+            const row = removeRowBtn.closest('[data-ident-row]');
+            row?.remove();
+        });
+
         // Enumeration: remove answer slot
         questionBlocks.addEventListener('click', (event) => {
             const removeRowBtn = event.target.closest('[data-remove-enum-row]');
@@ -351,8 +400,12 @@
                     blockMessages.push(`Question ${questionNumber}: Select True or False as the correct answer.`);
                 }
 
-                if (type === 'identification' && ! block.querySelector('input[name$="[accepted_answer]"]')?.value.trim()) {
-                    blockMessages.push(`Question ${questionNumber}: Enter the accepted answer.`);
+                if (type === 'identification') {
+                    const identInputs = Array.from(block.querySelectorAll('input[name*="[accepted_answers]"], input[name$="[accepted_answer]"]'));
+                    const filledIdent = identInputs.filter(inp => inp.value.trim() !== '');
+                    if (filledIdent.length === 0) {
+                        blockMessages.push(`Question ${questionNumber}: Enter at least one accepted answer.`);
+                    }
                 }
 
                 if (type === 'enumeration') {

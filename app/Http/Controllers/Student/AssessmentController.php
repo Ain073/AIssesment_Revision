@@ -440,7 +440,7 @@ class AssessmentController extends BaseController
             ->values();
 
         return $correctAnswers->isNotEmpty()
-            ? $correctAnswers->join(', ')
+            ? $correctAnswers->join(' / ')
             : 'For teacher checking';
     }
 

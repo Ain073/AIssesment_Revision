@@ -371,6 +371,8 @@ class AssessmentController extends BaseController
             'items.*.correct_choice' => ['nullable', 'integer', 'min:0', 'max:5'],
             'items.*.true_false_answer' => ['nullable', Rule::in(['true', 'false'])],
             'items.*.accepted_answer' => ['nullable', 'string', 'max:1000'],
+            'items.*.accepted_answers' => ['nullable', 'array', 'max:10'],
+            'items.*.accepted_answers.*' => ['nullable', 'string', 'max:1000'],
             'items.*.enum_answers' => ['nullable', 'array', 'min:1', 'max:20'],
             'items.*.enum_answers.*' => ['nullable', 'string', 'max:500'],
             'items.*.order_sensitive' => ['nullable', 'in:1,0,true,false'],
@@ -402,8 +404,15 @@ class AssessmentController extends BaseController
                 $itemErrors["items.{$index}.true_false_answer"] = "Question {$questionNumber}: Please select True or False as the correct answer.";
             }
 
-            if ($itemType === 'identification' && blank($itemData['accepted_answer'] ?? null)) {
-                $itemErrors["items.{$index}.accepted_answer"] = "Question {$questionNumber}: Please enter the accepted answer for identification.";
+            if ($itemType === 'identification') {
+                $identAnswers = collect($itemData['accepted_answers'] ?? [])
+                    ->concat([$itemData['accepted_answer'] ?? null])
+                    ->map(fn ($a) => trim((string) $a))
+                    ->filter(fn ($a) => $a !== '');
+
+                if ($identAnswers->isEmpty()) {
+                    $itemErrors["items.{$index}.accepted_answer"] = "Question {$questionNumber}: Please enter at least one accepted answer for identification.";
+                }
             }
 
             if ($itemType === 'enumeration') {
@@ -466,11 +475,20 @@ class AssessmentController extends BaseController
                 }
 
                 if ($itemType === 'identification') {
-                    $item->choices()->create([
-                        'choice_text' => trim((string) $itemData['accepted_answer']),
-                        'is_correct' => true,
-                        'sort_order' => 1,
-                    ]);
+                    $identAnswers = collect($itemData['accepted_answers'] ?? [])
+                        ->concat([$itemData['accepted_answer'] ?? null])
+                        ->map(fn ($a) => trim((string) $a))
+                        ->filter(fn ($a) => $a !== '')
+                        ->unique(fn ($a) => strtolower($a))
+                        ->values();
+
+                    foreach ($identAnswers as $i => $answerText) {
+                        $item->choices()->create([
+                            'choice_text' => $answerText,
+                            'is_correct' => true,
+                            'sort_order' => $i + 1,
+                        ]);
+                    }
                 }
 
                 if ($itemType === 'enumeration') {
@@ -614,6 +632,8 @@ class AssessmentController extends BaseController
             'correct_choice' => ['nullable', 'integer', 'min:0', 'max:5'],
             'true_false_answer' => ['nullable', Rule::in(['true', 'false'])],
             'accepted_answer' => ['nullable', 'string', 'max:1000'],
+            'accepted_answers' => ['nullable', 'array', 'max:10'],
+            'accepted_answers.*' => ['nullable', 'string', 'max:1000'],
             'enum_answers' => ['nullable', 'array', 'min:1', 'max:20'],
             'enum_answers.*' => ['nullable', 'string', 'max:500'],
             'order_sensitive' => ['nullable', 'in:1,0,true,false'],
@@ -642,10 +662,21 @@ class AssessmentController extends BaseController
             ]);
         }
 
-        if ($item->item_type === 'identification' && blank($validated['accepted_answer'] ?? null)) {
-            throw ValidationException::withMessages([
-                'accepted_answer' => 'Please enter the accepted answer for identification.',
-            ]);
+        if ($item->item_type === 'identification') {
+            $identAnswers = collect($request->input('accepted_answers', []))
+                ->concat([$request->input('accepted_answer')])
+                ->map(fn ($a) => trim((string) $a))
+                ->filter(fn ($a) => $a !== '')
+                ->unique(fn ($a) => strtolower($a))
+                ->values();
+
+            if ($identAnswers->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'accepted_answer' => 'Please enter at least one accepted answer for identification.',
+                ]);
+            }
+
+            $validated['accepted_answers'] = $identAnswers->all();
         }
 
         if ($item->item_type === 'enumeration') {
@@ -696,11 +727,22 @@ class AssessmentController extends BaseController
         }
 
         if ($item->item_type === 'identification') {
-            $item->choices()->create([
-                'choice_text' => trim((string) $validated['accepted_answer']),
-                'is_correct' => true,
-                'sort_order' => 1,
-            ]);
+            $identAnswers = collect($validated['accepted_answers'] ?? [])
+                ->concat([$validated['accepted_answer'] ?? null])
+                ->map(fn ($a) => trim((string) $a))
+                ->filter(fn ($a) => $a !== '')
+                ->unique(fn ($a) => strtolower($a))
+                ->values();
+
+            foreach ($identAnswers as $i => $answerText) {
+                $item->choices()->create([
+                    'choice_text' => $answerText,
+                    'is_correct' => true,
+                    'sort_order' => $i + 1,
+                ]);
+            }
+
+            return;
         }
 
         if ($item->item_type === 'enumeration') {

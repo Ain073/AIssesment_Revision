@@ -149,7 +149,8 @@
                         $answerId = $answer?->submission_answer_id;
                         $studentAnswer = $answer?->choice?->choice_text
                             ?? (filled($answer?->answer_text) ? $answer->answer_text : 'No answer');
-                        $correctAnswer = $item->choices->firstWhere('is_correct', true)?->choice_text ?? 'No correct answer set';
+                        $correctAnswersList = $item->choices->where('is_correct', true)->pluck('choice_text')->filter();
+                        $correctAnswer = $correctAnswersList->isNotEmpty() ? $correctAnswersList->join(' / ') : 'No correct answer set';
                         $maxPoints = (float) $item->points;
                         $earnedPoints = $row['earned_points'];
                         $isEssay = $item->item_type === 'essay';

@@ -476,13 +476,19 @@
                                 <p class="fw-semibold mb-3" style="color: var(--psu-navy);">{{ $item->question_text }}</p>
 
                                 @if ($item->choices->isNotEmpty())
-                                    <p class="compact-label">Saved Answers</p>
+                                    <p class="compact-label">{{ $item->item_type === 'identification' ? 'Accepted Answers' : 'Saved Answers' }}</p>
                                     <ul class="saved-choice-list">
-                                        @foreach ($item->choices as $choice)
+                                        @foreach ($item->choices as $ci => $choice)
                                             <li class="saved-choice">
                                                 <span>{{ $choice->choice_text }}</span>
                                                 @if ($choice->is_correct)
-                                                    <span class="badge text-bg-success rounded-1">Correct</span>
+                                                    @if ($item->item_type === 'identification' && $item->choices->count() > 1)
+                                                        <span class="badge {{ $ci === 0 ? 'text-bg-success' : 'text-bg-light border text-secondary' }} rounded-1">
+                                                            {{ $ci === 0 ? 'Primary' : 'Alternative' }}
+                                                        </span>
+                                                    @else
+                                                        <span class="badge text-bg-success rounded-1">Correct</span>
+                                                    @endif
                                                 @endif
                                             </li>
                                         @endforeach
@@ -546,8 +552,36 @@
                                                 </div>
                                             @elseif ($item->item_type === 'identification')
                                                 <div class="col-12">
-                                                    <label class="form-label fw-bold text-uppercase small" for="edit_accepted_answer_{{ $item->assessment_item_id }}">Accepted Answer</label>
-                                                    <input class="form-control" id="edit_accepted_answer_{{ $item->assessment_item_id }}" name="accepted_answer" type="text" value="{{ $correctChoice?->choice_text }}">
+                                                    <div class="mb-2">
+                                                        <label class="compact-label mb-1">Accepted Answers</label>
+                                                        <p class="small text-secondary mb-0">Provide the primary answer and any accepted alternatives, aliases, or acronyms.</p>
+                                                    </div>
+                                                    <div id="editIdentRows{{ $item->assessment_item_id }}">
+                                                        @php
+                                                            $identChoices = $item->choices->where('is_correct', true)->values();
+                                                        @endphp
+                                                        @foreach ($identChoices as $ai => $identChoice)
+                                                            <div class="ident-answer-row d-flex gap-2 mb-2" data-ident-row>
+                                                                <span class="input-group-text bg-light border rounded px-2 small fw-semibold" style="min-width:5.5rem;justify-content:center;">
+                                                                    {{ $ai === 0 ? 'Primary' : 'Alternative' }}
+                                                                </span>
+                                                                <input class="form-control" name="accepted_answers[]" type="text" value="{{ $identChoice->choice_text }}" placeholder="{{ $ai === 0 ? 'e.g. CPU' : 'e.g. Central Processing Unit' }}" required>
+                                                                @if ($ai > 0)
+                                                                    <button class="btn btn-sm btn-outline-danger" type="button" data-edit-remove-ident-row title="Remove">&times;</button>
+                                                                @endif
+                                                            </div>
+                                                        @endforeach
+                                                        @if ($identChoices->isEmpty())
+                                                            <div class="ident-answer-row d-flex gap-2 mb-2" data-ident-row>
+                                                                <span class="input-group-text bg-light border rounded px-2 small fw-semibold" style="min-width:5.5rem;justify-content:center;">Primary</span>
+                                                                <input class="form-control" name="accepted_answers[]" type="text" placeholder="e.g. CPU" required>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                    <button class="btn btn-sm btn-outline-secondary mt-1" type="button"
+                                                        data-add-edit-ident-row="{{ $item->assessment_item_id }}">
+                                                        + Add Alternative Answer
+                                                    </button>
                                                 </div>
                                             @elseif ($item->item_type === 'enumeration')
                                                 <div class="col-12">
@@ -673,10 +707,36 @@
         @include('instructor.assessments.assessment-show-page-code')
     @endunless
 
-    {{-- Edit modal: enumeration row add/remove --}}
+    {{-- Edit modal: enumeration and identification row add/remove --}}
     <script>
         (() => {
             document.addEventListener('click', (event) => {
+                // Add row in identification edit modal
+                const addIdentBtn = event.target.closest('[data-add-edit-ident-row]');
+                if (addIdentBtn) {
+                    const itemId = addIdentBtn.dataset.addEditIdentRow;
+                    const container = document.getElementById(`editIdentRows${itemId}`);
+                    if (! container) return;
+
+                    const row = document.createElement('div');
+                    row.className = 'ident-answer-row d-flex gap-2 mb-2';
+                    row.dataset.identRow = 'true';
+                    row.innerHTML = `
+                        <span class="input-group-text bg-light border rounded px-2 small fw-semibold" style="min-width:5.5rem;justify-content:center;">Alternative</span>
+                        <input class="form-control" name="accepted_answers[]" type="text" placeholder="e.g. Alternative answer / acronym" required>
+                        <button class="btn btn-sm btn-outline-danger" type="button" data-edit-remove-ident-row title="Remove">&times;</button>
+                    `;
+                    container.appendChild(row);
+                    return;
+                }
+
+                // Remove row in identification edit modal
+                const removeIdentBtn = event.target.closest('[data-edit-remove-ident-row]');
+                if (removeIdentBtn) {
+                    const row = removeIdentBtn.closest('[data-ident-row]');
+                    row?.remove();
+                    return;
+                }
                 // Add row in edit modal
                 const addBtn = event.target.closest('[data-add-edit-enum-row]');
 
