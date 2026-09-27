@@ -834,9 +834,8 @@
 
 @section('content')
     @if (session('status'))
-        <div class="alert alert-success d-flex align-items-center gap-2 mb-3 d-print-none" role="alert">
-            <span class="material-symbols-outlined fs-5">check_circle</span>
-            <div>{{ session('status') }}</div>
+        <div class="alert alert-success mb-3 d-print-none" role="alert">
+            {{ session('status') }}
         </div>
     @endif
 

@@ -222,7 +222,9 @@
             const flashAlerts = document.querySelectorAll('.page-container > .alert-success, .page-container > .alert-warning');
 
             flashAlerts.forEach((alert) => {
-                const message = alert.textContent.trim();
+                const clone = alert.cloneNode(true);
+                clone.querySelectorAll('.material-symbols-outlined, .btn-close, .close').forEach((el) => el.remove());
+                const message = clone.textContent.trim();
 
                 if (message) {
                     const type = alert.classList.contains('alert-warning') ? 'warning' : 'success';
