@@ -98,11 +98,8 @@ class SearchController extends Controller
         }
 
         return Subject::query()
-            ->with(['semester', 'department', 'program.department'])
-            ->where(function ($scope) use ($departmentId): void {
-                $scope->where('department_id', $departmentId)
-                    ->orWhereHas('program', fn ($programQuery) => $programQuery->where('department_id', $departmentId));
-            })
+            ->with(['department'])
+            ->where('department_id', $departmentId)
             ->where(function ($search) use ($query): void {
                 $search->where('subject_code', 'like', "%{$query}%")
                     ->orWhere('subject_name', 'like', "%{$query}%")

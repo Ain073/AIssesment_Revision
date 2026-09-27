@@ -38,9 +38,4 @@ class Program extends Model
     {
         return $this->hasMany(AcademicClass::class, 'program_id', 'program_id');
     }
-
-    public function subjects(): HasMany
-    {
-        return $this->hasMany(Subject::class, 'program_id', 'program_id');
-    }
 }

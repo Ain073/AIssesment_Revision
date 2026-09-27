@@ -61,13 +61,7 @@ class DashboardController extends BaseController
                     'label' => 'Subjects',
                     'value' => $scopedDepartmentId
                         ? Subject::query()
-                            ->where(function ($query) use ($scopedDepartmentId, $scopedProgramIds): void {
-                                $query->where('department_id', $scopedDepartmentId);
-
-                                if ($scopedProgramIds->isNotEmpty()) {
-                                    $query->orWhereIn('program_id', $scopedProgramIds);
-                                }
-                            })
+                            ->where('department_id', $scopedDepartmentId)
                             ->count()
                         : 0,
                     'icon' => 'menu_book',
