@@ -40,7 +40,11 @@ return new class extends Migration
             elseif (str_contains($lower, 'financial')) {
                 $this->normalizeSections($program->program_id, '/^BSBA\s+([0-9]-[A-Za-z])$/i', 'BSBA FM ');
             }
-            // 8. Home Economics
+            // 8. Human Resources Development Management
+            elseif (str_contains($lower, 'development') || str_contains($lower, 'hrdm')) {
+                $this->normalizeSections($program->program_id, '/^BSBA\s+([0-9]-[A-Za-z])$/i', 'BSBA HRDM ');
+            }
+            // 9. Home Economics
             elseif (str_contains($lower, 'home economics')) {
                 $this->normalizeSections($program->program_id, '/^BTLED\s+([0-9]-[A-Za-z])$/i', 'BTLED HE ');
             }

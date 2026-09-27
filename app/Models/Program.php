@@ -94,10 +94,10 @@ class Program extends Model
             if (str_contains($lower, 'financial') || preg_match('/\bfm\b/i', $clean)) {
                 return 'BSBA FM';
             }
-            if (str_contains($lower, 'human resource development') || preg_match('/\bhrdm\b/i', $clean)) {
+            if (str_contains($lower, 'development') || preg_match('/\bhrdm\b/i', $clean)) {
                 return 'BSBA HRDM';
             }
-            if (str_contains($lower, 'human resource') || preg_match('/\bhrm\b/i', $clean)) {
+            if (str_contains($lower, 'human resource') || str_contains($lower, 'human resources') || preg_match('/\bhrm\b/i', $clean)) {
                 return 'BSBA HRM';
             }
             if (str_contains($lower, 'operations') || preg_match('/\bom\b/i', $clean)) {
@@ -168,6 +168,9 @@ class Program extends Model
         }
         if (str_contains($lower, 'public administration') || preg_match('/\bbpa\b/i', $clean)) {
             return 'BPA';
+        }
+        if (str_contains($lower, 'agri business') || str_contains($lower, 'agribusiness') || preg_match('/\bbsab\b/i', $clean)) {
+            return 'BSAB';
         }
         if (str_contains($lower, 'agriculture') || preg_match('/\bbsa\b/i', $clean)) {
             return 'BSA';

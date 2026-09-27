@@ -53,4 +53,25 @@ class ProgramAcronymTest extends TestCase
         $this->assertSame('BSCrim', Program::formatAcronym('Bachelor of Science in Criminology'));
         $this->assertSame('BSN', Program::formatAcronym('Bachelor of Science in Nursing'));
     }
+
+    public function test_all_11_psu_campus_programs_from_system(): void
+    {
+        $expected = [
+            'Bachelor of Elementary Education' => 'BEED',
+            'Bachelor of Science in Agri Business' => 'BSAB',
+            'Bachelor of Science in Business Administration in Human Resources Development Management' => 'BSBA HRDM',
+            'Bachelor of Science in Business Administration major in Financial Management' => 'BSBA FM',
+            'Bachelor of Science in Business Administration major in Marketing Management' => 'BSBA MM',
+            'Bachelor of Science in Hospitality Management' => 'BSHM',
+            'Bachelor of Science in Information Technology' => 'BSIT',
+            'Bachelor of Science in Office Administration' => 'BSOA',
+            'Bachelor of Science in Technology and Livelihood Education' => 'BTLED',
+            'Bachelor of Secondary Education major in Filipino' => 'BSED FIL',
+            'Bachelor of Secondary Education major in Social Studies' => 'BSED SS',
+        ];
+
+        foreach ($expected as $programName => $expectedAcronym) {
+            $this->assertSame($expectedAcronym, Program::formatAcronym($programName), "Failed asserting acronym for {$programName}");
+        }
+    }
 }
