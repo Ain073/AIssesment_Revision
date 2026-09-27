@@ -145,7 +145,7 @@ class SubjectController extends BaseController
     {
         $department = $this->scopedDepartment($this->currentUser());
         $programs = $this->scopedPrograms($department);
-        $subject->loadMissing('program', 'department');
+        $subject->loadMissing('department');
 
         abort_if(! $department, 403, 'Department assignment is required before deleting subjects.');
         if (! $this->subjectBelongsToDepartment($subject, $department->department_id, $programs)) {
@@ -222,28 +222,14 @@ class SubjectController extends BaseController
             ->with('status', 'Subject deleted successfully.');
     }
 
-    /**
-     * @param  Collection<int, Program>  $programs
-     */
-    private function subjects(?int $departmentId, Collection $programs): Collection
+    private function subjects(?int $departmentId): Collection
     {
-        $programIds = $programs->pluck('program_id')->all();
-
-        if (! $departmentId && empty($programIds)) {
+        if (! $departmentId) {
             return collect();
         }
 
-        return Subject::with(['department.college', 'program.department.college', 'semester'])
-            ->where(function ($query) use ($departmentId, $programIds): void {
-                if ($departmentId) {
-                    $query->where('department_id', $departmentId);
-                }
-
-                if (! empty($programIds)) {
-                    $method = $departmentId ? 'orWhereIn' : 'whereIn';
-                    $query->{$method}('program_id', $programIds);
-                }
-            })
+        return Subject::with(['department.college'])
+            ->where('department_id', $departmentId)
             ->orderBy('subject_code')
             ->get();
     }
@@ -259,7 +245,7 @@ class SubjectController extends BaseController
 
         return [
             'programs' => $programs,
-            'subjects' => $this->subjects($department?->department_id, $programs),
+            'subjects' => $this->subjects($department?->department_id),
             'selectedProgramId' => null,
             'selectedProgramKey' => null,
             'selectedYearLevel' => null,
