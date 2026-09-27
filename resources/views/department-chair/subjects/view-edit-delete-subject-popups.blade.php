@@ -52,7 +52,6 @@
                 <form action="{{ route($subjectRoutePrefix.'.subjects.update', $subject) }}" class="modal-content" method="POST" data-ajax-form>
                     @csrf
                     @method('PUT')
-                    <input name="is_active" type="hidden" value="0">
                     <div class="modal-header">
                         <h3 class="modal-title h4" id="editSubjectModalLabel{{ $subject->subject_id }}">Edit Subject</h3>
                         <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
@@ -72,9 +71,12 @@
                                 <input class="form-control" id="edit_subject_name_{{ $subject->subject_id }}" name="subject_name" required type="text" value="{{ $subject->subject_name }}">
                             </div>
                         </div>
-                        <div class="form-check form-switch mt-3">
-                            <input class="form-check-input" id="edit_is_active_{{ $subject->subject_id }}" name="is_active" type="checkbox" value="1" @checked($subject->is_active)>
-                            <label class="form-check-label fw-semibold" for="edit_is_active_{{ $subject->subject_id }}">Subject is enabled</label>
+                        <div class="mt-3">
+                            <label class="form-label fw-bold text-uppercase small" for="edit_is_active_{{ $subject->subject_id }}">Status</label>
+                            <select class="form-select" id="edit_is_active_{{ $subject->subject_id }}" name="is_active">
+                                <option value="1" @selected($subject->is_active)>Active</option>
+                                <option value="0" @selected(! $subject->is_active)>Inactive</option>
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">

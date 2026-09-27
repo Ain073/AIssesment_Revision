@@ -12,7 +12,6 @@
                 data-reset-on-success="true"
             >
                 @csrf
-                <input name="is_active" type="hidden" value="0">
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="subjectModalLabel">New Subject</h3>
                     <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
@@ -30,9 +29,12 @@
                         <label class="form-label fw-bold text-uppercase small" for="subject_name">Subject Name</label>
                         <input class="form-control form-control-lg" id="subject_name" name="subject_name" placeholder="e.g. Introduction to Computing" required type="text" value="{{ old('subject_name') }}">
                     </div>
-                    <div class="form-check form-switch mt-3">
-                        <input class="form-check-input" id="is_active" name="is_active" type="checkbox" value="1" @checked(old('is_active', '1') === '1')>
-                        <label class="form-check-label fw-semibold" for="is_active">Subject is enabled</label>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-uppercase small" for="is_active">Status</label>
+                        <select class="form-select form-select-lg" id="is_active" name="is_active">
+                            <option value="1" @selected(old('is_active', '1') === '1')>Active</option>
+                            <option value="0" @selected(old('is_active') === '0')>Inactive</option>
+                        </select>
                     </div>
                 </div>
                 <div class="modal-footer">
