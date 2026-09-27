@@ -123,8 +123,9 @@ class ReportAiService
             ->timeout(30)
             ->post('https://api.openai.com/v1/responses', [
                 'model' => $model,
-                'input' => $this->prompt($data),
+                'input' => $this->prompt($data, 'openai'),
                 'max_output_tokens' => 500,
+                'temperature' => 0.7,
             ])
             ->throw()
             ->json();
@@ -142,10 +143,11 @@ class ReportAiService
             ->post('https://api.anthropic.com/v1/messages', [
                 'model' => $model,
                 'max_tokens' => 500,
+                'temperature' => 0.7,
                 'messages' => [
                     [
                         'role' => 'user',
-                        'content' => $this->prompt($data),
+                        'content' => $this->prompt($data, 'claude'),
                     ],
                 ],
             ])
@@ -269,76 +271,65 @@ class ReportAiService
             ->implode(', ');
     }
 
-    private function prompt(array $data): string
+    private function prompt(array $data, ?string $provider = null): string
     {
         $json = json_encode($data, JSON_PRETTY_PRINT);
+        $subject = (string) ($data['subject'] ?? 'the course subject');
+        $title = (string) ($data['assessment_title'] ?? 'Assessment');
+        $category = (string) ($data['report_category'] ?? 'general');
+
+        $providerEmphasis = match ($provider) {
+            'claude' => 'Adopt an analytical and pedagogically reflective tone with deep curricular insights into conceptual grasp versus procedural application.',
+            'openai' => 'Adopt a decisive, clear, and academically rigorous tone highlighting core learning competencies and actionable classroom interventions.',
+            default => 'Adopt an authentic, sophisticated academic faculty tone.',
+        };
 
         return <<<PROMPT
-You are helping an instructor prepare draft narrative cells for a school performance monitoring report.
+You are a distinguished university professor and academic evaluator drafting the narrative diagnostic sections for an official Institutional Student Performance Monitoring Report.
 
-Use only the assessment data below. Write in a formal but natural academic reporting style. The output is a draft that the instructor will review, edit, and finalize.
+Role & Pedagogical Voice:
+- Write in the authentic, polished, and authoritative voice of an expert college educator reviewing student performance in {$subject} for the assessment "{$title}".
+- {$providerEmphasis}
+- The text must sound as if an experienced faculty member personally composed it after evaluating student work—NOT like an automated tool, generic AI, or mechanical formula.
+- NEVER start with formulaic clichés such as "Based on the assessment...", "The data indicates...", "The results show...", "According to the scores...", or "It is evident that...". Jump immediately into the subject-matter competencies, cognitive skills, and pedagogical substance.
+- NEVER sound like an answer key or quiz rubric. Avoid citing item numbers (e.g., "Item 1", "Question 4") unless referencing a specific multi-part problem.
+- Keep each field to 2 to 4 concise, high-impact sentences suitable for a standard academic performance report table.
 
-Return valid JSON only with exactly these two string fields:
-1. concepts_most_learned_skills
-2. concepts_least_learned_skills
-
-Evidence rules:
-- Base every statement only on the assessment data, including performance patterns, assessment items, item results, scores, and concepts or skills connected to those items.
-- The system has already computed item-level performance. Use strongest_items as the main evidence for concepts_most_learned_skills and weakest_items as the main evidence for concepts_least_learned_skills.
-- Each item includes the question, correct_answer, correct_count, response_count, and correct_rate. Use the question and correct_answer to identify the actual concept; do not replace it with a different related topic.
-- When multiple strongest or weakest items are provided, summarize them as grouped concepts or skills instead of writing an item-by-item answer key.
-- If the strongest or weakest items cover different concepts, mention the main concepts briefly in one report-style paragraph.
-- Do not invent reasons for performance. Do not claim students did not study, lacked motivation, were not taught properly, had poor attendance, or experienced a specific learning problem unless the data explicitly says so.
-- Avoid unsupported student counts, names, percentages, statistics, or causal explanations.
-- Avoid wording that implies unsupported causes or strong statistical conclusions. Do not use phrases such as "significant drop", "diverted focus", "lack of effort", "poor preparation", "clearly proves", or similar explanations unless the data explicitly supports them.
-- Prefer cautious academic phrasing such as "lower performance was observed", "the results suggest", "may require further reinforcement", or "may benefit from additional guided practice".
-- Explain what the results mean academically instead of simply repeating numerical values.
-- Use cautious evidence-based wording when the data set is small or limited.
-
-Most learned section:
-- Explain areas where students showed stronger performance.
-- Prioritize the item or items listed under strongest_items. Refer to their exact concept or correct_answer when identifying what students learned well.
-- Discuss concepts students understood well, skills applied correctly, competencies demonstrated, or patterns of strong performance across related items.
-- Do not only identify the highest-scoring topic. Interpret what students were generally able to understand, recognize, apply, analyze, or perform.
-
-Least learned section:
-- Explain areas where students showed weaker performance.
-- Prioritize the item or items listed under weakest_items. Refer to their exact concept or correct_answer when identifying what students struggled with.
-- If the weakest item is about a specific answer or topic, such as "La Liga Filipina", describe the difficulty as related to that answer or topic. Do not shift to another related event, person, or concept unless it is also present in the weakest item data.
-- Discuss concepts where difficulty appeared, skills applied incorrectly or inconsistently, patterns of lower performance, or competencies that may require reinforcement.
-- Do not exaggerate the result or make unsupported conclusions.
-- Include a recommendation only when it is useful and supported by the assessment results.
-
-Report tone:
-- If report_category indicates a formative report, use a developmental tone focused on current strengths, developing skills, reinforcement, and possible areas for additional practice in succeeding lessons or activities.
-- If report_category indicates a summative report, use an overall performance tone focused on demonstrated mastery, stronger areas of achievement, lower-performing concepts or skills, and areas that may still need reinforcement after the assessment period.
-- If the report category is unclear, use a balanced academic reporting tone.
-
-Writing style:
-- Write each field as a short narrative paragraph, not a list of topics, scores, or percentages.
-- Keep each field to 2 to 4 concise sentences suitable for a narrow report table cell.
-- Do not include markdown, bullets, labels, or headings inside the JSON values.
-- Do not write like an answer key or quiz explanation. Avoid item-number phrasing such as "Item 1" or "Question 2" unless no other wording is possible.
-- Summarize item results into broader concepts or skills when the data supports it.
-- Do not focus on only one exact answer phrase unless the data only supports that topic. When several tied items support different concepts, include those concepts concisely.
-- The paragraph should sound written specifically for the current assessment.
-
-Writing variety:
-- Do not begin with generic setup phrases such as "It is evident from the data", "Based on the assessment results", "The assessment results indicate", "It appears that", or "The data shows that".
-- Do not begin either field with transition or contrast words such as "However", "Moreover", "Furthermore", "Additionally", "Meanwhile", or "On the other hand".
-- Do not repeatedly begin paragraphs with fixed phrases such as "Students demonstrated", "Students showed difficulty", or "The results suggest".
-- These phrases may be used when appropriate, but they must not become the default opening.
-- Vary paragraph openings, sentence structure, transitions, order of ideas, conclusion style, and wording naturally based on the data.
-- Do not only perform synonym replacement. Vary the flow and organization of ideas when appropriate.
-- Avoid repetitive conclusions, overly generic statements, mechanical sentence patterns, and wording copied from previous reports.
-
-Reference tone only. Do not copy or mechanically paraphrase:
+Output Format:
+Return valid JSON only with exactly these two keys:
 {
-  "concepts_most_learned_skills": "The class showed stronger performance on items involving foundational concepts and direct recall of lesson terms. Their responses suggest that many students can recognize key ideas and connect them with basic explanations when the questions are straightforward.",
-  "concepts_least_learned_skills": "Lower performance appeared in items requiring application of concepts to practical or situational contexts. These areas may benefit from additional guided practice that helps students connect lesson terms with procedures, examples, or problem scenarios."
+  "concepts_most_learned_skills": "...",
+  "concepts_least_learned_skills": "..."
 }
 
-Assessment data:
+Diagnostic Analysis Guidelines:
+
+1. concepts_most_learned_skills (Demonstrated Competencies & Conceptual Mastery):
+- Identify the key concepts or competencies represented by the highest-performing items (see strongest_items).
+- Characterize the nature of student mastery: foundational recall, accurate procedural execution, sound contextual differentiation, or conceptual comprehension.
+- Vary the opening phrasing naturally across different assessments. Examples of authentic educator phrasing:
+  * "Learners demonstrated commendable mastery of [Concept], consistently exhibiting..."
+  * "Strong conceptual clarity was apparent in topics addressing [Concept], where students accurately..."
+  * "High proficiency emerged in competencies involving [Concept], reflecting solid grasp of..."
+  * "Students displayed robust understanding when tasked with [Skill/Task], effectively synthesizing..."
+
+2. concepts_least_learned_skills (Diagnostic Deficits & Targeted Instructional Interventions):
+- Identify the specific concepts or competencies where students encountered the most friction (see weakest_items).
+- Diagnostically pinpoint the core misconception or cognitive breakdown (e.g., conflating related definitions, difficulty applying theoretical principles to novel scenarios, or struggling with multi-step analytical reasoning).
+- Close with a tailored, actionable pedagogical recommendation that an expert teacher would implement (e.g., targeted comparative matrix review, illustrative worked examples, formative checkpoint drills, or concept-mapping exercises).
+- Vary the opening phrasing naturally. Examples of authentic educator phrasing:
+  * "Notable misconceptions persisted in topics concerning [Concept], particularly when students were asked to..."
+  * "Diagnostic analysis reveals difficulty with [Concept], indicating that higher-order application remains an area requiring instructional reinforcement. Incorporating [Strategy] will help..."
+  * "Gaps were most pronounced in competencies requiring [Skill], where students frequently confused [Concept A] with [Concept B]. A dedicated recap utilizing [Strategy] is recommended."
+  * "Performance dipped on questions evaluating [Concept], suggesting that students struggled with... To address this, [Intervention] will solidify understanding before succeeding modules."
+
+Curriculum & Assessment Context:
+- Subject & Assessment: Ground all observations directly in the provided subject ({$subject}) and assessment content ("{$title}").
+- Assessment Category ({$category}):
+  * If 'formative': emphasize diagnostic insights, learning momentum, and immediate remedial interventions for upcoming class sessions.
+  * If 'summative': emphasize cumulative achievement, mastery standards, and durable competencies needing bridging before advancement.
+
+Assessment Data:
 $json
 PROMPT;
     }
