@@ -58,8 +58,6 @@ class ClassController extends BaseController
         $instructorProfile = $this->instructorProfile($user);
         $ownedClass = $this->ownedClass($class, $instructorProfile);
 
-        $this->ensureActiveClass($ownedClass);
-
         $enrolledStudents = $ownedClass->enrolledStudentsCollection(['user.roles', 'program.department.college'])
             ->sortBy(fn (StudentProfile $student) => strtolower($student->user?->displayName() ?? ''))
             ->values();
@@ -298,7 +296,6 @@ class ClassController extends BaseController
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedClass = $this->ownedClass($class, $instructorProfile);
-        $this->ensureActiveClass($ownedClass);
         $activeTab = in_array($request->query('tab'), ['overview', 'students', 'assessments'], true)
             ? $request->query('tab')
             : 'students';
