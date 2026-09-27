@@ -88,10 +88,9 @@ class SubjectController extends BaseController
     public function update(Request $request, Subject $subject): RedirectResponse|JsonResponse
     {
         $department = $this->scopedDepartment($this->currentUser());
-        $programs = $this->scopedPrograms($department);
 
         abort_if(! $department, 403, 'Department assignment is required before updating subjects.');
-        if (! $this->subjectBelongsToDepartment($subject, $department->department_id, $programs)) {
+        if (! $this->subjectBelongsToDepartment($subject, $department->department_id)) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'This subject is no longer available under your department.',
@@ -144,11 +143,10 @@ class SubjectController extends BaseController
     public function destroy(Request $request, Subject $subject): RedirectResponse|JsonResponse
     {
         $department = $this->scopedDepartment($this->currentUser());
-        $programs = $this->scopedPrograms($department);
         $subject->loadMissing('department');
 
         abort_if(! $department, 403, 'Department assignment is required before deleting subjects.');
-        if (! $this->subjectBelongsToDepartment($subject, $department->department_id, $programs)) {
+        if (! $this->subjectBelongsToDepartment($subject, $department->department_id)) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'This subject is no longer available under your department.',
@@ -273,7 +271,7 @@ class SubjectController extends BaseController
         ]);
     }
 
-    private function subjectBelongsToDepartment(Subject $subject, int $departmentId, Collection $programs): bool
+    private function subjectBelongsToDepartment(Subject $subject, int $departmentId): bool
     {
         return (int) $subject->department_id === $departmentId;
     }
