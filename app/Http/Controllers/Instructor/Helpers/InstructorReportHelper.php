@@ -274,7 +274,7 @@ trait InstructorReportHelper
             })
             ->values();
 
-        return $class->enrolledStudentsCollection(['user'])->mapWithKeys(function (StudentProfile $student) use ($scoreableAssessments): array {
+        return $class->enrolledStudentsCollection(['user'])->mapWithKeys(function (StudentProfile $student) use ($scoreableAssessments, $class): array {
             if ($scoreableAssessments->isEmpty()) {
                 return [$student->student_profile_id => [
                     'has_results' => false,
@@ -284,16 +284,21 @@ trait InstructorReportHelper
             }
 
             $totalPercentage = $scoreableAssessments->sum(function (PublishAssessment $publishAssessment) use ($student): float {
-                $items = $publishAssessment->assessment->items;
+                $items = $publishAssessment->assessment?->items ?? collect();
                 $maxScore = (float) $items->sum('points');
-                $bestScore = $this->reportableSubmissions($publishAssessment->submissions)
+
+                if ($maxScore <= 0) {
+                    return 0.0;
+                }
+
+                $bestScore = $this->reportableSubmissions($publishAssessment->submissions ?? collect())
                     ->where('student_profile_id', $student->student_profile_id)
                     ->map(fn (Submission $submission): float => $this->submissionScore($submission, $items))
                     ->max() ?? 0;
 
                 return ($bestScore / $maxScore) * 100;
             });
-            $percentage = round($totalPercentage / $scoreableAssessments->count(), 1);
+            $percentage = round($totalPercentage / max($scoreableAssessments->count(), 1), 1);
 
             return [$student->student_profile_id => [
                 'has_results' => true,

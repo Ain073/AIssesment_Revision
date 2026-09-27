@@ -340,7 +340,7 @@ class ClassController extends BaseController
             'class' => $ownedClass,
             'activeTab' => $activeTab,
             'classTabs' => $this->classTabs($ownedClass, $activeTab),
-            'classJoinLink' => route('student.classes.join.show', $ownedClass->join_token),
+            'classJoinLink' => $ownedClass->join_token ? route('student.classes.join.show', $ownedClass->join_token) : '',
             'pendingJoinRequests' => $ownedClass->joinRequests
                 ->sortByDesc('updated_at')
                 ->values(),

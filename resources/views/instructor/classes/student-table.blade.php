@@ -35,21 +35,21 @@
                             @endif
                         </td>
                         <td>
-                            @if ($performance['has_results'])
+                            @if (! empty($performance['has_results']))
                                 <div class="student-performance">
                                     <div class="student-performance-row">
                                         <div
-                                            class="student-performance-track {{ $performance['passed'] ? 'passed' : 'failed' }}"
+                                            class="student-performance-track {{ ! empty($performance['passed']) ? 'passed' : 'failed' }}"
                                             role="img"
-                                            aria-label="{{ $performance['percentage'] }} percent performance"
+                                            aria-label="{{ $performance['percentage'] ?? 0 }} percent performance"
                                         >
                                             <span
-                                                class="student-performance-fill {{ $performance['passed'] ? 'passed' : 'failed' }}"
-                                                style="width: {{ $performance['percentage'] }}%;"
+                                                class="student-performance-fill {{ ! empty($performance['passed']) ? 'passed' : 'failed' }}"
+                                                style="width: {{ $performance['percentage'] ?? 0 }}%;"
                                             ></span>
                                         </div>
-                                        <span class="student-performance-percent {{ $performance['passed'] ? 'text-success' : 'text-danger' }}">
-                                            {{ $performance['percentage'] }}%
+                                        <span class="student-performance-percent {{ ! empty($performance['passed']) ? 'text-success' : 'text-danger' }}">
+                                            {{ $performance['percentage'] ?? 0 }}%
                                         </span>
                                     </div>
                                 </div>
