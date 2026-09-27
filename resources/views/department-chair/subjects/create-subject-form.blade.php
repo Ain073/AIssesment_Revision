@@ -29,12 +29,14 @@
                         <label class="form-label fw-bold text-uppercase small" for="subject_name">Subject Name</label>
                         <input class="form-control form-control-lg" id="subject_name" name="subject_name" placeholder="e.g. Introduction to Computing" required type="text" value="{{ old('subject_name') }}">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-uppercase small" for="is_active">Status</label>
-                        <select class="form-select form-select-lg" id="is_active" name="is_active">
-                            <option value="1" @selected(old('is_active', '1') === '1')>Active</option>
-                            <option value="0" @selected(old('is_active') === '0')>Inactive</option>
-                        </select>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold text-uppercase small" for="is_active">Status</label>
+                            <select class="form-select form-select-lg" id="is_active" name="is_active">
+                                <option value="1" @selected(old('is_active', '1') === '1')>Active</option>
+                                <option value="0" @selected(old('is_active') === '0')>Inactive</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">

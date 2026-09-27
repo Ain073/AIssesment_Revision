@@ -35,8 +35,8 @@
                                     @if ($class->semester)
                                         <div class="small text-secondary">{{ $class->semester->semester_name }}</div>
                                     @endif
-                                    @if ($class->program || $class->subject?->program)
-                                        <div class="small text-secondary">{{ $class->program?->program_name ?? $class->subject?->program?->program_name }}</div>
+                                    @if ($class->program)
+                                        <div class="small text-secondary">{{ $class->program->program_name }}</div>
                                     @endif
                                 </div>
                             </div>

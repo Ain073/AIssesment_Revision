@@ -67,7 +67,7 @@
                                 <select class="form-select form-select-lg" id="edit_program_id_{{ $class->class_id }}" name="program_id" required data-class-program-select>
                                     <option value="">Select program</option>
                                     @foreach ($programs as $program)
-                                        <option value="{{ $program->program_id }}" data-section-prefix="{{ $programAcronym($program->program_name) }}" @selected((int) ($class->program_id ?? $class->subject?->program_id) === (int) $program->program_id)>
+                                        <option value="{{ $program->program_id }}" data-section-prefix="{{ $programAcronym($program->program_name) }}" @selected((int) $class->program_id === (int) $program->program_id)>
                                             {{ $program->program_name }}
                                         </option>
                                     @endforeach

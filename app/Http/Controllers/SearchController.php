@@ -108,13 +108,13 @@ class SearchController extends Controller
                     ->orWhere('subject_name', 'like', "%{$query}%")
                     ->orWhereHas('department', fn ($departmentQuery) => $departmentQuery->where('dept_name', 'like', "%{$query}%"));
             })
-            ->orderBy('year_level')
+            ->orderBy('subject_code')
             ->limit(5)
             ->get()
             ->toBase()
             ->map(fn (Subject $subject): array => [
                 'title' => $subject->subject_code,
-                'subtitle' => trim($subject->subject_name.' - '.($subject->department?->dept_name ?? $subject->program?->department?->dept_name ?? 'Department'), ' -'),
+                'subtitle' => trim($subject->subject_name.' - '.($subject->department?->dept_name ?? 'Department'), ' -'),
                 'type' => 'Subject',
                 'url' => route('department-chair.subjects'),
             ]);

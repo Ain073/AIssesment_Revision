@@ -195,10 +195,7 @@ trait InstructorAssessmentHelper
     {
         return Subject::query()
             ->when($instructorProfile?->department_id, function ($query) use ($instructorProfile): void {
-                $query->where(function ($scope) use ($instructorProfile): void {
-                    $scope->where('department_id', $instructorProfile->department_id)
-                        ->orWhereHas('program', fn ($programQuery) => $programQuery->where('department_id', $instructorProfile->department_id));
-                });
+                $query->where('department_id', $instructorProfile->department_id);
             })
             ->where('is_active', true)
             ->pluck('subject_id');

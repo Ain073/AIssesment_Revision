@@ -17,32 +17,18 @@ class Subject extends Model
 
     protected $fillable = [
         'department_id',
-        'program_id',
-        'semester_id',
         'subject_code',
         'subject_name',
-        'year_level',
         'is_active',
     ];
 
     protected $casts = [
-        'year_level' => 'integer',
         'is_active' => 'boolean',
     ];
-
-    public function program(): BelongsTo
-    {
-        return $this->belongsTo(Program::class, 'program_id', 'program_id');
-    }
 
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class, 'department_id', 'department_id');
-    }
-
-    public function semester(): BelongsTo
-    {
-        return $this->belongsTo(Semester::class, 'semester_id', 'semester_id');
     }
 
     public function classes(): HasManyThrough

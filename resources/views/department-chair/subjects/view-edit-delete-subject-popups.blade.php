@@ -31,9 +31,9 @@
                             </div>
                             <div class="col-12">
                                 <div class="subject-detail-label mb-1">Department</div>
-                                <div class="fw-semibold">{{ $subject->department?->dept_name ?? $subject->program?->department?->dept_name ?? 'Not assigned' }}</div>
+                                <div class="fw-semibold">{{ $subject->department?->dept_name ?? 'Not assigned' }}</div>
                                 <div class="small text-secondary">
-                                    {{ $subject->department?->college?->college_name ?? $subject->program?->department?->college?->college_name ?? 'No college' }}
+                                    {{ $subject->department?->college?->college_name ?? 'No college' }}
                                 </div>
                             </div>
                         </div>
@@ -59,7 +59,7 @@
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label fw-bold text-uppercase small">Department</label>
-                            <div class="form-control bg-light">{{ $scopedDepartment?->dept_name ?? $subject->department?->dept_name ?? $subject->program?->department?->dept_name ?? 'No department assigned' }}</div>
+                            <div class="form-control bg-light">{{ $scopedDepartment?->dept_name ?? $subject->department?->dept_name ?? 'No department assigned' }}</div>
                         </div>
                         <div class="row g-3">
                             <div class="col-md-5">
@@ -71,12 +71,14 @@
                                 <input class="form-control" id="edit_subject_name_{{ $subject->subject_id }}" name="subject_name" required type="text" value="{{ $subject->subject_name }}">
                             </div>
                         </div>
-                        <div class="mt-3">
-                            <label class="form-label fw-bold text-uppercase small" for="edit_is_active_{{ $subject->subject_id }}">Status</label>
-                            <select class="form-select" id="edit_is_active_{{ $subject->subject_id }}" name="is_active">
-                                <option value="1" @selected($subject->is_active)>Active</option>
-                                <option value="0" @selected(! $subject->is_active)>Inactive</option>
-                            </select>
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold text-uppercase small" for="edit_is_active_{{ $subject->subject_id }}">Status</label>
+                                <select class="form-select" id="edit_is_active_{{ $subject->subject_id }}" name="is_active">
+                                    <option value="1" @selected($subject->is_active)>Active</option>
+                                    <option value="0" @selected(! $subject->is_active)>Inactive</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">

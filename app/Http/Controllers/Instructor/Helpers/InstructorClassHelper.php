@@ -44,13 +44,13 @@ trait InstructorClassHelper
         $activeSubjectIds = $this->activeSubjectIds($instructorProfile);
         $existingSubjectIds = $activeClasses->merge($archivedClasses)->pluck('subject_id')->filter();
         $activeSubjects = Subject::query()
-            ->with(['program'])
+            ->with(['department'])
             ->whereIn('subject_id', $activeSubjectIds)
             ->orderBy('subject_code')
             ->orderBy('subject_name')
             ->get();
         $subjects = Subject::query()
-            ->with(['program'])
+            ->with(['department'])
             ->whereIn('subject_id', $activeSubjectIds->merge($existingSubjectIds)->unique())
             ->orderBy('subject_code')
             ->orderBy('subject_name')

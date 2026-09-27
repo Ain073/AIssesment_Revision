@@ -201,8 +201,8 @@
                 @if ($class->semester)
                     <span class="mx-1">|</span> {{ $class->semester->semester_name }}
                 @endif
-                @if ($class->program || $class->subject?->program)
-                    <span class="mx-1">|</span> {{ $class->program?->program_name ?? $class->subject?->program?->program_name }}
+                @if ($class->program)
+                    <span class="mx-1">|</span> {{ $class->program->program_name }}
                 @endif
                 @if ($class->archived_at)
                     <span class="badge text-bg-secondary rounded-1 ms-2">Archived</span>
@@ -252,7 +252,7 @@
                         </div>
                         <div>
                             <p class="small text-secondary mb-1">Program</p>
-                            <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $class->program?->program_name ?? $class->subject?->program?->program_name ?? 'Not assigned' }}</p>
+                            <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $class->program?->program_name ?? 'Not assigned' }}</p>
                         </div>
                         <div>
                             <p class="small text-secondary mb-1">Semester</p>

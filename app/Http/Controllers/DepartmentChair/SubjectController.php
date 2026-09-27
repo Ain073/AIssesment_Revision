@@ -39,11 +39,8 @@ class SubjectController extends BaseController
 
         $subject = Subject::create([
             'department_id' => $department->department_id,
-            'program_id' => null,
-            'semester_id' => null,
             'subject_code' => $validated['subject_code'],
             'subject_name' => $validated['subject_name'],
-            'year_level' => null,
             'is_active' => $validated['is_active'],
         ]);
 
@@ -123,11 +120,8 @@ class SubjectController extends BaseController
         DB::transaction(function () use ($subject, $department, $validated): void {
             $subject->update([
                 'department_id' => $department->department_id,
-                'program_id' => null,
-                'semester_id' => null,
                 'subject_code' => $validated['subject_code'],
                 'subject_name' => $validated['subject_name'],
-                'year_level' => null,
                 'is_active' => $validated['is_active'],
             ]);
         });
@@ -169,7 +163,6 @@ class SubjectController extends BaseController
                 ->withErrors(['subject' => 'This subject is no longer available under your department.']);
         }
 
-        $legacyProgramId = $subject->program_id;
         $redirectFilters = [];
 
         try {
@@ -217,7 +210,6 @@ class SubjectController extends BaseController
         Log::info('Subject deleted by department chair.', [
             'actor_id' => Auth::id(),
             'subject_id' => $subject->subject_id,
-            'legacy_program_id' => $legacyProgramId,
             'department_id' => $department->department_id,
         ]);
 
@@ -297,12 +289,6 @@ class SubjectController extends BaseController
 
     private function subjectBelongsToDepartment(Subject $subject, int $departmentId, Collection $programs): bool
     {
-        if ((int) $subject->department_id === $departmentId) {
-            return true;
-        }
-
-        return $programs
-            ->pluck('program_id')
-            ->contains((int) $subject->program_id);
+        return (int) $subject->department_id === $departmentId;
     }
 }
