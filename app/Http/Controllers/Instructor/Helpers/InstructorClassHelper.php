@@ -142,15 +142,10 @@ trait InstructorClassHelper
         ]);
     }
 
-    protected function activeClassPrograms(?InstructorProfile $instructorProfile): \Illuminate\Support\Collection
+    protected function activeClassPrograms(?InstructorProfile $instructorProfile = null): \Illuminate\Support\Collection
     {
-        if (! $instructorProfile?->department_id) {
-            return collect();
-        }
-
         return Program::query()
             ->with('department.college')
-            ->where('department_id', $instructorProfile->department_id)
             ->where('is_active', true)
             ->orderBy('program_name')
             ->get();
