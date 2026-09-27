@@ -736,11 +736,15 @@
             const url = new URL(window.location.href);
             const param = root.dataset.tableTabsParam || 'tab';
             const fallbackTab = root.dataset.tableTabsDefault || validTabs[0];
+            const storedTab = root.dataset.tableTabsSelected;
             const tab = validTabs.includes(selectedTab)
                 ? selectedTab
-                : (validTabs.includes(url.searchParams.get(param)) ? url.searchParams.get(param) : fallbackTab);
+                : (validTabs.includes(storedTab)
+                    ? storedTab
+                    : (validTabs.includes(url.searchParams.get(param)) ? url.searchParams.get(param) : fallbackTab));
 
             root.dataset.tableTabsSelected = tab;
+            root.dataset.tableTabsDefault = tab;
 
             buttons.forEach((button) => {
                 const isActive = button.dataset.tableTabButton === tab;
@@ -764,7 +768,11 @@
         };
 
         window.initializeTableTabs = (root = document) => {
-            root.querySelectorAll('[data-table-tabs-root]').forEach((tabRoot) => syncTableTabs(tabRoot));
+            const tabRoots = root.matches?.('[data-table-tabs-root]')
+                ? [root]
+                : Array.from(root.querySelectorAll('[data-table-tabs-root]'));
+
+            tabRoots.forEach((tabRoot) => syncTableTabs(tabRoot));
         };
 
         const initPortalPollSections = (root = document) => {
@@ -801,7 +809,9 @@
                         return;
                     }
 
-                    if (isLoading || document.hidden || isUserTypingInside() || section.querySelector('.modal.show')) {
+                    const hasOpenDropdown = Boolean(section.querySelector('.dropdown-menu.show'));
+
+                    if (isLoading || document.hidden || isUserTypingInside() || section.querySelector('.modal.show') || hasOpenDropdown) {
                         if (! force) {
                             return;
                         }
@@ -814,7 +824,23 @@
                     isLoading = true;
 
                     try {
-                        const response = await fetch(pollUrl, {
+                        let targetUrl;
+                        try {
+                            targetUrl = new URL(pollUrl, window.location.origin);
+                        } catch {
+                            targetUrl = new URL(window.location.origin + pollUrl);
+                        }
+
+                        const tabParam = section.dataset.tableTabsParam || 'tab';
+                        const currentTab = section.dataset.tableTabsSelected
+                            || new URL(window.location.href).searchParams.get(tabParam)
+                            || section.dataset.tableTabsDefault;
+
+                        if (currentTab && ! targetUrl.searchParams.has(tabParam)) {
+                            targetUrl.searchParams.set(tabParam, currentTab);
+                        }
+
+                        const response = await fetch(targetUrl.href, {
                             headers: {
                                 'X-Requested-With': 'XMLHttpRequest',
                             },
@@ -825,6 +851,7 @@
                             const html = await response.text();
 
                             if (html.trim()) {
+                                const currentScrollY = window.scrollY;
                                 cleanupStaleBootstrapBackdrops();
                                 section.innerHTML = html;
                                 window.initializeTableTabs?.(section);
@@ -832,6 +859,9 @@
                                 window.initializeClassSectionSelects?.(section);
                                 window.initializeClassForms?.(section);
                                 applyPageSearch();
+                                if (window.scrollY !== currentScrollY) {
+                                    window.scrollTo(window.scrollX, currentScrollY);
+                                }
                             }
                         }
                     } catch (error) {

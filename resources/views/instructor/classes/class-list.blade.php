@@ -46,4 +46,4 @@
     'isActivePanel' => $activeClassTab === 'archived',
 ])
 
-@include('instructor.classes.class-action-popups', ['classes' => $activeClasses])
+@include('instructor.classes.class-action-popups', ['classes' => $activeClasses->merge($archivedClasses)->unique('class_id')])

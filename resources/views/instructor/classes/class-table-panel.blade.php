@@ -73,12 +73,18 @@
                                         <span class="material-symbols-outlined fs-6">delete</span>
                                     </button>
                                 @else
+                                    <button class="btn btn-outline-psu btn-sm action-icon-btn d-inline-flex align-items-center justify-content-center" data-bs-target="#editClassModal{{ $class->class_id }}" data-bs-toggle="modal" type="button" title="Edit class" aria-label="Edit class">
+                                        <span class="material-symbols-outlined fs-6">edit</span>
+                                    </button>
                                     <form action="{{ route('instructor.classes.restore', $class) }}" method="POST" data-ajax-form>
                                         @csrf
                                         <button class="btn btn-outline-success btn-sm action-icon-btn d-inline-flex align-items-center justify-content-center" type="submit" title="Restore class" aria-label="Restore class">
                                             <span class="material-symbols-outlined fs-6">settings_backup_restore</span>
                                         </button>
                                     </form>
+                                    <button class="btn btn-outline-danger btn-sm action-icon-btn d-inline-flex align-items-center justify-content-center" data-bs-target="#deleteClassModal{{ $class->class_id }}" data-bs-toggle="modal" type="button" title="Delete class" aria-label="Delete class">
+                                        <span class="material-symbols-outlined fs-6">delete</span>
+                                    </button>
                                 @endif
                             </div>
                             <div class="class-row-actions-mobile d-inline-flex d-md-none flex-nowrap align-items-center justify-content-end gap-2">
@@ -104,6 +110,10 @@
                                                 Delete Class
                                             </button>
                                         @else
+                                            <button class="dropdown-item d-flex align-items-center gap-2" data-bs-target="#editClassModal{{ $class->class_id }}" data-bs-toggle="modal" type="button">
+                                                <span class="material-symbols-outlined fs-6">edit</span>
+                                                Edit Class
+                                            </button>
                                             <form action="{{ route('instructor.classes.restore', $class) }}" method="POST" data-ajax-form>
                                                 @csrf
                                                 <button class="dropdown-item d-flex align-items-center gap-2 text-success" type="submit">
@@ -111,6 +121,10 @@
                                                     Restore Class
                                                 </button>
                                             </form>
+                                            <button class="dropdown-item d-flex align-items-center gap-2 text-danger" data-bs-target="#deleteClassModal{{ $class->class_id }}" data-bs-toggle="modal" type="button">
+                                                <span class="material-symbols-outlined fs-6">delete</span>
+                                                Delete Class
+                                            </button>
                                         @endif
                                     </div>
                                 </div>

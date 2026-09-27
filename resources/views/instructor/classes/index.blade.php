@@ -170,7 +170,7 @@
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
-    <div data-poll-url="{{ route('instructor.classes.live') }}" data-poll-interval="5000" data-table-tabs-root data-table-tabs-param="tab" data-table-tabs-default="{{ $activeClassTab }}">
+    <div data-poll-url="{{ route('instructor.classes.live') }}" data-poll-interval="10000" data-table-tabs-root data-table-tabs-param="tab" data-table-tabs-default="{{ $activeClassTab }}" data-table-tabs-selected="{{ $activeClassTab }}">
         @include('instructor.classes.class-list')
     </div>
 

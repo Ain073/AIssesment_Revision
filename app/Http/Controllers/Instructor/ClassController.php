@@ -137,7 +137,6 @@ class ClassController extends BaseController
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
         $ownedClass = $this->ownedClass($class, $instructorProfile);
-        $this->ensureActiveClass($ownedClass);
 
         $allowedSubjectIds = $this->activeSubjectIds($instructorProfile)
             ->push($ownedClass->subject_id)
@@ -201,7 +200,7 @@ class ClassController extends BaseController
         }
 
         return redirect()
-            ->route('instructor.classes')
+            ->route('instructor.classes', ['tab' => $ownedClass->archived_at ? 'archived' : 'active'])
             ->with('status', 'Class updated successfully.');
     }
 
