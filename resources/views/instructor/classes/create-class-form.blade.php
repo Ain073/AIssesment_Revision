@@ -1,21 +1,4 @@
 @php
-    $programAcronym = function (?string $programName): string {
-        $programName = trim((string) $programName);
-
-        if ($programName === '') {
-            return 'Section';
-        }
-
-        $words = preg_split('/\s+/', strtolower($programName)) ?: [];
-        $stopWords = ['of', 'in', 'and', 'the'];
-        $acronym = collect($words)
-            ->reject(fn ($word) => in_array($word, $stopWords, true))
-            ->map(fn ($word) => strtoupper(substr(preg_replace('/[^a-z0-9]/', '', $word), 0, 1)))
-            ->filter()
-            ->join('');
-
-        return $acronym !== '' ? $acronym : 'Section';
-    };
     $selectedSemesterId = old('semester_id', $activeSemesterId);
     $selectedSemesterName = $semesters->firstWhere('semester_id', (int) $selectedSemesterId)?->semester_name
         ?? $activeSemesterName
@@ -50,7 +33,7 @@
                         <select class="form-select form-select-lg" id="program_id" name="program_id" required data-class-program-select>
                             <option value="">Select program</option>
                             @foreach ($activePrograms as $program)
-                                <option value="{{ $program->program_id }}" data-section-prefix="{{ $programAcronym($program->program_name) }}" @selected(old('program_id') == $program->program_id)>
+                                <option value="{{ $program->program_id }}" data-section-prefix="{{ \App\Models\Program::formatAcronym($program->program_name) }}" @selected(old('program_id') == $program->program_id)>
                                     {{ $program->program_name }}
                                 </option>
                             @endforeach

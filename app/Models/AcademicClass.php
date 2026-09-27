@@ -263,6 +263,24 @@ class AcademicClass extends Model
         );
     }
 
+    public function getSectionNameAttribute($value): ?string
+    {
+        if (is_string($value) && str_starts_with(strtoupper(trim($value)), 'BSBAMM')) {
+            return preg_replace('/^BSBAMM/i', 'BSBA MM', trim($value));
+        }
+
+        return $value;
+    }
+
+    public function setSectionNameAttribute($value): void
+    {
+        if (is_string($value) && str_starts_with(strtoupper(trim($value)), 'BSBAMM')) {
+            $value = preg_replace('/^BSBAMM/i', 'BSBA MM', trim($value));
+        }
+
+        $this->attributes['section_name'] = $value;
+    }
+
     public function getClassNameAttribute($value): string
     {
         return $value ?: $this->displayName();

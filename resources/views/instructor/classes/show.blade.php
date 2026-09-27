@@ -186,8 +186,8 @@
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
-    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
-        <div>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+        <div class="flex-grow-1" style="min-width: 0;">
             <a class="small fw-semibold text-decoration-none" href="{{ route('instructor.classes') }}" style="color: var(--psu-navy-2);">
                 <span class="material-symbols-outlined align-middle fs-6">arrow_back</span>
                 Back to Classes
@@ -211,7 +211,7 @@
         </div>
 
         @if ($activeTab === 'students' && ! $class->archived_at)
-            <div class="class-detail-actions d-flex flex-wrap justify-content-end gap-2">
+            <div class="class-detail-actions d-flex flex-wrap justify-content-md-end gap-2 flex-shrink-0 ms-md-auto align-self-md-start">
                 <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" data-bs-target="#joinLinkModal" data-bs-toggle="modal" type="button">
                     <span class="material-symbols-outlined fs-5">link</span>
                     Join Code

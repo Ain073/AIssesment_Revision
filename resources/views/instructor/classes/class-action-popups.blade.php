@@ -9,23 +9,6 @@
 
         return [$classDefaultStartYearShort, $classDefaultEndYearShort];
     };
-    $programAcronym = function (?string $programName): string {
-        $programName = trim((string) $programName);
-
-        if ($programName === '') {
-            return 'Section';
-        }
-
-        $words = preg_split('/\s+/', strtolower($programName)) ?: [];
-        $stopWords = ['of', 'in', 'and', 'the'];
-        $acronym = collect($words)
-            ->reject(fn ($word) => in_array($word, $stopWords, true))
-            ->map(fn ($word) => strtoupper(substr(preg_replace('/[^a-z0-9]/', '', $word), 0, 1)))
-            ->filter()
-            ->join('');
-
-        return $acronym !== '' ? $acronym : 'Section';
-    };
 @endphp
 
 @foreach ($classes as $class)
@@ -67,7 +50,7 @@
                                 <select class="form-select form-select-lg" id="edit_program_id_{{ $class->class_id }}" name="program_id" required data-class-program-select>
                                     <option value="">Select program</option>
                                     @foreach ($programs as $program)
-                                        <option value="{{ $program->program_id }}" data-section-prefix="{{ $programAcronym($program->program_name) }}" @selected((int) $class->program_id === (int) $program->program_id)>
+                                        <option value="{{ $program->program_id }}" data-section-prefix="{{ \App\Models\Program::formatAcronym($program->program_name) }}" @selected((int) $class->program_id === (int) $program->program_id)>
                                             {{ $program->program_name }}
                                         </option>
                                     @endforeach
