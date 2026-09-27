@@ -304,7 +304,12 @@
 
             .sidebar,
             .topbar,
-            .report-toolbar {
+            .report-toolbar,
+            .alert,
+            .modal,
+            .portal-toast-stack,
+            .portal-toast,
+            [data-portal-toast-stack] {
                 display: none !important;
             }
 

@@ -150,7 +150,7 @@
         </div>
     </header>
 
-    <div class="portal-toast-stack" data-portal-toast-stack></div>
+    <div class="portal-toast-stack d-print-none" data-portal-toast-stack></div>
 
     <main class="main-content">
         <div class="page-container mx-auto">
@@ -234,6 +234,10 @@
                 alert.remove();
             });
         };
+
+        window.addEventListener('beforeprint', () => {
+            document.querySelectorAll('.portal-toast').forEach((toast) => toast.remove());
+        });
 
         const autoDismissPageInfoAlerts = () => {
             document.querySelectorAll('.page-container > .alert-primary:not([data-sticky-alert])').forEach((alert) => {

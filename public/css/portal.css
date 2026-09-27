@@ -2203,3 +2203,16 @@ h1, h2, h3, .brand-text {
         justify-content: flex-start;
     }
 }
+
+@media print {
+    .portal-toast-stack,
+    .portal-toast,
+    [data-portal-toast-stack],
+    .d-print-none,
+    .alert,
+    .modal,
+    .modal-backdrop {
+        display: none !important;
+    }
+}
+

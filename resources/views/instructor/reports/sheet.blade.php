@@ -411,7 +411,10 @@
             .report-toolbar,
             #reportLockedNotice,
             .alert,
-            .modal {
+            .modal,
+            .portal-toast-stack,
+            .portal-toast,
+            [data-portal-toast-stack] {
                 display: none !important;
             }
 
