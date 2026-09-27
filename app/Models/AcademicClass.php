@@ -266,7 +266,14 @@ class AcademicClass extends Model
     public function getSectionNameAttribute($value): ?string
     {
         if (is_string($value) && str_starts_with(strtoupper(trim($value)), 'BSBAMM')) {
-            return preg_replace('/^BSBAMM/i', 'BSBA MM', trim($value));
+            $value = preg_replace('/^BSBAMM/i', 'BSBA MM', trim($value));
+        }
+
+        if (is_string($value) && preg_match('/^BSED\s+([0-9]-[A-Za-z])$/i', trim($value), $matches)) {
+            $progName = strtolower((string) ($this->relationLoaded('program') ? $this->program?->program_name : ''));
+            if ($progName && str_contains($progName, 'social studies')) {
+                return 'BSED SS ' . strtoupper($matches[1]);
+            }
         }
 
         return $value;
