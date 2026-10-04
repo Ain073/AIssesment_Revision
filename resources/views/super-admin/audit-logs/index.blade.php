@@ -147,7 +147,7 @@
 
                             {{-- Description --}}
                             <td data-label="Description">
-                                <span class="text-dark">{{ $log->description }}</span>
+                                <span class="text-dark">{{ $log->displayDescription() }}</span>
                             </td>
 
                             {{-- IP Address --}}

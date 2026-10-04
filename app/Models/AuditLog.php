@@ -69,4 +69,19 @@ class AuditLog extends Model
     {
         return $this->user?->displayName() ?? 'Deleted Account';
     }
+
+    public function displayDescription(): string
+    {
+        if ($this->action === 'UPDATE' && $this->module === 'Users') {
+            $masked = preg_replace(
+                '/ account for .+? \(Status:/',
+                ' account (Status:',
+                (string) $this->description
+            );
+
+            return is_string($masked) ? $masked : (string) $this->description;
+        }
+
+        return (string) $this->description;
+    }
 }

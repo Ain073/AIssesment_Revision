@@ -346,7 +346,7 @@ class UserController extends Controller
             ]);
         });
 
-        AuditLogger::log('UPDATE', 'Users', "Updated {$validated['base_role']} account for {$user->displayName()} (Status: {$validated['status']})", $user);
+        AuditLogger::log('UPDATE', 'Users', "Updated {$validated['base_role']} account details (Status: {$validated['status']})", $user);
 
         return redirect()
             ->route('super-admin.users')
