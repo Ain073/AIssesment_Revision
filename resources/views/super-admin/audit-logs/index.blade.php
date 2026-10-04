@@ -123,7 +123,7 @@
                                     <span class="avatar">{{ strtoupper(substr($log->actorName(), 0, 1)) }}</span>
                                     <div>
                                         <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $log->actorName() }}</p>
-                                        <p class="small text-secondary mb-0">{{ $log->user?->email ?? 'Deleted account' }}</p>
+                                        <p class="small text-secondary mb-0">{{ $log->actorSubtitle() }}</p>
                                     </div>
                                 </div>
                             </td>

@@ -52,6 +52,10 @@ class AuditLog extends Model
      */
     public function userRoleLabel(): string
     {
+        if ($this->isSystemMigration()) {
+            return 'System';
+        }
+
         return match ($this->user_role) {
             'super_admin'      => 'Admin',
             'admin_dean'       => 'Dean',
@@ -67,7 +71,25 @@ class AuditLog extends Model
      */
     public function actorName(): string
     {
+        if ($this->isSystemMigration()) {
+            return 'System Migration';
+        }
+
         return $this->user?->displayName() ?? 'Deleted Account';
+    }
+
+    public function actorSubtitle(): string
+    {
+        if ($this->isSystemMigration()) {
+            return 'Historical audit log';
+        }
+
+        return $this->user?->email ?? 'Deleted account';
+    }
+
+    public function isSystemMigration(): bool
+    {
+        return $this->user_agent === 'System Migration';
     }
 
     public function displayDescription(): string
