@@ -10,6 +10,7 @@ use App\Models\Report;
 use App\Models\StudentProfile;
 use App\Models\Submission;
 use App\Support\AssessmentScoring;
+use App\Support\ReportItemAnalysis;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -227,6 +228,7 @@ trait InstructorReportHelper
         $passingScore = $maxScore > 0
             ? PassingRateSetting::passingScore($maxScore, $publishAssessment->class?->year_level)
             : 0;
+        $itemAnalysis = collect(ReportItemAnalysis::summarize($items, $submissions));
 
         return [
             'students_count' => $publishAssessment->class?->enrolledStudentsCount() ?? 0,
@@ -242,6 +244,9 @@ trait InstructorReportHelper
                 ? round(($studentScores->filter(fn (float $score): bool => $score >= $passingScore)->count() / $studentScores->count()) * 100, 2)
                 : 0,
             'max_score' => $this->formatReportNumber($maxScore),
+            'item_analysis' => $itemAnalysis->all(),
+            'strongest_items' => ReportItemAnalysis::strongestItems($itemAnalysis),
+            'weakest_items' => ReportItemAnalysis::weakestItems($itemAnalysis),
         ];
     }
 

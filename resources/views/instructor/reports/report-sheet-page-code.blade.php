@@ -1,5 +1,13 @@
 <script>
     (() => {
+        const itemAnalysisQuiz = document.getElementById('reportItemAnalysisQuiz');
+        itemAnalysisQuiz?.addEventListener('change', () => {
+            document.querySelectorAll('[data-item-analysis-panel]').forEach((panel) => {
+                panel.hidden = panel.dataset.itemAnalysisPanel !== itemAnalysisQuiz.value;
+            });
+            document.querySelector('#reportItemAnalysisModal .modal-body')?.scrollTo(0, 0);
+        });
+
         const paperOptions = @json(collect($paperOptions)->map(fn ($option) => $option['description']));
         const paperSize = document.getElementById('paperSize');
         const paperSizeInput = document.getElementById('paperSizeInput');

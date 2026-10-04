@@ -6,6 +6,7 @@ use App\Models\PassingRateSetting;
 use App\Models\PublishAssessment;
 use App\Models\Submission;
 use App\Support\AssessmentScoring;
+use App\Support\ReportItemAnalysis;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
@@ -176,7 +177,8 @@ class ReportAiService
                 ->map(fn (Submission $submission): float => $this->submissionScore($submission, $items))
                 ->max())
             ->values();
-        $itemSummaries = collect($this->itemSummaries($items, $submissions));
+        $itemSummaries = collect(ReportItemAnalysis::summarize($items, $submissions))
+            ->map(fn (array $item): array => array_replace($item, ['question' => Str::limit($item['question'], 120)]));
 
         return [
             'assessment_title' => (string) ($assessment?->title ?? 'Assessment'),
@@ -190,31 +192,9 @@ class ReportAiService
             'mean_score' => $scores->isNotEmpty() ? round((float) $scores->avg(), 2) : 0,
             'passing_rate' => $this->passingRate($scores, $maxScore, $publishAssessment->class?->year_level),
             'items' => $itemSummaries->values()->all(),
-            'strongest_items' => $this->strongestItems($itemSummaries),
-            'weakest_items' => $this->weakestItems($itemSummaries),
+            'strongest_items' => ReportItemAnalysis::strongestItems($itemSummaries),
+            'weakest_items' => ReportItemAnalysis::weakestItems($itemSummaries),
         ];
-    }
-
-    private function itemSummaries(Collection $items, Collection $submissions): array
-    {
-        return $items->map(function ($item) use ($submissions): array {
-            $correctCount = $submissions->filter(function (Submission $submission) use ($item): bool {
-                $answer = $submission->answers->firstWhere('assessment_item_id', $item->assessment_item_id);
-
-                return $answer ? AssessmentScoring::isCorrect($item, $answer) : false;
-            })->count();
-            $total = $submissions->count();
-
-            return [
-                'item_number' => (int) $item->sort_order,
-                'item_type' => (string) $item->item_type,
-                'question' => Str::limit((string) $item->question_text, 120),
-                'correct_answer' => $this->correctAnswerText($item),
-                'correct_count' => $correctCount,
-                'response_count' => $total,
-                'correct_rate' => $total > 0 ? round(($correctCount / $total) * 100, 2) : 0,
-            ];
-        })->values()->all();
     }
 
     private function reportableSubmissions(Collection $submissions): Collection
@@ -223,52 +203,6 @@ class ReportAiService
             ->where('status', Submission::STATUS_SUBMITTED)
             ->reject(fn (Submission $submission): bool => $submission->completion_reason === Submission::COMPLETION_WARNING_LIMIT)
             ->values();
-    }
-
-    private function strongestItems(Collection $itemSummaries): array
-    {
-        $answeredItems = $itemSummaries
-            ->filter(fn (array $item): bool => (int) ($item['response_count'] ?? 0) > 0);
-
-        if ($answeredItems->isEmpty()) {
-            return [];
-        }
-
-        $highestRate = (float) $answeredItems->max('correct_rate');
-
-        return $answeredItems
-            ->filter(fn (array $item): bool => (float) ($item['correct_rate'] ?? 0) === $highestRate)
-            ->take(3)
-            ->values()
-            ->all();
-    }
-
-    private function weakestItems(Collection $itemSummaries): array
-    {
-        $answeredItems = $itemSummaries
-            ->filter(fn (array $item): bool => (int) ($item['response_count'] ?? 0) > 0);
-
-        if ($answeredItems->isEmpty()) {
-            return [];
-        }
-
-        $lowestRate = (float) $answeredItems->min('correct_rate');
-
-        return $answeredItems
-            ->filter(fn (array $item): bool => (float) ($item['correct_rate'] ?? 0) === $lowestRate)
-            ->take(3)
-            ->values()
-            ->all();
-    }
-
-    private function correctAnswerText($item): string
-    {
-        return $item->choices
-            ->where('is_correct', true)
-            ->pluck('choice_text')
-            ->map(fn ($choice): string => trim((string) $choice))
-            ->filter()
-            ->implode(', ');
     }
 
     private function prompt(array $data, ?string $provider = null): string
@@ -303,6 +237,8 @@ Return valid JSON only with exactly these two keys:
 }
 
 Diagnostic Analysis Guidelines:
+- Item counts use each student's highest-scoring submitted attempt. correct_rate is the percentage of takers with a fully correct answer; unanswered items remain in the denominator. A null correct_rate means no takers or grading is pending and must not support a mastery claim.
+- strongest_items and weakest_items are relative rankings within this assessment. If all rates are equal, state that performance is uniform rather than inventing differences; a highest rate of zero is not evidence of mastery.
 
 1. concepts_most_learned_skills (Demonstrated Competencies & Conceptual Mastery):
 - Identify the key concepts or competencies represented by the highest-performing items (see strongest_items).

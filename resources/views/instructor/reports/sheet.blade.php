@@ -858,6 +858,10 @@
                 <span class="material-symbols-outlined fs-5">arrow_back</span>
                 Back
             </a>
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#reportItemAnalysisModal">
+                <span class="material-symbols-outlined fs-5" aria-hidden="true">analytics</span>
+                View Item Analysis
+            </button>
             {{-- Paper Size Control (commented out - paper size is set directly in the print dialog; defaults to Long / Legal)
             <div class="report-paper-control">
                 <label for="paperSize">Paper</label>
@@ -954,6 +958,8 @@
             </div>
         </div>
     </div>
+
+    @include('instructor.reports.item-analysis')
 
     <form action="{{ route('instructor.reports.save') }}" id="reportSheetForm" method="POST">
         @csrf
