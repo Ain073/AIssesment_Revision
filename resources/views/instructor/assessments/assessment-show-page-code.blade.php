@@ -3,6 +3,7 @@
         const typeLabels = {{ Illuminate\Support\Js::from($itemTypes) }};
         const oldItems = Object.values({{ Illuminate\Support\Js::from($oldItems) }} ?? {});
         const validationErrors = {{ Illuminate\Support\Js::from($errors->getMessages()) }};
+        const firstQuestionNumber = {{ ((int) $assessment->items->max('sort_order')) + 1 }};
         const stepButtons = document.querySelectorAll('[data-step-tab]');
         const stepTriggers = document.querySelectorAll('[data-step-target]');
         const stepPanels = document.querySelectorAll('[data-step-panel]');
@@ -85,7 +86,11 @@
         };
 
         const refreshState = () => {
-            const count = questionBlocks.querySelectorAll('[data-question-block]').length;
+            const blocks = questionBlocks.querySelectorAll('[data-question-block]');
+            const count = blocks.length;
+            blocks.forEach((block, order) => {
+                block.querySelector('[data-question-number]').textContent = `Question ${firstQuestionNumber + order}`;
+            });
             questionBlocks.classList.toggle('d-none', count === 0);
             emptyState.classList.toggle('d-none', count > 0);
             saveButton.disabled = count === 0;
@@ -214,7 +219,7 @@
             block.innerHTML = `
                 <div class="question-block-header">
                     <div>
-                        <span class="badge text-bg-primary rounded-1 me-2">New Question</span>
+                        <span class="badge text-bg-primary rounded-1 me-2" data-question-number></span>
                         <span class="fw-bold" style="color: var(--psu-navy);">${escapeHtml(typeLabels[type] ?? type)}</span>
                     </div>
                     <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" type="button" data-remove-question>
@@ -378,7 +383,7 @@
             let firstInvalidBlock = null;
 
             questionBlocks.querySelectorAll('[data-question-block]').forEach((block, order) => {
-                const questionNumber = order + 1;
+                const questionNumber = firstQuestionNumber + order;
                 const blockMessages = [];
                 const type = block.querySelector('input[name$="[item_type]"]')?.value;
                 const questionText = block.querySelector('textarea[name$="[question_text]"]')?.value.trim();

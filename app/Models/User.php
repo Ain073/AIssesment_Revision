@@ -99,6 +99,25 @@ class User extends Authenticatable
         return $fullName !== '' ? $fullName : $this->name;
     }
 
+    public function familyNameFirst(): string
+    {
+        $lastName = trim((string) $this->last_name);
+        $givenNames = collect([
+            $this->first_name,
+            $this->middle_name,
+        ])->filter()->implode(' ');
+
+        if ($lastName !== '' && $givenNames !== '') {
+            return "{$lastName}, {$givenNames}";
+        }
+
+        if ($lastName !== '') {
+            return $lastName;
+        }
+
+        return $this->displayName();
+    }
+
     public function portalRoleLabel(): string
     {
         if ($this->hasRole('super_admin')) {

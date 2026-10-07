@@ -379,9 +379,10 @@ class AssessmentController extends BaseController
         ]);
 
         $itemErrors = [];
+        $questionNumber = (int) $ownedAssessment->items()->max('sort_order');
 
         foreach ($validated['items'] as $index => $itemData) {
-            $questionNumber = $index + 1;
+            $questionNumber++;
             $itemType = $itemData['item_type'];
             $choices = collect($itemData['choices'] ?? [])
                 ->map(fn ($choice) => trim((string) $choice));

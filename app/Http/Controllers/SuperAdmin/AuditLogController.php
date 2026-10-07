@@ -12,6 +12,10 @@ class AuditLogController extends Controller
     public function index(Request $request): View
     {
         $query = AuditLog::with('user')
+            ->whereNot(function ($q) {
+                $q->where('module', 'Users')
+                  ->where('action', 'UPDATE');
+            })
             ->orderByDesc('created_at');
 
         // -- Filters ---------------------------------------------------

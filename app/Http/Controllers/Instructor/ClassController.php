@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -59,7 +60,7 @@ class ClassController extends BaseController
         $ownedClass = $this->ownedClass($class, $instructorProfile);
 
         $enrolledStudents = $ownedClass->enrolledStudentsCollection(['user.roles', 'program.department.college'])
-            ->sortBy(fn (StudentProfile $student) => strtolower($student->user?->displayName() ?? ''))
+            ->sortBy(fn (StudentProfile $student): array => $this->studentNameSortKey($student))
             ->values();
 
         return view('instructor.classes.student-table', [
@@ -323,7 +324,7 @@ class ClassController extends BaseController
 
         $ownedClass->applyEnrolledStudentsCount();
         $enrolledStudents = $ownedClass->enrolledStudentsCollection(['user.roles', 'program.department.college'])
-            ->sortBy(fn (StudentProfile $student) => strtolower($student->user?->displayName() ?? ''))
+            ->sortBy(fn (StudentProfile $student): array => $this->studentNameSortKey($student))
             ->values();
 
         $ownedClass->publishAssessments->each(function (PublishAssessment $publishAssessment): void {
@@ -348,6 +349,20 @@ class ClassController extends BaseController
             'studentPerformance' => $this->studentPerformanceByStudent($ownedClass),
             'importPreview' => $this->pullImportPreview($request, $ownedClass),
         ]);
+    }
+
+    private function studentNameSortKey(StudentProfile $student): array
+    {
+        $user = $student->user;
+        $lastName = trim((string) $user?->last_name);
+
+        return [
+            Str::lower($lastName !== '' ? $lastName : trim($user?->displayName() ?? '')),
+            Str::lower(trim($user?->first_name ?? '')),
+            Str::lower(trim($user?->middle_name ?? '')),
+            (string) $student->student_number,
+            (int) $student->getKey(),
+        ];
     }
 
     private function normalizeSectionName(string $sectionName): string

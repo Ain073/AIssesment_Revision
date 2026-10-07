@@ -12,12 +12,13 @@
             <tbody>
                 @foreach ($pendingJoinRequests as $joinRequest)
                     @php($student = $joinRequest->studentProfile)
+                    @php($studentDisplayName = $student?->user?->familyNameFirst() ?? 'Unknown student')
                     <tr>
                         <td>
                             <div class="d-flex align-items-center gap-3">
-                                <span class="avatar">{{ strtoupper(substr($student?->user?->displayName() ?? 'S', 0, 1)) }}</span>
+                                <span class="avatar">{{ strtoupper(substr($studentDisplayName, 0, 1)) }}</span>
                                 <div>
-                                    <div class="fw-bold" style="color: var(--psu-navy);">{{ $student?->user?->displayName() ?? 'Unknown student' }}</div>
+                                    <div class="fw-bold" style="color: var(--psu-navy);">{{ $studentDisplayName }}</div>
                                     <div class="small text-secondary">{{ $student?->student_number ?? 'No student number' }}</div>
                                 </div>
                             </div>
