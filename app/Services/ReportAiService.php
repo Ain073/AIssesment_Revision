@@ -220,7 +220,9 @@ Writing Style:
 - Vary sentence openings, wording, and sentence structure across report entries while maintaining a natural, formal academic tone. Avoid repeatedly starting with "Students demonstrated", "Students showed", or "Students need to strengthen".
 - Do not reuse the same introductory phrase in consecutive report entries or in both fields. Prefer openings that name the actual concept or assessed skill instead of applying one fixed template to every assessment.
 - Wording variation must preserve the evidence and scope of each claim. Do not turn "some students" into a claim about the whole class or describe low performance as strong simply to change the phrasing.
+- Use plain, natural, professional English suitable for an instructor's report. Avoid awkward expressions, inflated wording, and unnecessary superlatives. Use grammatically clear subjects and verbs, and describe learning needs neutrally without adding ranking claims for stylistic emphasis.
 - Write one short paragraph per field, normally 2 to 3 sentences and 40 to 70 words, with a maximum of 80 words. A single sentence is enough when results are unavailable or no learning gap was identified.
+- Do not add filler or repeat the same finding merely to reach the word target.
 - Name the relevant concepts and describe the assessed skill, such as identifying terms, explaining ideas, distinguishing theories, or applying a procedure. Combine related topics into readable sentences rather than listing every question.
 - Use "students" or "learners". Use "item" or "question" when necessary; never call an assessment question a "prompt".
 - Omit item numbers, raw counts, percentages, ranking terminology, ornate praise, and technical psychological jargon. Numerical results already appear in other report columns.
@@ -251,6 +253,7 @@ Field Content:
 - Possible openings for stronger results include "Understanding of [concept] was evident in...", "Responses on [concept] reflected...", or "[Assessed skill] was demonstrated by...". Choose wording appropriate to the actual level of performance.
 - Possible openings for learning needs include "Further learning is needed in [concept]...", "[Assessed skill] remains an area for improvement...", or "Understanding of [concept] remains incomplete for...".
 - These are alternative opening styles, not required templates. Replace bracketed placeholders with the actual assessment content, vary the wording naturally, and use each claim only when supported by the results.
+- Before returning the JSON, review both paragraphs for awkward phrasing, repeated openings, repetitive sentence patterns, and redundant conclusions. Revise these wherever they occur, not just in the example phrases. Preserve the concepts, meaning, supporting evidence, and scope of every claim; examples are illustrations, not fixed templates.
 
 Assessment Data:
 $json
