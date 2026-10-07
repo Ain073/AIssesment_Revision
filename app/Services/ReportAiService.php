@@ -217,6 +217,9 @@ Write about {$subject} using the results of "{$title}" ({$category}).
 
 Writing Style:
 - Use clear, professional English that an instructor would write in a report table. Start directly with the students' learning or the concepts assessed.
+- Vary sentence openings, wording, and sentence structure across report entries while maintaining a natural, formal academic tone. Avoid repeatedly starting with "Students demonstrated", "Students showed", or "Students need to strengthen".
+- Do not reuse the same introductory phrase in consecutive report entries or in both fields. Prefer openings that name the actual concept or assessed skill instead of applying one fixed template to every assessment.
+- Wording variation must preserve the evidence and scope of each claim. Do not turn "some students" into a claim about the whole class or describe low performance as strong simply to change the phrasing.
 - Write one short paragraph per field, normally 2 to 3 sentences and 40 to 70 words, with a maximum of 80 words. A single sentence is enough when results are unavailable or no learning gap was identified.
 - Name the relevant concepts and describe the assessed skill, such as identifying terms, explaining ideas, distinguishing theories, or applying a procedure. Combine related topics into readable sentences rather than listing every question.
 - Use "students" or "learners". Use "item" or "question" when necessary; never call an assessment question a "prompt".
@@ -245,9 +248,9 @@ Field Content:
 1. concepts_most_learned_skills: Describe the concepts students handled more successfully and the skills demonstrated by the graded results. Match the claim to what the questions actually assess: recalling a definition does not establish practical application or higher-order reasoning.
 2. concepts_least_learned_skills: Describe the concepts requiring further learning and the assessed tasks where fewer students earned full credit. State the learning need clearly without diagnosing a specific wrong belief from counts alone.
 - For formative assessments, describe current understanding and learning needs for subsequent lessons. For summative assessments, describe achievement and remaining gaps in the assessed course content.
-- Example style for stronger results: "Students demonstrated understanding of the basic concepts and correctly distinguished the ideas assessed. They were more successful in identifying key terms and explaining their roles."
-- Example style for weaker results: "Students need to strengthen their explanations of the related theories and the distinctions between them. Fewer students earned full credit on the questions assessing these concepts."
-- These examples illustrate style only. Replace their concepts and skills with the actual assessment content, and use them only when the results support the claims.
+- Possible openings for stronger results include "Understanding of [concept] was evident in...", "Responses on [concept] reflected...", or "[Assessed skill] was demonstrated by...". Choose wording appropriate to the actual level of performance.
+- Possible openings for learning needs include "Further learning is needed in [concept]...", "[Assessed skill] remains an area for improvement...", or "Understanding of [concept] remains incomplete for...".
+- These are alternative opening styles, not required templates. Replace bracketed placeholders with the actual assessment content, vary the wording naturally, and use each claim only when supported by the results.
 
 Assessment Data:
 $json
