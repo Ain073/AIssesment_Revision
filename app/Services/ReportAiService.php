@@ -136,26 +136,79 @@ class ReportAiService
 
     private function claudeDraft(array $data, string $model, string $key): array
     {
-        $response = Http::withHeaders([
-            'x-api-key' => $key,
-            'anthropic-version' => '2023-06-01',
-        ])
-            ->timeout(30)
-            ->post('https://api.anthropic.com/v1/messages', [
-                'model' => $model,
-                'max_tokens' => 500,
-                'temperature' => 0.7,
-                'messages' => [
-                    [
-                        'role' => 'user',
-                        'content' => $this->prompt($data),
+        $payload = [
+            'model' => $model,
+            'temperature' => 0.7,
+            'messages' => [
+                [
+                    'role' => 'user',
+                    'content' => $this->prompt($data),
+                ],
+            ],
+            'output_config' => [
+                'format' => [
+                    'type' => 'json_schema',
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'concepts_most_learned_skills' => ['type' => 'string'],
+                            'concepts_least_learned_skills' => ['type' => 'string'],
+                        ],
+                        'required' => ['concepts_most_learned_skills', 'concepts_least_learned_skills'],
+                        'additionalProperties' => false,
                     ],
                 ],
-            ])
-            ->throw()
-            ->json();
+            ],
+        ];
 
-        return $this->parseDraft($response['content'][0]['text'] ?? '', 'claude');
+        // Retry only a truncated response, with a bounded increase in output allowance.
+        foreach ([1024, 2048] as $maxTokens) {
+            $response = Http::withHeaders([
+                'x-api-key' => $key,
+                'anthropic-version' => '2023-06-01',
+            ])
+                ->timeout(30)
+                ->post('https://api.anthropic.com/v1/messages', $payload + ['max_tokens' => $maxTokens])
+                ->throw()
+                ->json();
+
+            $stopReason = $response['stop_reason'] ?? null;
+
+            if ($stopReason === 'max_tokens') {
+                Log::warning('Claude report draft reached the output token limit.', [
+                    'model' => $model,
+                    'max_tokens' => $maxTokens,
+                    'output_tokens' => data_get($response, 'usage.output_tokens'),
+                    'stop_reason' => $stopReason,
+                ]);
+
+                continue;
+            }
+
+            if ($stopReason === 'refusal') {
+                throw new \RuntimeException('Claude declined to generate the report draft.');
+            }
+
+            $text = collect($response['content'] ?? [])
+                ->where('type', 'text')
+                ->pluck('text')
+                ->implode('');
+
+            try {
+                return $this->parseDraft($text, 'claude');
+            } catch (\RuntimeException $exception) {
+                Log::warning('Claude report draft response failed validation.', [
+                    'model' => $model,
+                    'stop_reason' => $stopReason,
+                    'output_tokens' => data_get($response, 'usage.output_tokens'),
+                    'text_length' => strlen($text),
+                ]);
+
+                throw $exception;
+            }
+        }
+
+        throw new \RuntimeException('Claude report draft remained incomplete after retrying with a higher output token limit.');
     }
 
     private function reportData(PublishAssessment $publishAssessment): array
@@ -293,9 +346,21 @@ PROMPT;
             throw new \RuntimeException('AI response was not valid JSON.');
         }
 
+        $fields = ['concepts_most_learned_skills', 'concepts_least_learned_skills'];
+
+        if (count($draft) !== count($fields)) {
+            throw new \RuntimeException('AI response must contain exactly the two report fields.');
+        }
+
+        foreach ($fields as $field) {
+            if (! isset($draft[$field]) || ! is_string($draft[$field]) || trim($draft[$field]) === '') {
+                throw new \RuntimeException('AI response must contain non-empty text for both report fields.');
+            }
+        }
+
         return [
-            'concepts_most_learned_skills' => trim((string) ($draft['concepts_most_learned_skills'] ?? '')),
-            'concepts_least_learned_skills' => trim((string) ($draft['concepts_least_learned_skills'] ?? '')),
+            'concepts_most_learned_skills' => trim($draft['concepts_most_learned_skills']),
+            'concepts_least_learned_skills' => trim($draft['concepts_least_learned_skills']),
             'source' => $source,
         ];
     }
