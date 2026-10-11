@@ -34,8 +34,8 @@ return [
         'key' => env('AI_API_KEY'),
         'providers' => [
             'openai' => [
-                'label' => 'ChatGPT-4',
-                'model' => env('OPENAI_MODEL', env('AI_MODEL', 'gpt-4')),
+                'label' => 'GPT-4.1',
+                'model' => env('OPENAI_MODEL', env('AI_MODEL', 'gpt-4.1')),
                 'key' => env('OPENAI_API_KEY', env('AI_API_KEY')),
             ],
             'claude' => [
