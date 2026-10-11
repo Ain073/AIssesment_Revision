@@ -125,8 +125,8 @@ class ReportAiService
             ->post('https://api.openai.com/v1/responses', [
                 'model' => $model,
                 'input' => $this->prompt($data),
-                'max_output_tokens' => 500,
-                'temperature' => 0.7,
+                'max_output_tokens' => 1200,
+                'temperature' => 0.2,
             ])
             ->throw()
             ->json();
