@@ -79,7 +79,7 @@ const runSearchForm = (fields, recordSearch = true) => {
     const context = {
         URL, URLSearchParams,
         FormData: class { forEach(callback) { fields.forEach(callback); } },
-        window: { location: { href: 'http://localhost/super-admin/users?tab=students&program=2&department=1&search=old&page=4' } },
+        window: { location: { href: 'http://localhost/super-admin/users?tab=students&program=2&department=1&search=old&page=4&teachers_page=3&students_page=2' } },
         document: { addEventListener(_event, callback) { context.submit = callback; } },
         loadPortalPage: async (...args) => { calls.push(args); return true; },
     };
@@ -99,6 +99,8 @@ test('feature search uses current tab/filters and resets pagination without addi
     assert.equal(result.url.searchParams.get('program'), '2');
     assert.equal(result.url.searchParams.get('department'), '1');
     assert.equal(result.url.searchParams.has('page'), false);
+    assert.equal(result.url.searchParams.has('teachers_page'), false);
+    assert.equal(result.url.searchParams.has('students_page'), false);
     assert.equal(result.historyMode, 'replace');
     assert.equal(result.preserveState, true);
 });
@@ -111,4 +113,6 @@ test('clearing search retains filters while a filter change retains the search t
     assert.equal(filtered.url.searchParams.get('search'), 'old');
     assert.equal(filtered.url.searchParams.get('tab'), 'students');
     assert.equal(filtered.url.searchParams.get('department'), '3');
+    assert.equal(filtered.url.searchParams.has('teachers_page'), false);
+    assert.equal(filtered.url.searchParams.has('students_page'), false);
 });

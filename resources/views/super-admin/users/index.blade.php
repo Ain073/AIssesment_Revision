@@ -94,12 +94,12 @@
                     <button class="btn btn-outline-primary table-switch-button {{ $activeUserTab === 'teachers' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="teachers" type="button" role="tab" aria-pressed="{{ $activeUserTab === 'teachers' ? 'true' : 'false' }}">
                         <span class="material-symbols-outlined fs-5">badge</span>
                         Teachers
-                        <span class="table-switch-count">{{ $teachers->count() }}</span>
+                        <span class="table-switch-count">{{ $teachers->total() }}</span>
                     </button>
                     <button class="btn btn-outline-primary table-switch-button {{ $activeUserTab === 'students' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="students" type="button" role="tab" aria-pressed="{{ $activeUserTab === 'students' ? 'true' : 'false' }}">
                         <span class="material-symbols-outlined fs-5">groups</span>
                         Students
-                        <span class="table-switch-count">{{ $students->count() }}</span>
+                        <span class="table-switch-count">{{ $students->total() }}</span>
                     </button>
                 </div>
 
@@ -206,9 +206,7 @@
                         </table>
                     </div>
 
-                    <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #eff4ff;">
-                        <span class="small text-secondary" data-entries-count>Showing {{ $teachers->count() }} {{ $teachers->count() === 1 ? 'entry' : 'entries' }}</span>
-                    </div>
+                    {{ $teachers->onEachSide(1)->links('super-admin.users.pagination', ['label' => 'Teachers']) }}
                 </section>
 
                 {{-- Students table --}}
@@ -300,9 +298,7 @@
                         </table>
                     </div>
 
-                    <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top" style="background: #eff4ff;">
-                        <span class="small text-secondary" data-entries-count>Showing {{ $students->count() }} {{ $students->count() === 1 ? 'entry' : 'entries' }}</span>
-                    </div>
+                    {{ $students->onEachSide(1)->links('super-admin.users.pagination', ['label' => 'Students']) }}
                 </section>
 
             </div>

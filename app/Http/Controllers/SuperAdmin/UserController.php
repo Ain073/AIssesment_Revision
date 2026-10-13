@@ -11,9 +11,11 @@ use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\StudentAccountImportService;
 use App\Services\UserAccountService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -54,25 +56,26 @@ class UserController extends Controller
             ->tap(fn ($query) => RecordSearch::apply($query, RecordSearch::USER_FIELDS))
             ->orderBy('last_name')
             ->orderBy('first_name')
-            ->orderBy('name');
+            ->orderBy('name')
+            ->orderBy('users.id');
 
-        $teachers = (clone $usersQuery)
+        $teachersQuery = (clone $usersQuery)
             ->whereHas('roles', fn ($query) => $query->where('role_name', 'instructor'))
             ->when($selectedDepartmentId, fn ($query) => $query->whereHas(
                 'instructorProfile',
                 fn ($profile) => $profile->where('department_id', $selectedDepartmentId),
-            ))
-            ->get();
+            ));
 
-        $students = (clone $usersQuery)
+        $studentsQuery = (clone $usersQuery)
             ->whereHas('roles', fn ($query) => $query->where('role_name', 'student'))
             ->when($selectedProgramId, fn ($query) => $query->whereHas(
                 'studentProfile',
                 fn ($profile) => $profile->where('program_id', $selectedProgramId),
-            ))
-            ->get();
+            ));
 
-        $users = $teachers->merge($students);
+        $teachers = $this->paginateUsers($teachersQuery, 'teachers_page')->appends(['tab' => 'teachers']);
+        $students = $this->paginateUsers($studentsQuery, 'students_page')->appends(['tab' => 'students']);
+        $users = $teachers->getCollection()->merge($students->getCollection());
 
         $departments = Department::with('college')
             ->orderBy('college_id')
@@ -88,15 +91,10 @@ class UserController extends Controller
             ->orderBy('program_name')
             ->get();
 
-        $adminDeans = $teachers->filter->hasRole('admin_dean')->values();
-        $departmentChairs = $teachers->filter->hasRole('department_chair')->values();
-
         return view('super-admin.users.index', [
             'users' => $users,
             'teachers' => $teachers,
             'students' => $students,
-            'adminDeans' => $adminDeans,
-            'departmentChairs' => $departmentChairs,
             'departments' => $departments,
             'programs' => $programs,
             'selectedDepartmentId' => $selectedDepartmentId,
@@ -385,6 +383,18 @@ class UserController extends Controller
         return redirect()
             ->route('super-admin.users')
             ->with('status', 'User account deleted successfully.');
+    }
+
+    private function paginateUsers(Builder $query, string $pageName): LengthAwarePaginator
+    {
+        $users = $query->paginate(25, ['*'], $pageName);
+
+        // An edit can remove the final record on a page from the current filters.
+        if ($users->currentPage() > $users->lastPage()) {
+            $users = $query->paginate(25, ['*'], $pageName, $users->lastPage(), $users->total());
+        }
+
+        return $users->withQueryString();
     }
 
     private function collegeHasDeanForDepartment(int $departmentId, ?int $exceptUserId = null): bool
