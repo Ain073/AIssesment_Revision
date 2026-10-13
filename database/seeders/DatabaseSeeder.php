@@ -10,12 +10,11 @@ class DatabaseSeeder extends Seeder
     use WithoutModelEvents;
 
     /**
-     * Seed the application's database.
+     * Seed required accounts, roles, and missing public IDs.
      */
     public function run(): void
     {
         $this->call(RoleAndSuperAdminSeeder::class);
-        $this->call(AcademicStructureSeeder::class);
         $this->call(PublicIdSeeder::class);
     }
 }
