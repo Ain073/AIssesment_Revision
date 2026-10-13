@@ -20,6 +20,7 @@
 
 @section('title', 'Programs | AIssessment Admin')
 @section('header', 'Programs')
+@section('record-search-toolbar', 'true')
 
 
 @section('content')
@@ -33,10 +34,12 @@
     @endif
 
     {{-- Filters and actions --}}
-    <div class="program-toolbar super-admin-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
-        <form action="{{ route('super-admin.programs') }}" method="GET">
-            <label class="form-label small fw-bold text-uppercase mb-1" for="department-filter">View Department</label>
-            <select class="form-select department-filter-select" id="department-filter" name="department" onchange="this.form.submit()">
+    <div class="record-toolbar">
+        @include('partials.record-search', ['inToolbar' => true])
+        <form action="{{ route('super-admin.programs') }}" class="record-filter-form" method="GET" data-ajax-page-form data-preserve-page-state="true">
+            <input type="hidden" name="search" value="{{ \App\Support\RecordSearch::term() }}">
+            <label class="visually-hidden" for="department-filter">View Department</label>
+            <select class="form-select department-filter-select" id="department-filter" name="department" data-submit-on-change>
                 <option value="">All Departments</option>
                 @foreach ($departments as $department)
                     <option value="{{ $department->public_id }}" @selected($selectedDepartmentKey === $department->public_id)>
@@ -49,7 +52,7 @@
             </noscript>
         </form>
 
-        <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#programModal" data-bs-toggle="modal" type="button">
+        <button class="btn btn-psu record-toolbar-actions d-flex align-items-center gap-2" data-bs-target="#programModal" data-bs-toggle="modal" type="button">
             <span class="material-symbols-outlined fs-5">add</span>
             Program
         </button>

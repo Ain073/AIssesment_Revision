@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
+use App\Support\RecordSearch;
+
 use App\Http\Controllers\Controller;
 use App\Models\College;
 use App\Models\Department;
@@ -19,10 +21,13 @@ class CollegeDepartmentController extends Controller
     public function index(): View
     {
         return view('super-admin.colleges.index', [
+            'collegeOptions' => College::orderBy('college_name')->get(),
             'colleges' => College::withCount('departments')
+                ->tap(fn ($query) => RecordSearch::apply($query, ['college_name']))
                 ->orderBy('college_name')
                 ->get(),
             'departments' => Department::with('college')
+                ->tap(fn ($query) => RecordSearch::apply($query, ['dept_name', 'college.college_name']))
                 ->withCount('instructorProfiles')
                 ->orderBy('dept_name')
                 ->get(),

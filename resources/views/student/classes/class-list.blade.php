@@ -51,7 +51,7 @@
         @endforeach
     </div>
 @else
-    <section class="class-card p-5 text-center mb-4">
+    <section class="class-card p-5 text-center mb-4" data-record-search-empty>
         <div class="empty-icon mb-3 mx-auto"><span class="material-symbols-outlined fs-2">school</span></div>
         <h2 class="h4" style="color: var(--psu-navy);">No enrolled classes yet</h2>
     </section>

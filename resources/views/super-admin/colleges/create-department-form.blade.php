@@ -10,8 +10,8 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label fw-bold text-uppercase small" for="college_id">College</label>
-                    <select class="form-select form-select-lg" id="college_id" name="college_id" required @disabled($colleges->isEmpty())>
-                        @forelse ($colleges as $college)
+                    <select class="form-select form-select-lg" id="college_id" name="college_id" required @disabled($collegeOptions->isEmpty())>
+                        @forelse ($collegeOptions as $college)
                             <option value="{{ $college->college_id }}" @selected(old('college_id') == $college->college_id)>{{ $college->college_name }}</option>
                         @empty
                             <option>No colleges available yet</option>
@@ -25,7 +25,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Discard</button>
-                <button class="btn btn-psu px-4" type="submit" @disabled($colleges->isEmpty())>Save Department</button>
+                <button class="btn btn-psu px-4" type="submit" @disabled($collegeOptions->isEmpty())>Save Department</button>
             </div>
         </form>
     </div>

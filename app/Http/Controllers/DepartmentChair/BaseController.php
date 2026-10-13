@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\DepartmentChair;
 
+use App\Support\RecordSearch;
+
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\DepartmentChair\Helpers\DepartmentChairLayoutHelper;
 use App\Models\Department;
@@ -70,6 +72,7 @@ abstract class BaseController extends Controller
                 fn ($query) => $query->whereHas('instructorProfile', fn ($inner) => $inner->where('department_id', $scopedDepartmentId)),
                 fn ($query) => $query->where('id', 0)
             )
+            ->tap(fn ($query) => RecordSearch::apply($query, RecordSearch::USER_FIELDS))
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->orderBy('name')
@@ -79,6 +82,7 @@ abstract class BaseController extends Controller
             ? StudentProfile::query()
                 ->with(['user.roles', 'program.department.college'])
                 ->whereIn('program_id', $scopedProgramIds)
+                ->tap(fn ($query) => RecordSearch::apply($query, ['student_number', 'user.name', 'user.first_name', 'user.middle_name', 'user.last_name', 'user.email']))
                 ->get()
                 ->sortBy(fn (StudentProfile $student) => strtolower($student->user?->displayName() ?? ''))
                 ->values()

@@ -42,21 +42,6 @@
 @endpush
 
 @section('content')
-    @php
-        $draftSubjectOptions = $assessments
-            ->pluck('subject')
-            ->filter()
-            ->unique('subject_id')
-            ->sortBy('subject_code')
-            ->values();
-        $publishedClassOptions = $publishedAssessments
-            ->map(fn ($publishAssessment) => $publishAssessment->classDetail?->class)
-            ->filter()
-            ->unique('class_id')
-            ->sortBy(fn ($class) => $class->class_name)
-            ->values();
-    @endphp
-
     @if (session('status'))
         <div class="alert alert-success">{{ session('status') }}</div>
     @endif
@@ -92,7 +77,7 @@
                 <select class="form-select {{ $activeAssessmentTab === 'draft' ? '' : 'd-none' }}" id="draftAssessmentFilter" data-assessment-filter-select="draft">
                     <option value="">All Subjects</option>
                     @foreach ($draftSubjectOptions as $subject)
-                        <option value="{{ $subject->subject_id }}">
+                        <option value="{{ $subject->subject_id }}" @selected((string) request('subject') === (string) $subject->subject_id)>
                             {{ $subject->subject_code }} - {{ $subject->subject_name }}
                         </option>
                     @endforeach
@@ -100,7 +85,7 @@
                 <select class="form-select {{ $activeAssessmentTab === 'published' ? '' : 'd-none' }}" id="publishedAssessmentFilter" data-assessment-filter-select="published">
                     <option value="">All Classes</option>
                     @foreach ($publishedClassOptions as $class)
-                        <option value="{{ $class->class_id }}">
+                        <option value="{{ $class->class_id }}" @selected((string) request('class') === (string) $class->class_id)>
                             {{ $class->class_name }}{{ $class->school_year ? ' - AY '.$class->school_year : '' }}
                         </option>
                     @endforeach

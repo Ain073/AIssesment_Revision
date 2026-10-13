@@ -246,13 +246,13 @@
                 <span class="material-symbols-outlined fs-5 ms-auto">expand_more</span>
             </button>
             <div class="dropdown-menu dropdown-menu-end class-filter-menu shadow-sm">
-                <a class="dropdown-item results-class-filter-link {{ $selectedClassKey === '' ? 'active' : '' }}" href="{{ route('student.results') }}">
+                <a class="dropdown-item results-class-filter-link {{ $selectedClassKey === '' ? 'active' : '' }}" href="{{ route('student.results', ['search' => \App\Support\RecordSearch::term()]) }}">
                     All Classes
                 </a>
                 @foreach ($classOptions as $classOption)
                     <a
                         class="dropdown-item results-class-filter-link {{ $selectedClassKey === $classOption['key'] ? 'active' : '' }}"
-                        href="{{ route('student.results', ['class' => $classOption['key']]) }}"
+                        href="{{ route('student.results', ['class' => $classOption['key'], 'search' => \App\Support\RecordSearch::term()]) }}"
                     >
                         <span class="fw-semibold d-block">{{ $classOption['label'] }}</span>
                         <span class="small">{{ $classOption['subject'] }}</span>

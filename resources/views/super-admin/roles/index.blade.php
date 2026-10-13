@@ -22,6 +22,7 @@
 @section('header', 'Dean Designation')
 
 
+@section('record-search-toolbar', 'true')
 @section('content')
     {{-- Page messages --}}
     @if (session('status'))
@@ -36,15 +37,18 @@
         </div>
     @endif
 
-    <div class="designation-action-row d-flex align-items-center justify-content-end gap-2">
-        <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" data-bs-target="#deanHistoryModal" data-bs-toggle="modal" type="button">
-            <span class="material-symbols-outlined fs-5">history</span>
-            Designation History
-        </button>
-        <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#grantAdminDeanModal" data-bs-toggle="modal" type="button">
-            <span class="material-symbols-outlined fs-5">add</span>
-            Designation
-        </button>
+    <div class="record-toolbar">
+        @include('partials.record-search', ['inToolbar' => true])
+        <div class="record-toolbar-actions">
+            <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" data-bs-target="#deanHistoryModal" data-bs-toggle="modal" type="button">
+                <span class="material-symbols-outlined fs-5">history</span>
+                Designation History
+            </button>
+            <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#grantAdminDeanModal" data-bs-toggle="modal" type="button">
+                <span class="material-symbols-outlined fs-5">add</span>
+                Designation
+            </button>
+        </div>
     </div>
 
     <section class="directory-card shadow-sm">
@@ -194,7 +198,3 @@
 
     @include('super-admin.roles.add-remove-access-popups')
 @endsection
-
-@push('scripts')
-    @include('super-admin.roles.role-page-code')
-@endpush

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\AdminDean;
 
+use App\Support\RecordSearch;
+
 use App\Models\Department;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -29,6 +31,7 @@ class TeacherController extends BaseController
                     ->when($scopedCollegeId, fn ($inner) => $inner->where('college_id', $scopedCollegeId), fn ($inner) => $inner->whereRaw('1 = 0'))
                     ->when($selectedDepartmentId, fn ($inner) => $inner->where('department_id', $selectedDepartmentId))
             )
+            ->tap(fn ($query) => RecordSearch::apply($query, RecordSearch::USER_FIELDS))
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->orderBy('name')

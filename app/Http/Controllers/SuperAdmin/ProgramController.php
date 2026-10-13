@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
+use App\Support\RecordSearch;
+
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Program;
@@ -135,6 +137,7 @@ class ProgramController extends Controller
     private function programsList(?int $departmentId = null)
     {
         return Program::with(['department.college'])
+            ->tap(fn ($query) => RecordSearch::apply($query, RecordSearch::PROGRAM_FIELDS))
             ->withCount(['studentProfiles', 'classes'])
             ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
             ->orderBy('program_name')

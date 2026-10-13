@@ -241,7 +241,8 @@
     </div>
 
     <section class="instructor-report-filter" aria-label="Report filters">
-        <form action="{{ route('instructor.reports') }}" class="instructor-report-filter-form" method="GET">
+        <form action="{{ route('instructor.reports') }}" class="instructor-report-filter-form" method="GET" data-ajax-page-form data-preserve-page-state="true">
+            <input type="hidden" name="search" value="{{ \App\Support\RecordSearch::term() }}">
             <input data-report-type-input name="type" type="hidden" value="{{ $activeReportType }}">
 
             <div class="instructor-report-filter-field">
@@ -249,7 +250,7 @@
                     <span class="material-symbols-outlined fs-6">school</span>
                     Class
                 </label>
-                <select class="form-select" id="instructorReportClassFilter" name="class" onchange="this.form.submit()" @disabled($classes->isEmpty())>
+                <select class="form-select" id="instructorReportClassFilter" name="class" data-submit-on-change @disabled($classes->isEmpty())>
                     <option value="">All classes</option>
                     @foreach ($classes as $class)
                         <option value="{{ $class->class_id }}" @selected($selectedClassId === (int) $class->class_id)>

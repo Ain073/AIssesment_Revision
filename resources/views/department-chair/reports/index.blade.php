@@ -160,7 +160,8 @@
     </section>
 
     <section class="report-filter-toolbar" aria-label="Report filters">
-        <form action="{{ route('department-chair.reports') }}" class="report-filter-form" method="GET">
+        <form action="{{ route('department-chair.reports') }}" class="report-filter-form" method="GET" data-ajax-page-form data-preserve-page-state="true">
+            <input type="hidden" name="search" value="{{ \App\Support\RecordSearch::term() }}">
             <input data-report-type-input name="type" type="hidden" value="{{ $activeReportType }}">
 
             <div class="report-filter-field">
@@ -168,7 +169,7 @@
                     <span class="material-symbols-outlined fs-6">person</span>
                     Teacher
                 </label>
-                <select class="form-select" id="reportTeacherFilter" name="teacher" onchange="this.form.submit()" @disabled($teachers->isEmpty())>
+                <select class="form-select" id="reportTeacherFilter" name="teacher" data-submit-on-change @disabled($teachers->isEmpty())>
                     <option value="">All teachers</option>
                     @foreach ($teachers as $teacher)
                         <option value="{{ $teacher->instructor_profile_id }}" @selected($selectedTeacherId === $teacher->instructor_profile_id)>
@@ -183,7 +184,7 @@
                     <span class="material-symbols-outlined fs-6">menu_book</span>
                     Subject
                 </label>
-                <select class="form-select" id="reportSubjectFilter" name="subject" onchange="this.form.submit()" @disabled($subjects->isEmpty())>
+                <select class="form-select" id="reportSubjectFilter" name="subject" data-submit-on-change @disabled($subjects->isEmpty())>
                     <option value="">All subjects</option>
                     @foreach ($subjects as $subject)
                         <option value="{{ $subject->subject_id }}" @selected($selectedSubjectId === $subject->subject_id)>

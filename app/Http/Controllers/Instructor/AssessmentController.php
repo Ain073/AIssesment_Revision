@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers\Instructor;
 
+use App\Support\RecordSearch;
+
 use App\Models\Assessment;
+use App\Models\AcademicClass;
 use App\Models\AssessmentItem;
+use App\Models\ClassDetail;
 use App\Models\PublishAssessment;
+use App\Models\Subject;
 use App\Models\Submission;
 use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
@@ -24,10 +29,22 @@ class AssessmentController extends BaseController
         $instructorProfile = $this->instructorProfile($user);
         $handledSubjects = $this->handledSubjects($instructorProfile);
         $activeAssessmentTab = $request->query('tab') === 'published' ? 'published' : 'draft';
+        $draftSubjectOptions = $instructorProfile
+            ? Subject::whereIn('subject_id', $instructorProfile->assessments()
+                ->where('status', '!=', Assessment::STATUS_ARCHIVED)->select('subject_id'))
+                ->orderBy('subject_code')->get()
+            : collect();
+        $publishedClassOptions = $instructorProfile
+            ? AcademicClass::whereIn('class_id', ClassDetail::whereIn('class_details_id', PublishAssessment::query()
+                ->whereHas('assessment', fn ($query) => $query->where('instructor_id', $instructorProfile->instructor_profile_id))
+                ->select('class_details_id'))->select('class_id'))
+                ->with('program')->get()->sortBy(fn ($class) => $class->class_name)->values()
+            : collect();
         $assessments = $instructorProfile
             ? $instructorProfile->assessments()
                 ->with(['subject', 'items.choices', 'publishAssessments.classDetail.class'])
                 ->where('status', '!=', Assessment::STATUS_ARCHIVED)
+                ->tap(fn ($query) => RecordSearch::apply($query, ['title', 'subject.subject_code', 'subject.subject_name']))
                 ->withCount([
                     'items',
                     'publishAssessments',
@@ -49,6 +66,7 @@ class AssessmentController extends BaseController
                 ->with(['assessment.subject', 'classDetail.class.subject'])
                 ->withCount(['submissions as submitted_count' => fn ($query) => $query->where('status', Submission::STATUS_SUBMITTED)])
                 ->whereHas('assessment', fn ($query) => $query->where('instructor_id', $instructorProfile->instructor_profile_id))
+                ->tap(fn ($query) => RecordSearch::apply($query, RecordSearch::PUBLISHED_FIELDS))
                 ->latest('publish_assessment_id')
                 ->get()
                 ->each(function (PublishAssessment $publishAssessment) {
@@ -64,6 +82,8 @@ class AssessmentController extends BaseController
             'handledSubjects' => $handledSubjects,
             'assessments' => $assessments,
             'publishedAssessments' => $publishedAssessments,
+            'draftSubjectOptions' => $draftSubjectOptions,
+            'publishedClassOptions' => $publishedClassOptions,
             'activeAssessmentTab' => $activeAssessmentTab,
             'classesBySubject' => $classesBySubject,
             'assessmentTypes' => $this->assessmentTypes(),

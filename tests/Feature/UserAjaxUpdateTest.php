@@ -3,12 +3,16 @@
 namespace Tests\Feature;
 
 use App\Models\InstructorProfile;
+use App\Models\AuditLog;
 use App\Models\Role;
 use App\Models\StudentProfile;
 use App\Models\User;
+use App\Models\PublishAssessment;
+use App\Support\RecordSearch;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -99,6 +103,38 @@ class UserAjaxUpdateTest extends TestCase
             $table->unsignedBigInteger('user_id');
             $table->timestamp('read_at')->nullable();
         });
+        Schema::create('classes', function (Blueprint $table) {
+            $table->id('class_id');
+            $table->unsignedBigInteger('program_id');
+            $table->string('section_name')->nullable();
+            $table->string('join_code')->nullable();
+            $table->string('school_year')->nullable();
+            $table->unsignedInteger('year_level')->nullable();
+            $table->timestamp('archived_at')->nullable();
+        });
+        Schema::create('class_details', function (Blueprint $table) {
+            $table->id('class_details_id');
+            $table->unsignedBigInteger('class_id');
+            $table->unsignedBigInteger('instructor_id');
+            $table->unsignedBigInteger('student_id')->nullable();
+            $table->unsignedBigInteger('subject_id');
+            $table->string('status');
+            $table->string('entry_method');
+            $table->timestamps();
+        });
+        Schema::create('subjects', function (Blueprint $table) {
+            $table->id('subject_id');
+            $table->uuid('public_id')->nullable();
+            $table->unsignedBigInteger('department_id');
+            $table->string('subject_code');
+            $table->string('subject_name');
+            $table->boolean('is_active')->default(true);
+        });
+        Schema::create('semesters', function (Blueprint $table) {
+            $table->id('semester_id');
+            $table->string('semester_name');
+            $table->boolean('is_active')->default(false);
+        });
 
         foreach (['super_admin', 'admin_dean', 'department_chair', 'instructor', 'student'] as $role) {
             Role::create(['role_name' => $role]);
@@ -135,6 +171,93 @@ class UserAjaxUpdateTest extends TestCase
             }
         }
         return $cases;
+    }
+
+    public static function designationTypes(): array
+    {
+        return ['dean' => ['dean'], 'department chair' => ['chair']];
+    }
+
+    #[DataProvider('designationTypes')]
+    public function test_first_designation_has_a_working_picker_and_records_the_appointment(string $type): void
+    {
+        $this->createDesignationTables();
+        $isDean = $type === 'dean';
+        $actor = $this->actor($isDean ? 'super_admin' : 'admin_dean');
+        $teacher = $this->account(['instructor']);
+        $outside = $this->account(['instructor'], 3);
+        $page = route($isDean ? 'super-admin.roles' : 'admin-dean.designations');
+        $currentList = $isDean ? 'adminDeans' : 'departmentChairs';
+        $availableList = $isDean ? 'availableAdminDeanTeachers' : 'availableDepartmentChairTeachers';
+        $pickerId = $isDean ? 'grantAdminDeanModal' : 'grantDepartmentChairModal';
+        $confirmationId = $isDean ? 'deanConfirmModal' : 'chairConfirmModal';
+
+        $response = $this->actingAs($actor)->get($page, ['X-Requested-With' => 'XMLHttpRequest'])
+            ->assertOk()->assertViewHas($currentList, fn ($users) => $users->isEmpty())
+            ->assertViewHas($availableList, fn ($users) => $users->contains('id', $teacher->id))
+            ->assertSee('data-bs-target="#'.$pickerId.'"', false)
+            ->assertSee('id="'.$confirmationId.'"', false)
+            ->assertSee('data-designation-candidate="'.$type.'"', false)
+            ->assertSee('js/designation-picker.js', false)
+            ->assertDontSee('onclick="open', false);
+        $this->assertSame(1, substr_count($response->getContent(), 'id="'.$pickerId.'"'));
+        if (! $isDean) {
+            $response->assertViewHas($availableList, fn ($users) => ! $users->contains('id', $outside->id));
+        }
+
+        $roleName = $isDean ? 'admin_dean' : 'department_chair';
+        $grantUrl = $isDean ? route('super-admin.roles.grant') : route('admin-dean.teachers.department-chair.grant', $teacher);
+        $this->from($page)->post($grantUrl, $isDean ? ['user_id' => $teacher->id, 'role_name' => $roleName, 'form_mode' => 'grant_admin_dean'] : [])
+            ->assertRedirect($page)->assertSessionHasNoErrors();
+        $this->assertTrue($teacher->fresh()->hasRole($roleName));
+        $this->assertDatabaseHas('designation_details', [
+            'instructor_id' => $teacher->instructorProfile->getKey(), 'designation_id' => $isDean ? 1 : 2,
+            'department_id' => 1, 'college_id' => 1, 'status' => 'active', 'designated_by' => $actor->id,
+        ]);
+        $this->get($page)->assertOk()->assertViewHas($currentList, fn ($users) => $users->contains('id', $teacher->id));
+        if (! $isDean) {
+            $this->post(route('admin-dean.teachers.department-chair.grant', $outside))->assertForbidden();
+        }
+        $this->assertDatabaseCount('designation_details', 1);
+    }
+
+    #[DataProvider('designationTypes')]
+    public function test_designation_picker_remains_available_without_eligible_teachers(string $type): void
+    {
+        $this->createDesignationTables();
+        $isDean = $type === 'dean';
+        $this->actingAs($this->actor($isDean ? 'super_admin' : 'admin_dean'))
+            ->get(route($isDean ? 'super-admin.roles' : 'admin-dean.designations'))
+            ->assertOk()
+            ->assertViewHas($isDean ? 'availableAdminDeanTeachers' : 'availableDepartmentChairTeachers', fn ($users) => $users->isEmpty())
+            ->assertSee('No available teacher accounts')
+            ->assertSee('id="'.($isDean ? 'grantAdminDeanModal' : 'grantDepartmentChairModal').'"', false);
+    }
+
+    private function createDesignationTables(): void
+    {
+        Schema::create('designations', function (Blueprint $table) {
+            $table->id('designation_id');
+            $table->string('designation_name');
+        });
+        DB::table('designations')->insert([
+            ['designation_id' => 1, 'designation_name' => 'Dean'],
+            ['designation_id' => 2, 'designation_name' => 'Department Chair'],
+        ]);
+        Schema::create('designation_details', function (Blueprint $table) {
+            $table->id('designation_details_id');
+            $table->unsignedBigInteger('instructor_id');
+            $table->unsignedBigInteger('designation_id');
+            $table->unsignedBigInteger('department_id')->nullable();
+            $table->unsignedBigInteger('college_id')->nullable();
+            $table->string('academic_year');
+            $table->date('effectivity_date');
+            $table->date('end_date')->nullable();
+            $table->string('status');
+            $table->unsignedBigInteger('designated_by')->nullable();
+            $table->text('remarks')->nullable();
+            $table->timestamps();
+        });
     }
 
     #[DataProvider('accountUpdates')]
@@ -259,6 +382,110 @@ class UserAjaxUpdateTest extends TestCase
             ->assertSee('value="Updated"', false)
             ->assertSee('js/user-directory.js', false)
             ->assertSee('data-ajax-form data-reload-page-on-success="true" data-preserve-page-state="true"', false);
+    }
+
+    public function test_user_search_treats_identifier_wildcards_literally_and_keeps_program_filters(): void
+    {
+        $admin = $this->actor('super_admin');
+        $target = $this->account(['student']);
+        $target->studentProfile->update(['student_number' => 'STU_100%']);
+        $otherProgram = $this->account(['student'], 2);
+        $otherProgram->studentProfile->update(['student_number' => 'STU_100%OTHER']);
+        $similar = $this->account(['student']);
+        $similar->studentProfile->update(['student_number' => 'STUA100X']);
+
+        $this->actingAs($admin)->get(route('super-admin.users', ['tab' => 'students', 'program' => 1, 'search' => '_100%']))
+            ->assertOk()
+            ->assertViewHas('students', fn ($students) => $students->modelKeys() === [$target->id])
+            ->assertViewHas('programs', fn ($programs) => $programs->count() === 3)
+            ->assertSee('data-record-search-form', false)
+            ->assertDontSee('data-global-search-url', false);
+    }
+
+    public function test_dean_and_chair_user_search_cannot_return_accounts_outside_their_scope(): void
+    {
+        $target = $this->account(['instructor']);
+        $outside = $this->account(['instructor'], 3);
+        $this->actingAs($this->actor('admin_dean'))->get(route('admin-dean.teachers', ['search' => 'EMP-']))
+            ->assertOk()->assertViewHas('teachers', fn ($teachers) => $teachers->contains('id', $target->id) && ! $teachers->contains('id', $outside->id));
+        $this->actingAs($this->actor('department_chair'))->get(route('department-chair.teachers', ['search' => 'EMP-']))
+            ->assertOk()->assertViewHas('teachers', fn ($teachers) => $teachers->contains('id', $target->id) && ! $teachers->contains('id', $outside->id));
+    }
+
+    public function test_program_and_subject_search_remain_inside_the_chairs_department(): void
+    {
+        DB::table('programs')->where('program_id', 1)->update(['public_id' => (string) Str::uuid()]);
+        DB::table('subjects')->insert([
+            ['subject_id' => 1, 'public_id' => (string) Str::uuid(), 'department_id' => 1, 'subject_code' => 'IT101', 'subject_name' => 'Shared Topic'],
+            ['subject_id' => 2, 'public_id' => (string) Str::uuid(), 'department_id' => 3, 'subject_code' => 'IT102', 'subject_name' => 'Shared Topic'],
+        ]);
+        $this->actingAs($this->actor('department_chair'))->get(route('department-chair.programs', ['search' => 'program']))
+            ->assertOk()->assertViewHas('programs', fn ($programs) => $programs->modelKeys() === [1]);
+        $this->get(route('department-chair.subjects', ['search' => 'sHaReD']))
+            ->assertOk()->assertViewHas('subjects', fn ($subjects) => $subjects->modelKeys() === [1]);
+    }
+
+    public function test_audit_search_finds_matches_before_pagination_and_keeps_other_filters(): void
+    {
+        $admin = $this->actor('super_admin');
+        foreach (range(1, 30) as $number) {
+            AuditLog::create(['user_id' => $admin->id, 'action' => 'CREATE', 'module' => 'Programs', 'description' => "Noise {$number}", 'created_at' => now()]);
+        }
+        AuditLog::create(['user_id' => $admin->id, 'action' => 'CREATE', 'module' => 'Programs', 'description' => 'Needle record', 'created_at' => now()->subDay()]);
+        AuditLog::create(['user_id' => $admin->id, 'action' => 'DELETE', 'module' => 'Programs', 'description' => 'Needle record', 'created_at' => now()]);
+
+        $this->actingAs($admin)->get(route('super-admin.audit-logs', ['search' => 'needle', 'action' => 'CREATE']))
+            ->assertOk()->assertViewHas('logs', fn ($logs) => $logs->total() === 1 && $logs->first()->description === 'Needle record')
+            ->assertSee('data-record-search-input', false);
+    }
+
+    public function test_search_input_rejects_arrays_and_excessively_long_terms(): void
+    {
+        $this->actingAs($this->actor('super_admin'));
+        foreach ([['bad'], str_repeat('x', 101)] as $term) {
+            $this->getJson(route('super-admin.users', ['search' => $term]))->assertUnprocessable()->assertJsonValidationErrors('search');
+        }
+    }
+
+    public function test_class_and_nested_assessment_search_preserve_enrollment_and_ownership_scopes(): void
+    {
+        $student = $this->account(['student']);
+        $teacher = $this->account(['instructor']);
+        $otherTeacher = $this->account(['instructor'], 3);
+        DB::table('subjects')->insert(['subject_id' => 1, 'department_id' => 1, 'subject_code' => 'IT101', 'subject_name' => 'Shared Topic']);
+        foreach ([1 => $teacher, 2 => $otherTeacher] as $id => $owner) {
+            DB::table('classes')->insert(['class_id' => $id, 'program_id' => 1, 'section_name' => 'Section A', 'school_year' => '2026', 'year_level' => 1]);
+            DB::table('class_details')->insert(['class_details_id' => $id, 'class_id' => $id, 'instructor_id' => $owner->instructorProfile->getKey(), 'subject_id' => 1, 'status' => 'approved', 'entry_method' => 'class_setup']);
+        }
+        DB::table('class_details')->insert(['class_id' => 1, 'instructor_id' => $teacher->instructorProfile->getKey(), 'student_id' => $student->studentProfile->getKey(), 'subject_id' => 1, 'status' => 'approved', 'entry_method' => 'manual_add']);
+
+        $this->actingAs($student)->get(route('student.classes', ['search' => 'sHaReD']))
+            ->assertOk()->assertViewHas('enrolledClasses', fn ($classes) => $classes->modelKeys() === [1]);
+        $this->get(route('student.classes', ['search' => 'missing']))
+            ->assertOk()->assertViewHas('enrolledClasses', fn ($classes) => $classes->isEmpty());
+        $this->assertSame([1], RecordSearch::apply($teacher->instructorProfile->classes()->getQuery(), RecordSearch::CLASS_FIELDS, 'Shared')->get()->modelKeys());
+
+        Schema::create('assessments', function (Blueprint $table) {
+            $table->id('assessment_id');
+            $table->unsignedBigInteger('instructor_id');
+            $table->unsignedBigInteger('subject_id');
+            $table->string('title');
+        });
+        Schema::create('publish_assessment', function (Blueprint $table) {
+            $table->id('publish_assessment_id');
+            $table->unsignedBigInteger('assessment_id');
+            $table->unsignedBigInteger('class_details_id');
+        });
+        foreach ([1 => $teacher, 2 => $otherTeacher] as $id => $owner) {
+            DB::table('assessments')->insert(['assessment_id' => $id, 'instructor_id' => $owner->instructorProfile->getKey(), 'subject_id' => 1, 'title' => 'Quiz']);
+            DB::table('publish_assessment')->insert(['publish_assessment_id' => $id, 'assessment_id' => $id, 'class_details_id' => $id]);
+        }
+        $query = PublishAssessment::whereHas('assessment', fn ($query) => $query->where('instructor_id', $teacher->instructorProfile->getKey()));
+        foreach (['Shared', 'Section A', 'Quiz'] as $term) {
+            $this->assertSame([1], RecordSearch::apply(clone $query, RecordSearch::PUBLISHED_FIELDS, $term)->get()->modelKeys());
+        }
+        request()->query->set('search', 'Shared');
+        $this->assertSame([1], RecordSearch::filter($query->get(), RecordSearch::PUBLISHED_FIELDS)->modelKeys());
     }
 
     private function actor(string $role): User

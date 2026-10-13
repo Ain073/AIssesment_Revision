@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\DepartmentChair;
 
+use App\Support\RecordSearch;
+
 use App\Models\Program;
 use App\Models\Semester;
 use App\Models\Subject;
@@ -227,6 +229,7 @@ class SubjectController extends BaseController
         }
 
         return Subject::with(['department.college'])
+            ->tap(fn ($query) => RecordSearch::apply($query, RecordSearch::SUBJECT_FIELDS))
             ->where('department_id', $departmentId)
             ->orderBy('subject_code')
             ->get();

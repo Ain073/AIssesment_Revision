@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
+use App\Support\RecordSearch;
+
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Program;
@@ -49,6 +51,7 @@ class UserController extends Controller
         $selectedProgramId = $selectedProgram?->program_id;
 
         $usersQuery = User::with(['roles', 'instructorProfile.department.college', 'studentProfile.program.department.college'])
+            ->tap(fn ($query) => RecordSearch::apply($query, RecordSearch::USER_FIELDS))
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->orderBy('name');

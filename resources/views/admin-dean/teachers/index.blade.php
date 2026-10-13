@@ -81,6 +81,7 @@
     </style>
 @endpush
 
+@section('record-search-toolbar', 'true')
 @section('content')
     @if (session('status'))
         <div class="alert alert-success">{{ session('status') }}</div>
@@ -100,10 +101,12 @@
         </div>
     @endif
 
-    <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
-        <form action="{{ route('admin-dean.teachers') }}" class="d-flex flex-column gap-2" method="GET" data-ajax-page-form>
-            <label class="form-label fw-bold text-uppercase small mb-0" for="department_filter">Department</label>
-            <select class="form-select" id="department_filter" name="department" data-submit-on-change style="min-width: min(100%, 320px);">
+    <div class="record-toolbar">
+        @include('partials.record-search', ['inToolbar' => true])
+        <form action="{{ route('admin-dean.teachers') }}" class="record-filter-form" method="GET" data-ajax-page-form data-preserve-page-state="true">
+            <input type="hidden" name="search" value="{{ \App\Support\RecordSearch::term() }}">
+            <label class="visually-hidden" for="department_filter">Department</label>
+            <select class="form-select" id="department_filter" name="department" data-submit-on-change>
                 <option value="">All Departments</option>
                 @foreach ($departments as $department)
                     <option value="{{ $department->public_id }}" @selected($selectedDepartmentKey === $department->public_id)>
@@ -113,7 +116,7 @@
             </select>
         </form>
 
-        <button class="btn btn-psu d-inline-flex align-items-center gap-2 ms-auto" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button" @disabled($departments->isEmpty())>
+        <button class="btn btn-psu record-toolbar-actions d-inline-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button" @disabled($departments->isEmpty())>
             <span class="material-symbols-outlined fs-5">add</span>
             Instructor
         </button>

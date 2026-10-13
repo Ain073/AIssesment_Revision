@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
+use App\Support\RecordSearch;
+
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
@@ -19,14 +21,7 @@ class AuditLogController extends Controller
             ->orderByDesc('created_at');
 
         // -- Filters ---------------------------------------------------
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('description', 'like', "%{$search}%")
-                  ->orWhereHas('user', fn ($u) => $u->where('first_name', 'like', "%{$search}%")
-                                                     ->orWhere('last_name', 'like', "%{$search}%")
-                                                     ->orWhere('email', 'like', "%{$search}%"));
-            });
-        }
+        RecordSearch::apply($query, ['description', 'user.first_name', 'user.last_name', 'user.email']);
 
         if ($role = $request->input('role')) {
             $query->where('user_role', $role);

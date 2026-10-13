@@ -96,20 +96,6 @@
         </div>
 
         <div class="d-flex align-items-center gap-3">
-            @if (! empty($showTopbarSearch))
-                <div class="global-search">
-                    <button class="btn btn-link text-secondary p-1 mobile-search-toggle d-lg-none" data-mobile-search-toggle type="button" aria-expanded="false" aria-controls="topbarSearchPanel" aria-label="Search">
-                        <span class="material-symbols-outlined">search</span>
-                    </button>
-                    <div class="global-search-panel" id="topbarSearchPanel">
-                    <div class="input-group global-search-input">
-                        <input class="form-control" data-page-search data-global-search-url="{{ route('portal.search') }}" placeholder="{{ $topbarSearchPlaceholder ?? 'Search records...' }}" type="search" aria-label="Search records">
-                        <span class="input-group-text bg-white"><span class="material-symbols-outlined fs-6">search</span></span>
-                    </div>
-                    <div class="global-search-results d-none" data-global-search-results></div>
-                    </div>
-                </div>
-            @endif
             <div class="dropdown">
                 <button class="btn btn-link text-secondary p-1 notification-button" data-bs-toggle="dropdown" type="button" aria-expanded="false" aria-label="Notifications">
                     <span class="material-symbols-outlined">notifications</span>
@@ -154,12 +140,17 @@
 
     <main class="main-content">
         <div class="page-container mx-auto">
+            @unless ($__env->hasSection('record-search-toolbar'))
+                @include('partials.record-search')
+            @endunless
             @yield('content')
         </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ asset('js/user-directory.js') }}?v={{ filemtime(public_path('js/user-directory.js')) }}"></script>
+    <script src="{{ asset('js/record-search.js') }}?v={{ filemtime(public_path('js/record-search.js')) }}"></script>
+    <script src="{{ asset('js/designation-picker.js') }}?v={{ filemtime(public_path('js/designation-picker.js')) }}"></script>
     <script>
         window.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
@@ -254,120 +245,7 @@
             });
         };
 
-        const searchableItems = () => {
-            return Array.from(document.querySelectorAll('.page-container tbody tr, .page-container .assessment-card, .page-container .class-card, .page-container .class-performance-card, .page-container .report-assessment-card'))
-                .filter((item) => ! item.closest('.modal') && ! item.closest('[data-search-ignore]'));
-        };
-
-        const pageSearchText = (item) => {
-            return (item.dataset.searchText || item.textContent || '')
-                .toLowerCase()
-                .replace(/\s+/g, ' ')
-                .trim();
-        };
-
-        const isInsideVisibleTab = (item) => {
-            const tableTabPanel = item.closest('[data-table-tab-panel]');
-
-            if (tableTabPanel && (tableTabPanel.hidden || tableTabPanel.classList.contains('d-none'))) {
-                return false;
-            }
-
-            const tabPane = item.closest('.tab-pane');
-
-            return ! tabPane || tabPane.classList.contains('active');
-        };
-
-        const setPageSearchEmpty = (show) => {
-            const pageContainer = document.querySelector('.page-container');
-
-            if (! pageContainer) {
-                return;
-            }
-
-            let emptyMessage = pageContainer.querySelector('[data-page-search-empty]');
-
-            if (! emptyMessage) {
-                emptyMessage = document.createElement('div');
-                emptyMessage.dataset.pageSearchEmpty = 'true';
-                emptyMessage.className = 'alert alert-info d-none';
-                emptyMessage.textContent = 'No matching records found.';
-                pageContainer.prepend(emptyMessage);
-            }
-
-            emptyMessage.classList.toggle('d-none', ! show);
-        };
-
-        const applyPageSearch = () => {
-            const searchInput = document.querySelector('[data-page-search]');
-            const query = (searchInput?.value || '').toLowerCase().trim();
-            const items = searchableItems();
-
-            if (! searchInput || items.length === 0) {
-                setPageSearchEmpty(false);
-                return;
-            }
-
-            let visibleCount = 0;
-
-            items.forEach((item) => {
-                const isVisible = query === '' || pageSearchText(item).includes(query);
-
-                item.hidden = ! isVisible;
-
-                if (isVisible) {
-                    visibleCount += isInsideVisibleTab(item) ? 1 : 0;
-                }
-            });
-
-            setPageSearchEmpty(query !== '' && visibleCount === 0);
-        };
-
-        const clearPageSearch = () => {
-            searchableItems().forEach((item) => {
-                item.hidden = false;
-            });
-
-            setPageSearchEmpty(false);
-        };
-
-        const searchIconForType = (type) => {
-            const icons = {
-                Assessment: 'assignment',
-                Class: 'school',
-                Program: 'school',
-                Result: 'grading',
-                Subject: 'menu_book',
-                User: 'person',
-            };
-
-            return icons[type] || 'search';
-        };
-
-        const portalEscapeHtml = (value) => {
-            const element = document.createElement('div');
-            element.textContent = value ?? '';
-
-            return element.innerHTML;
-        };
-
-        const globalSearchBox = () => document.querySelector('[data-global-search-results]');
-
-        const closeMobileSearch = () => {
-            document.querySelectorAll('.global-search.is-open').forEach((search) => {
-                search.classList.remove('is-open');
-                search.querySelector('[data-mobile-search-toggle]')?.setAttribute('aria-expanded', 'false');
-            });
-        };
-
-        const hideGlobalSearchResults = () => {
-            const box = globalSearchBox();
-
-            if (box) {
-                box.classList.add('d-none');
-                box.innerHTML = '';
-            }
-        };
+        const applyPageSearch = () => window.initializeRecordSearch?.();
 
         const cleanupBootstrapOverlays = () => {
             document.querySelectorAll('.modal.show').forEach((modal) => {
@@ -395,146 +273,13 @@
             document.body.style.removeProperty('padding-right');
         };
 
-        const renderGlobalSearchResults = (results, query) => {
-            const box = globalSearchBox();
-
-            if (! box) {
-                return;
-            }
-
-            if (query.length < 2) {
-                hideGlobalSearchResults();
-                return;
-            }
-
-            if (! results.length) {
-                box.innerHTML = '<div class="global-search-empty">No matching records found.</div>';
-                box.classList.remove('d-none');
-                return;
-            }
-
-            box.innerHTML = results.map((result) => `
-                <a class="global-search-item" href="${portalEscapeHtml(result.url)}">
-                    <span class="global-search-icon">
-                        <span class="material-symbols-outlined fs-5">${searchIconForType(result.type)}</span>
-                    </span>
-                    <span>
-                        <span class="fw-bold d-block" style="color: var(--psu-navy);">${portalEscapeHtml(result.title)}</span>
-                        <span class="small text-secondary d-block">${portalEscapeHtml(result.subtitle)}</span>
-                        <span class="badge text-bg-light border rounded-1 mt-1">${portalEscapeHtml(result.type)}</span>
-                    </span>
-                </a>
-            `).join('');
-            box.classList.remove('d-none');
-        };
-
-        const showGlobalSearchMessage = (message) => {
-            const box = globalSearchBox();
-
-            if (! box) {
-                return;
-            }
-
-            box.innerHTML = `<div class="global-search-empty">${portalEscapeHtml(message)}</div>`;
-            box.classList.remove('d-none');
-        };
-
-        let globalSearchTimer = null;
-        let globalSearchRequest = null;
-
-        const runGlobalSearch = (input) => {
-            const query = input.value.trim();
-            const url = input.dataset.globalSearchUrl;
-
-            window.clearTimeout(globalSearchTimer);
-
-            if (! url || query.length < 2) {
-                hideGlobalSearchResults();
-                return;
-            }
-
-            showGlobalSearchMessage('Searching...');
-
-            globalSearchTimer = window.setTimeout(async () => {
-                if (globalSearchRequest) {
-                    globalSearchRequest.abort();
-                }
-
-                globalSearchRequest = new AbortController();
-
-                try {
-                    const response = await fetch(`${url}?q=${encodeURIComponent(query)}`, {
-                        headers: {
-                            Accept: 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                        },
-                        signal: globalSearchRequest.signal,
-                    });
-
-                    if (! response.ok) {
-                        showGlobalSearchMessage('Search is temporarily unavailable.');
-                        return;
-                    }
-
-                    const data = await response.json();
-                    renderGlobalSearchResults(data.results || [], query);
-                } catch (error) {
-                    if (error.name !== 'AbortError') {
-                        showGlobalSearchMessage('Search is temporarily unavailable.');
-                    }
-                }
-            }, 250);
-        };
-
         document.addEventListener('input', (event) => {
-            if (event.target.matches('[data-page-search]')) {
-                if (event.target.dataset.globalSearchUrl) {
-                    clearPageSearch();
-                } else {
-                    applyPageSearch();
-                }
-
-                runGlobalSearch(event.target);
-            }
-
             if (event.target.matches('input[name="school_year_start"]')) {
                 syncSchoolYearEnd(event.target);
             }
 
             if (event.target.matches('input[name="school_year_end"]')) {
                 cleanTwoDigitYear(event.target);
-            }
-        });
-
-        document.addEventListener('click', (event) => {
-            const searchToggle = event.target.closest('[data-mobile-search-toggle]');
-
-            if (searchToggle) {
-                const search = searchToggle.closest('.global-search');
-                const input = search?.querySelector('[data-page-search]');
-                const isOpen = search?.classList.toggle('is-open');
-
-                searchToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-
-                if (isOpen) {
-                    window.setTimeout(() => input?.focus(), 0);
-                } else {
-                    hideGlobalSearchResults();
-                }
-
-                return;
-            }
-
-            if (! event.target.closest('.global-search')) {
-                closeMobileSearch();
-                hideGlobalSearchResults();
-            }
-        });
-
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') {
-                closeMobileSearch();
-                hideGlobalSearchResults();
             }
         });
 
@@ -568,6 +313,7 @@
             initPortalPollSections();
             window.initializeTableTabs?.();
             window.initializeUserDirectory?.();
+            window.initializeDesignationPickers?.();
             window.initializeAssessmentFilters?.();
             window.initializeClassSectionSelects?.();
             window.initializeClassForms?.();
@@ -802,6 +548,7 @@
 
                 const refreshSection = async (force = false) => {
                     if (! section.isConnected) {
+                        window.clearInterval(pollTimer);
                         return;
                     }
 
@@ -841,6 +588,8 @@
                         if (currentTab && ! targetUrl.searchParams.has(tabParam)) {
                             targetUrl.searchParams.set(tabParam, currentTab);
                         }
+                        const searchTerm = new URL(window.location.href).searchParams.get('search') || '';
+                        if (searchTerm) targetUrl.searchParams.set('search', searchTerm);
 
                         const response = await fetch(targetUrl.href, {
                             headers: {
@@ -851,6 +600,7 @@
 
                         if (response.ok) {
                             const html = await response.text();
+                            if (! section.isConnected || searchTerm !== (new URL(window.location.href).searchParams.get('search') || '')) return;
 
                             if (html.trim()) {
                                 const currentScrollY = window.scrollY;
@@ -874,7 +624,7 @@
                 };
 
                 window.portalPollSections.push(refreshSection);
-                window.setInterval(refreshSection, interval);
+                const pollTimer = window.setInterval(refreshSection, interval);
             });
         };
 
@@ -1052,6 +802,7 @@
         const loadPortalPage = async (url, pushHistory = true, preserveState = false) => {
             const requestId = ++latestPortalPageRequest;
             const preserveCurrentPage = preserveState && new URL(url, window.location.href).pathname === window.location.pathname;
+            const startingParams = new URL(window.location.href).searchParams;
             const scrollPosition = { x: window.scrollX, y: window.scrollY };
             const tableScrollPositions = preserveCurrentPage
                 ? Array.from(document.querySelectorAll('.page-container .table-responsive'), (table) => ({ x: table.scrollLeft, y: table.scrollTop }))
@@ -1087,9 +838,33 @@
                     throw new Error('Page content is unavailable.');
                 }
 
+                const currentSearchForm = preserveCurrentPage ? currentContainer.querySelector('[data-record-search-form]') : null;
+                const currentSearchInput = currentSearchForm?.querySelector('[data-record-search-input]');
+                const requestedUrl = new URL(url, window.location.href);
+                if (currentSearchInput && currentSearchInput.value.trim() !== (requestedUrl.searchParams.get('search') || '').trim()) {
+                    return true;
+                }
+                if (preserveCurrentPage) {
+                    const currentParams = new URL(window.location.href).searchParams;
+                    ['tab', 'type'].forEach((key) => {
+                        if (currentParams.get(key) !== startingParams.get(key)) {
+                            if (currentParams.has(key)) requestedUrl.searchParams.set(key, currentParams.get(key));
+                            else requestedUrl.searchParams.delete(key);
+                        }
+                    });
+                    url = requestedUrl.href;
+                }
+                const activeBootstrapTabs = preserveCurrentPage
+                    ? Array.from(document.querySelectorAll('[data-bs-toggle="tab"].active'), (button) => button.getAttribute('data-bs-target'))
+                    : [];
                 syncPageStyles(nextDocument);
                 document.body.className = nextDocument.body.className || '';
+                const focusedSearchInput = currentSearchForm?.querySelector('[data-record-search-input]') === document.activeElement
+                    ? document.activeElement : null;
+                const searchSelection = focusedSearchInput ? [focusedSearchInput.selectionStart, focusedSearchInput.selectionEnd] : null;
                 currentContainer.innerHTML = nextContainer.innerHTML;
+                const nextSearchInput = currentSearchInput ? currentContainer.querySelector('[data-record-search-input]') : null;
+                if (nextSearchInput) nextSearchInput.replaceWith(currentSearchInput);
 
                 if (! preserveCurrentPage && nextSidebar && currentSidebar) {
                     currentSidebar.innerHTML = nextSidebar.innerHTML;
@@ -1101,23 +876,32 @@
 
                 document.title = nextDocument.title || document.title;
                 if (pushHistory) {
-                    window.history.pushState({ ajaxPage: true }, '', url);
+                    window.history[pushHistory === 'replace' ? 'replaceState' : 'pushState']({ ajaxPage: true }, '', url);
                 }
 
                 window.portalPollSections = [];
                 initPortalPollSections();
                 window.initializeTableTabs?.();
                 window.initializeUserDirectory?.();
+                window.initializeDesignationPickers?.();
                 window.initializeAssessmentFilters?.();
                 window.initializeClassSectionSelects?.();
                 window.initializeClassForms?.();
                 window.initializeReportsPage?.();
                 window.initializeDashboardPage?.();
+                activeBootstrapTabs.forEach((target) => {
+                    const button = target ? document.querySelector(`[data-bs-toggle="tab"][data-bs-target="${target}"]`) : null;
+                    if (button) bootstrap.Tab.getOrCreateInstance(button).show();
+                });
                 applyPageSearch();
                 movePageFlashAlertsToToast();
                 autoDismissPageInfoAlerts();
                 cleanupStaleBootstrapBackdrops();
                 if (preserveCurrentPage) {
+                    if (focusedSearchInput) {
+                        focusedSearchInput.focus({ preventScroll: true });
+                        focusedSearchInput.setSelectionRange(...searchSelection);
+                    }
                     document.querySelectorAll('.page-container .table-responsive').forEach((table, index) => {
                         const position = tableScrollPositions[index];
                         if (position) {
@@ -1182,10 +966,25 @@
                 }
             });
 
+            const currentParams = new URL(window.location.href).searchParams;
+            if (form.matches('[data-record-search-form]') && form.id !== 'auditFilterForm') {
+                ['tab', 'type', 'department', 'department_id', 'program', 'program_id', 'class', 'teacher', 'subject'].forEach((key) => {
+                    if (currentParams.has(key)) params.set(key, currentParams.get(key));
+                    else params.delete(key);
+                });
+            } else {
+                ['search', 'tab', 'type'].forEach((key) => {
+                    if (! form.querySelector(`[name="${key}"]`) && currentParams.has(key)) params.set(key, currentParams.get(key));
+                });
+            }
+
             url.search = params.toString();
-            loadPortalPage(url.href, true, form.dataset.preservePageState === 'true').then((loaded) => {
+            loadPortalPage(url.href, form.matches('[data-record-search-form]') ? 'replace' : true, form.dataset.preservePageState === 'true').then((loaded) => {
                 if (! loaded && form.dataset.preservePageState === 'true') {
                     showPortalMessage('The list could not refresh. Please try again.', 'warning');
+                    const status = form.querySelector('[data-record-search-status]');
+                    if (status) status.textContent = 'Search could not complete. Please try again.';
+                    form.removeAttribute('aria-busy');
                 }
             });
         });
@@ -1215,6 +1014,12 @@
             }
 
             syncAssessmentFilter(select.closest('[data-assessment-filter-root]'));
+            const url = new URL(window.location.href);
+            const key = select.dataset.assessmentFilterSelect === 'published' ? 'class' : 'subject';
+            if (select.value) url.searchParams.set(key, select.value);
+            else url.searchParams.delete(key);
+            window.history.replaceState({ ajaxPage: true }, '', url.href);
+            applyPageSearch();
         });
 
         document.addEventListener('change', (event) => {
@@ -1242,6 +1047,9 @@
             }
 
             const type = tab.dataset.reportTab;
+            const url = new URL(window.location.href);
+            url.searchParams.set('type', type);
+            window.history.replaceState({ ajaxPage: true }, '', url.href);
 
             document.querySelectorAll('[data-report-tab]').forEach((button) => {
                 const isActive = button.dataset.reportTab === type;
@@ -1259,6 +1067,7 @@
             });
 
             syncReportSelection(type);
+            applyPageSearch();
         });
 
         document.addEventListener('change', (event) => {
@@ -1330,7 +1139,10 @@
             let saved = false;
 
             try {
-                const response = await fetch(form.action, {
+                const actionUrl = new URL(form.action, window.location.href);
+                const searchTerm = new URL(window.location.href).searchParams.get('search');
+                if (searchTerm) actionUrl.searchParams.set('search', searchTerm);
+                const response = await fetch(actionUrl.href, {
                     method: form.method || 'POST',
                     body: new FormData(form),
                     headers: {
@@ -1380,7 +1192,9 @@
                     }
 
                     if (data.url && ! form.dataset.redirectOnSuccess && form.dataset.reloadPageOnSuccess !== 'true') {
-                        window.history.replaceState({ ajaxPage: true }, '', data.url);
+                        const nextUrl = new URL(data.url, window.location.href);
+                        if (searchTerm) nextUrl.searchParams.set('search', searchTerm);
+                        window.history.replaceState({ ajaxPage: true }, '', nextUrl.href);
                     }
 
                     try {

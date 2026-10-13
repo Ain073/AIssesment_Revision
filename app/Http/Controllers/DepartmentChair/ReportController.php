@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\DepartmentChair;
 
+use App\Support\RecordSearch;
+
 use App\Models\PassingRateSetting;
 use App\Models\PublishAssessment;
 use App\Models\Department;
@@ -41,6 +43,7 @@ class ReportController extends BaseController
                     $assessmentQuery->where('subject_id', $subjectId);
                 });
             })
+            ->tap(fn ($query) => RecordSearch::apply($query, ['publishAssessment.assessment.title', 'publishAssessment.assessment.subject.subject_code', 'publishAssessment.assessment.subject.subject_name', 'publishAssessment.classDetail.class.section_name']))
             ->latest('updated_at')
             ->get();
 

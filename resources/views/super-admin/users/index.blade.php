@@ -21,6 +21,7 @@
 
 @section('title', 'Users | AIssessment Admin')
 @section('header', 'Users')
+@section('record-search-toolbar', 'true')
 
 
 @section('content')
@@ -44,11 +45,13 @@
             @endif
 
             {{-- Filters and actions --}}
-            <div class="program-toolbar super-admin-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
-                <form action="{{ route('super-admin.users') }}" method="GET" id="userFilterForm" data-ajax-page-form data-preserve-page-state="true">
+            <div class="record-toolbar">
+                @include('partials.record-search', ['inToolbar' => true])
+                <form action="{{ route('super-admin.users') }}" method="GET" id="userFilterForm" class="record-filter-form" data-ajax-page-form data-preserve-page-state="true">
+                    <input type="hidden" name="search" value="{{ \App\Support\RecordSearch::term() }}">
                     <input type="hidden" name="tab" id="activeTabInput" value="{{ $activeUserTab }}">
                     <div data-user-filter-tab="teachers" @if ($activeUserTab !== 'teachers') hidden @endif>
-                        <label class="form-label small fw-bold text-uppercase mb-1" for="department-filter">View Department</label>
+                        <label class="visually-hidden" for="department-filter">View Department</label>
                         <select class="form-select department-filter-select" id="department-filter" name="department" data-submit-on-change>
                             <option value="">All Departments</option>
                             @foreach ($departments as $department)
@@ -59,7 +62,7 @@
                         </select>
                     </div>
                     <div data-user-filter-tab="students" @if ($activeUserTab !== 'students') hidden @endif>
-                        <label class="form-label small fw-bold text-uppercase mb-1" for="program-filter">View Program</label>
+                        <label class="visually-hidden" for="program-filter">View Program</label>
                         <select class="form-select" id="program-filter" name="program" data-submit-on-change>
                             <option value="">All Programs</option>
                             @foreach ($programs as $program)
@@ -74,7 +77,7 @@
                     </noscript>
                 </form>
 
-                <div class="d-flex align-items-center gap-2">
+                <div class="record-toolbar-actions">
                     <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#createInstructorModal" data-bs-toggle="modal" type="button">
                         <span class="material-symbols-outlined fs-5">add</span>
                         Instructor

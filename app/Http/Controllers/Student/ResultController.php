@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Support\RecordSearch;
+
 use App\Models\PassingRateSetting;
 use App\Models\Submission;
 use App\Support\AssessmentScoring;
@@ -37,11 +39,16 @@ class ResultController extends BaseController
             $selectedClassKey = '';
         }
 
+        $matchingResults = $allResults;
+        if (RecordSearch::term() !== '') {
+            $matchingAssessments = RecordSearch::filter($allResults->pluck('publish_assessment')->filter(), RecordSearch::PUBLISHED_FIELDS);
+            $matchingResults = $allResults->whereIn('publish_assessment.publish_assessment_id', $matchingAssessments->pluck('publish_assessment_id'))->values();
+        }
         $results = $selectedClassKey !== ''
-            ? $allResults
+            ? $matchingResults
                 ->where('class_key', $selectedClassKey)
                 ->values()
-            : $allResults;
+            : $matchingResults;
         $releasedResults = $results->where('score_visible', true);
 
         return view('student.results.index', $this->sharedData($user, 'results') + [

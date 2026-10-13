@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Support\RecordSearch;
+
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Student\Helpers\StudentLayoutHelper;
 use App\Models\AcademicClass;
@@ -97,6 +99,7 @@ class BaseController extends Controller
             ? $this->classesForStudent($studentProfile)
                 ->with(['subject', 'instructorProfile.user'])
                 ->whereNull('classes.archived_at')
+                ->tap(fn ($query) => RecordSearch::apply($query, RecordSearch::CLASS_FIELDS))
                 ->latest('classes.class_id')
                 ->get()
             : collect();
@@ -104,12 +107,14 @@ class BaseController extends Controller
             ? $this->classesForStudent($studentProfile)
                 ->with(['subject', 'instructorProfile.user'])
                 ->whereNotNull('classes.archived_at')
+                ->tap(fn ($query) => RecordSearch::apply($query, RecordSearch::CLASS_FIELDS))
                 ->latest('classes.archived_at')
                 ->get()
             : collect();
         $joinRequests = $studentProfile
             ? $studentProfile->classDetails()
                 ->where('entry_method', ClassDetail::METHOD_JOIN_CODE)
+                ->tap(fn ($query) => RecordSearch::apply($query, ['class.section_name', 'class.subject.subject_code', 'class.subject.subject_name']))
                 ->with(['class.subject', 'class.instructorProfile.user'])
                 ->latest('updated_at')
                 ->get()
@@ -136,6 +141,7 @@ class BaseController extends Controller
                 ->with(['assessment.subject', 'assessment.items.choices', 'classDetail.class.instructorProfile.user'])
                 ->whereHas('classDetail', fn ($query) => $query->whereIn('class_id', $classIds))
                 ->where('publish_status', PublishAssessment::STATUS_PUBLISHED)
+                ->tap(fn ($query) => RecordSearch::apply($query, RecordSearch::PUBLISHED_FIELDS))
                 ->latest('publish_assessment_id')
                 ->get()
                 ->map(function (PublishAssessment $publishAssessment): PublishAssessment {

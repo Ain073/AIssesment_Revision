@@ -1,5 +1,5 @@
     {{-- Add Dean designation popup (modal-lg with college filter & search) --}}
-    <div class="modal fade" id="grantAdminDeanModal" tabindex="-1" aria-labelledby="grantAdminDeanModalLabel" aria-hidden="true">
+    <div class="modal fade" id="grantAdminDeanModal" tabindex="-1" aria-labelledby="grantAdminDeanModalLabel" aria-hidden="true" @if ($errors->any() && old('form_mode') === 'grant_admin_dean') data-designation-auto-open @endif>
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
@@ -13,7 +13,7 @@
                     {{-- Filter by College & Small Search Bar --}}
                     <div class="row g-2 mb-3 align-items-center">
                         <div class="col-md-6 col-12">
-                            <select class="form-select form-select-sm" id="deanCollegeFilter" onchange="filterDeanList()">
+                            <select class="form-select form-select-sm" id="deanCollegeFilter" data-designation-filter="dean" aria-label="Filter teachers by college">
                                 <option value="">All Colleges</option>
                                 @foreach ($colleges as $college)
                                     <option value="{{ $college->college_id }}">{{ $college->college_name }}</option>
@@ -25,7 +25,7 @@
                                 <span class="input-group-text bg-white border-end-0 text-secondary">
                                     <span class="material-symbols-outlined fs-6">search</span>
                                 </span>
-                                <input class="form-control form-control-sm border-start-0" id="searchDeanFacultyInput" placeholder="Search by name, email, department..." type="text" oninput="filterDeanList()">
+                                <input class="form-control form-control-sm border-start-0" id="searchDeanFacultyInput" placeholder="Search by name, email, department..." aria-label="Search eligible teachers" type="text" data-designation-search="dean">
                             </div>
                         </div>
                     </div>
@@ -38,10 +38,11 @@
                                 $deptName = $user->instructorProfile?->department?->dept_name ?? 'No department';
                                 $displayName = $user->displayName();
                             @endphp
-                            <div class="designation-picker-card dean-picker-item" role="button" tabindex="0"
-                                data-college-id="{{ $collegeId }}"
+                            <button class="designation-picker-card dean-picker-item" type="button" data-designation-candidate="dean"
+                                data-scope-id="{{ $collegeId }}"
                                 data-search="{{ strtolower($displayName . ' ' . $user->email . ' ' . $collegeName . ' ' . $deptName) }}"
-                                onclick="openDeanConfirmDialog('{{ $user->id }}', '{{ addslashes($displayName) }}', '{{ addslashes($collegeName) }}', '{{ addslashes($deptName) }}', '{{ addslashes($user->email) }}')">
+                                data-user-id="{{ $user->id }}" data-name="{{ $displayName }}" data-email="{{ $user->email }}"
+                                data-unit="{{ $collegeName }}" data-department="{{ $deptName }}" data-designation-action="{{ route('super-admin.roles.grant') }}">
                                 <span class="avatar">{{ strtoupper(substr($displayName, 0, 1)) }}</span>
                                 <span class="designation-picker-info">
                                     <span class="fw-bold d-block" style="color: var(--psu-navy);">{{ $displayName }}</span>
@@ -53,7 +54,7 @@
                                 <span class="designation-picker-action" aria-hidden="true" title="Designate as Dean">
                                     <span class="material-symbols-outlined fs-5">add</span>
                                 </span>
-                            </div>
+                            </button>
                         @empty
                             <div class="text-center py-4">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">person_off</span></div>
@@ -72,7 +73,7 @@
     </div>
 
     {{-- Styled Confirmation Modal for Dean Designation --}}
-    <div class="modal fade" id="deanConfirmModal" tabindex="-1" aria-labelledby="deanConfirmModalLabel" aria-hidden="true" style="z-index: 1065;">
+    <div class="modal fade" id="deanConfirmModal" tabindex="-1" aria-labelledby="deanConfirmModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
             <form action="{{ route('super-admin.roles.grant') }}" method="POST" class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                 @csrf

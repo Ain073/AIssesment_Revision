@@ -22,7 +22,8 @@
 @section('content')
 
     {{-- Filter toolbar --}}
-    <form id="auditFilterForm" method="GET" action="{{ route('super-admin.audit-logs') }}">
+    <form id="auditFilterForm" data-record-search-form method="GET" action="{{ route('super-admin.audit-logs') }}" data-ajax-page-form data-preserve-page-state="true">
+
         <div class="d-flex flex-wrap align-items-end gap-2 mb-3">
 
             {{-- Search --}}
@@ -35,7 +36,7 @@
                         placeholder="Search actor or description…"
                         type="search"
                         value="{{ request('search') }}"
-                        autocomplete="off"
+                        autocomplete="off" maxlength="100" data-record-search-input
                     >
                     <button class="btn btn-psu d-inline-flex align-items-center justify-content-center px-3" type="submit" title="Search">
                         <span class="material-symbols-outlined fs-6">search</span>
@@ -44,7 +45,7 @@
             </div>
 
             {{-- Role --}}
-            <select class="form-select" id="auditRole" name="role" style="width: auto;" onchange="this.form.submit()">
+            <select class="form-select" id="auditRole" name="role" style="width: auto;" data-submit-on-change>
                 <option value="">All Roles</option>
                 @foreach ($roles as $rKey => $rLabel)
                     <option value="{{ $rKey }}" @selected(request('role') === $rKey)>
@@ -54,7 +55,7 @@
             </select>
 
             {{-- Feature --}}
-            <select class="form-select" id="auditModule" name="module" style="width: auto;" onchange="this.form.submit()">
+            <select class="form-select" id="auditModule" name="module" style="width: auto;" data-submit-on-change>
                 <option value="">All Features</option>
                 @foreach ($modules as $m)
                     <option value="{{ $m }}" @selected(request('module') === $m)>{{ $m }}</option>
@@ -62,7 +63,7 @@
             </select>
 
             {{-- Action --}}
-            <select class="form-select" id="auditAction" name="action" style="width: auto;" onchange="this.form.submit()">
+            <select class="form-select" id="auditAction" name="action" style="width: auto;" data-submit-on-change>
                 <option value="">All Actions</option>
                 @foreach ($actions as $a)
                     <option value="{{ $a }}" @selected(request('action') === $a)>{{ ucwords(strtolower(str_replace('_', ' ', $a))) }}</option>
@@ -71,9 +72,9 @@
 
             {{-- Date range --}}
             <div class="d-flex align-items-center gap-1">
-                <input class="form-control" id="auditFrom" name="from" type="date" value="{{ request('from') }}" title="From" style="width: 148px;" onchange="this.form.submit()">
+                <input class="form-control" id="auditFrom" name="from" type="date" value="{{ request('from') }}" title="From" style="width: 148px;" data-submit-on-change>
                 <span class="text-secondary small">–</span>
-                <input class="form-control" id="auditTo"   name="to"   type="date" value="{{ request('to') }}"   title="To"   style="width: 148px;" onchange="this.form.submit()">
+                <input class="form-control" id="auditTo"   name="to"   type="date" value="{{ request('to') }}"   title="To"   style="width: 148px;" data-submit-on-change>
             </div>
 
             @if (request()->hasAny(['search', 'role', 'module', 'action', 'from', 'to']))
@@ -84,6 +85,7 @@
             @endif
 
         </div>
+        <div class="small text-secondary mt-2" data-record-search-status role="status" aria-live="polite"></div>
     </form>
 
     {{-- Audit Log Directory Card --}}

@@ -132,7 +132,7 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold text-uppercase small" for="edit_department_college_id_{{ $department->department_id }}">College</label>
                         <select class="form-select form-select-lg" id="edit_department_college_id_{{ $department->department_id }}" name="college_id" required>
-                            @foreach ($colleges as $college)
+                            @foreach ($collegeOptions as $college)
                                 <option value="{{ $college->college_id }}" @selected(old('college_id', $department->college_id) == $college->college_id)>{{ $college->college_name }}</option>
                             @endforeach
                         </select>

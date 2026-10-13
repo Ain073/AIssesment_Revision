@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
+use App\Support\RecordSearch;
+
 use App\Http\Controllers\Controller;
 use App\Models\College;
 use App\Models\DesignationDetail;
@@ -39,10 +41,11 @@ class RoleController extends Controller
             ->orderBy('name')
             ->get();
 
-        $adminDeans = $teachers->filter->hasRole('admin_dean')->values();
+        $adminDeans = RecordSearch::filter($teachers->filter->hasRole('admin_dean')->values(), [...RecordSearch::USER_FIELDS, 'instructorProfile.department.dept_name']);
 
         $designationHistory = DesignationDetail::with(['instructor.user', 'college', 'department', 'designatedByUser'])
             ->where('designation_id', 1) // Dean
+            ->tap(fn ($query) => RecordSearch::apply($query, ['instructor.user.name', 'instructor.user.first_name', 'instructor.user.last_name', 'instructor.employee_number', 'department.dept_name', 'college.college_name']))
             ->orderByDesc('created_at')
             ->get();
 

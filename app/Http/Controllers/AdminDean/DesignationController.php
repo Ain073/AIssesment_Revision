@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\AdminDean;
 
+use App\Support\RecordSearch;
+
 use App\Models\Department;
 use App\Models\DesignationDetail;
 use App\Models\Role;
@@ -42,10 +44,12 @@ class DesignationController extends BaseController
             ->unique()
             ->values();
         $teachers = $this->scopedTeachers($selectedDepartmentId);
+        $matchingTeachers = RecordSearch::filter($teachers, [...RecordSearch::USER_FIELDS, 'instructorProfile.department.dept_name']);
 
         $designationHistory = DesignationDetail::with(['instructor.user', 'department', 'designatedByUser'])
             ->where('designation_id', 2) // Department Chair
-            ->when($scopedCollege, fn ($query) => $query->where('college_id', $scopedCollege->college_id))
+            ->tap(fn ($query) => RecordSearch::apply($query, ['instructor.user.name', 'instructor.user.first_name', 'instructor.user.last_name', 'instructor.employee_number', 'department.dept_name']))
+            ->when($scopedCollege, fn ($query) => $query->where('college_id', $scopedCollege->college_id), fn ($query) => $query->whereRaw('1 = 0'))
             ->orderByDesc('created_at')
             ->get();
 
@@ -53,7 +57,7 @@ class DesignationController extends BaseController
             'scopedCollege' => $scopedCollege,
             'departments' => $departments,
             'selectedDepartmentId' => $selectedDepartmentId,
-            'departmentChairs' => $teachers
+            'departmentChairs' => $matchingTeachers
                 ->filter(fn (User $teacher) => $teacher->hasRole('department_chair'))
                 ->values(),
             'availableDepartmentChairTeachers' => $teachers

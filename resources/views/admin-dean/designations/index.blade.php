@@ -83,6 +83,7 @@
     </style>
 @endpush
 
+@section('record-search-toolbar', 'true')
 @section('content')
     @if (session('status'))
         <div class="alert alert-success">{{ session('status') }}</div>
@@ -98,10 +99,12 @@
         </div>
     @endif
 
-    <div class="designation-toolbar">
-        <form action="{{ route('admin-dean.designations') }}" class="designation-filter" method="GET" data-ajax-page-form>
-            <label class="form-label fw-bold text-uppercase small" for="departmentDesignationFilter">Department</label>
-            <select class="form-select" id="departmentDesignationFilter" name="department_id" onchange="this.form.submit()">
+    <div class="record-toolbar">
+        @include('partials.record-search', ['inToolbar' => true])
+        <form action="{{ route('admin-dean.designations') }}" class="record-filter-form" method="GET" data-ajax-page-form data-preserve-page-state="true">
+            <input type="hidden" name="search" value="{{ \App\Support\RecordSearch::term() }}">
+            <label class="visually-hidden" for="departmentDesignationFilter">Department</label>
+            <select class="form-select" id="departmentDesignationFilter" name="department_id" data-submit-on-change>
                 <option value="">All departments</option>
                 @foreach ($departments as $department)
                     <option value="{{ $department->department_id }}" @selected((int) $selectedDepartmentId === (int) $department->department_id)>
@@ -111,7 +114,7 @@
             </select>
         </form>
 
-        <div class="designation-action-row d-flex align-items-center gap-2 mb-0">
+        <div class="record-toolbar-actions">
             <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" data-bs-target="#chairHistoryModal" data-bs-toggle="modal" type="button">
                 <span class="material-symbols-outlined fs-5">history</span>
                 Designation History
@@ -280,7 +283,7 @@
                     {{-- Filter by Department & Small Search Bar --}}
                     <div class="row g-2 mb-3 align-items-center">
                         <div class="col-md-6 col-12">
-                            <select class="form-select form-select-sm" id="chairDepartmentFilter" onchange="filterSimpleChairList()">
+                            <select class="form-select form-select-sm" id="chairDepartmentFilter" data-designation-filter="chair" aria-label="Filter teachers by department">
                                 <option value="">All Departments</option>
                                 @foreach ($departments as $department)
                                     <option value="{{ $department->department_id }}" @selected((int) $selectedDepartmentId === (int) $department->department_id)>
@@ -294,7 +297,7 @@
                                 <span class="input-group-text bg-white border-end-0 text-secondary">
                                     <span class="material-symbols-outlined fs-6">search</span>
                                 </span>
-                                <input class="form-control form-control-sm border-start-0" id="searchChairFacultyInput" placeholder="Search teacher by name, email..." type="text" oninput="filterSimpleChairList()">
+                                <input class="form-control form-control-sm border-start-0" id="searchChairFacultyInput" placeholder="Search teacher by name, email..." aria-label="Search eligible teachers" type="text" data-designation-search="chair">
                             </div>
                         </div>
                     </div>
@@ -306,10 +309,11 @@
                                 $deptName = $teacher->instructorProfile?->department?->dept_name ?? 'Not assigned';
                                 $displayName = $teacher->displayName();
                             @endphp
-                            <div class="designation-picker-card chair-picker-item" role="button" tabindex="0"
-                                data-dept-id="{{ $deptId }}"
+                            <button class="designation-picker-card chair-picker-item" type="button" data-designation-candidate="chair"
+                                data-scope-id="{{ $deptId }}"
                                 data-search="{{ strtolower($displayName . ' ' . $teacher->email . ' ' . $deptName) }}"
-                                onclick="openChairConfirmDialog('{{ $teacher->id }}', '{{ addslashes($displayName) }}', '{{ addslashes($deptName) }}', '{{ addslashes($teacher->email) }}', '{{ route('admin-dean.teachers.department-chair.grant', $teacher) }}')">
+                                data-user-id="{{ $teacher->id }}" data-name="{{ $displayName }}" data-email="{{ $teacher->email }}"
+                                data-unit="{{ $deptName }}" data-designation-action="{{ route('admin-dean.teachers.department-chair.grant', $teacher) }}">
                                 <span class="avatar">{{ strtoupper(substr($displayName, 0, 1)) }}</span>
                                 <span class="designation-picker-info">
                                     <span class="fw-bold d-block" style="color: var(--psu-navy);">{{ $displayName }}</span>
@@ -321,7 +325,7 @@
                                 <span class="designation-picker-action" aria-hidden="true" title="Designate as Chair">
                                     <span class="material-symbols-outlined fs-5">add</span>
                                 </span>
-                            </div>
+                            </button>
                         @empty
                             <div class="text-center py-4">
                                 <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">person_off</span></div>
@@ -340,7 +344,7 @@
     </div>
 
     {{-- Styled Confirmation Modal for Chair Designation --}}
-    <div class="modal fade" id="chairConfirmModal" tabindex="-1" aria-labelledby="chairConfirmModalLabel" aria-hidden="true" style="z-index: 1065;">
+    <div class="modal fade" id="chairConfirmModal" tabindex="-1" aria-labelledby="chairConfirmModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
             <form id="chairConfirmForm" action="" method="POST" class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                 @csrf
@@ -454,48 +458,3 @@
         </div>
     @endforeach
 @endsection
-
-@push('scripts')
-<script>
-    function filterSimpleChairList() {
-        const deptId = document.getElementById('chairDepartmentFilter')?.value || '';
-        const q = (document.getElementById('searchChairFacultyInput')?.value || '').toLowerCase().trim();
-        const items = document.querySelectorAll('.chair-picker-item');
-        let count = 0;
-
-        items.forEach(item => {
-            const itemDeptId = item.getAttribute('data-dept-id') || '';
-            const searchData = item.getAttribute('data-search') || '';
-
-            const matchesDept = !deptId || itemDeptId === deptId;
-            const matchesQuery = !q || searchData.includes(q);
-
-            if (matchesDept && matchesQuery) {
-                item.classList.remove('d-none');
-                count++;
-            } else {
-                item.classList.add('d-none');
-            }
-        });
-
-        const emptyMsg = document.getElementById('noChairFacultyFound');
-        if (emptyMsg) {
-            emptyMsg.classList.toggle('d-none', count > 0 || items.length === 0);
-        }
-    }
-
-    function openChairConfirmDialog(teacherId, teacherName, deptName, teacherEmail, formAction) {
-        document.getElementById('chairConfirmForm').action = formAction;
-        document.getElementById('chairConfirmName').textContent = teacherName;
-        document.getElementById('chairConfirmDept').textContent = deptName;
-        document.getElementById('chairConfirmAvatar').textContent = (teacherName.charAt(0) || 'U').toUpperCase();
-        const emailEl = document.getElementById('chairConfirmEmail');
-        if (emailEl) {
-            emailEl.textContent = teacherEmail || '';
-        }
-
-        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('chairConfirmModal'));
-        modal.show();
-    }
-</script>
-@endpush

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Instructor;
 
+use App\Support\RecordSearch;
+
 use App\Models\Report;
 use App\Services\AuditLogger;
 use App\Services\ReportAiService;
@@ -36,6 +38,8 @@ class ReportController extends BaseController
                 ->filter(fn ($publishAssessment): bool => (int) $publishAssessment->class?->class_id === $selectedClassId)
                 ->values();
         }
+
+        $completedAssessments = RecordSearch::filter($completedAssessments, RecordSearch::PUBLISHED_FIELDS);
 
         $formativeAssessments = $completedAssessments->where('assessment.report_category', Report::TYPE_FORMATIVE)->values();
         $summativeAssessments = $completedAssessments->where('assessment.report_category', Report::TYPE_SUMMATIVE)->values();

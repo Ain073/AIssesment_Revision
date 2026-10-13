@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\DepartmentChair;
 
+use App\Support\RecordSearch;
+
 use App\Models\Program;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -126,6 +128,7 @@ class ProgramController extends BaseController
                 ->with('department.college')
                 ->withCount(['studentProfiles', 'classes'])
                 ->where('department_id', $departmentId)
+                ->tap(fn ($query) => RecordSearch::apply($query, RecordSearch::PROGRAM_FIELDS))
                 ->orderBy('program_name')
                 ->get()
             : collect();

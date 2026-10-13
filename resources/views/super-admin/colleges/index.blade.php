@@ -20,6 +20,7 @@
 
 @section('title', 'Colleges & Departments | AIssessment Admin')
 @section('header', 'Colleges & Departments')
+@section('record-search-toolbar', 'true')
 
 
 @section('content')
@@ -37,15 +38,18 @@
             @endif
 
             {{-- Page actions --}}
-            <div class="d-flex flex-wrap justify-content-end gap-2 mb-4 super-admin-toolbar">
-                <button class="btn btn-outline-psu d-flex align-items-center gap-2" data-bs-target="#departmentModal" data-bs-toggle="modal" type="button">
-                    <span class="material-symbols-outlined fs-5">add</span>
-                    Department
-                </button>
-                <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#collegeModal" data-bs-toggle="modal" type="button">
-                    <span class="material-symbols-outlined fs-5">add</span>
-                    College
-                </button>
+            <div class="record-toolbar">
+                @include('partials.record-search', ['inToolbar' => true])
+                <div class="record-toolbar-actions">
+                    <button class="btn btn-outline-psu d-flex align-items-center gap-2" data-bs-target="#departmentModal" data-bs-toggle="modal" type="button">
+                        <span class="material-symbols-outlined fs-5">add</span>
+                        Department
+                    </button>
+                    <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#collegeModal" data-bs-toggle="modal" type="button">
+                        <span class="material-symbols-outlined fs-5">add</span>
+                        College
+                    </button>
+                </div>
             </div>
 
             <div class="table-switch-tabs" id="directoryTabs" role="tablist">

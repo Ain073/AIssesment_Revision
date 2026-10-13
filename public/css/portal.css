@@ -603,6 +603,9 @@ h1, h2, h3, .brand-text {
 
 .designation-picker-card {
     width: 100%;
+    text-align: left;
+    font: inherit;
+    width: 100%;
     display: flex;
     align-items: center;
     gap: 0.9rem;
@@ -2204,7 +2207,107 @@ h1, h2, h3, .brand-text {
     }
 }
 
+.record-search-form {
+    width: 100%;
+    max-width: 24rem;
+    min-width: 0;
+}
+
+.record-search-field {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.record-search-field .form-control {
+    padding-right: 2.5rem;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.record-search-field input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+}
+
+.record-search-field .record-search-clear {
+    position: absolute;
+    top: 50%;
+    right: 0.35rem;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    color: var(--psu-muted);
+}
+
+.record-search-clear:hover,
+.record-search-clear:focus-visible {
+    color: var(--psu-navy);
+    background: var(--psu-surface, #eff4ff);
+}
+
+.record-search-clear[hidden],
+.record-search-status:empty {
+    display: none;
+}
+
+.record-search-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+}
+
+.record-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.record-toolbar > .record-search-form {
+    flex: 0 1 24rem;
+    margin: 0;
+}
+
+.record-filter-form {
+    flex: 0 1 22rem;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+}
+
+.record-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+@media (max-width: 767.98px) {
+    .record-search-form {
+        max-width: none;
+    }
+
+    .record-toolbar > .record-search-form,
+    .record-toolbar > .record-filter-form {
+        flex-basis: 100%;
+    }
+
+    .record-toolbar-actions {
+        margin-left: 0;
+    }
+}
+
 @media print {
+    .record-search-form,
     .portal-toast-stack,
     .portal-toast,
     [data-portal-toast-stack],

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Instructor\Helpers;
 
+use App\Support\RecordSearch;
+
 use App\Models\AcademicClass;
 use App\Models\InstructorProfile;
 use App\Models\Program;
@@ -23,6 +25,7 @@ trait InstructorClassHelper
         $activeClasses = $baseClassesQuery
             ? (clone $baseClassesQuery)
                 ->whereNull('classes.archived_at')
+                ->tap(fn ($query) => RecordSearch::apply($query, RecordSearch::CLASS_FIELDS))
                 ->latest('classes.class_id')
                 ->get()
                 ->each(fn (AcademicClass $class) => $class->applyEnrolledStudentsCount())
@@ -30,6 +33,7 @@ trait InstructorClassHelper
         $archivedClasses = $baseClassesQuery
             ? (clone $baseClassesQuery)
                 ->whereNotNull('classes.archived_at')
+                ->tap(fn ($query) => RecordSearch::apply($query, RecordSearch::CLASS_FIELDS))
                 ->latest('classes.archived_at')
                 ->get()
                 ->each(fn (AcademicClass $class) => $class->applyEnrolledStudentsCount())
@@ -42,7 +46,12 @@ trait InstructorClassHelper
             ? (clone $baseClassesQuery)->whereNotNull('classes.archived_at')->count()
             : 0;
         $activeSubjectIds = $this->activeSubjectIds($instructorProfile);
-        $existingSubjectIds = $activeClasses->merge($archivedClasses)->pluck('subject_id')->filter();
+        $existingSubjectIds = $baseClassesQuery
+            ? (clone $baseClassesQuery)->pluck('class_details.subject_id')->filter()
+            : collect();
+        $existingProgramIds = $baseClassesQuery
+            ? (clone $baseClassesQuery)->pluck('classes.program_id')->filter()
+            : collect();
         $activeSubjects = Subject::query()
             ->with(['department'])
             ->whereIn('subject_id', $activeSubjectIds)
@@ -59,7 +68,7 @@ trait InstructorClassHelper
         $programs = Program::query()
             ->with('department.college')
             ->whereIn('program_id', $activePrograms->pluck('program_id')
-                ->merge($activeClasses->merge($archivedClasses)->pluck('program_id')->filter())
+                ->merge($existingProgramIds)
                 ->unique())
             ->orderBy('program_name')
             ->get();

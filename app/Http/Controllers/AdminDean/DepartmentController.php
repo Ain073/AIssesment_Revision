@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\AdminDean;
 
+use App\Support\RecordSearch;
+
 use App\Models\Department;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,6 +22,7 @@ class DepartmentController extends BaseController
 
         return view('admin-dean.departments.index', $this->sharedData('departments') + [
             'departments' => Department::with('college')
+                ->tap(fn ($query) => RecordSearch::apply($query, ['dept_name']))
                 ->when($scopedCollegeId, fn ($query) => $query->where('college_id', $scopedCollegeId), fn ($query) => $query->whereRaw('1 = 0'))
                 ->withCount('instructorProfiles')
                 ->orderBy('dept_name')

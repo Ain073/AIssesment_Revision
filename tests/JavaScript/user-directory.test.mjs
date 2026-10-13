@@ -28,6 +28,7 @@ const createPageContext = () => {
             tables = [{ scrollLeft: 0, scrollTop: 0 }, { scrollLeft: 0, scrollTop: 0 }];
         },
         get innerHTML() { return this.content; },
+        querySelector() { return null; },
     };
     const sidebar = { innerHTML: 'current sidebar' };
     const topbar = { innerHTML: 'current search field', searchValue: 'Person' };
@@ -46,7 +47,7 @@ const createPageContext = () => {
         initializeUserDirectory() { this.directoryInitialized = true; },
     };
     const context = {
-        window, URL, document: { body: {}, title: 'Users', querySelector: (selector) => elements[selector], querySelectorAll: () => tables },
+        window, URL, document: { body: {}, title: 'Users', querySelector: (selector) => elements[selector], querySelectorAll: (selector) => selector.includes('table-responsive') ? tables : [] },
         fetch: async () => ({ ok: true, text: async () => 'new rows' }),
         DOMParser: class {
             parseFromString(html) {
@@ -87,6 +88,43 @@ test('failed refresh keeps the current page instead of navigating away', async (
     context.fetch = async () => { throw new Error('offline'); };
     assert.equal(await context.loadPortalPage(url, false, true), false);
     assert.equal(container.innerHTML, 'original rows');
+});
+
+test('search refresh restores input focus and caret after replacing the feature list', async () => {
+    const { context, window, container } = createPageContext();
+    const input = {
+        value: '',
+        selectionStart: 2, selectionEnd: 5,
+        focus(options) { this.focusOptions = options; },
+        setSelectionRange(start, end) { this.selection = [start, end]; },
+    };
+    const form = { querySelector: () => input, querySelectorAll: () => [] };
+    const fetchedInput = { replaceWith(received) { assert.equal(received, input); } };
+    let calls = 0;
+    container.querySelector = () => ++calls === 1 ? form : fetchedInput;
+    context.document.activeElement = input;
+    assert.equal(await context.loadPortalPage(window.location.href, false, true), true);
+    assert.equal(input.focusOptions.preventScroll, true);
+    assert.deepEqual(input.selection, [2, 5]);
+});
+
+test('a search response cannot replace results after more text is typed during debounce', async () => {
+    const { context, window, container } = createPageContext();
+    const input = { value: 'new search' };
+    container.querySelector = () => ({ querySelector: () => input });
+    assert.equal(await context.loadPortalPage(`${window.location.href}&search=old`, true, true), true);
+    assert.equal(container.innerHTML, 'original rows');
+});
+
+test('a tab changed while search is pending remains selected when results arrive', async () => {
+    const { context, window } = createPageContext();
+    let resolveSearch;
+    context.fetch = () => new Promise((resolve) => { resolveSearch = resolve; });
+    const pending = context.loadPortalPage(window.location.href, true, true);
+    window.location.href = window.location.href.replace('tab=students', 'tab=teachers');
+    resolveSearch({ ok: true, text: async () => 'searched rows' });
+    await pending;
+    assert.equal(window.selectedTab, 'teachers');
 });
 
 test('normal navigation still replaces page chrome and resets scroll', async () => {
@@ -172,6 +210,7 @@ const createFormContext = () => {
     const refreshCalls = [];
     const context = {
         document: { addEventListener(_name, handler) { context.submit = handler; } },
+        URL,
         window: { location: { href: 'http://localhost/super-admin/users?tab=students&program=2' } },
         fetch: async () => ({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ message: 'Saved.' }) }),
         FormData: class {},
