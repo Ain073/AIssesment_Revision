@@ -22,4 +22,6 @@ RUN npm run build
 
 EXPOSE 10000
 
-CMD php artisan migrate --force && php artisan db:seed --force && (php artisan storage:link || true) && php artisan optimize && php artisan serve --host=0.0.0.0 --port=${PORT:-10000}
+# Run php artisan db:seed --force manually when setting up a new database.
+# Regular startups use the existing database without running seeders.
+CMD php artisan migrate --force && (php artisan storage:link || true) && php artisan optimize && php artisan serve --host=0.0.0.0 --port=${PORT:-10000}

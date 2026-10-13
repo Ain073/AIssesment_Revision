@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\StudentAccountImportService;
 use App\Services\UserAccountService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\MessageBag;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -251,12 +253,10 @@ class UserController extends Controller
         return $redirect;
     }
 
-    public function update(Request $request, User $user, UserAccountService $accounts): RedirectResponse
+    public function update(Request $request, User $user, UserAccountService $accounts): JsonResponse|RedirectResponse
     {
         if ($user->hasRole('super_admin')) {
-            return redirect()
-                ->route('super-admin.users')
-                ->withErrors(new MessageBag(['user' => 'Admin account cannot be edited here.']));
+            throw ValidationException::withMessages(['user' => 'Admin account cannot be edited here.']);
         }
 
         $validated = $request->validate([
@@ -304,12 +304,9 @@ class UserController extends Controller
             ->values();
 
         if ($selectedManagedRoles->contains('admin_dean') && $user->hasRole('department_chair')) {
-            return redirect()
-                ->route('super-admin.users')
-                ->withInput()
-                ->withErrors(new MessageBag([
-                    'authorizations' => 'This teacher already has a Department Chair designation. Ask the Dean to remove it before assigning Dean designation.',
-                ]));
+            throw ValidationException::withMessages([
+                'authorizations' => 'This teacher already has a Department Chair designation. Ask the Dean to remove it before assigning Dean designation.',
+            ]);
         }
 
         $managedRoles = $selectedManagedRoles;
@@ -323,12 +320,9 @@ class UserController extends Controller
             && $managedRoles->contains('admin_dean')
             && $this->collegeHasDeanForDepartment((int) $validated['department_id'], $user->id)
         ) {
-            return redirect()
-                ->route('super-admin.users')
-                ->withInput()
-                ->withErrors(new MessageBag([
-                    'authorizations' => 'This college already has a Dean. Remove the current designation first.',
-                ]));
+            throw ValidationException::withMessages([
+                'authorizations' => 'This college already has a Dean. Remove the current designation first.',
+            ]);
         }
 
         if (
@@ -336,12 +330,9 @@ class UserController extends Controller
             && $managedRoles->contains('department_chair')
             && $this->departmentHasChair((int) $validated['department_id'], $user->id)
         ) {
-            return redirect()
-                ->route('super-admin.users')
-                ->withInput()
-                ->withErrors(new MessageBag([
-                    'authorizations' => 'This department already has a Department Chair. Remove the current designation first.',
-                ]));
+            throw ValidationException::withMessages([
+                'authorizations' => 'This department already has a Department Chair. Remove the current designation first.',
+            ]);
         }
 
         DB::transaction(function () use ($user, $validated, $accounts, $managedRoles) {
@@ -363,8 +354,12 @@ class UserController extends Controller
 
         AuditLogger::log('UPDATE', 'Users', "Updated {$validated['base_role']} account details (Status: {$validated['status']})", $user);
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'User account updated successfully.']);
+        }
+
         return redirect()
-            ->route('super-admin.users')
+            ->back(fallback: route('super-admin.users'))
             ->with('status', 'User account updated successfully.');
     }
 

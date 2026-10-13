@@ -145,7 +145,7 @@
 
         <div class="modal fade" id="editUserModal{{ $user->id }}" tabindex="-1" aria-labelledby="editUserModalLabel{{ $user->id }}" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered">
-                <form action="{{ route('super-admin.users.update', $user) }}" class="modal-content" method="POST">
+                <form action="{{ route('super-admin.users.update', $user) }}" class="modal-content" method="POST" data-ajax-form data-reload-page-on-success="true" data-preserve-page-state="true">
                     @csrf
                     @method('PUT')
                     <input name="form_mode" type="hidden" value="edit">

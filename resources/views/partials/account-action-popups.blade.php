@@ -95,7 +95,7 @@
 
     <div class="modal fade" id="editAccountModal{{ $accountUser->id }}" tabindex="-1" aria-labelledby="editAccountModalLabel{{ $accountUser->id }}" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
-            <form action="{{ route($accountRoutePrefix.'.users.update', $accountUser) }}" class="modal-content" method="POST">
+            <form action="{{ route($accountRoutePrefix.'.users.update', $accountUser) }}" class="modal-content" method="POST" data-ajax-form data-reload-page-on-success="true" data-preserve-page-state="true">
                 @csrf
                 @method('PUT')
                 <input name="form_mode" type="hidden" value="edit">

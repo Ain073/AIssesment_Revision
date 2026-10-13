@@ -4,6 +4,7 @@ namespace App\Http\Controllers\DepartmentChair;
 
 use App\Models\User;
 use App\Services\UserAccountService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -84,7 +85,7 @@ class UserController extends BaseController
         return $redirect;
     }
 
-    public function update(Request $request, User $user, UserAccountService $accounts): RedirectResponse
+    public function update(Request $request, User $user, UserAccountService $accounts): JsonResponse|RedirectResponse
     {
         $actor = $this->currentUser();
         $scopedDepartment = $this->scopedDepartment($actor);
@@ -156,6 +157,10 @@ class UserController extends BaseController
                 'program_id' => $validated['program_id'] ?? null,
             ]);
         });
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'User account updated successfully.']);
+        }
 
         return redirect()
             ->back()

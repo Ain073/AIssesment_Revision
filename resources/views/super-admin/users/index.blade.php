@@ -45,11 +45,11 @@
 
             {{-- Filters and actions --}}
             <div class="program-toolbar super-admin-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
-                <form action="{{ route('super-admin.users') }}" method="GET" id="userFilterForm">
+                <form action="{{ route('super-admin.users') }}" method="GET" id="userFilterForm" data-ajax-page-form data-preserve-page-state="true">
                     <input type="hidden" name="tab" id="activeTabInput" value="{{ $activeUserTab }}">
                     <div data-user-filter-tab="teachers" @if ($activeUserTab !== 'teachers') hidden @endif>
                         <label class="form-label small fw-bold text-uppercase mb-1" for="department-filter">View Department</label>
-                        <select class="form-select department-filter-select" id="department-filter" name="department" onchange="this.form.submit()">
+                        <select class="form-select department-filter-select" id="department-filter" name="department" data-submit-on-change>
                             <option value="">All Departments</option>
                             @foreach ($departments as $department)
                                 <option value="{{ $department->public_id ?? $department->department_id }}" @selected($selectedDepartmentKey === ($department->public_id ?? (string) $department->department_id))>
@@ -60,7 +60,7 @@
                     </div>
                     <div data-user-filter-tab="students" @if ($activeUserTab !== 'students') hidden @endif>
                         <label class="form-label small fw-bold text-uppercase mb-1" for="program-filter">View Program</label>
-                        <select class="form-select" id="program-filter" name="program" onchange="this.form.submit()">
+                        <select class="form-select" id="program-filter" name="program" data-submit-on-change>
                             <option value="">All Programs</option>
                             @foreach ($programs as $program)
                                 <option value="{{ $program->public_id ?? $program->program_id }}" @selected($selectedProgramKey === ($program->public_id ?? (string) $program->program_id))>

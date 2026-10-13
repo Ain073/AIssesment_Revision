@@ -159,6 +159,7 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ asset('js/user-directory.js') }}?v={{ filemtime(public_path('js/user-directory.js')) }}"></script>
     <script>
         window.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
@@ -566,6 +567,7 @@
 
             initPortalPollSections();
             window.initializeTableTabs?.();
+            window.initializeUserDirectory?.();
             window.initializeAssessmentFilters?.();
             window.initializeClassSectionSelects?.();
             window.initializeClassForms?.();
@@ -882,6 +884,7 @@
 
         initPortalPollSections();
         window.initializeTableTabs?.();
+        window.initializeUserDirectory?.();
         window.initializeAssessmentFilters?.();
         window.initializeClassSectionSelects?.();
         window.initializeClassForms?.();
@@ -1045,7 +1048,15 @@
 
         window.initializeDashboardPage();
 
-        const loadPortalPage = async (url, pushHistory = true) => {
+        let latestPortalPageRequest = 0;
+        const loadPortalPage = async (url, pushHistory = true, preserveState = false) => {
+            const requestId = ++latestPortalPageRequest;
+            const preserveCurrentPage = preserveState && new URL(url, window.location.href).pathname === window.location.pathname;
+            const scrollPosition = { x: window.scrollX, y: window.scrollY };
+            const tableScrollPositions = preserveCurrentPage
+                ? Array.from(document.querySelectorAll('.page-container .table-responsive'), (table) => ({ x: table.scrollLeft, y: table.scrollTop }))
+                : [];
+
             try {
                 cleanupBootstrapOverlays();
 
@@ -1057,11 +1068,13 @@
                 });
 
                 if (! response.ok) {
-                    window.location.href = url;
-                    return;
+                    throw new Error('Page refresh failed.');
                 }
 
                 const html = await response.text();
+                if (requestId !== latestPortalPageRequest) {
+                    return true;
+                }
                 const nextDocument = new DOMParser().parseFromString(html, 'text/html');
                 const nextContainer = nextDocument.querySelector('.page-container');
                 const nextSidebar = nextDocument.querySelector('.sidebar');
@@ -1071,26 +1084,30 @@
                 const currentTopbar = document.querySelector('.topbar');
 
                 if (! nextContainer || ! currentContainer) {
-                    window.location.href = url;
-                    return;
+                    throw new Error('Page content is unavailable.');
                 }
 
                 syncPageStyles(nextDocument);
                 document.body.className = nextDocument.body.className || '';
                 currentContainer.innerHTML = nextContainer.innerHTML;
 
-                if (nextSidebar && currentSidebar) {
+                if (! preserveCurrentPage && nextSidebar && currentSidebar) {
                     currentSidebar.innerHTML = nextSidebar.innerHTML;
                 }
 
-                if (nextTopbar && currentTopbar) {
+                if (! preserveCurrentPage && nextTopbar && currentTopbar) {
                     currentTopbar.innerHTML = nextTopbar.innerHTML;
                 }
 
                 document.title = nextDocument.title || document.title;
+                if (pushHistory) {
+                    window.history.pushState({ ajaxPage: true }, '', url);
+                }
+
                 window.portalPollSections = [];
                 initPortalPollSections();
                 window.initializeTableTabs?.();
+                window.initializeUserDirectory?.();
                 window.initializeAssessmentFilters?.();
                 window.initializeClassSectionSelects?.();
                 window.initializeClassForms?.();
@@ -1100,13 +1117,27 @@
                 movePageFlashAlertsToToast();
                 autoDismissPageInfoAlerts();
                 cleanupStaleBootstrapBackdrops();
-                window.scrollTo(0, 0);
-
-                if (pushHistory) {
-                    window.history.pushState({ ajaxPage: true }, '', url);
+                if (preserveCurrentPage) {
+                    document.querySelectorAll('.page-container .table-responsive').forEach((table, index) => {
+                        const position = tableScrollPositions[index];
+                        if (position) {
+                            table.scrollLeft = position.x;
+                            table.scrollTop = position.y;
+                        }
+                    });
+                    window.scrollTo(scrollPosition.x, scrollPosition.y);
+                } else {
+                    window.scrollTo(0, 0);
                 }
+                return true;
             } catch (error) {
-                window.location.href = url;
+                if (requestId !== latestPortalPageRequest) {
+                    return true;
+                }
+                if (! preserveCurrentPage) {
+                    window.location.href = url;
+                }
+                return false;
             }
         };
 
@@ -1152,7 +1183,11 @@
             });
 
             url.search = params.toString();
-            loadPortalPage(url.href);
+            loadPortalPage(url.href, true, form.dataset.preservePageState === 'true').then((loaded) => {
+                if (! loaded && form.dataset.preservePageState === 'true') {
+                    showPortalMessage('The list could not refresh. Please try again.', 'warning');
+                }
+            });
         });
 
         document.addEventListener('click', (event) => {
@@ -1275,6 +1310,11 @@
 
             event.preventDefault();
 
+            if (form.dataset.ajaxSubmitting === 'true') {
+                return;
+            }
+            form.dataset.ajaxSubmitting = 'true';
+
             const submitButtons = form.querySelectorAll('button[type="submit"]');
             const errorBox = form.querySelector('[data-ajax-errors]') || document.createElement('div');
 
@@ -1287,6 +1327,7 @@
             errorBox.classList.add('d-none');
             errorBox.textContent = '';
             submitButtons.forEach((button) => button.disabled = true);
+            let saved = false;
 
             try {
                 const response = await fetch(form.action, {
@@ -1306,10 +1347,16 @@
                 }
 
                 const contentType = response.headers.get('content-type') || '';
+                if (form.dataset.preservePageState === 'true' && ! contentType.includes('application/json')) {
+                    errorBox.textContent = 'Your session may have expired. Refresh the page and sign in again.';
+                    errorBox.classList.remove('d-none');
+                    return;
+                }
                 const data = contentType.includes('application/json') ? await response.json() : {};
+                saved = true;
                 const modalElement = form.closest('.modal');
 
-                const finishSuccess = () => {
+                const finishSuccess = async () => {
                     if (form.dataset.resetOnSuccess === 'true') {
                         form.reset();
                         window.initializeClassForms?.(form);
@@ -1336,32 +1383,44 @@
                         window.history.replaceState({ ajaxPage: true }, '', data.url);
                     }
 
-                    localStorage.setItem('portal-refresh-sections', String(Date.now()));
+                    try {
+                        localStorage.setItem('portal-refresh-sections', String(Date.now()));
+                    } catch (error) {
+                        // Saving still succeeds when browser storage is unavailable.
+                    }
                     window.refreshPortalSections?.();
                     showPortalMessage(data.message || 'Saved successfully.');
                     cleanupStaleBootstrapBackdrops();
 
                     if (form.dataset.reloadPageOnSuccess === 'true') {
-                        loadPortalPage(window.location.href, false);
+                        const loaded = await loadPortalPage(window.location.href, false, form.dataset.preservePageState === 'true');
+                        if (! loaded && form.dataset.preservePageState === 'true') {
+                            showPortalMessage('Changes saved, but the list could not refresh. Refresh the page to see the updated details.', 'warning');
+                        }
                         return;
                     }
 
                     if (form.dataset.redirectOnSuccess) {
-                        loadPortalPage(form.dataset.redirectOnSuccess);
+                        await loadPortalPage(form.dataset.redirectOnSuccess);
                     }
                 };
 
                 if (modalElement?.classList.contains('show')) {
-                    modalElement.addEventListener('hidden.bs.modal', finishSuccess, { once: true });
-                    bootstrap.Modal.getOrCreateInstance(modalElement).hide();
-                    window.setTimeout(cleanupStaleBootstrapBackdrops, 350);
-                } else {
-                    finishSuccess();
+                    await new Promise((resolve) => {
+                        modalElement.addEventListener('hidden.bs.modal', resolve, { once: true });
+                        bootstrap.Modal.getOrCreateInstance(modalElement).hide();
+                    });
                 }
+                await finishSuccess();
             } catch (error) {
-                errorBox.textContent = 'Request failed. Please try again.';
-                errorBox.classList.remove('d-none');
+                if (saved) {
+                    showPortalMessage('Changes saved, but the page could not refresh. Refresh the page to see the updated details.', 'warning');
+                } else {
+                    errorBox.textContent = 'Request failed. Please try again.';
+                    errorBox.classList.remove('d-none');
+                }
             } finally {
+                delete form.dataset.ajaxSubmitting;
                 submitButtons.forEach((button) => button.disabled = false);
             }
         });

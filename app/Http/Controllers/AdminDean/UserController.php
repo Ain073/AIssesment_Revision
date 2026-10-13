@@ -6,12 +6,14 @@ use App\Models\Department;
 use App\Models\Program;
 use App\Models\User;
 use App\Services\UserAccountService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\MessageBag;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends BaseController
 {
@@ -131,7 +133,7 @@ class UserController extends BaseController
         return $redirect;
     }
 
-    public function update(Request $request, User $user, UserAccountService $accounts): RedirectResponse
+    public function update(Request $request, User $user, UserAccountService $accounts): JsonResponse|RedirectResponse
     {
         $actor = $this->currentUser();
         $scopedCollege = $this->scopedCollege($actor);
@@ -207,12 +209,9 @@ class UserController extends BaseController
             in_array('department_chair', $managedRoles, true)
             && $this->departmentHasChair((int) $validated['department_id'], $targetUser->id)
         ) {
-            return redirect()
-                ->back()
-                ->withInput()
-                ->withErrors(new MessageBag([
-                    'authorizations' => 'This department already has a Department Chair. Remove the current designation first.',
-                ]));
+            throw ValidationException::withMessages([
+                'authorizations' => 'This department already has a Department Chair. Remove the current designation first.',
+            ]);
         }
 
         DB::transaction(function () use ($targetUser, $validated, $actor, $scopedCollege, $accounts, $managedRoles) {
@@ -225,6 +224,10 @@ class UserController extends BaseController
                 'college_id' => $scopedCollege->college_id,
             ]);
         });
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'User account updated successfully.']);
+        }
 
         return redirect()
             ->back()
