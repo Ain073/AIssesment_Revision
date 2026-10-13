@@ -45,17 +45,30 @@
 
             {{-- Filters and actions --}}
             <div class="program-toolbar super-admin-toolbar d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
-                <form action="{{ route('super-admin.users') }}" method="GET" id="departmentFilterForm">
+                <form action="{{ route('super-admin.users') }}" method="GET" id="userFilterForm">
                     <input type="hidden" name="tab" id="activeTabInput" value="{{ $activeUserTab }}">
-                    <label class="form-label small fw-bold text-uppercase mb-1" for="department-filter">View Department</label>
-                    <select class="form-select department-filter-select" id="department-filter" name="department" onchange="this.form.submit()">
-                        <option value="">All Departments</option>
-                        @foreach ($departments as $department)
-                            <option value="{{ $department->public_id ?? $department->department_id }}" @selected($selectedDepartmentKey === ($department->public_id ?? (string) $department->department_id))>
-                                {{ $department->dept_name }} ({{ $department->college?->college_code ?? $department->college?->college_name }})
-                            </option>
-                        @endforeach
-                    </select>
+                    <div data-user-filter-tab="teachers" @if ($activeUserTab !== 'teachers') hidden @endif>
+                        <label class="form-label small fw-bold text-uppercase mb-1" for="department-filter">View Department</label>
+                        <select class="form-select department-filter-select" id="department-filter" name="department" onchange="this.form.submit()">
+                            <option value="">All Departments</option>
+                            @foreach ($departments as $department)
+                                <option value="{{ $department->public_id ?? $department->department_id }}" @selected($selectedDepartmentKey === ($department->public_id ?? (string) $department->department_id))>
+                                    {{ $department->dept_name }} ({{ $department->college?->college_code ?? $department->college?->college_name }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div data-user-filter-tab="students" @if ($activeUserTab !== 'students') hidden @endif>
+                        <label class="form-label small fw-bold text-uppercase mb-1" for="program-filter">View Program</label>
+                        <select class="form-select" id="program-filter" name="program" onchange="this.form.submit()">
+                            <option value="">All Programs</option>
+                            @foreach ($programs as $program)
+                                <option value="{{ $program->public_id ?? $program->program_id }}" @selected($selectedProgramKey === ($program->public_id ?? (string) $program->program_id))>
+                                    {{ $program->program_name }} ({{ $program->department?->dept_name }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                     <noscript>
                         <button class="btn btn-outline-primary mt-2" type="submit">View</button>
                     </noscript>
@@ -174,7 +187,7 @@
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">school</span></div>
                                             <h4 class="h4" style="color: var(--psu-navy);">{{ $selectedDepartmentKey ? 'No teacher accounts in this department' : 'No teacher accounts yet' }}</h4>
                                             @if ($selectedDepartmentKey)
-                                                <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('super-admin.users', ['tab' => 'teachers']) }}">
+                                                <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('super-admin.users', ['tab' => 'teachers', 'program' => $selectedProgramKey]) }}">
                                                     View All Departments
                                                 </a>
                                             @else
@@ -266,10 +279,10 @@
                                     <tr>
                                         <td class="text-center py-5 mobile-empty-cell" colspan="5">
                                             <div class="empty-icon mb-3"><span class="material-symbols-outlined fs-2">groups</span></div>
-                                            <h4 class="h4" style="color: var(--psu-navy);">{{ $selectedDepartmentKey ? 'No student accounts in this department' : 'No student accounts yet' }}</h4>
-                                            @if ($selectedDepartmentKey)
-                                                <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('super-admin.users', ['tab' => 'students']) }}">
-                                                    View All Departments
+                                            <h4 class="h4" style="color: var(--psu-navy);">{{ $selectedProgramKey ? 'No student accounts in this program' : 'No student accounts yet' }}</h4>
+                                            @if ($selectedProgramKey)
+                                                <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" href="{{ route('super-admin.users', ['tab' => 'students', 'department' => $selectedDepartmentKey]) }}">
+                                                    View All Programs
                                                 </a>
                                             @else
                                                 <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#createStudentModal" data-bs-toggle="modal" type="button">

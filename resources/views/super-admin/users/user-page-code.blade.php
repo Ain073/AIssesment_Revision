@@ -134,15 +134,22 @@
 
     syncExclusiveAuthorizations();
 
-    // Keep active tab in sync with department filter form
-    document.querySelectorAll('[data-table-tab-button]').forEach((tabBtn) => {
-        tabBtn.addEventListener('click', () => {
-            const tabName = tabBtn.dataset.tableTabButton;
-            const activeTabInput = document.getElementById('activeTabInput');
-            if (activeTabInput && tabName) {
-                activeTabInput.value = tabName;
-            }
+    function syncUserFilters(tabName) {
+        const activeTabInput = document.getElementById('activeTabInput');
+
+        if (activeTabInput) {
+            activeTabInput.value = tabName;
+        }
+
+        document.querySelectorAll('[data-user-filter-tab]').forEach((filter) => {
+            filter.hidden = filter.dataset.userFilterTab !== tabName;
         });
+    }
+
+    syncUserFilters(document.getElementById('activeTabInput')?.value || 'teachers');
+
+    document.querySelectorAll('#userTabs [data-table-tab-button]').forEach((tabBtn) => {
+        tabBtn.addEventListener('click', () => syncUserFilters(tabBtn.dataset.tableTabButton));
     });
 </script>
 

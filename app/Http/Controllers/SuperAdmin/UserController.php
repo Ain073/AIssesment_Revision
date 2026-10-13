@@ -33,25 +33,41 @@ class UserController extends Controller
                 ->first();
         }
 
+        $programKey = $request->query('program') ?? $request->query('program_id');
+        $selectedProgram = null;
+
+        if (filled($programKey)) {
+            $selectedProgram = Program::query()
+                ->where('public_id', $programKey)
+                ->orWhere('program_id', $programKey)
+                ->first();
+        }
+
         $selectedDepartmentId = $selectedDepartment?->department_id;
+        $selectedProgramId = $selectedProgram?->program_id;
 
         $usersQuery = User::with(['roles', 'instructorProfile.department.college', 'studentProfile.program.department.college'])
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->orderBy('name');
 
-        if ($selectedDepartmentId) {
-            $usersQuery->where(function ($q) use ($selectedDepartmentId) {
-                $q->whereHas('instructorProfile', function ($iq) use ($selectedDepartmentId) {
-                    $iq->where('department_id', $selectedDepartmentId);
-                })
-                ->orWhereHas('studentProfile.program', function ($sq) use ($selectedDepartmentId) {
-                    $sq->where('department_id', $selectedDepartmentId);
-                });
-            });
-        }
+        $teachers = (clone $usersQuery)
+            ->whereHas('roles', fn ($query) => $query->where('role_name', 'instructor'))
+            ->when($selectedDepartmentId, fn ($query) => $query->whereHas(
+                'instructorProfile',
+                fn ($profile) => $profile->where('department_id', $selectedDepartmentId),
+            ))
+            ->get();
 
-        $users = $usersQuery->get();
+        $students = (clone $usersQuery)
+            ->whereHas('roles', fn ($query) => $query->where('role_name', 'student'))
+            ->when($selectedProgramId, fn ($query) => $query->whereHas(
+                'studentProfile',
+                fn ($profile) => $profile->where('program_id', $selectedProgramId),
+            ))
+            ->get();
+
+        $users = $teachers->merge($students);
 
         $departments = Department::with('college')
             ->orderBy('college_id')
@@ -67,8 +83,6 @@ class UserController extends Controller
             ->orderBy('program_name')
             ->get();
 
-        $teachers = $users->filter->hasRole('instructor')->values();
-        $students = $users->filter->hasRole('student')->values();
         $adminDeans = $teachers->filter->hasRole('admin_dean')->values();
         $departmentChairs = $teachers->filter->hasRole('department_chair')->values();
 
@@ -82,6 +96,7 @@ class UserController extends Controller
             'programs' => $programs,
             'selectedDepartmentId' => $selectedDepartmentId,
             'selectedDepartmentKey' => $selectedDepartment?->public_id ?? ($selectedDepartment ? (string) $selectedDepartment->department_id : ''),
+            'selectedProgramKey' => $selectedProgram?->public_id ?? ($selectedProgram ? (string) $selectedProgram->program_id : ''),
             'studentImportPreview' => $importer->previewForRequest($request, 'super-admin'),
         ]);
     }
