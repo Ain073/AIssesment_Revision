@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -24,12 +25,14 @@ class AuditLog extends Model
         'ip_address',
         'user_agent',
         'created_at',
+        'metadata',
     ];
 
     protected function casts(): array
     {
         return [
             'created_at' => 'datetime',
+            'metadata' => 'array',
         ];
     }
 
@@ -43,6 +46,27 @@ class AuditLog extends Model
     public function auditable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * Keep original placeholders in storage, but prefer an original or
+     * import-backed account event when displaying the audit trail.
+     */
+    public function scopeWithoutSupersededUserCreations(Builder $query): Builder
+    {
+        return $query->whereNot(function ($placeholder) {
+            $placeholder->where('module', 'Users')->where('action', 'CREATE')
+                ->where('auditable_type', User::class)
+                ->whereNotNull('user_agent')->where('user_agent', 'System Migration')
+                ->whereExists(function ($actual) {
+                    $actual->selectRaw('1')->from('audit_logs as actual_creation')
+                        ->whereColumn('actual_creation.auditable_id', 'audit_logs.auditable_id')
+                        ->where('actual_creation.auditable_type', User::class)
+                        ->where('actual_creation.module', 'Users')->where('actual_creation.action', 'CREATE')
+                        ->where(fn ($agent) => $agent->whereNull('actual_creation.user_agent')
+                            ->orWhere('actual_creation.user_agent', '!=', 'System Migration'));
+                });
+        });
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
@@ -119,6 +143,14 @@ class AuditLog extends Model
 
     public function displayDescription(): string
     {
+        if ($this->isHistoricalAccountCreation()) {
+            return preg_replace(
+                '/^Reconstructed creation entry for account (.+); original creator unavailable\.$/s',
+                'User account for $1 created.',
+                (string) $this->description,
+            ) ?? (string) $this->description;
+        }
+
         if ($this->action === 'UPDATE' && $this->module === 'Users') {
             $masked = preg_replace(
                 '/ account for .+? \(Status:/',
