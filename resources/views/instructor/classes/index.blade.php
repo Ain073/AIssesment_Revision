@@ -100,13 +100,14 @@
         }
 
         .school-year-fields {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             gap: 0.25rem;
+            height: 48px;
             min-height: 48px;
             width: auto;
             max-width: 100%;
-            padding: 0.35rem 0.55rem;
+            padding: 0 0.55rem;
             background: #fff;
             border: 1px solid #dee2e6;
             border-radius: 0.5rem;
@@ -130,6 +131,7 @@
             width: 36px;
             min-width: 0;
             height: 36px;
+            min-height: 0;
             padding: 0;
             border: 0;
             border-bottom: 2px solid var(--psu-line);
@@ -140,6 +142,9 @@
         }
 
         .class-school-year-field {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
             flex: 0 0 auto;
             width: auto;
             min-width: 220px;
