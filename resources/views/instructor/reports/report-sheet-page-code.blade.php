@@ -22,18 +22,6 @@
             times: '"Times New Roman", Times, serif',
         };
         const contentFontStorageKey = `aissessment:report-content-style:${@json($reportType)}`;
-        const reportDraftAssessmentKeys = reportForm
-            ? [...reportForm.querySelectorAll('input[name="publish_assessment_keys[]"]')]
-                .map((input) => input.value.trim())
-                .filter(Boolean)
-                .sort()
-                .join('|')
-            : '';
-        const reportDraftStorageKey = reportDraftAssessmentKeys
-            ? `aissessment:report-draft:${@json($reportType)}:${reportDraftAssessmentKeys}`
-            : null;
-        let reportDraftSaveTimer = null;
-        let reportFormSubmitting = false;
 
         const reportDraftFields = () => reportForm
             ? [...reportForm.querySelectorAll(draftFieldSelector)]
@@ -82,7 +70,7 @@
             applyReportContentStyle();
         };
 
-        const isReportFinalized = @json($isFinalized);
+        const reportAutosave = window.createReportAutosave?.(reportForm);
         const reportSheetWrap = document.querySelector('.report-sheet-wrap');
         const editReportButton = document.getElementById('editReportButton');
         const cancelEditButton = document.getElementById('cancelEditButton');
@@ -184,68 +172,9 @@
             });
         }
 
-        const saveReportDraft = () => {
-            if (! reportDraftStorageKey || reportSheetWrap?.classList.contains('is-locked')) {
-                return;
-            }
-
-            const values = {};
-            reportDraftFields().forEach((field) => {
-                if (field.name) {
-                    values[field.name] = field.value;
-                }
-            });
-
-            try {
-                localStorage.setItem(reportDraftStorageKey, JSON.stringify({
-                    savedAt: Date.now(),
-                    values,
-                }));
-            } catch (error) {
-                // Ignore storage failures so report editing remains usable.
-            }
-        };
-
-        const queueReportDraftSave = () => {
-            clearTimeout(reportDraftSaveTimer);
-            reportDraftSaveTimer = setTimeout(saveReportDraft, 150);
-        };
-
-        const clearReportDraft = () => {
-            if (! reportDraftStorageKey) {
-                return;
-            }
-
-            try {
-                localStorage.removeItem(reportDraftStorageKey);
-            } catch (error) {
-                // Ignore storage failures.
-            }
-        };
-
-        const restoreReportDraft = () => {
-            if (! reportDraftStorageKey) {
-                return;
-            }
-
-            try {
-                const savedDraft = JSON.parse(localStorage.getItem(reportDraftStorageKey));
-                const maxDraftAge = 7 * 24 * 60 * 60 * 1000;
-
-                if (! savedDraft?.values || Date.now() - Number(savedDraft.savedAt ?? 0) > maxDraftAge) {
-                    clearReportDraft();
-                    return;
-                }
-
-                reportDraftFields().forEach((field) => {
-                    if (field.name && Object.prototype.hasOwnProperty.call(savedDraft.values, field.name)) {
-                        field.value = savedDraft.values[field.name];
-                    }
-                });
-            } catch (error) {
-                clearReportDraft();
-            }
-        };
+        const queueReportDraftSave = () => reportAutosave?.changed();
+        const saveReportDraft = queueReportDraftSave;
+        const clearReportDraft = () => reportAutosave?.clearLocal();
 
         paperSize?.addEventListener('change', () => {
             const url = new URL(window.location.href);
@@ -281,11 +210,6 @@
         };
 
         restoreReportContentStyle();
-        if (isReportFinalized) {
-            clearReportDraft();
-        } else {
-            restoreReportDraft();
-        }
 
         document.querySelectorAll('.report-edit-textarea').forEach((textarea) => {
             autosize(textarea);
@@ -338,16 +262,6 @@
         const aiConfirmModal = document.getElementById('confirmAiDraftModal');
         const aiConfirmProviderLabel = document.getElementById('confirmAiProviderLabel');
 
-        reportForm?.addEventListener('submit', () => {
-            reportFormSubmitting = true;
-            clearReportDraft();
-        });
-
-        window.addEventListener('beforeunload', () => {
-            if (! reportFormSubmitting && ! reportSheetWrap?.classList.contains('is-locked')) {
-                saveReportDraft();
-            }
-        });
 
         const showAiStatus = (message, type = 'info') => {
             if (! aiStatus) {
@@ -395,7 +309,7 @@
             showAiStatus(`Generating AI draft content with ${selectedAiName}...`, 'info');
 
             try {
-                const response = await fetch(aiButton.dataset.aiUrl, {
+                const response = await (window.portalFetch || fetch)(aiButton.dataset.aiUrl, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',

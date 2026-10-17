@@ -7,6 +7,7 @@ use App\Support\RecordSearch;
 use App\Models\Report;
 use App\Services\AuditLogger;
 use App\Services\ReportAiService;
+use App\Services\ReportSheetWriter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -164,7 +165,12 @@ class ReportController extends BaseController
         ]);
     }
 
-    public function saveReportSheet(Request $request): RedirectResponse
+    public function autosaveReportSheet(Request $request): JsonResponse
+    {
+        return $this->saveReportSheet($request, true);
+    }
+
+    public function saveReportSheet(Request $request, bool $autosave = false): RedirectResponse|JsonResponse
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
@@ -173,12 +179,15 @@ class ReportController extends BaseController
 
         $validated = $request->validate([
             'report_type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
-            'save_action' => ['required', 'string', Rule::in(['draft', 'finalized'])],
+            'save_action' => [$autosave ? 'nullable' : 'required', 'string', Rule::in(['draft', 'finalized'])],
             'paper_size' => ['nullable', 'string', Rule::in(['a4', 'short', 'long'])],
             'course_code_title' => ['nullable', 'string', 'max:255'],
             'publish_assessment_keys' => ['required', 'array', 'min:1'],
             'publish_assessment_keys.*' => ['required', 'uuid'],
             'reports' => ['required', 'array'],
+            'reports.*' => ['required', 'array'],
+            'revisions' => ['required', 'array'],
+            'revisions.*' => ['required', 'integer', 'min:0'],
             'reports.*.concept_most_learned_skills' => ['nullable', 'string'],
             'reports.*.concept_least_learned_skills' => ['nullable', 'string'],
             'reports.*.issues_concern' => ['nullable', 'string'],
@@ -205,33 +214,25 @@ class ReportController extends BaseController
             $ownedCompletedAssessments,
         );
 
-        DB::transaction(function () use ($ownedCompletedAssessments, $validated, $courseCodeTitle): void {
-            foreach ($ownedCompletedAssessments as $publishAssessment) {
-                $row = $validated['reports'][$publishAssessment->public_id] ?? [];
-
-                Report::query()->updateOrCreate(
-                    [
-                        'publish_assessment_id' => $publishAssessment->publish_assessment_id,
-                        'report_type' => $validated['report_type'],
-                    ],
-                    [
-                        'course_code_title' => $courseCodeTitle,
-                        'concept_most_learned_skills' => $row['concept_most_learned_skills'] ?? null,
-                        'concept_least_learned_skills' => $row['concept_least_learned_skills'] ?? null,
-                        'issues_concern' => $row['issues_concern'] ?? null,
-                        'interventions_done' => $validated['report_type'] === Report::TYPE_FORMATIVE
-                            ? ($row['interventions_done'] ?? null)
-                            : null,
-                        'future_plans_curriculum' => $validated['report_type'] === Report::TYPE_SUMMATIVE
-                            ? ($row['future_plans_curriculum'] ?? null)
-                            : null,
-                        'report_status' => $validated['save_action'] === 'finalized'
-                            ? Report::STATUS_FINALIZED
-                            : Report::STATUS_DRAFT,
-                    ],
-                );
+        try {
+            $revisions = app(ReportSheetWriter::class)->save($ownedCompletedAssessments, $validated, $courseCodeTitle, $autosave);
+        } catch (ValidationException $exception) {
+            if ($autosave && isset($exception->errors()['report_conflict'])) {
+                return response()->json([
+                    'message' => $exception->errors()['report_conflict'][0],
+                    'code' => 'report_conflict',
+                ], 409)->header('Cache-Control', 'no-store');
             }
-        });
+            throw $exception;
+        }
+
+        if ($autosave) {
+            return response()->json([
+                'message' => 'Draft saved.',
+                'revisions' => $revisions,
+                'saved_at' => now()->toIso8601String(),
+            ])->header('Cache-Control', 'no-store');
+        }
 
         Log::info('Instructor saved report details.', [
             'actor_id' => $user->id,

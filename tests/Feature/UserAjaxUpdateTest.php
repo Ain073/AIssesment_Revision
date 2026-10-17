@@ -8,9 +8,13 @@ use App\Models\Role;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Models\PublishAssessment;
+use App\Services\UserAccountService;
+use App\Services\AccountSessionService;
 use App\Support\RecordSearch;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -42,6 +46,7 @@ class UserAjaxUpdateTest extends TestCase
             $table->string('password');
             $table->string('status');
             $table->boolean('must_change_password')->default(false);
+            $table->unsignedBigInteger('session_version')->default(0);
             $table->timestamps();
         });
         Schema::create('roles', function (Blueprint $table) {
@@ -100,8 +105,14 @@ class UserAjaxUpdateTest extends TestCase
         });
         Schema::create('app_notifications', function (Blueprint $table) {
             $table->id('notification_id');
+            $table->uuid('public_id')->unique();
             $table->unsignedBigInteger('user_id');
+            $table->string('title');
+            $table->text('message');
+            $table->string('type');
+            $table->string('link')->nullable();
             $table->timestamp('read_at')->nullable();
+            $table->timestamps();
         });
         Schema::create('classes', function (Blueprint $table) {
             $table->id('class_id');
@@ -192,7 +203,7 @@ class UserAjaxUpdateTest extends TestCase
         $pickerId = $isDean ? 'grantAdminDeanModal' : 'grantDepartmentChairModal';
         $confirmationId = $isDean ? 'deanConfirmModal' : 'chairConfirmModal';
 
-        $response = $this->actingAs($actor)->get($page, ['X-Requested-With' => 'XMLHttpRequest'])
+        $response = $this->signInAccount($actor)->get($page, ['X-Requested-With' => 'XMLHttpRequest'])
             ->assertOk()->assertViewHas($currentList, fn ($users) => $users->isEmpty())
             ->assertViewHas($availableList, fn ($users) => $users->contains('id', $teacher->id))
             ->assertSee('data-bs-target="#'.$pickerId.'"', false)
@@ -226,7 +237,7 @@ class UserAjaxUpdateTest extends TestCase
     {
         $this->createDesignationTables();
         $isDean = $type === 'dean';
-        $this->actingAs($this->actor($isDean ? 'super_admin' : 'admin_dean'))
+        $this->signInAccount($this->actor($isDean ? 'super_admin' : 'admin_dean'))
             ->get(route($isDean ? 'super-admin.roles' : 'admin-dean.designations'))
             ->assertOk()
             ->assertViewHas($isDean ? 'availableAdminDeanTeachers' : 'availableDepartmentChairTeachers', fn ($users) => $users->isEmpty())
@@ -267,7 +278,7 @@ class UserAjaxUpdateTest extends TestCase
         $target = $this->account([$baseRole]);
         $password = $target->password;
 
-        $this->actingAs($actor)->post(route("{$portal}.users.update", $target), [
+        $this->signInAccount($actor)->post(route("{$portal}.users.update", $target), [
             ...$this->payload($target),
             '_method' => 'PUT',
         ], ['Accept' => 'application/json', 'X-Requested-With' => 'XMLHttpRequest'])
@@ -296,7 +307,7 @@ class UserAjaxUpdateTest extends TestCase
         $payload = $this->payload($target);
         $payload['email'] = $actor->email;
 
-        $this->actingAs($actor)->putJson(route("{$portal}.users.update", $target), $payload)
+        $this->signInAccount($actor)->putJson(route("{$portal}.users.update", $target), $payload)
             ->assertUnprocessable()->assertJsonValidationErrors('email');
         $this->assertSame('Original Person', $target->fresh()->name);
     }
@@ -305,7 +316,7 @@ class UserAjaxUpdateTest extends TestCase
     {
         $target = $this->account(['instructor'], 3);
         foreach (['admin-dean' => 'admin_dean', 'department-chair' => 'department_chair'] as $portal => $role) {
-            $this->actingAs($this->actor($role))->putJson(route("{$portal}.users.update", $target), $this->payload($target))
+            $this->signInAccount($this->actor($role))->putJson(route("{$portal}.users.update", $target), $this->payload($target))
                 ->assertForbidden();
         }
         $this->assertSame('Original Person', $target->fresh()->name);
@@ -317,7 +328,7 @@ class UserAjaxUpdateTest extends TestCase
         $this->actor('admin_dean');
         $target = $this->account(['instructor']);
 
-        $this->actingAs($admin)->putJson(route('super-admin.users.update', $target), [
+        $this->signInAccount($admin)->putJson(route('super-admin.users.update', $target), [
             ...$this->payload($target),
             'authorizations' => ['admin_dean'],
         ])->assertUnprocessable()->assertJsonValidationErrors('authorizations');
@@ -330,7 +341,7 @@ class UserAjaxUpdateTest extends TestCase
         $target = $this->account(['instructor', 'department_chair']);
         $this->account(['instructor', 'department_chair'], 2);
 
-        $this->actingAs($dean)->putJson(route('admin-dean.users.update', $target), [
+        $this->signInAccount($dean)->putJson(route('admin-dean.users.update', $target), [
             ...$this->payload($target),
             'department_id' => 2,
         ])->assertUnprocessable()->assertJsonValidationErrors('authorizations');
@@ -343,7 +354,7 @@ class UserAjaxUpdateTest extends TestCase
         $target = $this->account(['student']);
         $previousUrl = route('super-admin.users', ['tab' => 'students', 'department' => 1, 'program' => 1]);
 
-        $this->actingAs($admin)->from($previousUrl)->put(route('super-admin.users.update', $target), $this->payload($target))
+        $this->signInAccount($admin)->from($previousUrl)->put(route('super-admin.users.update', $target), $this->payload($target))
             ->assertRedirect($previousUrl)->assertSessionHas('status', 'User account updated successfully.');
     }
 
@@ -354,7 +365,7 @@ class UserAjaxUpdateTest extends TestCase
         $payload = $this->payload($target);
         unset($payload['program_id'], $payload['student_number']);
 
-        $this->actingAs($admin)->putJson(route('super-admin.users.update', $target), [
+        $this->signInAccount($admin)->putJson(route('super-admin.users.update', $target), [
             ...$payload,
             'base_role' => 'instructor',
             'department_id' => 2,
@@ -372,7 +383,7 @@ class UserAjaxUpdateTest extends TestCase
     {
         $admin = $this->actor('super_admin');
         $target = $this->account(['student']);
-        $this->actingAs($admin)->putJson(route('super-admin.users.update', $target), $this->payload($target))->assertOk();
+        $this->signInAccount($admin)->putJson(route('super-admin.users.update', $target), $this->payload($target))->assertOk();
 
         $this->get(route('super-admin.users', ['tab' => 'students', 'department' => 1, 'program' => 1]), ['X-Requested-With' => 'XMLHttpRequest'])
             ->assertOk()
@@ -394,7 +405,7 @@ class UserAjaxUpdateTest extends TestCase
         $similar = $this->account(['student']);
         $similar->studentProfile->update(['student_number' => 'STUA100X']);
 
-        $this->actingAs($admin)->get(route('super-admin.users', ['tab' => 'students', 'program' => 1, 'search' => '_100%']))
+        $this->signInAccount($admin)->get(route('super-admin.users', ['tab' => 'students', 'program' => 1, 'search' => '_100%']))
             ->assertOk()
             ->assertViewHas('students', fn ($students) => $students->modelKeys() === [$target->id])
             ->assertViewHas('programs', fn ($programs) => $programs->count() === 3)
@@ -415,7 +426,7 @@ class UserAjaxUpdateTest extends TestCase
         }
 
         // Identical names still have a consistent order across page boundaries.
-        $firstPage = $this->actingAs($admin)->get(route('super-admin.users'));
+        $firstPage = $this->signInAccount($admin)->get(route('super-admin.users'));
         $firstPage->assertOk()
             ->assertViewHas('teachers', fn ($users) => $users->total() === 30 && $users->getCollection()->modelKeys() === array_slice($teacherIds, 0, 25))
             ->assertViewHas('students', fn ($users) => $users->total() === 31 && $users->getCollection()->modelKeys() === array_slice($studentIds, 0, 25))
@@ -465,7 +476,7 @@ class UserAjaxUpdateTest extends TestCase
         $teacher = $this->account(['instructor']);
         $teacher->update(['first_name' => 'Matched']);
 
-        $response = $this->actingAs($admin)->get(route('super-admin.users', [
+        $response = $this->signInAccount($admin)->get(route('super-admin.users', [
             'tab' => 'students', 'search' => 'mAtChEd', 'department' => 1, 'program' => 1,
             'teachers_page' => 1, 'students_page' => 2,
         ]));
@@ -493,7 +504,7 @@ class UserAjaxUpdateTest extends TestCase
         $target = $this->account(['student']);
         $url = route('super-admin.users', ['tab' => 'students', 'program' => 1, 'students_page' => 2]);
 
-        $this->actingAs($admin)->get($url)->assertOk()
+        $this->signInAccount($admin)->get($url)->assertOk()
             ->assertViewHas('students', fn ($users) => $users->currentPage() === 2 && $users->first()->id === $target->id);
         $this->putJson(route('super-admin.users.update', $target), array_merge($this->payload($target), ['program_id' => 2]))
             ->assertOk();
@@ -513,9 +524,9 @@ class UserAjaxUpdateTest extends TestCase
     {
         $target = $this->account(['instructor']);
         $outside = $this->account(['instructor'], 3);
-        $this->actingAs($this->actor('admin_dean'))->get(route('admin-dean.teachers', ['search' => 'EMP-']))
+        $this->signInAccount($this->actor('admin_dean'))->get(route('admin-dean.teachers', ['search' => 'EMP-']))
             ->assertOk()->assertViewHas('teachers', fn ($teachers) => $teachers->contains('id', $target->id) && ! $teachers->contains('id', $outside->id));
-        $this->actingAs($this->actor('department_chair'))->get(route('department-chair.teachers', ['search' => 'EMP-']))
+        $this->signInAccount($this->actor('department_chair'))->get(route('department-chair.teachers', ['search' => 'EMP-']))
             ->assertOk()->assertViewHas('teachers', fn ($teachers) => $teachers->contains('id', $target->id) && ! $teachers->contains('id', $outside->id));
     }
 
@@ -526,7 +537,7 @@ class UserAjaxUpdateTest extends TestCase
             ['subject_id' => 1, 'public_id' => (string) Str::uuid(), 'department_id' => 1, 'subject_code' => 'IT101', 'subject_name' => 'Shared Topic'],
             ['subject_id' => 2, 'public_id' => (string) Str::uuid(), 'department_id' => 3, 'subject_code' => 'IT102', 'subject_name' => 'Shared Topic'],
         ]);
-        $this->actingAs($this->actor('department_chair'))->get(route('department-chair.programs', ['search' => 'program']))
+        $this->signInAccount($this->actor('department_chair'))->get(route('department-chair.programs', ['search' => 'program']))
             ->assertOk()->assertViewHas('programs', fn ($programs) => $programs->modelKeys() === [1]);
         $this->get(route('department-chair.subjects', ['search' => 'sHaReD']))
             ->assertOk()->assertViewHas('subjects', fn ($subjects) => $subjects->modelKeys() === [1]);
@@ -541,14 +552,14 @@ class UserAjaxUpdateTest extends TestCase
         AuditLog::create(['user_id' => $admin->id, 'action' => 'CREATE', 'module' => 'Programs', 'description' => 'Needle record', 'created_at' => now()->subDay()]);
         AuditLog::create(['user_id' => $admin->id, 'action' => 'DELETE', 'module' => 'Programs', 'description' => 'Needle record', 'created_at' => now()]);
 
-        $this->actingAs($admin)->get(route('super-admin.audit-logs', ['search' => 'needle', 'action' => 'CREATE']))
+        $this->signInAccount($admin)->get(route('super-admin.audit-logs', ['search' => 'needle', 'action' => 'CREATE']))
             ->assertOk()->assertViewHas('logs', fn ($logs) => $logs->total() === 1 && $logs->first()->description === 'Needle record')
             ->assertSee('data-record-search-input', false);
     }
 
     public function test_search_input_rejects_arrays_and_excessively_long_terms(): void
     {
-        $this->actingAs($this->actor('super_admin'));
+        $this->signInAccount($this->actor('super_admin'));
         foreach ([['bad'], str_repeat('x', 101)] as $term) {
             $this->getJson(route('super-admin.users', ['search' => $term]))->assertUnprocessable()->assertJsonValidationErrors('search');
         }
@@ -566,7 +577,7 @@ class UserAjaxUpdateTest extends TestCase
         }
         DB::table('class_details')->insert(['class_id' => 1, 'instructor_id' => $teacher->instructorProfile->getKey(), 'student_id' => $student->studentProfile->getKey(), 'subject_id' => 1, 'status' => 'approved', 'entry_method' => 'manual_add']);
 
-        $this->actingAs($student)->get(route('student.classes', ['search' => 'sHaReD']))
+        $this->signInAccount($student)->get(route('student.classes', ['search' => 'sHaReD']))
             ->assertOk()->assertViewHas('enrolledClasses', fn ($classes) => $classes->modelKeys() === [1]);
         $this->get(route('student.classes', ['search' => 'missing']))
             ->assertOk()->assertViewHas('enrolledClasses', fn ($classes) => $classes->isEmpty());
@@ -593,6 +604,249 @@ class UserAjaxUpdateTest extends TestCase
         }
         request()->query->set('search', 'Shared');
         $this->assertSame([1], RecordSearch::filter($query->get(), RecordSearch::PUBLISHED_FIELDS)->modelKeys());
+    }
+
+    #[DataProvider('accountUpdates')]
+    public function test_ajax_creation_saves_scoped_accounts_profiles_and_notifications(string $portal, string $actorRole, string $baseRole): void
+    {
+        Mail::fake();
+        $actor = $this->actor($actorRole);
+        $payload = $this->creationPayload($baseRole);
+        $this->signInAccount($actor)->postJson(route("{$portal}.users.store"), $payload)
+            ->assertCreated()->assertExactJson(['message' => 'User account created successfully.', 'warning' => null]);
+
+        $created = User::where('email', $payload['email'])->firstOrFail();
+        $this->assertTrue($created->hasRole($baseRole));
+        $this->assertTrue($created->must_change_password);
+        $this->assertDatabaseHas('app_notifications', ['user_id' => $created->id, 'title' => 'Account Created']);
+        if ($baseRole === 'instructor') {
+            $this->assertSame(1, $created->instructorProfile->department_id);
+        } else {
+            $this->assertSame(1, $created->studentProfile->program_id);
+        }
+        if ($actorRole === 'super_admin') {
+            $this->assertDatabaseHas('audit_logs', ['action' => 'CREATE', 'module' => 'Users', 'auditable_id' => $created->id]);
+        }
+        Mail::assertSent(\App\Mail\InitialAccountPasswordMail::class);
+    }
+
+    #[DataProvider('portals')]
+    public function test_ajax_creation_rejects_duplicate_email_without_creating_an_account(string $portal, string $actorRole): void
+    {
+        Mail::fake();
+        $actor = $this->actor($actorRole);
+        $this->signInAccount($actor)->postJson(route("{$portal}.users.store"), [
+            ...$this->creationPayload('student'), 'email' => $actor->email,
+        ])->assertUnprocessable()->assertJsonValidationErrors('email');
+        $this->assertDatabaseCount('users', 1);
+        Mail::assertNothingSent();
+    }
+
+    public function test_ajax_creation_preserves_dean_and_chair_academic_scopes(): void
+    {
+        Mail::fake();
+        foreach (['admin-dean' => 'admin_dean', 'department-chair' => 'department_chair'] as $portal => $role) {
+            $actor = $this->actor($role);
+            foreach (['instructor' => 'department_id', 'student' => 'program_id'] as $baseRole => $field) {
+                if ($portal === 'department-chair' && $baseRole === 'instructor') continue;
+                $count = User::count();
+                $this->signInAccount($actor)->postJson(route("{$portal}.users.store"), [
+                    ...$this->creationPayload($baseRole), $field => 3,
+                ])->assertUnprocessable()->assertJsonValidationErrors($field);
+                $this->assertDatabaseCount('users', $count);
+            }
+        }
+        Mail::assertNothingSent();
+    }
+
+    public function test_ajax_creation_designation_conflicts_return_validation_errors_without_saving(): void
+    {
+        Mail::fake();
+        $dean = $this->actor('admin_dean');
+        $this->actor('department_chair');
+        $admin = $this->actor('super_admin');
+        foreach (['super-admin' => [$admin, 'admin_dean'], 'admin-dean' => [$dean, 'department_chair']] as $portal => [$actor, $designation]) {
+            $this->signInAccount($actor)->postJson(route("{$portal}.users.store"), [
+                ...$this->creationPayload('instructor'), 'designation' => $designation,
+            ])->assertUnprocessable()->assertJsonValidationErrors('authorizations');
+        }
+        $this->assertDatabaseCount('users', 3);
+        Mail::assertNothingSent();
+    }
+
+    public function test_ajax_creation_reports_email_failure_as_a_warning_after_saving(): void
+    {
+        $this->partialMock(UserAccountService::class, function ($mock) {
+            $mock->shouldReceive('sendAccountCreatedNotification')->once();
+            $mock->shouldReceive('sendInitialPasswordEmail')->once()->andReturn(false);
+        });
+        $this->signInAccount($this->actor('super_admin'))->postJson(route('super-admin.users.store'), $this->creationPayload('student'))
+            ->assertCreated()->assertJson(['warning' => 'Account was created, but the initial password email was not delivered.']);
+        $this->assertDatabaseHas('users', ['email' => 'new-account@example.test']);
+    }
+
+    public function test_normal_creation_still_redirects_with_a_success_message(): void
+    {
+        Mail::fake();
+        $this->signInAccount($this->actor('super_admin'))->from(route('super-admin.users'))
+            ->post(route('super-admin.users.store'), $this->creationPayload('student'))
+            ->assertRedirect(route('super-admin.users'))->assertSessionHas('status', 'User account created successfully.');
+    }
+
+    #[DataProvider('portals')]
+    public function test_live_availability_checks_duplicates_without_writing_accounts(string $portal, string $actorRole): void
+    {
+        $actor = $this->actor($actorRole);
+        $teacher = $this->account(['instructor']);
+        $student = $this->account(['student']);
+        $this->signInAccount($actor);
+        foreach ([
+            'email' => $student->email,
+            'employee_number' => $teacher->instructorProfile->employee_number,
+            'student_number' => $student->studentProfile->student_number,
+        ] as $field => $value) {
+            $response = $this->postJson(route("{$portal}.users.availability"), compact('field', 'value'))
+                ->assertOk()->assertJsonPath('field', $field)->assertJsonPath('available', false);
+            $this->assertSame(['field', 'available', 'message'], array_keys($response->json()));
+            $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+            $this->postJson(route("{$portal}.users.availability"), [
+                'field' => $field, 'value' => $field === 'email' ? 'unused@example.test' : 'UNUSED-999',
+            ])->assertOk()->assertJsonPath('available', true);
+        }
+        $this->assertDatabaseCount('users', 3);
+        $this->assertDatabaseCount('audit_logs', 0);
+        $this->assertDatabaseCount('app_notifications', 0);
+    }
+
+    #[DataProvider('accountUpdates')]
+    public function test_live_availability_excludes_only_the_authorized_edited_account(string $portal, string $actorRole, string $baseRole): void
+    {
+        $actor = $this->actor($actorRole);
+        $target = $this->account([$baseRole]);
+        $other = $this->account([$baseRole]);
+        $this->signInAccount($actor);
+        $field = $baseRole === 'instructor' ? 'employee_number' : 'student_number';
+        $profile = $baseRole === 'instructor' ? 'instructorProfile' : 'studentProfile';
+        foreach (['email' => $target->email, $field => $target->$profile->$field] as $name => $value) {
+            $this->postJson(route("{$portal}.users.availability.edit", $target), ['field' => $name, 'value' => $value])
+                ->assertOk()->assertJsonPath('available', true);
+        }
+        foreach (['email' => $other->email, $field => $other->$profile->$field] as $name => $value) {
+            $this->postJson(route("{$portal}.users.availability.edit", $target), [
+                'field' => $name, 'value' => $value, 'user_id' => $other->id, 'ignore' => $other->id,
+            ])->assertOk()->assertJsonPath('available', false);
+        }
+        $this->assertSame('Original Person', $target->fresh()->name);
+    }
+
+    public function test_live_availability_does_not_allow_excluding_accounts_outside_the_editors_scope(): void
+    {
+        foreach (['admin-dean' => 'admin_dean', 'department-chair' => 'department_chair'] as $portal => $role) {
+            $this->signInAccount($this->actor($role));
+            foreach (['instructor', 'student'] as $baseRole) {
+                $outside = $this->account([$baseRole], 3);
+                $this->postJson(route("{$portal}.users.availability.edit", $outside), [
+                    'field' => 'email', 'value' => $outside->email,
+                ])->assertForbidden();
+            }
+        }
+        $chair = $this->actor('department_chair');
+        $sameCollegeOtherDepartment = $this->account(['student'], 2);
+        $this->signInAccount($chair)->postJson(route('department-chair.users.availability.edit', $sameCollegeOtherDepartment), [
+            'field' => 'email', 'value' => $sameCollegeOtherDepartment->email,
+        ])->assertForbidden();
+    }
+
+    public function test_live_availability_requires_valid_input_and_an_authorized_active_account(): void
+    {
+        $url = route('super-admin.users.availability');
+        $this->postJson($url, ['field' => 'email', 'value' => 'test@example.test'])->assertUnauthorized();
+        $admin = $this->actor('super_admin');
+        $this->signInAccount($admin);
+        foreach ([
+            ['field' => 'password', 'value' => 'secret'],
+            ['field' => ['email'], 'value' => 'test@example.test'],
+            ['field' => 'email', 'value' => 'not-an-email'],
+            ['field' => 'student_number', 'value' => ['STU-123']],
+            ['field' => 'student_number', 'value' => str_repeat('x', 256)],
+            ['field' => 'email', 'value' => ''],
+        ] as $payload) {
+            $this->postJson($url, $payload)->assertUnprocessable();
+        }
+        $this->postJson(route('super-admin.users.availability.edit', $admin), [
+            'field' => 'email', 'value' => $admin->email,
+        ])->assertForbidden();
+        $this->signInAccount($this->account(['student']))->postJson($url, [
+            'field' => 'email', 'value' => 'test@example.test',
+        ])->assertForbidden();
+        $admin->update(['status' => 'inactive']);
+        $this->signInAccount($admin)->postJson($url, ['field' => 'email', 'value' => 'test@example.test'])
+            ->assertForbidden();
+    }
+
+    public function test_live_availability_requires_an_assigned_academic_scope_and_limits_requests(): void
+    {
+        foreach (['admin-dean' => 'admin_dean', 'department-chair' => 'department_chair'] as $portal => $role) {
+            $actor = $this->actor($role);
+            $actor->instructorProfile->delete();
+            $actor->refresh(); // Real requests reload the actor instead of retaining the deleted relation.
+            $this->signInAccount($actor)->postJson(route("{$portal}.users.availability"), [
+                'field' => 'email', 'value' => 'test@example.test',
+            ])->assertForbidden();
+        }
+        $this->signInAccount($this->actor('super_admin'));
+        for ($i = 0; $i < 60; $i++) {
+            $this->postJson(route('super-admin.users.availability'), ['field' => 'email', 'value' => 'unused@example.test'])
+                ->assertOk();
+        }
+        $this->postJson(route('super-admin.users.availability'), ['field' => 'email', 'value' => 'unused@example.test'])
+            ->assertTooManyRequests();
+        // The availability limit must not consume the separate save endpoint's allowance.
+        $this->putJson(route('super-admin.users.update', $this->account(['student'])), ['email' => 'invalid'])
+            ->assertUnprocessable();
+    }
+
+    public static function availabilityFormPages(): array
+    {
+        // The Dean currently has a Teachers page; there is no student directory in that portal.
+        return array_filter(self::accountUpdates(), fn (array $case) => $case[0] !== 'admin-dean' || $case[2] !== 'student');
+    }
+
+    #[DataProvider('availabilityFormPages')]
+    public function test_live_availability_urls_are_present_in_ajax_loaded_create_and_edit_forms(string $portal, string $actorRole, string $baseRole): void
+    {
+        $target = $this->account([$baseRole]);
+        $page = $portal === 'super-admin' ? 'users'
+            : ($portal === 'department-chair' && $baseRole === 'student' ? 'students' : 'teachers');
+        $response = $this->signInAccount($this->actor($actorRole))->get(route("{$portal}.{$page}"), ['X-Requested-With' => 'XMLHttpRequest'])
+            ->assertOk();
+        foreach ([
+            'js/user-availability.js',
+            'data-user-availability-url="'.route("{$portal}.users.availability").'"',
+            'data-user-availability-url="'.route("{$portal}.users.availability.edit", $target).'"',
+        ] as $expected) {
+            $this->assertTrue(str_contains($response->getContent(), $expected), "Missing availability wiring on {$portal} {$baseRole} form: {$expected}");
+        }
+    }
+
+    private function creationPayload(string $baseRole): array
+    {
+        return [
+            'first_name' => 'New', 'last_name' => 'Account', 'email' => 'new-account@example.test',
+            'status' => 'active', 'base_role' => $baseRole,
+            ...($baseRole === 'instructor'
+                ? ['department_id' => 1, 'employee_number' => 'EMP-987']
+                : ['program_id' => 1, 'student_number' => 'STU-987']),
+        ];
+    }
+
+    private function signInAccount(User $user): static
+    {
+        // Account switching in CRUD fixtures must emulate the markers set by a real login.
+        return $this->withSession([
+            AccountSessionService::VERSION_KEY => (int) $user->session_version,
+            'password_hash_web' => Auth::guard()->hashPasswordForCookie($user->getAuthPassword()),
+        ])->actingAs($user);
     }
 
     private function actor(string $role): User

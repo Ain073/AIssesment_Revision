@@ -4,6 +4,7 @@ namespace App\Http\Controllers\DepartmentChair;
 
 use App\Models\User;
 use App\Services\UserAccountService;
+use App\Services\UserAccountAvailability;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,7 +14,20 @@ use Illuminate\Validation\Rule;
 
 class UserController extends BaseController
 {
-    public function store(Request $request, UserAccountService $accounts): RedirectResponse
+    public function checkAvailability(Request $request, UserAccountAvailability $availability, ?User $user = null): JsonResponse
+    {
+        $department = $this->scopedDepartment($this->currentUser());
+        abort_unless($department, 403, 'Department Chair account needs an assigned department before managing users.');
+
+        if ($user) {
+            $programIds = $this->scopedPrograms($department)->pluck('program_id')->all();
+            $user = $this->scopedUser($user, $department->department_id, $programIds);
+        }
+
+        return $availability->check($request, $user);
+    }
+
+    public function store(Request $request, UserAccountService $accounts): JsonResponse|RedirectResponse
     {
         $user = $this->currentUser();
         $scopedDepartment = $this->scopedDepartment($user);
@@ -73,6 +87,13 @@ class UserController extends BaseController
 
         $accounts->sendAccountCreatedNotification($createdUser);
         $passwordEmailSent = $accounts->sendInitialPasswordEmail($createdUser, $initialPassword);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'User account created successfully.',
+                'warning' => $passwordEmailSent ? null : 'Account was created, but the initial password email was not delivered.',
+            ], 201);
+        }
 
         $redirect = redirect()
             ->back()

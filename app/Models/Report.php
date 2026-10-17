@@ -20,6 +20,11 @@ class Report extends Model
 
     protected $primaryKey = 'report_id';
 
+    protected function casts(): array
+    {
+        return ['revision' => 'integer'];
+    }
+
     protected $fillable = [
         'publish_assessment_id',
         'report_type',

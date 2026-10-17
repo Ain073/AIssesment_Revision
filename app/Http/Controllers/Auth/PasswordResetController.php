@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AccountSessionService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -80,7 +80,7 @@ class PasswordResetController extends Controller
         ]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request, AccountSessionService $sessions): RedirectResponse
     {
         $validated = $request->validate([
             'token' => ['required', 'string'],
@@ -90,7 +90,7 @@ class PasswordResetController extends Controller
 
         $status = Password::reset(
             $validated,
-            function (User $user, string $password) use ($request): void {
+            function (User $user, string $password) use ($request, $sessions): void {
                 if ($user->status !== 'active') {
                     Log::warning('Password reset blocked for inactive account.', [
                         'user_id' => $user->id,
@@ -103,11 +103,7 @@ class PasswordResetController extends Controller
                     ]);
                 }
 
-                $user->forceFill([
-                    'password' => Hash::make($password),
-                    'must_change_password' => false,
-                    'remember_token' => Str::random(60),
-                ])->save();
+                $sessions->changePassword($user, $password);
 
                 event(new PasswordReset($user));
 

@@ -337,7 +337,7 @@
         applyLocalWarning(eventType);
 
         try {
-            const response = await fetch(securityEventUrl, {
+            const response = await (window.portalFetch || fetch)(securityEventUrl, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',

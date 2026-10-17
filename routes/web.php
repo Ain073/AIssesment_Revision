@@ -54,7 +54,7 @@ Route::middleware(['guest', 'no_cache'])->group(function () {
     Route::post('/reset-password', [PasswordResetController::class, 'update'])->middleware('throttle:6,1')->name('password.update');
 });
 
-Route::middleware(['auth', 'no_cache'])->group(function () {
+Route::middleware(['auth', 'password_changed', 'no_cache'])->group(function () {
     Route::get('/password/setup', [PasswordSetupController::class, 'edit'])->name('password.setup');
     Route::put('/password/setup', [PasswordSetupController::class, 'update'])->middleware('throttle:6,1')->name('password.setup.update');
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
@@ -64,11 +64,12 @@ Route::middleware(['auth', 'no_cache'])->group(function () {
     Route::get('/profile/activity-log', [ProfileController::class, 'activityLog'])->name('profile.activity');
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
     Route::get('/portal-search', [SearchController::class, 'search'])->middleware('throttle:30,1')->name('portal.search');
+    Route::get('/notifications', [NotificationController::class, 'index'])->middleware('throttle:60,1')->name('notifications.index');
     Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
 });
 
-Route::middleware(['super_admin', 'password_changed', 'no_cache'])
+Route::middleware(['auth', 'super_admin', 'password_changed', 'no_cache'])
     ->prefix('super-admin')
     ->name('super-admin.')
     ->group(function () {
@@ -94,12 +95,14 @@ Route::middleware(['super_admin', 'password_changed', 'no_cache'])
         Route::post('/users/student-import-preview', [UserController::class, 'previewStudentImport'])->middleware('throttle:10,1')->name('users.students.import.preview');
         Route::post('/users/student-import-confirm', [UserController::class, 'confirmStudentImport'])->middleware('throttle:10,1')->name('users.students.import.confirm');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::post('/users/check-availability', [UserController::class, 'checkAvailability'])->middleware('throttle:60,1,user-availability:')->name('users.availability');
+        Route::post('/users/{user}/check-availability', [UserController::class, 'checkAvailability'])->middleware('throttle:60,1,user-availability:')->name('users.availability.edit');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs');
     });
 
-Route::middleware(['instructor', 'password_changed', 'no_cache'])
+Route::middleware(['auth', 'instructor', 'password_changed', 'no_cache'])
     ->prefix('instructor')
     ->name('instructor.')
     ->group(function () {
@@ -142,10 +145,11 @@ Route::middleware(['instructor', 'password_changed', 'no_cache'])
         Route::post('/reports/prepare', [InstructorReportController::class, 'prepareReports'])->name('reports.prepare');
         Route::get('/reports/build', [InstructorReportController::class, 'showReportSheet'])->name('reports.build');
         Route::post('/reports/build', [InstructorReportController::class, 'saveReportSheet'])->name('reports.save');
+        Route::post('/reports/autosave', [InstructorReportController::class, 'autosaveReportSheet'])->middleware('throttle:60,1,report-autosave:')->name('reports.autosave');
         Route::post('/reports/ai-drafts', [InstructorReportController::class, 'generateAiDrafts'])->middleware('throttle:10,1')->name('reports.ai-drafts');
     });
 
-Route::middleware(['admin_dean', 'password_changed', 'no_cache'])
+Route::middleware(['auth', 'admin_dean', 'password_changed', 'no_cache'])
     ->prefix('admin-dean')
     ->name('admin-dean.')
     ->group(function () {
@@ -157,11 +161,13 @@ Route::middleware(['admin_dean', 'password_changed', 'no_cache'])
         Route::post('/teachers/{user}/department-chair-designation', [AdminDeanDesignationController::class, 'grantDepartmentChair'])->name('teachers.department-chair.grant');
         Route::delete('/teachers/{user}/department-chair-designation', [AdminDeanDesignationController::class, 'revokeDepartmentChair'])->name('teachers.department-chair.revoke');
         Route::post('/users', [AdminDeanUserController::class, 'store'])->name('users.store');
+        Route::post('/users/check-availability', [AdminDeanUserController::class, 'checkAvailability'])->middleware('throttle:60,1,user-availability:')->name('users.availability');
+        Route::post('/users/{user}/check-availability', [AdminDeanUserController::class, 'checkAvailability'])->middleware('throttle:60,1,user-availability:')->name('users.availability.edit');
         Route::put('/users/{user}', [AdminDeanUserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [AdminDeanUserController::class, 'destroy'])->name('users.destroy');
     });
 
-Route::middleware(['department_chair', 'password_changed', 'no_cache'])
+Route::middleware(['auth', 'department_chair', 'password_changed', 'no_cache'])
     ->prefix('department-chair')
     ->name('department-chair.')
     ->group(function () {
@@ -181,13 +187,15 @@ Route::middleware(['department_chair', 'password_changed', 'no_cache'])
         Route::post('/students/import-preview', [DepartmentChairStudentController::class, 'previewImport'])->middleware('throttle:10,1')->name('students.import.preview');
         Route::post('/students/import-confirm', [DepartmentChairStudentController::class, 'confirmImport'])->middleware('throttle:10,1')->name('students.import.confirm');
         Route::post('/users', [DepartmentChairUserController::class, 'store'])->name('users.store');
+        Route::post('/users/check-availability', [DepartmentChairUserController::class, 'checkAvailability'])->middleware('throttle:60,1,user-availability:')->name('users.availability');
+        Route::post('/users/{user}/check-availability', [DepartmentChairUserController::class, 'checkAvailability'])->middleware('throttle:60,1,user-availability:')->name('users.availability.edit');
         Route::put('/users/{user}', [DepartmentChairUserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [DepartmentChairUserController::class, 'destroy'])->name('users.destroy');
         Route::get('/reports', [DepartmentChairReportController::class, 'index'])->name('reports');
         Route::get('/reports/{publishAssessment}/{type}', [DepartmentChairReportController::class, 'show'])->name('reports.show');
     });
 
-Route::middleware(['student', 'password_changed', 'no_cache'])
+Route::middleware(['auth', 'student', 'password_changed', 'no_cache'])
     ->prefix('student')
     ->name('student.')
     ->group(function () {

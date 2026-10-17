@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\AccountSessionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -71,7 +73,7 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function updatePhoto(Request $request): RedirectResponse
+    public function updatePhoto(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'profile_photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
@@ -81,9 +83,22 @@ class ProfileController extends Controller
         $file = $validated['profile_photo'];
         $photoAttributes = $this->storeProfilePhoto($file, $user);
 
-        $this->deleteExistingProfilePhoto($user);
-
+        $previousPhoto = clone $user;
         $user->update($photoAttributes);
+
+        // Keep the existing file until its replacement has been saved successfully.
+        try {
+            $this->deleteExistingProfilePhoto($previousPhoto);
+        } catch (\Throwable) {
+            Log::warning('Previous profile picture could not be cleaned up.', ['user_id' => $user->id]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Profile picture updated.',
+                'photo_url' => $user->profilePhotoUrl(),
+            ])->header('Cache-Control', 'no-store');
+        }
 
         return back()->with('status', 'Profile picture updated.');
     }
@@ -142,8 +157,15 @@ SVG;
             ];
         }
 
+        $path = $file->store('profile-photos', 'public');
+        if ($path === false) {
+            throw ValidationException::withMessages([
+                'profile_photo' => 'Profile picture could not be uploaded. Please try again.',
+            ]);
+        }
+
         return [
-            'profile_photo_path' => $file->store('profile-photos', 'public'),
+            'profile_photo_path' => $path,
             'profile_photo_mime' => null,
             'profile_photo_data' => null,
         ];
@@ -283,17 +305,14 @@ SVG;
         return sha1($payload.$apiSecret);
     }
 
-    public function updatePassword(Request $request): RedirectResponse
+    public function updatePassword(Request $request, AccountSessionService $sessions): RedirectResponse
     {
         $validated = $request->validate([
             'current_password' => ['required', 'current_password'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $this->profileUser()->update([
-            'password' => $validated['password'],
-            'must_change_password' => false,
-        ]);
+        $sessions->changePassword($this->profileUser(), $validated['password'], $request);
 
         return back()->with('status', 'Password updated.');
     }

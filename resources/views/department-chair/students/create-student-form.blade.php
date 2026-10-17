@@ -1,7 +1,7 @@
 {{-- Create student form --}}
 <div class="modal fade" id="createStudentModal" tabindex="-1" aria-labelledby="createStudentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <form action="{{ route('department-chair.users.store') }}" class="modal-content" method="POST" autocomplete="off">
+        <form action="{{ route('department-chair.users.store') }}" class="modal-content" method="POST" autocomplete="off" data-ajax-form data-reset-on-success="true" data-reload-page-on-success="true" data-preserve-page-state="true" data-submitting-text="Creating..." data-user-availability-url="{{ route('department-chair.users.availability') }}">
             @csrf
             <input name="base_role" type="hidden" value="student">
 

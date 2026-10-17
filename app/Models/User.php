@@ -46,6 +46,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'session_version',
     ];
 
     /**
@@ -59,6 +60,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'must_change_password' => 'boolean',
+            'session_version' => 'integer',
         ];
     }
 
@@ -160,7 +162,8 @@ class User extends Authenticatable
         }
 
         if ($this->profile_photo_path === 'database') {
-            $version = $this->updated_at?->timestamp ?? time();
+            // Distinct uploads within the same second must not reuse a cached image.
+            $version = substr(hash('sha256', (string) $this->profile_photo_data), 0, 16);
 
             return route('profile.photo.show', ['v' => $version]);
         }

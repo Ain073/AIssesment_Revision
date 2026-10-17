@@ -63,6 +63,30 @@ const createPageContext = () => {
     return { context, window, container, sidebar, topbar, getTables: () => tables };
 };
 
+test('report draft navigation guard can keep the current page without starting a fetch', async () => {
+    const { context, window, container } = createPageContext();
+    let requests = 0;
+    context.fetch = async () => { requests++; throw new Error('Should not fetch'); };
+    window.beforeReportNavigation = async () => false;
+    assert.equal(await context.loadPortalPage('http://localhost/instructor/reports'), true);
+    assert.equal(requests, 0);
+    assert.equal(container.innerHTML, 'original rows');
+});
+
+test('page navigation waits for report draft saving before fetching the next page', async () => {
+    const { context, window, container } = createPageContext();
+    let finishSave;
+    let requests = 0;
+    window.beforeReportNavigation = () => new Promise(resolve => { finishSave = resolve; });
+    context.fetch = async () => { requests++; return { ok: true, text: async () => 'next page' }; };
+    const navigation = context.loadPortalPage('http://localhost/instructor/reports');
+    assert.equal(requests, 0);
+    finishSave(true);
+    await navigation;
+    assert.equal(requests, 1);
+    assert.equal(container.innerHTML, 'next page');
+});
+
 test('saving preserves URL, tab, search and window/table scroll while fetching fresh rows', async () => {
     const { context, window, container, sidebar, topbar, getTables } = createPageContext();
     const url = window.location.href;
@@ -278,4 +302,45 @@ test('refresh failure after saving reports that the data was already saved', asy
     assert.equal(messages[0][0], 'Saved.');
     assert.ok(messages[1][0].includes('Changes saved, but the list could not refresh'));
     assert.equal(messages[1][1], 'warning');
+});
+
+test('account creation shows a busy state, resets after saving, and reports email delivery failure separately', async () => {
+    const { context, form, button, modal, messages, refreshCalls, submit } = createFormContext();
+    form.action = 'http://localhost/super-admin/users';
+    form.dataset.resetOnSuccess = 'true';
+    form.dataset.submittingText = 'Creating...';
+    form.reset = () => form.resets = (form.resets || 0) + 1;
+    button.innerHTML = 'Create Student';
+    let resolveSave;
+    context.fetch = () => new Promise((resolve) => resolveSave = resolve);
+    const pending = submit();
+    assert.equal(button.textContent, 'Creating...');
+    assert.equal(button.disabled, true);
+    assert.equal(form.resets, undefined);
+    resolveSave({
+        ok: true, headers: { get: () => 'application/json' },
+        json: async () => ({ message: 'User account created successfully.', warning: 'Initial password email was not delivered.' }),
+    });
+    await new Promise(setImmediate);
+    modal.onHidden();
+    await pending;
+    assert.equal(form.resets, 1);
+    assert.equal(button.innerHTML, 'Create Student');
+    assert.equal(button.disabled, false);
+    assert.deepEqual(messages, [
+        ['User account created successfully.'], ['Initial password email was not delivered.', 'warning'],
+    ]);
+    assert.deepEqual(refreshCalls[0], [context.window.location.href, false, true]);
+});
+
+test('authentication errors preserve the current feature page even during ordinary navigation', async () => {
+    const { context, window, container } = createPageContext();
+    const originalUrl = window.location.href;
+    window.portalFetch = async () => {
+        window.portalAuthenticationRequired = true;
+        return { ok: false, status: 401 };
+    };
+    assert.equal(await context.loadPortalPage('http://localhost/student/classes'), false);
+    assert.equal(window.location.href, originalUrl);
+    assert.equal(container.content, 'original rows');
 });

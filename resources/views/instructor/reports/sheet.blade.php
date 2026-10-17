@@ -961,8 +961,21 @@
 
     @include('instructor.reports.item-analysis')
 
-    <form action="{{ route('instructor.reports.save') }}" id="reportSheetForm" method="POST">
+    <div class="d-print-none mb-3 d-flex align-items-center gap-2" id="reportAutosaveFeedback">
+        <span role="status" aria-live="polite" data-report-autosave-status></span>
+        <button type="button" class="btn btn-sm btn-outline-primary" data-report-autosave-retry hidden>Retry save</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-report-backup-download hidden>Download unsaved copy</button>
+    </div>
+    <form action="{{ route('instructor.reports.save') }}" id="reportSheetForm" method="POST"
+          data-report-autosave-url="{{ route('instructor.reports.autosave') }}"
+          data-report-account="{{ auth()->id() }}"
+          data-report-unsaved="{{ $errors->any() ? 'true' : 'false' }}"
+          data-report-autosave-enabled="{{ $rows->contains(fn ($row) => $row['report']?->report_status === \App\Models\Report::STATUS_FINALIZED) ? 'false' : 'true' }}"
+          data-report-conflict="{{ $errors->has('report_conflict') ? 'true' : 'false' }}">
         @csrf
+        @foreach ($rows as $row)
+            <input type="hidden" name="revisions[{{ $row['publishAssessment']->public_id }}]" data-report-revision="{{ $row['publishAssessment']->public_id }}" value="{{ old('revisions.'.$row['publishAssessment']->public_id, (int) $row['report']?->revision) }}">
+        @endforeach
         <input name="report_type" type="hidden" value="{{ $reportType }}">
         <input id="paperSizeInput" name="paper_size" type="hidden" value="{{ $selectedPaper }}">
         @foreach ($publishAssessmentKeys as $publishAssessmentKey)

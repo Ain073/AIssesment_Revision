@@ -20,7 +20,7 @@
     @stack('styles')
 
 </head>
-<body class="@yield('body_class')">
+<body class="@yield('body_class')" data-portal-login-url="{{ route('login') }}" data-password-setup-url="{{ route('password.setup') }}">
     @php
         $sidebarUser = auth()->user();
         $sidebarPhotoUrl = $sidebarUser?->profilePhotoUrl();
@@ -49,7 +49,7 @@
         <div class="border-top border-white border-opacity-10 profile-menu-shell">
             <button class="profile-menu-toggle" data-bs-target="#sidebarProfileMenu" data-bs-toggle="collapse" type="button" aria-expanded="false" aria-controls="sidebarProfileMenu">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="sidebar-profile-photo d-flex align-items-center justify-content-center fw-bold">
+                    <div class="sidebar-profile-photo d-flex align-items-center justify-content-center fw-bold" data-profile-photo-display data-profile-photo-alt="{{ $profileName ?? 'User' }} profile picture">
                         @if ($sidebarPhotoUrl)
                             <img src="{{ $sidebarPhotoUrl }}" alt="{{ $profileName ?? 'User' }} profile picture">
                         @else
@@ -96,41 +96,13 @@
         </div>
 
         <div class="d-flex align-items-center gap-3">
-            <div class="dropdown">
+            <div class="dropdown" data-notifications-root data-notifications-url="{{ route('notifications.index') }}">
                 <button class="btn btn-link text-secondary p-1 notification-button" data-bs-toggle="dropdown" type="button" aria-expanded="false" aria-label="Notifications">
                     <span class="material-symbols-outlined">notifications</span>
-                    @if (($portalUnreadNotifications ?? 0) > 0)
-                        <span class="notification-count">{{ $portalUnreadNotifications > 9 ? '9+' : $portalUnreadNotifications }}</span>
-                    @endif
+                    <span class="notification-count" data-notification-count @if (($portalUnreadNotifications ?? 0) === 0) hidden @endif>{{ ($portalUnreadNotifications ?? 0) > 9 ? '9+' : ($portalUnreadNotifications ?? 0) }}</span>
                 </button>
-                <div class="dropdown-menu dropdown-menu-end p-0 notification-menu">
-                    <div class="d-flex align-items-center justify-content-between gap-2 px-3 py-2 border-bottom">
-                        <span class="fw-bold" style="color: var(--psu-navy);">Notifications</span>
-                        @if (($portalUnreadNotifications ?? 0) > 0)
-                            <form action="{{ route('notifications.read-all') }}" method="POST">
-                                @csrf
-                                <button class="btn btn-link btn-sm p-0 text-decoration-none" type="submit">Mark all read</button>
-                            </form>
-                        @endif
-                    </div>
-
-                    @forelse (($portalNotifications ?? collect()) as $notification)
-                        <form action="{{ route('notifications.read', $notification) }}" method="POST">
-                            @csrf
-                            <button class="notification-item {{ $notification->isUnread() ? 'unread' : '' }}" type="submit">
-                                <div class="d-flex justify-content-between gap-2">
-                                    <span class="fw-bold" style="color: var(--psu-navy);">{{ $notification->title }}</span>
-                                    <span class="small text-secondary text-nowrap">{{ $notification->created_at->diffForHumans(null, true) }}</span>
-                                </div>
-                                <p class="small text-secondary mb-0 mt-1">{{ $notification->message }}</p>
-                            </button>
-                        </form>
-                    @empty
-                        <div class="p-4 text-center text-secondary">
-                            <span class="material-symbols-outlined d-block mb-2">notifications</span>
-                            No notifications yet.
-                        </div>
-                    @endforelse
+                <div class="dropdown-menu dropdown-menu-end p-0 notification-menu" data-notification-menu>
+                    @include('partials.notification-menu')
                 </div>
             </div>
         </div>
@@ -148,7 +120,11 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ asset('js/portal-session.js') }}?v={{ filemtime(public_path('js/portal-session.js')) }}"></script>
+    <script src="{{ asset('js/profile-photo.js') }}?v={{ filemtime(public_path('js/profile-photo.js')) }}"></script>
+    <script src="{{ asset('js/report-autosave.js') }}?v={{ filemtime(public_path('js/report-autosave.js')) }}"></script>
     <script src="{{ asset('js/user-directory.js') }}?v={{ filemtime(public_path('js/user-directory.js')) }}"></script>
+    <script src="{{ asset('js/user-availability.js') }}?v={{ filemtime(public_path('js/user-availability.js')) }}"></script>
     <script src="{{ asset('js/record-search.js') }}?v={{ filemtime(public_path('js/record-search.js')) }}"></script>
     <script src="{{ asset('js/designation-picker.js') }}?v={{ filemtime(public_path('js/designation-picker.js')) }}"></script>
     <script>
@@ -547,6 +523,11 @@
                 };
 
                 const refreshSection = async (force = false) => {
+                    if (window.portalAuthenticationRequired) {
+                        window.clearInterval(pollTimer);
+                        return;
+                    }
+
                     if (! section.isConnected) {
                         window.clearInterval(pollTimer);
                         return;
@@ -591,7 +572,7 @@
                         const searchTerm = new URL(window.location.href).searchParams.get('search') || '';
                         if (searchTerm) targetUrl.searchParams.set('search', searchTerm);
 
-                        const response = await fetch(targetUrl.href, {
+                        const response = await (window.portalFetch || fetch)(targetUrl.href, {
                             headers: {
                                 'X-Requested-With': 'XMLHttpRequest',
                             },
@@ -809,9 +790,13 @@
                 : [];
 
             try {
+                if (window.beforeReportNavigation && ! await window.beforeReportNavigation()) {
+                    return true;
+                }
+                if (requestId !== latestPortalPageRequest) return true;
                 cleanupBootstrapOverlays();
 
-                const response = await fetch(url, {
+                const response = await (window.portalFetch || fetch)(url, {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
                     },
@@ -862,6 +847,7 @@
                 const focusedSearchInput = currentSearchForm?.querySelector('[data-record-search-input]') === document.activeElement
                     ? document.activeElement : null;
                 const searchSelection = focusedSearchInput ? [focusedSearchInput.selectionStart, focusedSearchInput.selectionEnd] : null;
+                window.cleanupProfilePhotoPreviews?.(currentContainer);
                 currentContainer.innerHTML = nextContainer.innerHTML;
                 const nextSearchInput = currentSearchInput ? currentContainer.querySelector('[data-record-search-input]') : null;
                 if (nextSearchInput) nextSearchInput.replaceWith(currentSearchInput);
@@ -873,6 +859,8 @@
                 if (! preserveCurrentPage && nextTopbar && currentTopbar) {
                     currentTopbar.innerHTML = nextTopbar.innerHTML;
                 }
+
+                window.refreshPortalNotifications?.();
 
                 document.title = nextDocument.title || document.title;
                 if (pushHistory) {
@@ -918,7 +906,7 @@
                 if (requestId !== latestPortalPageRequest) {
                     return true;
                 }
-                if (! preserveCurrentPage) {
+                if (! preserveCurrentPage && ! window.portalAuthenticationRequired) {
                     window.location.href = url;
                 }
                 return false;
@@ -955,7 +943,8 @@
 
             event.preventDefault();
 
-            const url = new URL(form.action, window.location.href);
+            // Named controls such as the audit Action filter can shadow form.action.
+            const url = new URL(form.getAttribute('action') || window.location.href, window.location.href);
             const params = new URLSearchParams();
 
             new FormData(form).forEach((value, key) => {
@@ -1125,6 +1114,7 @@
             form.dataset.ajaxSubmitting = 'true';
 
             const submitButtons = form.querySelectorAll('button[type="submit"]');
+            const buttonStates = Array.from(submitButtons, (button) => ({ button, disabled: button.disabled, html: button.innerHTML }));
             const errorBox = form.querySelector('[data-ajax-errors]') || document.createElement('div');
 
             if (! errorBox.hasAttribute('data-ajax-errors')) {
@@ -1135,14 +1125,17 @@
 
             errorBox.classList.add('d-none');
             errorBox.textContent = '';
-            submitButtons.forEach((button) => button.disabled = true);
+            submitButtons.forEach((button) => {
+                button.disabled = true;
+                if (form.dataset.submittingText) button.textContent = form.dataset.submittingText;
+            });
             let saved = false;
 
             try {
                 const actionUrl = new URL(form.action, window.location.href);
                 const searchTerm = new URL(window.location.href).searchParams.get('search');
                 if (searchTerm) actionUrl.searchParams.set('search', searchTerm);
-                const response = await fetch(actionUrl.href, {
+                const response = await (window.portalFetch || fetch)(actionUrl.href, {
                     method: form.method || 'POST',
                     body: new FormData(form),
                     headers: {
@@ -1204,6 +1197,7 @@
                     }
                     window.refreshPortalSections?.();
                     showPortalMessage(data.message || 'Saved successfully.');
+                    if (data.warning) showPortalMessage(data.warning, 'warning');
                     cleanupStaleBootstrapBackdrops();
 
                     if (form.dataset.reloadPageOnSuccess === 'true') {
@@ -1235,10 +1229,16 @@
                 }
             } finally {
                 delete form.dataset.ajaxSubmitting;
-                submitButtons.forEach((button) => button.disabled = false);
+                buttonStates.forEach(({ button, disabled, html }) => {
+                    button.disabled = disabled;
+                    button.innerHTML = html;
+                });
             }
         });
+        window.navigatePortalPage = loadPortalPage;
+        window.showPortalMessage = showPortalMessage;
     </script>
+    <script src="{{ asset('js/portal-notifications.js') }}?v={{ filemtime(public_path('js/portal-notifications.js')) }}"></script>
     @stack('scripts')
 </body>
 </html>

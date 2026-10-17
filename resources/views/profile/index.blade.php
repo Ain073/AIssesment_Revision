@@ -162,7 +162,7 @@
 
     <section class="profile-card profile-header-card mb-4">
         <div class="profile-main-info">
-            <div class="profile-photo-large">
+            <div class="profile-photo-large" data-profile-photo-display data-profile-photo-alt="{{ $user->displayName() }} profile picture">
                 @if ($photoUrl)
                     <img src="{{ $photoUrl }}" alt="{{ $user->displayName() }} profile picture">
                 @else

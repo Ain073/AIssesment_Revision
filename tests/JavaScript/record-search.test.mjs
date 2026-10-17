@@ -69,17 +69,25 @@ test('empty results use current-feature feedback and the correct student placeho
     assert.equal(status.textContent, '');
 });
 
-const runSearchForm = (fields, recordSearch = true) => {
+const runSearchForm = (fields, recordSearch = true, audit = false) => {
     const calls = [];
+    const action = audit ? 'http://localhost/super-admin/audit-logs' : 'http://localhost/super-admin/users';
     const form = {
-        method: 'GET', action: 'http://localhost/super-admin/users', dataset: { preservePageState: 'true' },
+        id: audit ? 'auditFilterForm' : 'recordSearchForm',
+        method: 'GET',
+        // A named form control shadows the native action property in the browser.
+        action: fields.has('action') ? { toString: () => '[object HTMLSelectElement]' } : action,
+        getAttribute: (name) => name === 'action' ? action : null,
+        dataset: { preservePageState: 'true' },
         matches: () => recordSearch,
         querySelector(selector) { return fields.has(selector.match(/name="([^"]+)"/)[1]) ? {} : null; },
     };
     const context = {
         URL, URLSearchParams,
         FormData: class { forEach(callback) { fields.forEach(callback); } },
-        window: { location: { href: 'http://localhost/super-admin/users?tab=students&program=2&department=1&search=old&page=4&teachers_page=3&students_page=2' } },
+        window: { location: { href: audit
+            ? 'http://localhost/super-admin/audit-logs?search=old&page=4'
+            : 'http://localhost/super-admin/users?tab=students&program=2&department=1&search=old&page=4&teachers_page=3&students_page=2' } },
         document: { addEventListener(_event, callback) { context.submit = callback; } },
         loadPortalPage: async (...args) => { calls.push(args); return true; },
     };
@@ -115,4 +123,31 @@ test('clearing search retains filters while a filter change retains the search t
     assert.equal(filtered.url.searchParams.get('department'), '3');
     assert.equal(filtered.url.searchParams.has('teachers_page'), false);
     assert.equal(filtered.url.searchParams.has('students_page'), false);
+});
+
+test('audit role filtering keeps the audit URL when the Action dropdown shadows form.action', () => {
+    const result = runSearchForm(new Map([
+        ['search', 'Account'], ['role', 'instructor'], ['module', 'Users'],
+        ['action', ''], ['from', '2026-10-01'], ['to', '2026-10-17'],
+    ]), true, true);
+    assert.equal(result.url.pathname, '/super-admin/audit-logs');
+    assert.equal(result.url.searchParams.get('role'), 'instructor');
+    assert.equal(result.url.searchParams.get('search'), 'Account');
+    assert.equal(result.url.searchParams.get('module'), 'Users');
+    assert.equal(result.url.searchParams.get('from'), '2026-10-01');
+    assert.equal(result.url.searchParams.get('to'), '2026-10-17');
+    assert.equal(result.url.searchParams.has('action'), false);
+    assert.equal(result.url.searchParams.has('page'), false);
+    assert.equal(result.historyMode, 'replace');
+    assert.equal(result.preserveState, true);
+});
+
+test('audit Action filtering and clearing filters keep the audit URL and selected values', () => {
+    const filtered = runSearchForm(new Map([['role', 'student'], ['action', 'UPDATE']]), true, true);
+    assert.equal(filtered.url.pathname, '/super-admin/audit-logs');
+    assert.equal(filtered.url.searchParams.get('role'), 'student');
+    assert.equal(filtered.url.searchParams.get('action'), 'UPDATE');
+    const cleared = runSearchForm(new Map([['role', ''], ['action', ''], ['search', '']]), true, true);
+    assert.equal(cleared.url.pathname, '/super-admin/audit-logs');
+    assert.equal(cleared.url.search, '');
 });

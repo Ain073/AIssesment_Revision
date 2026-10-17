@@ -6,18 +6,26 @@ use App\Models\Department;
 use App\Models\Program;
 use App\Models\User;
 use App\Services\UserAccountService;
+use App\Services\UserAccountAvailability;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\MessageBag;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class UserController extends BaseController
 {
-    public function store(Request $request, UserAccountService $accounts): RedirectResponse
+    public function checkAvailability(Request $request, UserAccountAvailability $availability, ?User $user = null): JsonResponse
+    {
+        $college = $this->scopedCollege($this->currentUser());
+        abort_unless($college, 403, 'Dean account needs an assigned college before managing users.');
+
+        return $availability->check($request, $user ? $this->scopedUser($user, $college->college_id) : null);
+    }
+
+    public function store(Request $request, UserAccountService $accounts): JsonResponse|RedirectResponse
     {
         $user = $this->currentUser();
         $scopedCollege = $this->scopedCollege($user);
@@ -83,21 +91,15 @@ class UserController extends BaseController
             ->values();
 
         if ($managedRoles->isNotEmpty() && $validated['base_role'] !== 'instructor') {
-            return redirect()
-                ->back()
-                ->withInput()
-                ->withErrors(new MessageBag([
-                    'authorizations' => 'Only teacher accounts can receive a designation.',
-                ]));
+            throw ValidationException::withMessages([
+                'authorizations' => 'Only teacher accounts can receive a designation.',
+            ]);
         }
 
         if ($managedRoles->contains('department_chair') && $this->departmentHasChair((int) $validated['department_id'])) {
-            return redirect()
-                ->back()
-                ->withInput()
-                ->withErrors(new MessageBag([
-                    'authorizations' => 'This department already has a Department Chair. Remove the current designation first.',
-                ]));
+            throw ValidationException::withMessages([
+                'authorizations' => 'This department already has a Department Chair. Remove the current designation first.',
+            ]);
         }
 
         $initialPassword = $accounts->initialPasswordFor($validated);
@@ -121,6 +123,13 @@ class UserController extends BaseController
 
         $accounts->sendAccountCreatedNotification($createdUser);
         $passwordEmailSent = $accounts->sendInitialPasswordEmail($createdUser, $initialPassword);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'User account created successfully.',
+                'warning' => $passwordEmailSent ? null : 'Account was created, but the initial password email was not delivered.',
+            ], 201);
+        }
 
         $redirect = redirect()
             ->back()

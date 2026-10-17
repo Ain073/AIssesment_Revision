@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\StudentAccountImportService;
 use App\Services\UserAccountService;
+use App\Services\UserAccountAvailability;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +28,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UserController extends Controller
 {
+    public function checkAvailability(Request $request, UserAccountAvailability $availability, ?User $user = null): JsonResponse
+    {
+        abort_if($user?->hasRole('super_admin'), 403, 'Admin account cannot be edited here.');
+
+        return $availability->check($request, $user);
+    }
+
     public function index(Request $request, StudentAccountImportService $importer): View
     {
         $departmentKey = $request->query('department') ?? $request->query('department_id');
@@ -147,7 +155,7 @@ class UserController extends Controller
         return $redirect;
     }
 
-    public function store(Request $request, UserAccountService $accounts): RedirectResponse
+    public function store(Request $request, UserAccountService $accounts): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
@@ -200,21 +208,15 @@ class UserController extends Controller
             ->values();
 
         if ($managedRoles->isNotEmpty() && $validated['base_role'] !== 'instructor') {
-            return redirect()
-                ->route('super-admin.users')
-                ->withInput()
-                ->withErrors(new MessageBag([
-                    'authorizations' => 'Only teacher accounts can receive a designation.',
-                ]));
+            throw ValidationException::withMessages([
+                'authorizations' => 'Only teacher accounts can receive a designation.',
+            ]);
         }
 
         if ($managedRoles->contains('admin_dean') && $this->collegeHasDeanForDepartment((int) $validated['department_id'])) {
-            return redirect()
-                ->route('super-admin.users')
-                ->withInput()
-                ->withErrors(new MessageBag([
-                    'authorizations' => 'This college already has a Dean. Remove the current designation first.',
-                ]));
+            throw ValidationException::withMessages([
+                'authorizations' => 'This college already has a Dean. Remove the current designation first.',
+            ]);
         }
 
         $initialPassword = $accounts->initialPasswordFor($validated);
@@ -242,6 +244,13 @@ class UserController extends Controller
         $passwordEmailSent = $accounts->sendInitialPasswordEmail($createdUser, $initialPassword);
 
         AuditLogger::log('CREATE', 'Users', "Created {$validated['base_role']} account for {$createdUser->displayName()} ({$createdUser->email})", $createdUser);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'User account created successfully.',
+                'warning' => $passwordEmailSent ? null : 'Account was created, but the initial password email was not delivered.',
+            ], 201);
+        }
 
         $redirect = redirect()
             ->route('super-admin.users')

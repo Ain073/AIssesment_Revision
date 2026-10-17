@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        $middleware->authenticateSessions();
+        $middleware->web(append: [\App\Http\Middleware\EnsureAccountSessionIsValid::class]);
 
         $middleware->alias([
             'admin_dean' => \App\Http\Middleware\EnsureAdminDean::class,
@@ -24,5 +28,15 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (AuthenticationException $exception, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Your session has ended. Please sign in again.',
+                    'code' => 'authentication_required',
+                    'login_url' => route('login'),
+                ], 401)->header('Cache-Control', 'no-store');
+            }
+
+            return null;
+        });
     })->create();

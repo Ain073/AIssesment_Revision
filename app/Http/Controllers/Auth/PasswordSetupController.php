@@ -4,12 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AccountSessionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
@@ -29,7 +28,7 @@ class PasswordSetupController extends Controller
         ]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request, AccountSessionService $sessions): RedirectResponse
     {
         $validated = $request->validate([
             'current_password' => ['required', 'current_password'],
@@ -38,11 +37,7 @@ class PasswordSetupController extends Controller
 
         /** @var User $user */
         $user = Auth::user();
-        $user->forceFill([
-            'password' => Hash::make($validated['password']),
-            'must_change_password' => false,
-            'remember_token' => Str::random(60),
-        ])->save();
+        $sessions->changePassword($user, $validated['password'], $request);
 
         Log::info('User completed first-login password setup.', [
             'user_id' => $user->id,

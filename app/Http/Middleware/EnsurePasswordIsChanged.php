@@ -17,6 +17,13 @@ class EnsurePasswordIsChanged
             && ! $request->routeIs('password.setup')
             && ! $request->routeIs('password.setup.update')
             && ! $request->routeIs('logout')) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Please change your initial password before using this feature.',
+                    'code' => 'password_change_required',
+                ], 403)->header('Cache-Control', 'no-store');
+            }
+
             return redirect()->route('password.setup');
         }
 

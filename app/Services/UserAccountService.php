@@ -25,7 +25,7 @@ class UserAccountService
         'department_chair',
     ];
 
-    public function __construct(private NotificationService $notifications)
+    public function __construct(private NotificationService $notifications, private AccountSessionService $sessions)
     {
     }
 
@@ -63,6 +63,10 @@ class UserAccountService
         ]);
 
         $user->save();
+
+        if ($user->wasChanged('status') && $user->status !== 'active') {
+            $this->sessions->invalidateAllSessions($user);
+        }
 
         $this->syncRoles($user, $data['base_role'], $managedRoles);
         $this->syncInstructorProfile($user, $data);

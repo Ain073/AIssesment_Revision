@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Services\AuditLogger;
+use App\Services\AccountSessionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,7 +44,7 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
-    public function login(Request $request): RedirectResponse
+    public function login(Request $request, AccountSessionService $sessions): RedirectResponse
     {
         $validated = $request->validate([
             'email' => ['required', 'email'],
@@ -101,6 +102,8 @@ class LoginController extends Controller
                 ->withErrors(['email' => 'Your account is inactive. Please contact the administrator.'])
                 ->onlyInput('email');
         }
+
+        $sessions->rememberCurrentSession($request, Auth::user());
 
         Log::info('User logged in successfully.', [
             'user_id' => Auth::id(),
