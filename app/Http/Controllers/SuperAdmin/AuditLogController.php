@@ -22,10 +22,6 @@ class AuditLogController extends Controller
 
         $query = AuditLog::with('user')
             ->withoutSupersededUserCreations()
-            ->whereNot(function ($q) {
-                $q->where('module', 'Users')
-                  ->where('action', 'UPDATE');
-            })
             ->orderByDesc('created_at')->orderByDesc('audit_log_id');
 
         // Options come from visible logs for the feature, independently of search/date filters.

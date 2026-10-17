@@ -578,8 +578,8 @@ class UserAjaxUpdateTest extends TestCase
         $this->signInAccount($admin);
         foreach ([
             'Auth' => ['LOGIN', 'LOGOUT'], 'Assessments' => ['PUBLISH', 'SUBMIT'],
-            'Reports' => ['FINALIZE'], 'Users' => ['CREATE'], 'Subjects' => [],
-            '' => ['CREATE', 'FINALIZE', 'LOGIN', 'LOGOUT', 'PUBLISH', 'SUBMIT'],
+            'Reports' => ['FINALIZE'], 'Users' => ['CREATE', 'UPDATE'], 'Subjects' => [],
+            '' => ['CREATE', 'FINALIZE', 'LOGIN', 'LOGOUT', 'PUBLISH', 'SUBMIT', 'UPDATE'],
         ] as $module => $expected) {
             $this->get(route('super-admin.audit-logs', ['module' => $module]), ['X-Requested-With' => 'XMLHttpRequest'])
                 ->assertOk()->assertViewHas('actions', fn ($actions) => $actions->all() === $expected);
@@ -587,6 +587,40 @@ class UserAjaxUpdateTest extends TestCase
         $this->get(route('super-admin.audit-logs', ['module' => 'Auth', 'search' => 'missing event']))
             ->assertOk()->assertViewHas('actions', fn ($actions) => $actions->all() === ['LOGIN', 'LOGOUT'])
             ->assertViewHas('logs', fn ($logs) => $logs->total() === 0);
+    }
+
+    public function test_past_and_new_user_updates_are_visible_and_filterable_without_rewriting_logs(): void
+    {
+        $admin = $this->actor('super_admin');
+        $originalDescription = 'Updated student account for Previous Name (Status: active)';
+        $old = AuditLog::create([
+            'user_id' => $admin->id, 'user_role' => 'super_admin',
+            'module' => 'Users', 'action' => 'UPDATE',
+            'description' => $originalDescription, 'created_at' => now()->subYear(),
+        ]);
+        $new = AuditLog::create([
+            'user_id' => $admin->id, 'user_role' => 'super_admin',
+            'module' => 'Users', 'action' => 'UPDATE',
+            'description' => 'Updated student account details (Status: active)', 'created_at' => now(),
+        ]);
+        AuditLog::create([
+            'user_id' => $admin->id, 'module' => 'Users', 'action' => 'CREATE',
+            'description' => 'Created another account', 'created_at' => now(),
+        ]);
+        $this->signInAccount($admin);
+        foreach ([[], ['X-Requested-With' => 'XMLHttpRequest']] as $headers) {
+            $this->get(route('super-admin.audit-logs', ['module' => 'Users', 'action' => 'UPDATE']), $headers)
+                ->assertOk()
+                ->assertViewHas('actions', fn ($actions) => $actions->all() === ['CREATE', 'UPDATE'])
+                ->assertViewHas('logs', fn ($logs) => $logs->total() === 2
+                    && $logs->pluck('audit_log_id')->all() === [$new->getKey(), $old->getKey()])
+                ->assertSee('Updated student account (Status: active)')
+                ->assertSee('Updated student account details (Status: active)')
+                ->assertDontSee('Previous Name')
+                ->assertDontSee('Created another account');
+        }
+        $this->assertSame($originalDescription, $old->fresh()->description);
+        $this->assertSame(3, AuditLog::count());
     }
 
     public function test_audit_feature_change_discards_unrelated_action_and_pagination_but_keeps_other_filters(): void
