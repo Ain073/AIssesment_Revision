@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\PublishAssessment;
 use App\Services\UserAccountService;
 use App\Services\AccountSessionService;
+use App\Services\AuditLogger;
 use App\Support\RecordSearch;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
@@ -665,9 +666,95 @@ class UserAjaxUpdateTest extends TestCase
             ->assertOk()->assertSee('Student identity unavailable')->assertDontSee('Historical audit log');
         $this->assertSame('Student', $missingStudent->userRoleLabel());
         $this->assertSame('', $missingStudent->actorSubtitle());
-        $this->assertSame('System Migration', $accountCreation->actorName());
-        $this->assertSame('System', $accountCreation->userRoleLabel());
+        $this->get(route('super-admin.audit-logs', ['module' => 'Users', 'action' => 'CREATE']))
+            ->assertOk()->assertSee('Creator unavailable')->assertSee('Unknown')->assertDontSee('System Migration');
+        $this->assertSame('Creator unavailable', $accountCreation->actorName());
+        $this->assertSame('Unknown', $accountCreation->userRoleLabel());
         $this->assertSame('', $accountCreation->actorSubtitle());
+    }
+
+    public function test_missing_account_creation_backfill_is_idempotent_and_preserves_accounts_and_existing_logs(): void
+    {
+        $admin = $this->actor('super_admin');
+        $missing = $this->account(['student']);
+        $existing = $this->account(['instructor']);
+        DB::table('users')->where('id', $missing->id)->update([
+            'created_at' => '2026-09-25 20:24:44', 'updated_at' => '2026-10-01 12:30:00',
+        ]);
+        $original = AuditLog::create([
+            'user_id' => $admin->id, 'user_role' => 'super_admin', 'module' => 'Users', 'action' => 'CREATE',
+            'description' => 'Original creation event', 'auditable_type' => User::class,
+            'auditable_id' => $existing->id, 'created_at' => '2026-09-10 10:00:00',
+        ]);
+        AuditLog::create([
+            'module' => 'Classes', 'action' => 'CREATE', 'description' => 'Unrelated event',
+            'auditable_type' => User::class, 'auditable_id' => $missing->id, 'created_at' => now(),
+        ]);
+        $originalAttributes = $original->fresh()->getRawOriginal();
+        $accountsBefore = DB::table('users')->orderBy('id')->get()->toJson();
+
+        $migration = require database_path('migrations/2026_10_17_000002_backfill_missing_user_creation_audit_logs.php');
+        $migration->up();
+        $migration->up();
+        $migration->down();
+
+        $this->assertDatabaseCount('audit_logs', 4);
+        $this->assertSame($accountsBefore, DB::table('users')->orderBy('id')->get()->toJson());
+        $this->assertSame($originalAttributes, $original->fresh()->getRawOriginal());
+        foreach ([$admin, $missing, $existing] as $account) {
+            $this->assertSame(1, AuditLog::where('module', 'Users')->where('action', 'CREATE')
+                ->where('auditable_type', User::class)->where('auditable_id', $account->id)->count());
+        }
+        $reconstructed = AuditLog::where('module', 'Users')->where('auditable_id', $missing->id)->firstOrFail();
+        $this->assertNull($reconstructed->user_id);
+        $this->assertNull($reconstructed->user_role);
+        $this->assertNull($reconstructed->ip_address);
+        $this->assertSame('2026-09-25 20:24:44', $reconstructed->getRawOriginal('created_at'));
+        $this->assertStringContainsString('Reconstructed creation entry', $reconstructed->description);
+        $this->assertSame('Creator unavailable', $reconstructed->actorName());
+    }
+
+    public function test_missing_creation_backfill_rolls_back_if_a_log_cannot_be_inserted(): void
+    {
+        $first = $this->account(['student']);
+        $second = $this->account(['student']);
+        DB::statement("CREATE TRIGGER reject_backfilled_audit BEFORE INSERT ON audit_logs
+            WHEN NEW.auditable_id = {$second->id}
+            BEGIN SELECT RAISE(ABORT, 'Simulated backfill failure'); END");
+        $migration = require database_path('migrations/2026_10_17_000002_backfill_missing_user_creation_audit_logs.php');
+        try {
+            $migration->up();
+            $this->fail('The backfill must not silently lose an audit entry.');
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString('Simulated backfill failure', $exception->getMessage());
+        }
+        $this->assertDatabaseCount('audit_logs', 0);
+        $this->assertDatabaseCount('users', 2);
+    }
+
+    public function test_missing_creation_backfill_covers_accounts_after_the_first_chunk(): void
+    {
+        $rows = [];
+        foreach (range(1, 101) as $number) {
+            $rows[] = [
+                'public_id' => (string) Str::uuid(), 'name' => "Account {$number}",
+                'first_name' => 'Account', 'last_name' => (string) $number,
+                'email' => "backfill{$number}@example.test", 'password' => 'unused-fixture-value',
+                'status' => 'active', 'created_at' => '2026-09-25 20:24:44', 'updated_at' => '2026-10-01 12:30:00',
+            ];
+        }
+        DB::table('users')->insert($rows);
+        $accountsBefore = DB::table('users')->orderBy('id')->get()->toJson();
+        $migration = require database_path('migrations/2026_10_17_000002_backfill_missing_user_creation_audit_logs.php');
+        $migration->up();
+        $migration->up();
+
+        $this->assertDatabaseCount('audit_logs', 101);
+        $this->assertDatabaseHas('audit_logs', [
+            'module' => 'Users', 'action' => 'CREATE', 'auditable_type' => User::class,
+            'auditable_id' => 101, 'user_id' => null, 'created_at' => '2026-09-25 20:24:44',
+        ]);
+        $this->assertSame($accountsBefore, DB::table('users')->orderBy('id')->get()->toJson());
     }
 
     public function test_search_input_rejects_arrays_and_excessively_long_terms(): void
@@ -811,6 +898,33 @@ class UserAjaxUpdateTest extends TestCase
         Mail::assertNothingSent();
     }
 
+    public function test_student_import_rolls_back_all_accounts_if_a_create_log_fails(): void
+    {
+        Mail::fake();
+        $this->signInAccount($this->actor('super_admin'));
+        $token = $this->previewStudentImport('super-admin.users.students.import',
+            "student_number,first_name,last_name,email\n"
+            ."2026-90001,Juan,Dela Cruz,juan.import@example.test\n"
+            ."2026-90002,Maria,Santos,maria.import@example.test\n"
+        );
+        DB::statement("CREATE TRIGGER reject_imported_audit BEFORE INSERT ON audit_logs
+            WHEN NEW.description LIKE '%maria.import@example.test%'
+            BEGIN SELECT RAISE(ABORT, 'Simulated audit failure'); END");
+        $this->withoutExceptionHandling();
+        try {
+            $this->post(route('super-admin.users.students.import.confirm'), ['import_token' => $token]);
+            $this->fail('A missing Create log must abort the import.');
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString('Simulated audit failure', $exception->getMessage());
+        }
+        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseCount('user_roles', 1);
+        $this->assertDatabaseCount('student_profiles', 0);
+        $this->assertDatabaseCount('audit_logs', 0);
+        $this->assertDatabaseCount('app_notifications', 0);
+        Mail::assertNothingSent();
+    }
+
     private function previewStudentImport(string $routePrefix, string $csv): string
     {
         $preview = $this->post(route("{$routePrefix}.preview"), [
@@ -840,10 +954,53 @@ class UserAjaxUpdateTest extends TestCase
         } else {
             $this->assertSame(1, $created->studentProfile->program_id);
         }
-        if ($actorRole === 'super_admin') {
-            $this->assertDatabaseHas('audit_logs', ['action' => 'CREATE', 'module' => 'Users', 'auditable_id' => $created->id]);
-        }
+        $this->assertDatabaseCount('audit_logs', 1);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $actor->id, 'user_role' => $actorRole,
+            'action' => 'CREATE', 'module' => 'Users',
+            'auditable_type' => User::class, 'auditable_id' => $created->id,
+            'description' => "Created {$baseRole} account for {$created->displayName()} ({$created->email})",
+        ]);
         Mail::assertSent(\App\Mail\InitialAccountPasswordMail::class);
+    }
+
+    #[DataProvider('portals')]
+    public function test_account_creation_rolls_back_when_the_required_audit_write_fails(string $portal, string $actorRole): void
+    {
+        Mail::fake();
+        $actor = $this->actor($actorRole);
+        $payload = $this->creationPayload('student');
+        DB::statement("CREATE TRIGGER reject_manual_audit BEFORE INSERT ON audit_logs
+            WHEN NEW.module = 'Users' AND NEW.action = 'CREATE'
+            BEGIN SELECT RAISE(ABORT, 'Simulated audit failure'); END");
+        $this->withoutExceptionHandling();
+        try {
+            $this->signInAccount($actor)->postJson(route("{$portal}.users.store"), $payload);
+            $this->fail('A missing Create log must abort account creation.');
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString('Simulated audit failure', $exception->getMessage());
+        }
+        $this->assertDatabaseMissing('users', ['email' => $payload['email']]);
+        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseCount('user_roles', $actorRole === 'super_admin' ? 1 : 2);
+        $this->assertDatabaseCount('student_profiles', 0);
+        $this->assertDatabaseCount('audit_logs', 0);
+        $this->assertDatabaseCount('app_notifications', 0);
+        Mail::assertNothingSent();
+    }
+
+    public function test_optional_audit_failure_is_reported_without_throwing(): void
+    {
+        \Illuminate\Support\Facades\Log::spy();
+        DB::statement("CREATE TRIGGER reject_optional_audit BEFORE INSERT ON audit_logs
+            BEGIN SELECT RAISE(ABORT, 'Simulated optional audit failure'); END");
+        AuditLogger::log('LOGIN', 'Auth', 'User logged in successfully.');
+        $this->assertDatabaseCount('audit_logs', 0);
+        \Illuminate\Support\Facades\Log::shouldHaveReceived('error')->once()->with(
+            'Audit log could not be recorded.',
+            \Mockery::on(fn ($context) => $context['action'] === 'LOGIN'
+                && $context['module'] === 'Auth' && $context['exception_type'] === QueryException::class)
+        );
     }
 
     #[DataProvider('portals')]

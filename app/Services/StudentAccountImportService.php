@@ -163,7 +163,7 @@ class StudentAccountImportService
                     'program_id' => $row['program_id'],
                     'student_number' => $row['student_number'],
                 ]);
-                AuditLogger::log(
+                AuditLogger::logOrFail(
                     'CREATE',
                     'Users',
                     "Created student account for {$createdUser->displayName()} ({$createdUser->email}) via {$format} import",

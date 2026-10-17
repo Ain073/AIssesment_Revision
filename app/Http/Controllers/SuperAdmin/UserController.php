@@ -242,8 +242,6 @@ class UserController extends Controller
         $accounts->sendAccountCreatedNotification($createdUser);
         $passwordEmailSent = $accounts->sendInitialPasswordEmail($createdUser, $initialPassword);
 
-        AuditLogger::log('CREATE', 'Users', "Created {$validated['base_role']} account for {$createdUser->displayName()} ({$createdUser->email})", $createdUser);
-
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'User account created successfully.',

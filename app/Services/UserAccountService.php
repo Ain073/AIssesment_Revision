@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Closure;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -33,22 +34,31 @@ class UserAccountService
     {
         $data['password'] = $data['password'] ?? $this->initialPasswordFor($data);
 
-        $user = User::create([
-            'name' => $this->buildName($data),
-            'first_name' => $data['first_name'],
-            'middle_name' => $data['middle_name'] ?? null,
-            'last_name' => $data['last_name'],
-            'email' => $data['email'],
-            'password' => $data['password'],
-            'must_change_password' => true,
-            'status' => $data['status'],
-        ]);
+        return DB::transaction(function () use ($data, $managedRoles): User {
+            $user = User::create([
+                'name' => $this->buildName($data),
+                'first_name' => $data['first_name'],
+                'middle_name' => $data['middle_name'] ?? null,
+                'last_name' => $data['last_name'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+                'must_change_password' => true,
+                'status' => $data['status'],
+            ]);
 
-        $this->syncRoles($user, $data['base_role'], $managedRoles);
-        $this->syncInstructorProfile($user, $data);
-        $this->syncStudentProfile($user, $data);
+            $this->syncRoles($user, $data['base_role'], $managedRoles);
+            $this->syncInstructorProfile($user, $data);
+            $this->syncStudentProfile($user, $data);
 
-        return $user;
+            AuditLogger::logOrFail(
+                'CREATE',
+                'Users',
+                "Created {$data['base_role']} account for {$user->displayName()} ({$user->email})",
+                $user,
+            );
+
+            return $user;
+        });
     }
 
     public function updateAccount(User $user, array $data, array $managedRoles = []): void
