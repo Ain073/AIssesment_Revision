@@ -931,6 +931,11 @@
                 return;
             }
 
+            if (field.id === 'auditModule' && field.form?.id === 'auditFilterForm') {
+                const action = field.form.querySelector('[name="action"]');
+                if (action) action.value = '';
+            }
+
             field.form?.requestSubmit();
         });
 

@@ -151,3 +151,28 @@ test('audit Action filtering and clearing filters keep the audit URL and selecte
     assert.equal(cleared.url.pathname, '/super-admin/audit-logs');
     assert.equal(cleared.url.search, '');
 });
+
+test('audit feature changes clear the action before submitting, including after AJAX replaces the form', () => {
+    let change;
+    const start = portalScript.indexOf("        document.addEventListener('change', (event) => {\n            const field = event.target.closest('[data-submit-on-change]')");
+    assert.ok(start >= 0);
+    const end = portalScript.indexOf("\n        document.addEventListener('submit'", start);
+    vm.runInNewContext(portalScript.slice(start, end), {
+        document: { addEventListener(_event, callback) { change = callback; } },
+    });
+
+    for (let replacement = 0; replacement < 2; replacement++) {
+        const action = { value: 'SUBMIT' };
+        const submissions = [];
+        const form = {
+            id: 'auditFilterForm', querySelector: () => action,
+            requestSubmit() { submissions.push(action.value); },
+        };
+        change({ target: { closest: () => ({ id: 'auditModule', form }) } });
+        assert.deepEqual(submissions, ['']);
+    }
+    const action = { value: 'LOGIN' };
+    const form = { id: 'auditFilterForm', querySelector: () => action, requestSubmit() {} };
+    change({ target: { closest: () => ({ id: 'auditRole', form }) } });
+    assert.equal(action.value, 'LOGIN');
+});

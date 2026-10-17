@@ -45,9 +45,10 @@ class StudentAccountImportService
             ],
         ]);
 
+        $extension = Str::lower((string) $validated['student_file']->getClientOriginalExtension());
         $rows = $this->fileReader->read(
             $validated['student_file']->getRealPath(),
-            Str::lower((string) $validated['student_file']->getClientOriginalExtension())
+            $extension
         );
         $program = $programs->firstWhere('program_id', (int) $validated['import_program_id']);
         $preview = $this->buildPreview($rows, $program);
@@ -56,6 +57,7 @@ class StudentAccountImportService
         $request->session()->put($this->sessionKey($token), [
             'actor_id' => (int) $request->user()->id,
             'scope' => $scope,
+            'file_extension' => $extension,
             'ready_rows' => $preview['ready_rows'],
             'rows' => $preview['rows'],
             'summary' => $preview['summary'],
@@ -127,7 +129,12 @@ class StudentAccountImportService
         }
 
         $studentRole = Role::query()->where('role_name', 'student')->firstOrFail();
-        $createdAccounts = DB::transaction(function () use ($rows, $studentRole): array {
+        $format = match ($storedImport['file_extension'] ?? null) {
+            'csv' => 'CSV',
+            'xlsx' => 'XLSX',
+            default => 'file',
+        };
+        $createdAccounts = DB::transaction(function () use ($rows, $studentRole, $format): array {
             $accounts = [];
 
             foreach ($rows as $row) {
@@ -156,6 +163,12 @@ class StudentAccountImportService
                     'program_id' => $row['program_id'],
                     'student_number' => $row['student_number'],
                 ]);
+                AuditLogger::log(
+                    'CREATE',
+                    'Users',
+                    "Created student account for {$createdUser->displayName()} ({$createdUser->email}) via {$format} import",
+                    $createdUser,
+                );
                 $accounts[] = [
                     'user' => $createdUser,
                     'initial_password' => $initialPassword,

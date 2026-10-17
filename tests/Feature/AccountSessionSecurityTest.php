@@ -8,6 +8,7 @@ use App\Services\AccountSessionService;
 use App\Services\UserAccountService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
@@ -200,6 +201,69 @@ class AccountSessionSecurityTest extends TestCase
         $this->requestFrom($current, 'PUT', '/profile/password', $this->passwordPayload())->assertRedirect();
         $this->assertSame(0, $otherUser->fresh()->session_version);
         $this->requestFrom($other, 'GET', '/session-security-probe', [], true)->assertOk();
+    }
+
+    public function test_database_login_throttle_survives_fresh_cache_instances_and_expires_after_one_minute(): void
+    {
+        (require database_path('migrations/0001_01_01_000001_create_cache_table.php'))->up();
+        config(['cache.default' => 'database', 'cache.stores.database.connection' => 'sqlite']);
+        $this->freezeTime();
+        $user = $this->user();
+        $browser = [];
+        Log::spy();
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $this->resetLoginLimiterCacheInstance();
+            $this->requestFrom($browser, 'POST', '/login', ['email' => $user->email, 'password' => 'wrong-password'])
+                ->assertSessionHasErrors(['email' => 'Invalid email or password.']);
+        }
+        $this->resetLoginLimiterCacheInstance();
+        $this->requestFrom($browser, 'POST', '/login', ['email' => $user->email, 'password' => 'original-password'])
+            ->assertSessionHasErrors(['email' => 'Too many login attempts. Please try again in 60 seconds.']);
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            Log::shouldHaveReceived('warning')->withArgs(fn ($message, $context) =>
+                $message === 'Failed login attempt.'
+                && $context['attempts'] === $attempt
+                && $context['stored_attempts'] === $attempt
+                && $context['cache_store'] === 'database'
+                && $context['cache_driver'] === 'database'
+                && $context['retry_after_seconds'] === 60
+                && strlen($context['throttle_bucket']) === 64
+            )->once();
+        }
+        Log::shouldHaveReceived('warning')->withArgs(fn ($message, $context) =>
+            $message === 'Login attempt temporarily blocked.' && $context['stored_attempts'] === 5
+        )->once();
+        $this->requestFrom($browser, 'GET', '/session-security-probe', [], true)->assertUnauthorized();
+        $this->travel(61)->seconds();
+        $this->resetLoginLimiterCacheInstance();
+        $this->login($browser, $user);
+        $this->requestFrom($browser, 'GET', '/session-security-probe', [], true)->assertOk();
+    }
+
+    public function test_successful_login_clears_database_failed_attempt_counter(): void
+    {
+        (require database_path('migrations/0001_01_01_000001_create_cache_table.php'))->up();
+        config(['cache.default' => 'database', 'cache.stores.database.connection' => 'sqlite']);
+        $user = $this->user();
+        $browser = [];
+        for ($round = 0; $round < 2; $round++) {
+            for ($attempt = 0; $attempt < 4; $attempt++) {
+                $this->resetLoginLimiterCacheInstance();
+                $this->requestFrom($browser, 'POST', '/login', ['email' => $user->email, 'password' => 'wrong-password'])
+                    ->assertSessionHasErrors(['email' => 'Invalid email or password.']);
+            }
+            $this->resetLoginLimiterCacheInstance();
+            $this->login($browser, $user);
+            $this->requestFrom($browser, 'POST', '/logout')->assertRedirect(route('login'));
+        }
+    }
+
+    private function resetLoginLimiterCacheInstance(): void
+    {
+        // Fresh repositories model separate PHP requests; the attempt counter must survive in SQL.
+        $this->app['cache']->forgetDriver('database');
+        $this->app->forgetInstance(\Illuminate\Cache\RateLimiter::class);
+        \Illuminate\Support\Facades\RateLimiter::clearResolvedInstance(\Illuminate\Cache\RateLimiter::class);
     }
 
     private function user(): User

@@ -62,6 +62,8 @@ class LoginController extends Controller
         if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_LOGIN_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($throttleKey);
 
+            Log::warning('Login attempt temporarily blocked.', $this->throttleLogContext($throttleKey));
+
             return back()
                 ->withErrors([
                     'email' => "Too many login attempts. Please try again in {$seconds} seconds.",
@@ -72,10 +74,12 @@ class LoginController extends Controller
         $remember = $request->boolean('remember');
 
         if (! Auth::attempt($credentials, $remember)) {
-            RateLimiter::hit($throttleKey, self::LOGIN_DECAY_SECONDS);
+            $attempts = RateLimiter::hit($throttleKey, self::LOGIN_DECAY_SECONDS);
             Log::warning('Failed login attempt.', [
                 'email' => $credentials['email'],
                 'ip' => $request->ip(),
+                'attempts' => $attempts,
+                ...$this->throttleLogContext($throttleKey),
             ]);
 
             return back()
@@ -172,5 +176,19 @@ class LoginController extends Controller
     private function throttleKey(Request $request): string
     {
         return Str::transliterate(Str::lower((string) $request->string('email')).'|'.$request->ip());
+    }
+
+    private function throttleLogContext(string $throttleKey): array
+    {
+        $store = config('cache.limiter') ?? config('cache.default');
+
+        return [
+            // Compare counters across requests without logging the email or IP address.
+            'throttle_bucket' => hash_hmac('sha256', $throttleKey, (string) config('app.key')),
+            'cache_store' => $store,
+            'cache_driver' => config("cache.stores.{$store}.driver"),
+            'stored_attempts' => RateLimiter::attempts($throttleKey),
+            'retry_after_seconds' => RateLimiter::availableIn($throttleKey),
+        ];
     }
 }

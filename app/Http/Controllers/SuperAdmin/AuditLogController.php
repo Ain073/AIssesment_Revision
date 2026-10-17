@@ -13,12 +13,34 @@ class AuditLogController extends Controller
 {
     public function index(Request $request): View
     {
+        $filters = $request->validate([
+            'module' => ['nullable', 'string', 'max:80'],
+            'action' => ['nullable', 'string', 'max:50'],
+        ]);
+        $module = $filters['module'] ?? null;
+        $action = $filters['action'] ?? null;
+
         $query = AuditLog::with('user')
             ->whereNot(function ($q) {
                 $q->where('module', 'Users')
                   ->where('action', 'UPDATE');
             })
             ->orderByDesc('created_at');
+
+        // Options come from visible logs for the feature, independently of search/date filters.
+        $actions = (clone $query)
+            ->when($module, fn ($q) => $q->where('module', $module))
+            ->whereNotNull('action')
+            ->where('action', '!=', '')
+            ->reorder('action')
+            ->distinct()
+            ->pluck('action');
+
+        if ($action && ! $actions->contains($action)) {
+            $action = null;
+            $request->query->remove('action');
+            $request->query->remove('page');
+        }
 
         // -- Filters ---------------------------------------------------
         RecordSearch::apply($query, ['description', 'user.first_name', 'user.last_name', 'user.email']);
@@ -27,11 +49,11 @@ class AuditLogController extends Controller
             $query->where('user_role', $role);
         }
 
-        if ($action = $request->input('action')) {
+        if ($action) {
             $query->where('action', $action);
         }
 
-        if ($module = $request->input('module')) {
+        if ($module) {
             $query->where('module', $module);
         }
 
@@ -69,34 +91,6 @@ class AuditLogController extends Controller
             'Subjects',
         ])
             ->merge(AuditLog::distinct()->pluck('module')->filter())
-            ->unique()
-            ->sort()
-            ->values();
-
-        // Comprehensive actions list
-        $actions = collect([
-            'LOGIN',
-            'LOGOUT',
-            'CREATE',
-            'UPDATE',
-            'DELETE',
-            'ARCHIVE',
-            'RESTORE',
-            'PUBLISH',
-            'SUBMIT',
-            'GRADE',
-            'DESIGNATE',
-            'REVOKE',
-            'ENROLL',
-            'APPROVE',
-            'REJECT',
-            'IMPORT',
-            'FINALIZE',
-            'GENERATE',
-            'REOPEN',
-            'ADD_ITEM',
-        ])
-            ->merge(AuditLog::distinct()->pluck('action')->filter())
             ->unique()
             ->sort()
             ->values();

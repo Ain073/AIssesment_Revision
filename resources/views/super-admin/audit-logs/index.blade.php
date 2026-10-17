@@ -92,9 +92,6 @@
     <section class="directory-card shadow-sm">
         <div class="directory-header d-flex align-items-center justify-content-between px-4 py-3">
             <h3 class="h4 mb-0 text-white">Event Log</h3>
-            <span class="badge rounded-1" style="background: rgba(255, 255, 255, 0.2); color: #fff;">
-                {{ number_format($logs->total()) }} {{ $logs->total() === 1 ? 'event' : 'events' }}
-            </span>
         </div>
 
         <div class="table-responsive">
@@ -106,8 +103,7 @@
                         <th>Role</th>
                         <th>Action</th>
                         <th>Feature</th>
-                        <th>Description</th>
-                        <th class="pe-4">IP Address</th>
+                        <th class="pe-4">Description</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -125,7 +121,9 @@
                                     <span class="avatar">{{ strtoupper(substr($log->actorName(), 0, 1)) }}</span>
                                     <div>
                                         <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $log->actorName() }}</p>
-                                        <p class="small text-secondary mb-0">{{ $log->actorSubtitle() }}</p>
+                                        @if ($subtitle = $log->actorSubtitle())
+                                            <p class="small text-secondary mb-0">{{ $subtitle }}</p>
+                                        @endif
                                     </div>
                                 </div>
                             </td>
@@ -148,18 +146,13 @@
                             </td>
 
                             {{-- Description --}}
-                            <td data-label="Description">
+                            <td class="pe-4" data-label="Description">
                                 <span class="text-dark">{{ $log->displayDescription() }}</span>
-                            </td>
-
-                            {{-- IP Address --}}
-                            <td class="pe-4 small text-secondary" data-label="IP Address" style="font-family: monospace;">
-                                {{ $log->ip_address ?? '—' }}
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td class="text-center py-5 mobile-empty-cell" colspan="7">
+                            <td class="text-center py-5 mobile-empty-cell" colspan="6">
                                 <div class="empty-icon mb-3">
                                     <span class="material-symbols-outlined fs-2">manage_search</span>
                                 </div>
@@ -226,13 +219,11 @@
 document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.getElementById('auditSearch');
     const tableBody = document.querySelector('.audit-log-table tbody');
-    const countBadge = document.querySelector('.directory-header .badge');
     if (!searchInput || !tableBody) return;
 
     const dataRows = Array.from(tableBody.querySelectorAll('tr:not(.mobile-empty-cell)'));
     if (dataRows.length === 0) return;
 
-    const defaultBadgeText = countBadge ? countBadge.textContent.trim() : '';
     let noMatchRow = null;
 
     function filterTable() {
@@ -250,7 +241,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!noMatchRow) {
                 noMatchRow = document.createElement('tr');
                 noMatchRow.className = 'no-live-match-row';
-                noMatchRow.innerHTML = '<td colspan="7" class="text-center py-4 text-secondary small"><span class="material-symbols-outlined fs-3 d-block mb-1 text-muted">search_off</span>No matching entries on this page. Press <strong>Enter</strong> or click <strong>Search</strong> to query the full database.</td>';
+                noMatchRow.innerHTML = '<td colspan="6" class="text-center py-4 text-secondary small"><span class="material-symbols-outlined fs-3 d-block mb-1 text-muted">search_off</span>No matching entries on this page. Press <strong>Enter</strong> or click <strong>Search</strong> to query the full database.</td>';
                 tableBody.appendChild(noMatchRow);
             }
             noMatchRow.style.display = '';
@@ -258,13 +249,6 @@ document.addEventListener('DOMContentLoaded', function () {
             noMatchRow.style.display = 'none';
         }
 
-        if (countBadge) {
-            if (query !== '') {
-                countBadge.textContent = `${visibleCount} of ${dataRows.length} displayed`;
-            } else {
-                countBadge.textContent = defaultBadgeText;
-            }
-        }
     }
 
     searchInput.addEventListener('input', filterTable);

@@ -143,7 +143,6 @@ class UserController extends Controller
         abort_if($programs->isEmpty(), 403);
 
         $result = $importer->confirm($request, $programs, 'super-admin');
-        AuditLogger::log('IMPORT', 'Users', "Imported {$result['created_count']} student account/s via CSV");
         $redirect = redirect()
             ->route('super-admin.users')
             ->with('status', $result['created_count'].' student accounts created successfully.');

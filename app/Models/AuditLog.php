@@ -53,7 +53,7 @@ class AuditLog extends Model
     public function userRoleLabel(): string
     {
         if ($this->isSystemMigration()) {
-            return 'System';
+            return $this->isHistoricalSubmission() ? 'Student' : 'System';
         }
 
         return match ($this->user_role) {
@@ -72,7 +72,9 @@ class AuditLog extends Model
     public function actorName(): string
     {
         if ($this->isSystemMigration()) {
-            return 'System Migration';
+            return $this->isHistoricalSubmission()
+                ? ($this->user?->displayName() ?? 'Student identity unavailable')
+                : 'System Migration';
         }
 
         return $this->user?->displayName() ?? 'Deleted Account';
@@ -81,7 +83,7 @@ class AuditLog extends Model
     public function actorSubtitle(): string
     {
         if ($this->isSystemMigration()) {
-            return 'Historical audit log';
+            return $this->isHistoricalSubmission() ? ($this->user?->email ?? '') : '';
         }
 
         return $this->user?->email ?? 'Deleted account';
@@ -90,6 +92,15 @@ class AuditLog extends Model
     public function isSystemMigration(): bool
     {
         return $this->user_agent === 'System Migration';
+    }
+
+    private function isHistoricalSubmission(): bool
+    {
+        // Only submission backfills identify a student; other backfills may identify a record owner.
+        return $this->isSystemMigration()
+            && $this->action === 'SUBMIT'
+            && $this->module === 'Assessments'
+            && $this->auditable_type === Submission::class;
     }
 
     public function displayDescription(): string

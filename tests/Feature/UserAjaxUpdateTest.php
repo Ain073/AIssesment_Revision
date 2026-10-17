@@ -6,12 +6,15 @@ use App\Models\InstructorProfile;
 use App\Models\AuditLog;
 use App\Models\Role;
 use App\Models\StudentProfile;
+use App\Models\Submission;
 use App\Models\User;
 use App\Models\PublishAssessment;
 use App\Services\UserAccountService;
 use App\Services\AccountSessionService;
 use App\Support\RecordSearch;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -557,6 +560,116 @@ class UserAjaxUpdateTest extends TestCase
             ->assertSee('data-record-search-input', false);
     }
 
+    public function test_audit_actions_are_limited_to_existing_visible_logs_for_the_selected_feature(): void
+    {
+        $admin = $this->actor('super_admin');
+        foreach ([
+            ['Auth', 'LOGIN'], ['Auth', 'LOGOUT'], ['Auth', 'LOGIN'],
+            ['Assessments', 'PUBLISH'], ['Assessments', 'SUBMIT'],
+            ['Reports', 'FINALIZE'], ['Users', 'CREATE'], ['Users', 'UPDATE'],
+        ] as [$module, $action]) {
+            AuditLog::create([
+                'user_id' => $admin->id, 'module' => $module, 'action' => $action,
+                'description' => "{$module} {$action}", 'created_at' => now(),
+            ]);
+        }
+        $this->signInAccount($admin);
+        foreach ([
+            'Auth' => ['LOGIN', 'LOGOUT'], 'Assessments' => ['PUBLISH', 'SUBMIT'],
+            'Reports' => ['FINALIZE'], 'Users' => ['CREATE'], 'Subjects' => [],
+            '' => ['CREATE', 'FINALIZE', 'LOGIN', 'LOGOUT', 'PUBLISH', 'SUBMIT'],
+        ] as $module => $expected) {
+            $this->get(route('super-admin.audit-logs', ['module' => $module]), ['X-Requested-With' => 'XMLHttpRequest'])
+                ->assertOk()->assertViewHas('actions', fn ($actions) => $actions->all() === $expected);
+        }
+        $this->get(route('super-admin.audit-logs', ['module' => 'Auth', 'search' => 'missing event']))
+            ->assertOk()->assertViewHas('actions', fn ($actions) => $actions->all() === ['LOGIN', 'LOGOUT'])
+            ->assertViewHas('logs', fn ($logs) => $logs->total() === 0);
+    }
+
+    public function test_audit_feature_change_discards_unrelated_action_and_pagination_but_keeps_other_filters(): void
+    {
+        $admin = $this->actor('super_admin');
+        foreach (range(1, 26) as $number) {
+            AuditLog::create([
+                'user_id' => $admin->id, 'user_role' => 'super_admin', 'module' => 'Auth', 'action' => 'LOGIN',
+                'description' => "Target event {$number}", 'created_at' => now(),
+            ]);
+        }
+        AuditLog::create([
+            'user_id' => $admin->id, 'module' => 'Assessments', 'action' => 'SUBMIT',
+            'description' => 'Other feature', 'created_at' => now(),
+        ]);
+        $filters = [
+            'module' => 'Auth', 'action' => 'SUBMIT', 'page' => 9, 'role' => 'super_admin',
+            'search' => 'Target', 'from' => now()->toDateString(), 'to' => now()->toDateString(),
+        ];
+        $this->signInAccount($admin)->get(route('super-admin.audit-logs', $filters))
+            ->assertOk()->assertViewHas('actions', fn ($actions) => $actions->all() === ['LOGIN'])
+            ->assertViewHas('logs', function ($logs) use ($filters) {
+                parse_str(parse_url($logs->nextPageUrl(), PHP_URL_QUERY), $nextPage);
+                return $logs->total() === 26 && $logs->currentPage() === 1
+                    && ! isset($nextPage['action']) && $nextPage['page'] === '2'
+                    && $nextPage['module'] === 'Auth' && $nextPage['role'] === $filters['role']
+                    && $nextPage['search'] === $filters['search'] && $nextPage['from'] === $filters['from']
+                    && $nextPage['to'] === $filters['to'];
+            });
+        $this->get(route('super-admin.audit-logs', ['module' => 'Assessments', 'action' => 'SUBMIT']))
+            ->assertOk()->assertViewHas('logs', fn ($logs) => $logs->total() === 1 && $logs->first()->action === 'SUBMIT');
+    }
+
+    public function test_historical_submission_displays_linked_student_without_ip_or_historical_subtitle(): void
+    {
+        $admin = $this->actor('super_admin');
+        $student = $this->account(['student']);
+        $student->update(['first_name' => 'Submission', 'last_name' => 'Student']);
+        $log = AuditLog::create([
+            'user_id' => $student->id, 'user_role' => 'student',
+            'action' => 'SUBMIT', 'module' => 'Assessments', 'description' => "Submitted attempt for 'Quiz 2'",
+            'auditable_type' => Submission::class, 'auditable_id' => 123,
+            'user_agent' => 'System Migration', 'ip_address' => '127.0.0.1', 'created_at' => now(),
+        ]);
+        AuditLog::create([
+            'user_id' => $admin->id, 'user_role' => 'super_admin',
+            'action' => 'LOGIN', 'module' => 'Auth', 'description' => 'User logged in successfully.',
+            'ip_address' => '198.51.100.42', 'created_at' => now(),
+        ]);
+
+        $this->signInAccount($admin)->get(route('super-admin.audit-logs'))
+            ->assertOk()->assertSee('Submission Student')->assertSee($student->email)
+            ->assertDontSee('System Migration')->assertDontSee('Historical audit log')
+            ->assertDontSee('IP Address')->assertDontSee('127.0.0.1')->assertDontSee('198.51.100.42');
+        $this->assertSame('Student', $log->userRoleLabel());
+        $this->assertDatabaseHas('audit_logs', [
+            'audit_log_id' => $log->getKey(), 'user_id' => $student->id,
+            'user_agent' => 'System Migration', 'ip_address' => '127.0.0.1',
+        ]);
+    }
+
+    public function test_historical_actor_fallback_does_not_attribute_account_creation_to_its_owner(): void
+    {
+        $admin = $this->actor('super_admin');
+        $missingStudent = AuditLog::create([
+            'user_id' => null, 'user_role' => 'student', 'action' => 'SUBMIT', 'module' => 'Assessments',
+            'description' => 'Submitted attempt with missing student reference',
+            'auditable_type' => Submission::class, 'auditable_id' => 123,
+            'user_agent' => 'System Migration', 'created_at' => now(),
+        ]);
+        $accountCreation = AuditLog::create([
+            'user_id' => $admin->id, 'user_role' => 'super_admin', 'action' => 'CREATE', 'module' => 'Users',
+            'description' => 'Historical account creation', 'auditable_type' => User::class,
+            'auditable_id' => $admin->id, 'user_agent' => 'System Migration', 'created_at' => now(),
+        ]);
+
+        $this->signInAccount($admin)->get(route('super-admin.audit-logs', ['action' => 'SUBMIT']))
+            ->assertOk()->assertSee('Student identity unavailable')->assertDontSee('Historical audit log');
+        $this->assertSame('Student', $missingStudent->userRoleLabel());
+        $this->assertSame('', $missingStudent->actorSubtitle());
+        $this->assertSame('System Migration', $accountCreation->actorName());
+        $this->assertSame('System', $accountCreation->userRoleLabel());
+        $this->assertSame('', $accountCreation->actorSubtitle());
+    }
+
     public function test_search_input_rejects_arrays_and_excessively_long_terms(): void
     {
         $this->signInAccount($this->actor('super_admin'));
@@ -604,6 +717,109 @@ class UserAjaxUpdateTest extends TestCase
         }
         request()->query->set('search', 'Shared');
         $this->assertSame([1], RecordSearch::filter($query->get(), RecordSearch::PUBLISHED_FIELDS)->modelKeys());
+    }
+
+    public static function studentImportPortals(): array
+    {
+        return [
+            'super admin' => ['super_admin', 'super-admin.users.students.import'],
+            'department chair' => ['department_chair', 'department-chair.students.import'],
+        ];
+    }
+
+    #[DataProvider('studentImportPortals')]
+    public function test_student_import_logs_each_created_account_with_the_actual_importer(string $actorRole, string $routePrefix): void
+    {
+        Mail::fake();
+        $actor = $this->actor($actorRole);
+        $existing = $this->account(['student']);
+        $this->signInAccount($actor);
+        $csv = "student_number,first_name,last_name,email\n"
+            ."2026-90001,Juan,Dela Cruz,juan.import@example.test\n"
+            ."2026-90002,Maria,Santos,maria.import@example.test\n"
+            ."{$existing->studentProfile->student_number},Existing,Student,{$existing->email}\n"
+            ."2026-90003,Invalid,Student,not-an-email\n";
+        $token = $this->previewStudentImport($routePrefix, $csv);
+        $this->assertDatabaseCount('audit_logs', 0);
+        $this->post(route("{$routePrefix}.confirm"), ['import_token' => $token])
+            ->assertRedirect()->assertSessionHasNoErrors()->assertSessionHas('status', '2 student accounts created successfully.');
+
+        $this->assertDatabaseCount('audit_logs', 2);
+        foreach (['juan.import@example.test', 'maria.import@example.test'] as $email) {
+            $created = User::where('email', $email)->firstOrFail();
+            $this->assertDatabaseHas('audit_logs', [
+                'user_id' => $actor->id, 'user_role' => $actorRole, 'action' => 'CREATE', 'module' => 'Users',
+                'auditable_type' => User::class, 'auditable_id' => $created->id,
+                'description' => "Created student account for {$created->displayName()} ({$email}) via CSV import",
+            ]);
+            $this->assertSame(1, $created->studentProfile->program_id);
+            $this->assertTrue($created->hasRole('student'));
+        }
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'IMPORT']);
+        $this->assertDatabaseMissing('audit_logs', ['auditable_id' => $existing->id, 'auditable_type' => User::class]);
+        Mail::assertSent(\App\Mail\InitialAccountPasswordMail::class, 2);
+
+        $this->post(route("{$routePrefix}.confirm"), ['import_token' => $token])->assertSessionHasErrorsIn('studentImport');
+        $this->assertDatabaseCount('audit_logs', 2);
+        $viewer = $actorRole === 'super_admin' ? $actor : $this->actor('super_admin');
+        $this->signInAccount($viewer)->get(route('super-admin.audit-logs', ['module' => 'Users', 'action' => 'CREATE']))
+            ->assertOk()->assertSee('juan.import@example.test')->assertSee('maria.import@example.test')
+            ->assertViewHas('logs', fn ($logs) => $logs->total() === 2);
+    }
+
+    public function test_student_import_conflict_after_preview_does_not_create_accounts_or_audit_entries(): void
+    {
+        Mail::fake();
+        $this->signInAccount($this->actor('super_admin'));
+        $token = $this->previewStudentImport('super-admin.users.students.import',
+            "student_number,first_name,last_name,email\n"
+            ."2026-90001,Juan,Dela Cruz,juan.import@example.test\n"
+            ."2026-90002,Maria,Santos,maria.import@example.test\n"
+        );
+        $conflict = $this->account(['student']);
+        $conflict->update(['email' => 'maria.import@example.test']);
+        $this->post(route('super-admin.users.students.import.confirm'), ['import_token' => $token])
+            ->assertSessionHasErrorsIn('studentImport');
+        $this->assertDatabaseMissing('users', ['email' => 'juan.import@example.test']);
+        $this->assertDatabaseCount('users', 2);
+        $this->assertDatabaseCount('audit_logs', 0);
+        Mail::assertNothingSent();
+    }
+
+    public function test_student_import_rolls_back_create_logs_if_a_later_account_fails(): void
+    {
+        Mail::fake();
+        $this->signInAccount($this->actor('super_admin'));
+        $token = $this->previewStudentImport('super-admin.users.students.import',
+            "student_number,first_name,last_name,email\n"
+            ."2026-90001,Juan,Dela Cruz,juan.import@example.test\n"
+            ."2026-90002,Maria,Santos,maria.import@example.test\n"
+        );
+        DB::statement("CREATE TRIGGER reject_imported_profile BEFORE INSERT ON student_profiles
+            WHEN NEW.student_number = '2026-90002'
+            BEGIN SELECT RAISE(ABORT, 'Simulated profile failure'); END");
+        $this->withoutExceptionHandling();
+        try {
+            $this->post(route('super-admin.users.students.import.confirm'), ['import_token' => $token]);
+            $this->fail('The simulated profile failure should abort the import.');
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString('Simulated profile failure', $exception->getMessage());
+        }
+        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseCount('student_profiles', 0);
+        $this->assertDatabaseCount('audit_logs', 0);
+        Mail::assertNothingSent();
+    }
+
+    private function previewStudentImport(string $routePrefix, string $csv): string
+    {
+        $preview = $this->post(route("{$routePrefix}.preview"), [
+            'import_program_id' => 1,
+            'student_file' => UploadedFile::fake()->createWithContent('students.csv', $csv),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        parse_str(parse_url($preview->headers->get('Location'), PHP_URL_QUERY), $query);
+        $this->assertTrue(Str::isUuid($query['import_token'] ?? ''));
+        return $query['import_token'];
     }
 
     #[DataProvider('accountUpdates')]
