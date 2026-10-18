@@ -317,6 +317,127 @@ class AccountSessionSecurityTest extends TestCase
         }
     }
 
+    #[DataProvider('drivers')]
+    public function test_ajax_login_rejects_bad_credentials_without_redirect_and_enforces_the_live_countdown(string $driver): void
+    {
+        config(['session.driver' => $driver]);
+        (require database_path('migrations/0001_01_01_000001_create_cache_table.php'))->up();
+        config(['cache.default' => 'database', 'cache.stores.database.connection' => 'sqlite']);
+        $this->freezeTime();
+        $user = $this->user();
+        $browser = [];
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            $this->resetLoginLimiterCacheInstance();
+            $response = $this->requestFrom($browser, 'POST', '/login', ['email' => $user->email, 'password' => 'wrong-password'], true)
+                ->assertHeaderMissing('Location')->assertJsonMissingPath('redirect')->assertDontSee('wrong-password');
+            if ($attempt < 5) {
+                $response->assertUnprocessable()->assertJsonPath('errors.email.0', 'Invalid email or password.');
+            } else {
+                $response->assertTooManyRequests()->assertHeader('Retry-After', '60')->assertJsonPath('retry_after', 60);
+            }
+        }
+        $this->requestFrom($browser, 'GET', '/login')->assertViewHas('loginRetryAfter', 60);
+        $this->travel(15)->seconds();
+        $this->resetLoginLimiterCacheInstance();
+        $this->requestFrom($browser, 'POST', '/login', ['email' => $user->email, 'password' => 'original-password'], true)
+            ->assertTooManyRequests()->assertJsonPath('retry_after', 45)->assertHeader('Retry-After', '45');
+        $this->requestFrom($browser, 'GET', '/session-security-probe', [], true)->assertUnauthorized();
+        $this->travel(46)->seconds();
+        $this->resetLoginLimiterCacheInstance();
+        $this->requestFrom($browser, 'POST', '/login', ['email' => $user->email, 'password' => 'original-password'], true)
+            ->assertOk()->assertJsonPath('redirect', route('student.dashboard'));
+        $this->requestFrom($browser, 'GET', '/session-security-probe', [], true)->assertOk();
+    }
+
+    #[DataProvider('drivers')]
+    public function test_ajax_success_regenerates_session_sets_remember_cookie_and_keeps_security_markers(string $driver): void
+    {
+        config(['session.driver' => $driver]);
+        $user = $this->user();
+        $browser = [];
+        $this->requestFrom($browser, 'GET', '/login')->assertOk();
+        $oldSessionId = $browser['id'];
+        $this->requestFrom($browser, 'POST', '/login', [
+            'email' => $user->email, 'password' => 'original-password', 'remember' => '1',
+        ], true)->assertOk()->assertHeaderMissing('Location')->assertJsonPath('redirect', route('student.dashboard'));
+        $this->assertNotSame($oldSessionId, $browser['id']);
+        $this->assertNotEmpty(array_filter($browser['cookies'], fn ($name) => str_starts_with($name, 'remember_'), ARRAY_FILTER_USE_KEY));
+        $this->requestFrom($browser, 'GET', '/session-security-probe', [], true)->assertOk();
+    }
+
+    #[DataProvider('drivers')]
+    public function test_ajax_login_preserves_intended_destination_and_prioritizes_first_login_setup(string $driver): void
+    {
+        config(['session.driver' => $driver]);
+        $user = $this->user();
+        foreach ([false, true] as $setupRequired) {
+            $user->update(['must_change_password' => $setupRequired]);
+            $browser = [];
+            $this->requestFrom($browser, 'GET', '/session-security-probe')->assertRedirect(route('login'));
+            $this->requestFrom($browser, 'POST', '/login', ['email' => $user->email, 'password' => 'original-password'], true)
+                ->assertOk()->assertJsonPath('redirect', $setupRequired ? route('password.setup') : url('/session-security-probe'));
+            if ($setupRequired) {
+                $this->requestFrom($browser, 'GET', '/session-security-probe', [], true)
+                    ->assertForbidden()->assertJsonPath('code', 'password_change_required');
+            }
+        }
+    }
+
+    #[DataProvider('drivers')]
+    public function test_ajax_rejected_accounts_remain_guests_and_receive_a_fresh_csrf_token(string $driver): void
+    {
+        config(['session.driver' => $driver]);
+        foreach (['inactive', 'no-portal'] as $reason) {
+            $user = $this->user();
+            if ($reason === 'inactive') $user->update(['status' => 'inactive']);
+            else $user->roles()->detach();
+            $browser = [];
+            $this->requestFrom($browser, 'GET', '/login')->assertOk();
+            $token = $this->app['session']->token();
+            $response = $this->requestFrom($browser, 'POST', '/login', ['email' => $user->email, 'password' => 'original-password'], true)
+                ->assertUnprocessable()->assertHeaderMissing('Location')->assertJsonMissingPath('redirect')
+                ->assertJsonPath('errors.email.0', $reason === 'inactive'
+                    ? 'Your account is inactive. Please contact the administrator.'
+                    : 'This account does not have an assigned portal yet.');
+            $this->assertIsString($response->json('csrf_token'));
+            $this->assertNotSame($token, $response->json('csrf_token'));
+            $this->requestFrom($browser, 'GET', '/session-security-probe', [], true)->assertUnauthorized();
+        }
+    }
+
+    public function test_ajax_login_validation_errors_return_json_without_redirect_or_echoing_the_password(): void
+    {
+        $browser = [];
+        $this->requestFrom($browser, 'POST', '/login', ['email' => 'not-an-email', 'password' => ['secret']], true)
+            ->assertUnprocessable()->assertJsonValidationErrors(['email', 'password'])
+            ->assertHeaderMissing('Location')->assertDontSee('secret');
+    }
+
+    #[DataProvider('drivers')]
+    public function test_ajax_retry_after_inactive_login_uses_the_new_csrf_token_with_real_csrf_enforcement(string $driver): void
+    {
+        config(['session.driver' => $driver]);
+        $this->app->bind(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+            fn ($app) => new class($app, $app['encrypter']) extends \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken {
+                protected function runningUnitTests() { return false; }
+            });
+        $inactive = $this->user();
+        $inactive->update(['status' => 'inactive']);
+        $active = $this->user();
+        $browser = [];
+        $this->requestFrom($browser, 'GET', '/login')->assertOk();
+        $oldToken = $this->app['session']->token();
+        $credentials = ['email' => $inactive->email, 'password' => 'original-password'];
+        $this->requestFrom($browser, 'POST', '/login', $credentials, true)->assertStatus(419);
+        $rejected = $this->requestFrom($browser, 'POST', '/login', $credentials + ['_token' => $oldToken], true)->assertUnprocessable();
+        $newToken = $rejected->json('csrf_token');
+        $credentials['email'] = $active->email;
+        $this->requestFrom($browser, 'POST', '/login', $credentials + ['_token' => $oldToken], true)->assertStatus(419);
+        $this->requestFrom($browser, 'POST', '/login', $credentials + ['_token' => $newToken], true)
+            ->assertOk()->assertJsonPath('redirect', route('student.dashboard'));
+        $this->requestFrom($browser, 'GET', '/session-security-probe', [], true)->assertOk();
+    }
+
     private function resetLoginLimiterCacheInstance(): void
     {
         // Fresh repositories model separate PHP requests; the attempt counter must survive in SQL.

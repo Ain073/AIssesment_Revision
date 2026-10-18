@@ -279,11 +279,9 @@
             <form action="{{ route('login.submit') }}" id="loginForm" method="POST" data-login-retry-after="{{ $loginRetryAfter }}">
                 @csrf
 
-                @if ($errors->any() && $loginRetryAfter === 0)
-                    <div class="alert alert-danger py-2">
-                        {{ $errors->first() }}
-                    </div>
-                @endif
+                <div class="alert alert-danger py-2" id="loginErrorMessage" role="alert" @if (! $errors->any() || $loginRetryAfter > 0) hidden @endif>
+                    {{ $errors->first() }}
+                </div>
 
                 @if (session('status'))
                     <div class="alert alert-success py-2">
@@ -292,7 +290,8 @@
                 @endif
 
                 <div class="alert alert-warning py-2" id="loginLockoutMessage" role="status" @if ($loginRetryAfter === 0) hidden @endif>
-                    Too many login attempts. Please try again in <span id="loginCountdown" aria-live="off">{{ $loginRetryAfter }}</span> seconds.
+                    <span id="loginLockoutText">Too many login attempts. Please try again in <span id="loginCountdown" aria-live="off">{{ $loginRetryAfter }}</span> seconds.</span>
+                    <span id="loginLockoutReady" hidden>You can try logging in again.</span>
                 </div>
 
                 <fieldset class="border-0 p-0 m-0 w-100" id="loginFields" @disabled($loginRetryAfter > 0)>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Services\AuditLogger;
 use App\Services\AccountSessionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -57,7 +58,7 @@ class LoginController extends Controller
         return view('auth.login', compact('loginRetryAfter', 'loginEmail'));
     }
 
-    public function login(Request $request, AccountSessionService $sessions): RedirectResponse
+    public function login(Request $request, AccountSessionService $sessions): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'email' => ['required', 'email'],
@@ -93,9 +94,7 @@ class LoginController extends Controller
                 return $this->loginLockoutResponse($request, $throttleKey);
             }
 
-            return back()
-                ->withErrors(['email' => 'Invalid email or password.'])
-                ->onlyInput('email');
+            return $this->loginErrorResponse($request, 'Invalid email or password.');
         }
 
         RateLimiter::clear($throttleKey);
@@ -114,9 +113,7 @@ class LoginController extends Controller
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return back()
-                ->withErrors(['email' => 'Your account is inactive. Please contact the administrator.'])
-                ->onlyInput('email');
+            return $this->loginErrorResponse($request, 'Your account is inactive. Please contact the administrator.');
         }
 
         $sessions->rememberCurrentSession($request, Auth::user());
@@ -142,16 +139,16 @@ class LoginController extends Controller
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return back()
-                ->withErrors(['email' => 'This account does not have an assigned portal yet.'])
-                ->onlyInput('email');
+            return $this->loginErrorResponse($request, 'This account does not have an assigned portal yet.');
         }
 
-        if (Auth::user()->must_change_password) {
-            return redirect()->route('password.setup');
-        }
+        $redirect = Auth::user()->must_change_password
+            ? redirect()->route('password.setup')
+            : redirect()->intended($redirectPath);
 
-        return redirect()->intended($redirectPath);
+        return $request->expectsJson()
+            ? response()->json(['redirect' => $redirect->getTargetUrl()])
+            : $redirect;
     }
 
     public function logout(Request $request): RedirectResponse
@@ -190,15 +187,35 @@ class LoginController extends Controller
         return Str::transliterate(Str::lower($email ?? (string) $request->string('email')).'|'.$request->ip());
     }
 
-    private function loginLockoutResponse(Request $request, string $throttleKey): RedirectResponse
+    private function loginLockoutResponse(Request $request, string $throttleKey): RedirectResponse|JsonResponse
     {
         // Retain only the email so a refreshed page can recheck the server's limiter.
         $request->session()->put('login_lockout_email', (string) $request->string('email'));
         $seconds = RateLimiter::availableIn($throttleKey);
 
-        return back()
-            ->withErrors(['email' => "Too many login attempts. Please try again in {$seconds} seconds."])
-            ->onlyInput('email');
+        return $this->loginErrorResponse(
+            $request,
+            "Too many login attempts. Please try again in {$seconds} seconds.",
+            429,
+            $seconds,
+        );
+    }
+
+    private function loginErrorResponse(Request $request, string $message, int $status = 422, ?int $retryAfter = null): RedirectResponse|JsonResponse
+    {
+        if ($request->expectsJson()) {
+            // Inactive/unassigned logins invalidate the session; the next AJAX attempt
+            // must use the new CSRF token alongside the updated session cookie.
+            $payload = ['message' => $message, 'errors' => ['email' => [$message]], 'csrf_token' => csrf_token()];
+            if ($retryAfter !== null) {
+                $payload['retry_after'] = $retryAfter;
+            }
+            $response = response()->json($payload, $status);
+
+            return $retryAfter !== null ? $response->header('Retry-After', (string) $retryAfter) : $response;
+        }
+
+        return back()->withErrors(['email' => $message])->onlyInput('email');
     }
 
     private function throttleLogContext(string $throttleKey): array
