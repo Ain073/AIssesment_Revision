@@ -12,12 +12,12 @@
                 <div class="modal-body p-4">
                     <div class="row g-3">
                         <div class="col-12">
-                            <label class="form-label fw-bold text-uppercase small">College Name</label>
-                            <div class="form-control bg-light text-break">{{ $college->college_name }}</div>
-                        </div>
-                        <div class="col-12">
                             <label class="form-label fw-bold text-uppercase small">College Acronym</label>
                             <div class="form-control bg-light text-break">{{ $college->college_acronym ?? 'Not set' }}</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-uppercase small">College Name</label>
+                            <div class="form-control bg-light text-break">{{ $college->college_name }}</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-uppercase small">Departments</label>
@@ -47,12 +47,12 @@
                     <h3 class="modal-title h4" id="editCollegeModalLabel{{ $college->college_id }}">Edit College</h3>
                 </div>
                 <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-uppercase small" for="edit_college_acronym_{{ $college->college_id }}">College Acronym <span class="fw-normal text-secondary">(optional)</span></label>
+                        <input class="form-control form-control-lg" id="edit_college_acronym_{{ $college->college_id }}" name="college_acronym" maxlength="50" placeholder="e.g. CHMBAC" type="text" value="{{ old('college_acronym', $college->college_acronym) }}">
+                    </div>
                     <label class="form-label fw-bold text-uppercase small" for="edit_college_name_{{ $college->college_id }}">College Name</label>
                     <input class="form-control form-control-lg" id="edit_college_name_{{ $college->college_id }}" name="college_name" required type="text" value="{{ old('college_name', $college->college_name) }}">
-                    <div class="mt-3">
-                        <label class="form-label fw-bold text-uppercase small" for="edit_college_acronym_{{ $college->college_id }}">College Acronym <span class="fw-normal text-secondary">(optional)</span></label>
-                        <input class="form-control" id="edit_college_acronym_{{ $college->college_id }}" name="college_acronym" maxlength="50" placeholder="e.g. CHMBAC" type="text" value="{{ old('college_acronym', $college->college_acronym) }}">
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>

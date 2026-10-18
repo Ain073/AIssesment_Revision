@@ -86,15 +86,20 @@
                                     <tr>
                                         <td class="mobile-primary-cell" data-label="College Name">
                                             <div class="d-flex align-items-center gap-3">
-                                                <span class="icon-box"><span class="material-symbols-outlined">account_balance</span></span>
-                                                <span class="fw-bold" style="color: var(--psu-navy);">{{ $college->shortName() }}</span>
+                                                <span class="icon-box flex-shrink-0"><span class="material-symbols-outlined">account_balance</span></span>
+                                                <div class="text-break">
+                                                    <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $college->college_name }}</p>
+                                                    @if (filled($college->college_acronym))
+                                                        <p class="small text-secondary mb-0">{{ $college->college_acronym }}</p>
+                                                    @endif
+                                                </div>
                                             </div>
                                         </td>
                                         <td class="fw-semibold" data-label="Departments">
                                             {{ $college->departments_count }} {{ $college->departments_count === 1 ? 'Department' : 'Departments' }}
                                         </td>
                                         <td class="text-end" data-label="Actions">
-                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewCollegeModal{{ $college->college_id }}" data-bs-toggle="modal" type="button" aria-label="View {{ $college->shortName() }}">
+                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewCollegeModal{{ $college->college_id }}" data-bs-toggle="modal" type="button" aria-label="View {{ $college->college_name }}">
                                                 <span class="material-symbols-outlined fs-6">visibility</span>
                                                 View
                                             </button>
