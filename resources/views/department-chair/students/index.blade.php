@@ -156,7 +156,7 @@
                                 @if ($student->program)
                                     <p class="fw-semibold mb-0">{{ $student->program->program_name }}</p>
                                     <p class="small text-secondary mb-0">
-                                        {{ collect([$student->program->department?->dept_name, $student->program->department?->college?->college_name])->filter()->join(' - ') }}
+                                        {{ collect([$student->program->department?->dept_name, $student->program->department?->college?->shortName()])->filter()->join(' - ') }}
                                     </p>
                                 @else
                                     <span class="text-secondary fst-italic">No program</span>

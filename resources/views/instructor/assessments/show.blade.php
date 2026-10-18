@@ -507,7 +507,6 @@
                                     @method('PUT')
                                     <div class="modal-header">
                                         <h3 class="modal-title h4" id="editQuestionModalLabel{{ $item->assessment_item_id }}">Edit Question {{ $item->sort_order }}</h3>
-                                        <button class="btn-close" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
                                         <div class="row g-3">
@@ -641,7 +640,6 @@
                                     @method('DELETE')
                                     <div class="modal-header">
                                         <h3 class="modal-title h4" id="deleteQuestionModalLabel{{ $item->assessment_item_id }}">Delete Question {{ $item->sort_order }}</h3>
-                                        <button class="btn-close" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
                                         <p class="fw-bold mb-2" style="color: var(--psu-navy);">{{ $item->question_text }}</p>

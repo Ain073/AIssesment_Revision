@@ -36,50 +36,6 @@
             overflow: hidden;
         }
 
-        .instructor-report-filter {
-            width: min(100%, 620px);
-            margin-left: 0;
-            margin-bottom: 1rem;
-            padding: 1rem;
-            border: 1px solid var(--psu-line);
-            border-radius: 0.5rem;
-            background: #fff;
-        }
-
-        .instructor-report-filter-form {
-            display: grid;
-            grid-template-columns: minmax(220px, 1fr) auto;
-            gap: 0.75rem;
-            align-items: end;
-        }
-
-        .instructor-report-filter-field {
-            min-width: 0;
-        }
-
-        .instructor-report-filter-label {
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-            margin-bottom: 0.35rem;
-            color: var(--psu-navy);
-            font-size: 0.75rem;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-
-        .instructor-report-filter-field .form-select {
-            width: 100%;
-            min-width: 0;
-            text-overflow: ellipsis;
-        }
-
-        .instructor-report-filter-actions {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
         .reports-panel-header {
             display: flex;
             flex-wrap: wrap;
@@ -149,19 +105,6 @@
         }
 
         @media (max-width: 767.98px) {
-            .instructor-report-filter {
-                width: 100%;
-                margin-left: 0;
-            }
-
-            .instructor-report-filter-form {
-                grid-template-columns: minmax(0, 1fr);
-            }
-
-            .instructor-report-filter-actions {
-                justify-content: flex-end;
-            }
-
             .report-assessment-card {
                 grid-template-columns: auto minmax(0, 1fr);
                 gap: 0.75rem;
@@ -240,16 +183,13 @@
         </a>
     </div>
 
-    <section class="instructor-report-filter" aria-label="Report filters">
-        <form action="{{ route('instructor.reports') }}" class="instructor-report-filter-form" method="GET" data-ajax-page-form data-preserve-page-state="true">
+    <section class="mb-4" aria-label="Report filters">
+        <form action="{{ route('instructor.reports') }}" class="record-filters" method="GET" data-ajax-page-form data-preserve-page-state="true">
             <input type="hidden" name="search" value="{{ \App\Support\RecordSearch::term() }}">
             <input data-report-type-input name="type" type="hidden" value="{{ $activeReportType }}">
 
-            <div class="instructor-report-filter-field">
-                <label class="instructor-report-filter-label" for="instructorReportClassFilter">
-                    <span class="material-symbols-outlined fs-6">school</span>
-                    Class
-                </label>
+            <div class="record-filter-field">
+                <label class="record-filter-label" for="instructorReportClassFilter">Class</label>
                 <select class="form-select" id="instructorReportClassFilter" name="class" data-submit-on-change @disabled($classes->isEmpty())>
                     <option value="">All classes</option>
                     @foreach ($classes as $class)
@@ -264,7 +204,7 @@
             </div>
 
             @if ($selectedClassId)
-                <div class="instructor-report-filter-actions">
+                <div class="record-filter-actions">
                     <a
                         aria-label="Clear report filters"
                         class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center"

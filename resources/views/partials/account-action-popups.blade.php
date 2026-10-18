@@ -25,60 +25,60 @@
     @endphp
 
     <div class="modal fade" id="viewAccountModal{{ $accountUser->id }}" tabindex="-1" aria-labelledby="viewAccountModalLabel{{ $accountUser->id }}" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header p-3 p-md-4">
                     <div>
                         <h3 class="modal-title h4 mb-1" id="viewAccountModalLabel{{ $accountUser->id }}">{{ $isInstructorAccount ? 'Teacher Details' : 'Student Details' }}</h3>
-                        <p class="small text-white-50 mb-0">{{ $accountUser->displayName() }}</p>
+                        <p class="small text-white-50 mb-0 text-break">{{ $accountUser->displayName() }}</p>
                     </div>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
+                    <button class="btn-close btn-close-white flex-shrink-0" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="row g-3">
+                <div class="modal-body p-3 p-md-4">
+                    <div class="row g-3 g-md-4">
                         <div class="col-12">
                             <label class="form-label fw-bold text-uppercase small">Full Name</label>
-                            <div class="form-control bg-light">{{ $accountUser->displayName() }}</div>
+                            <div class="form-control bg-light text-break">{{ $accountUser->displayName() }}</div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-8">
                             <label class="form-label fw-bold text-uppercase small">Email</label>
-                            <div class="form-control bg-light">{{ $accountUser->email }}</div>
+                            <div class="form-control bg-light text-break">{{ $accountUser->email }}</div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold text-uppercase small">Status</label>
-                            <div class="form-control bg-light">{{ ucfirst($accountUser->status) }}</div>
+                            <div class="form-control bg-light text-break">{{ ucfirst($accountUser->status) }}</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-uppercase small">Account Type</label>
-                            <div class="form-control bg-light">{{ $isInstructorAccount ? 'Teacher' : 'Student' }}</div>
+                            <div class="form-control bg-light text-break">{{ $isInstructorAccount ? 'Teacher' : 'Student' }}</div>
                         </div>
                         @if ($isInstructorAccount)
                             <div class="col-md-6">
                                 <label class="form-label fw-bold text-uppercase small">Designation</label>
-                                <div class="form-control bg-light">{{ $authorization !== '' ? $authorization : 'Teacher only' }}</div>
+                                <div class="form-control bg-light text-break">{{ $authorization !== '' ? $authorization : 'Teacher only' }}</div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-8">
                                 <label class="form-label fw-bold text-uppercase small">Department</label>
-                                <div class="form-control bg-light">{{ $accountUser->instructorProfile?->department?->dept_name ?? 'Not assigned' }}</div>
+                                <div class="form-control bg-light text-break">{{ $accountUser->instructorProfile?->department?->dept_name ?? 'Not assigned' }}</div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label fw-bold text-uppercase small">Employee Number</label>
-                                <div class="form-control bg-light">{{ $accountUser->instructorProfile?->employee_number ?? 'Not assigned' }}</div>
+                                <div class="form-control bg-light text-break">{{ $accountUser->instructorProfile?->employee_number ?? 'Not assigned' }}</div>
                             </div>
                         @endif
                         @if ($isStudentAccount)
-                            <div class="col-md-6">
+                            <div class="col-md-8">
                                 <label class="form-label fw-bold text-uppercase small">Program</label>
-                                <div class="form-control bg-light">{{ $accountUser->studentProfile?->program?->program_name ?? 'Not assigned' }}</div>
+                                <div class="form-control bg-light text-break">{{ $accountUser->studentProfile?->program?->program_name ?? 'Not assigned' }}</div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label fw-bold text-uppercase small">Student Number</label>
-                                <div class="form-control bg-light">{{ $accountUser->studentProfile?->student_number ?? 'Not assigned' }}</div>
+                                <div class="form-control bg-light text-break">{{ $accountUser->studentProfile?->student_number ?? 'Not assigned' }}</div>
                             </div>
                         @endif
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer px-3 px-md-4 py-3">
                     <button class="btn btn-outline-psu px-4" data-bs-target="#editAccountModal{{ $accountUser->id }}" data-bs-toggle="modal" type="button">Edit</button>
                     @if ($accountAllowDepartmentChairDesignation && $isInstructorAccount && ! $accountUser->hasRole('admin_dean'))
                         @if ($accountUser->hasRole('department_chair'))
@@ -103,7 +103,6 @@
                 <input name="base_role" type="hidden" value="{{ $accountMode }}">
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="editAccountModalLabel{{ $accountUser->id }}">Edit {{ $isInstructorAccount ? 'Teacher' : 'Student' }}</h3>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row g-3">
@@ -139,7 +138,7 @@
                                         <option value="">Select department</option>
                                         @foreach ($accountDepartments as $department)
                                             <option value="{{ $department->department_id }}" @selected((string) $editDepartmentId === (string) $department->department_id)>
-                                                {{ $department->dept_name }} - {{ $department->college?->college_name }}
+                                                {{ $department->dept_name }} - {{ $department->college?->shortName() }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -164,7 +163,7 @@
                                     <option value="">Select program</option>
                                     @foreach ($accountPrograms as $program)
                                         <option value="{{ $program->program_id }}" @selected((string) $editProgramId === (string) $program->program_id)>
-                                            {{ $program->program_name }} - {{ $program->department?->dept_name }} - {{ $program->department?->college?->college_name }}
+                                            {{ $program->program_name }} - {{ $program->department?->dept_name }} - {{ $program->department?->college?->shortName() }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -191,7 +190,6 @@
                 @method('DELETE')
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="deleteAccountModalLabel{{ $accountUser->id }}">Delete {{ $isInstructorAccount ? 'Teacher' : 'Student' }}</h3>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     @if ($deleteDisabled)

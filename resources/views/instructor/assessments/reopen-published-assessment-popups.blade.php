@@ -18,7 +18,6 @@
                             <h3 class="modal-title h4" id="reopenPublishedAssessmentModalLabel{{ $publishAssessment->publish_assessment_id }}">Republish Assessment</h3>
                             <p class="small text-white-50 mb-0">{{ $assessment?->title ?? 'Untitled Assessment' }} - {{ $class?->class_name ?? 'Class' }}</p>
                         </div>
-                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-4">
                         <p class="text-secondary">

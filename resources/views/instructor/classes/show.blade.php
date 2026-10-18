@@ -264,7 +264,7 @@
                         </div>
                         <div>
                             <p class="small text-secondary mb-1">College</p>
-                            <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $class->instructorProfile?->department?->college?->college_name ?? 'Not assigned' }}</p>
+                            <p class="fw-bold mb-0" style="color: var(--psu-navy);">{{ $class->instructorProfile?->department?->college?->shortName() ?? 'Not assigned' }}</p>
                         </div>
                     </div>
                 </section>

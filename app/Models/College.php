@@ -16,7 +16,20 @@ class College extends Model
 
     protected $fillable = [
         'college_name',
+        'college_acronym',
     ];
+
+    public function shortName(): string
+    {
+        return filled($this->college_acronym) ? $this->college_acronym : $this->college_name;
+    }
+
+    public function displayName(): string
+    {
+        return filled($this->college_acronym) && $this->college_acronym !== $this->college_name
+            ? "{$this->college_name} ({$this->college_acronym})"
+            : $this->college_name;
+    }
 
     public function departments(): HasMany
     {

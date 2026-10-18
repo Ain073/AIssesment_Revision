@@ -6,6 +6,8 @@ use App\Support\RecordSearch;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -63,6 +65,12 @@ class AuditLogController extends Controller
         }
 
         $logs = $query->paginate(25)->withQueryString();
+
+        // Load only referenced accounts needed by generic old UPDATE descriptions.
+        $logs->getCollection()->filter(fn (AuditLog $log) => $log->needsCurrentAccountLabel())
+            ->load(['auditable' => fn (MorphTo $target) => $target->morphWith([
+                User::class => ['studentProfile', 'instructorProfile'],
+            ])]);
 
         // Predefined system roles map
         $roles = [

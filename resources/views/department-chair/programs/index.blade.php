@@ -100,8 +100,8 @@
                             <td class="fw-bold mobile-primary-cell" data-label="Program" style="color: var(--psu-navy);">{{ $program->program_name }}</td>
                             <td data-label="Department">
                                 <span class="fw-semibold d-block">{{ $program->department?->dept_name ?? 'Not assigned' }}</span>
-                                @if ($program->department?->college?->college_name)
-                                    <span class="small text-secondary d-block">{{ $program->department->college->college_name }}</span>
+                                @if ($program->department?->college?->shortName())
+                                    <span class="small text-secondary d-block">{{ $program->department->college->shortName() }}</span>
                                 @endif
                             </td>
                             <td class="count-cell" data-label="Students">{{ $program->student_profiles_count }}</td>

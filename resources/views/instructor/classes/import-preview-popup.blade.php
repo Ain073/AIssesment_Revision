@@ -4,7 +4,6 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="importPreviewModalLabel">Import Preview</h3>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row g-3 mb-4">

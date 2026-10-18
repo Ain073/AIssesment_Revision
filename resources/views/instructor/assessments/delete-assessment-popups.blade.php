@@ -6,7 +6,6 @@
                 @method('DELETE')
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="deleteAssessmentModalLabel{{ $assessment->assessment_id }}">Delete Assessment</h3>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p class="fw-bold mb-2" style="color: var(--psu-navy);">{{ $assessment->title }}</p>

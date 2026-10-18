@@ -16,7 +16,7 @@
                             <select class="form-select form-select-sm" id="deanCollegeFilter" data-designation-filter="dean" aria-label="Filter teachers by college">
                                 <option value="">All Colleges</option>
                                 @foreach ($colleges as $college)
-                                    <option value="{{ $college->college_id }}">{{ $college->college_name }}</option>
+                                    <option value="{{ $college->college_id }}">{{ $college->shortName() }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -34,7 +34,7 @@
                         @forelse ($availableAdminDeanTeachers as $user)
                             @php
                                 $collegeId = $user->instructorProfile?->department?->college_id ?? '';
-                                $collegeName = $user->instructorProfile?->department?->college?->college_name ?? 'No college';
+                                $collegeName = $user->instructorProfile?->department?->college?->shortName() ?? 'No college';
                                 $deptName = $user->instructorProfile?->department?->dept_name ?? 'No department';
                                 $displayName = $user->displayName();
                             @endphp
@@ -124,7 +124,6 @@
                             <h3 class="modal-title h4 mb-1" id="viewAdminDeanModalLabel{{ $user->id }}">Designation Details</h3>
                             <p class="small text-white-50 mb-0">Dean Designation</p>
                         </div>
-                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row g-3">
@@ -142,7 +141,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold text-uppercase small">College</label>
-                                <div class="form-control bg-light">{{ $user->instructorProfile?->department?->college?->college_name ?? 'Not assigned' }}</div>
+                                <div class="form-control bg-light">{{ $user->instructorProfile?->department?->college?->shortName() ?? 'Not assigned' }}</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold text-uppercase small">Department</label>
@@ -180,7 +179,6 @@
                     <input name="role_name" type="hidden" value="admin_dean">
                     <div class="modal-header">
                         <h3 class="modal-title h4" id="removeAdminDeanModalLabel{{ $user->id }}">Remove Designation</h3>
-                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <p class="mb-2">Remove Dean designation from this teacher?</p>

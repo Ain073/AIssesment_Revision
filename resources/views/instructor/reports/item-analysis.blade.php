@@ -13,7 +13,6 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title h5" id="reportItemAnalysisModalLabel">{{ $reportTypeLabel }} Item Analysis</h2>
-                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <label class="form-label" for="reportItemAnalysisQuiz">Quiz / Assessment</label>

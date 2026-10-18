@@ -2266,7 +2266,7 @@ h1, h2, h3, .brand-text {
 .record-toolbar {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-start;
+    align-items: flex-end;
     gap: 0.75rem;
     margin-bottom: 1.5rem;
 }
@@ -2281,6 +2281,56 @@ h1, h2, h3, .brand-text {
     width: 100%;
     min-width: 0;
     margin: 0;
+}
+
+.record-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem;
+}
+
+.record-filter-field {
+    flex: 0 1 22rem;
+    width: 100%;
+    max-width: 22rem;
+    min-width: 0;
+}
+
+.record-filter-field--compact {
+    flex-basis: 11rem;
+    max-width: 12rem;
+}
+
+.record-filter-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--psu-navy);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.4;
+    text-transform: uppercase;
+}
+
+.record-filter-field .form-select,
+.record-filter-field > .form-control,
+.record-filter-form .form-select {
+    width: 100%;
+    min-width: 0;
+    min-height: 2.375rem;
+    text-overflow: ellipsis;
+}
+
+.record-filter-actions {
+    display: flex;
+    align-items: center;
+    align-self: flex-end;
+    gap: 0.5rem;
+}
+
+.record-filter-actions .btn,
+.record-filters > .btn {
+    min-height: 2.375rem;
 }
 
 .record-toolbar-actions {
@@ -2299,6 +2349,17 @@ h1, h2, h3, .brand-text {
     .record-toolbar > .record-search-form,
     .record-toolbar > .record-filter-form {
         flex-basis: 100%;
+    }
+
+    .record-filter-form,
+    .record-filter-field {
+        flex-basis: 100%;
+        max-width: none;
+    }
+
+    .record-filter-actions {
+        width: 100%;
+        justify-content: flex-end;
     }
 
     .record-toolbar-actions {

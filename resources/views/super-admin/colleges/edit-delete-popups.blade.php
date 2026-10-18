@@ -8,13 +8,16 @@
                         <h3 class="modal-title h4 mb-1" id="viewCollegeModalLabel{{ $college->college_id }}">College Details</h3>
                         <p class="small text-white-50 mb-0">{{ $college->college_name }}</p>
                     </div>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label fw-bold text-uppercase small">College Name</label>
-                            <div class="form-control bg-light">{{ $college->college_name }}</div>
+                            <div class="form-control bg-light text-break">{{ $college->college_name }}</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-uppercase small">College Acronym</label>
+                            <div class="form-control bg-light text-break">{{ $college->college_acronym ?? 'Not set' }}</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-uppercase small">Departments</label>
@@ -42,11 +45,14 @@
                 @method('PUT')
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="editCollegeModalLabel{{ $college->college_id }}">Edit College</h3>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <label class="form-label fw-bold text-uppercase small" for="edit_college_name_{{ $college->college_id }}">College Name</label>
                     <input class="form-control form-control-lg" id="edit_college_name_{{ $college->college_id }}" name="college_name" required type="text" value="{{ old('college_name', $college->college_name) }}">
+                    <div class="mt-3">
+                        <label class="form-label fw-bold text-uppercase small" for="edit_college_acronym_{{ $college->college_id }}">College Acronym <span class="fw-normal text-secondary">(optional)</span></label>
+                        <input class="form-control" id="edit_college_acronym_{{ $college->college_id }}" name="college_acronym" maxlength="50" placeholder="e.g. CHMBAC" type="text" value="{{ old('college_acronym', $college->college_acronym) }}">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>
@@ -63,7 +69,6 @@
                 @method('DELETE')
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="deleteCollegeModalLabel{{ $college->college_id }}">Delete College</h3>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-center p-4">
                     <div class="delete-warning-icon mb-3">
@@ -92,7 +97,6 @@
                         <h3 class="modal-title h4 mb-1" id="viewDepartmentModalLabel{{ $department->department_id }}">Department Details</h3>
                         <p class="small text-white-50 mb-0">{{ $department->dept_name }}</p>
                     </div>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="row g-3">
@@ -102,7 +106,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-uppercase small">College</label>
-                            <div class="form-control bg-light">{{ $department->college?->college_name ?? 'Not assigned' }}</div>
+                            <div class="form-control bg-light">{{ $department->college?->displayName() ?? 'Not assigned' }}</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-uppercase small">Instructors</label>
@@ -126,14 +130,13 @@
                 @method('PUT')
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="editDepartmentModalLabel{{ $department->department_id }}">Edit Department</h3>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-bold text-uppercase small" for="edit_department_college_id_{{ $department->department_id }}">College</label>
                         <select class="form-select form-select-lg" id="edit_department_college_id_{{ $department->department_id }}" name="college_id" required>
                             @foreach ($collegeOptions as $college)
-                                <option value="{{ $college->college_id }}" @selected(old('college_id', $department->college_id) == $college->college_id)>{{ $college->college_name }}</option>
+                                <option value="{{ $college->college_id }}" @selected(old('college_id', $department->college_id) == $college->college_id)>{{ $college->shortName() }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -157,7 +160,6 @@
                 @method('DELETE')
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="deleteDepartmentModalLabel{{ $department->department_id }}">Delete Department</h3>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-center p-4">
                     <div class="delete-warning-icon mb-3">

@@ -84,7 +84,7 @@
 
     @if ($scopedCollege)
         <div class="alert alert-primary border-0 shadow-sm mb-4">
-            New departments created here will automatically belong to <strong>{{ $scopedCollege->college_name }}</strong>.
+            New departments created here will automatically belong to <strong>{{ $scopedCollege->shortName() }}</strong>.
         </div>
     @endif
 
@@ -111,7 +111,7 @@
                                     <span class="fw-bold" style="color: var(--psu-navy);">{{ $department->dept_name }}</span>
                                 </div>
                             </td>
-                            <td>{{ $department->college?->college_name ?? 'Not assigned' }}</td>
+                            <td>{{ $department->college?->shortName() ?? 'Not assigned' }}</td>
                             <td>
                                 {{ $department->instructor_profiles_count }}
                                 {{ $department->instructor_profiles_count === 1 ? 'Instructor' : 'Instructors' }}

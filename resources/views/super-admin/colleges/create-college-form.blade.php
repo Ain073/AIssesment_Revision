@@ -9,6 +9,10 @@
             <div class="modal-body">
                 <label class="form-label fw-bold text-uppercase small" for="college_name">College Name</label>
                 <input class="form-control form-control-lg" id="college_name" name="college_name" placeholder="e.g. College of Information Technology" required type="text" value="{{ old('college_name') }}">
+                <div class="mt-3">
+                    <label class="form-label fw-bold text-uppercase small" for="college_acronym">College Acronym <span class="fw-normal text-secondary">(optional)</span></label>
+                    <input class="form-control" id="college_acronym" name="college_acronym" maxlength="50" placeholder="e.g. CHMBAC" type="text" value="{{ old('college_acronym') }}">
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>

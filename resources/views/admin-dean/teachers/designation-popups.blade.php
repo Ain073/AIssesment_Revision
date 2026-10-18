@@ -7,7 +7,6 @@
                         @csrf
                         <div class="modal-header">
                             <h3 class="modal-title h4" id="grantDepartmentChairDesignationModalLabel{{ $teacher->id }}">Designate Department Chair</h3>
-                            <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <p class="mb-2">Designate this teacher as Department Chair?</p>
@@ -31,7 +30,6 @@
                         @method('DELETE')
                         <div class="modal-header">
                             <h3 class="modal-title h4" id="removeDepartmentChairDesignationModalLabel{{ $teacher->id }}">Remove Designation</h3>
-                            <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <p class="mb-2">Remove Department Chair designation from this teacher?</p>

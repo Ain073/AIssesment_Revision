@@ -51,18 +51,18 @@
                     <input type="hidden" name="search" value="{{ \App\Support\RecordSearch::term() }}">
                     <input type="hidden" name="tab" id="activeTabInput" value="{{ $activeUserTab }}">
                     <div data-user-filter-tab="teachers" @if ($activeUserTab !== 'teachers') hidden @endif>
-                        <label class="visually-hidden" for="department-filter">View Department</label>
+                        <label class="record-filter-label" for="department-filter">Department</label>
                         <select class="form-select department-filter-select" id="department-filter" name="department" data-submit-on-change>
                             <option value="">All Departments</option>
                             @foreach ($departments as $department)
                                 <option value="{{ $department->public_id ?? $department->department_id }}" @selected($selectedDepartmentKey === ($department->public_id ?? (string) $department->department_id))>
-                                    {{ $department->dept_name }} ({{ $department->college?->college_code ?? $department->college?->college_name }})
+                                    {{ $department->dept_name }} ({{ $department->college?->shortName() }})
                                 </option>
                             @endforeach
                         </select>
                     </div>
                     <div data-user-filter-tab="students" @if ($activeUserTab !== 'students') hidden @endif>
-                        <label class="visually-hidden" for="program-filter">View Program</label>
+                        <label class="record-filter-label" for="program-filter">Program</label>
                         <select class="form-select" id="program-filter" name="program" data-submit-on-change>
                             <option value="">All Programs</option>
                             @foreach ($programs as $program)
@@ -153,7 +153,7 @@
                                             @if ($user->instructorProfile?->department)
                                                 <div>
                                                     <p class="fw-semibold mb-0">{{ $user->instructorProfile->department->dept_name }}</p>
-                                                    <p class="small text-secondary mb-0">{{ $user->instructorProfile->department->college?->college_name }}</p>
+                                                    <p class="small text-secondary mb-0">{{ $user->instructorProfile->department->college?->shortName() }}</p>
                                                 </div>
                                             @else
                                                 <span class="text-secondary fst-italic">Not assigned</span>
@@ -257,7 +257,7 @@
                                                 <div>
                                                     <p class="fw-semibold mb-0">{{ $user->studentProfile->program->program_name }}</p>
                                                     <p class="small text-secondary mb-0">
-                                                        {{ collect([$user->studentProfile->program->department?->dept_name, $user->studentProfile->program->department?->college?->college_name])->filter()->join(' - ') }}
+                                                        {{ collect([$user->studentProfile->program->department?->dept_name, $user->studentProfile->program->department?->college?->shortName()])->filter()->join(' - ') }}
                                                     </p>
                                                 </div>
                                             @else

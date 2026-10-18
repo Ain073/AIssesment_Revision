@@ -14,7 +14,7 @@
                 <div class="dashboard-eyebrow">Welcome back</div>
                 <h2 class="dashboard-title">{{ $user->displayName() }}</h2>
                 <p class="dashboard-subtitle">
-                    {{ $scopedCollege?->college_name ?? 'College scope not assigned' }}
+                    {{ $scopedCollege?->shortName() ?? 'College scope not assigned' }}
                 </p>
             </div>
 

@@ -141,6 +141,36 @@ class AuditLog extends Model
             && $this->auditable_type === User::class;
     }
 
+    public function needsCurrentAccountLabel(): bool
+    {
+        return $this->module === 'Users'
+            && $this->action === 'UPDATE'
+            && $this->auditable_type === User::class
+            && $this->auditable_id !== null
+            && preg_match('/^Updated (student|instructor) account(?: details)? \(Status:/', (string) $this->description) === 1;
+    }
+
+    public function currentAccountLabel(): ?string
+    {
+        // Generic old events have no identity snapshot. Only show their verified link,
+        // labelled as current information; never infer a target from the actor.
+        if (! $this->needsCurrentAccountLabel() || ! $this->relationLoaded('auditable')) {
+            return null;
+        }
+
+        $account = $this->getRelation('auditable');
+        if (! $account instanceof User) {
+            return null;
+        }
+
+        $studentNumber = $account->studentProfile?->student_number;
+        $employeeNumber = $account->instructorProfile?->employee_number;
+        $identifier = filled($studentNumber) ? "Student No.: {$studentNumber}"
+            : (filled($employeeNumber) ? "Employee No.: {$employeeNumber}" : null);
+
+        return $account->displayName().($identifier !== null ? " ({$identifier})" : '');
+    }
+
     public function displayDescription(): string
     {
         if ($this->isHistoricalAccountCreation()) {
@@ -149,16 +179,6 @@ class AuditLog extends Model
                 'User account for $1 created.',
                 (string) $this->description,
             ) ?? (string) $this->description;
-        }
-
-        if ($this->action === 'UPDATE' && $this->module === 'Users') {
-            $masked = preg_replace(
-                '/ account for .+? \(Status:/',
-                ' account (Status:',
-                (string) $this->description
-            );
-
-            return is_string($masked) ? $masked : (string) $this->description;
         }
 
         return (string) $this->description;

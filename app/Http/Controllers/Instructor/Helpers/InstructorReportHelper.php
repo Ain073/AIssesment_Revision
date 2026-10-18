@@ -97,7 +97,7 @@ trait InstructorReportHelper
 
         return [
             'campus' => 'SAN CARLOS',
-            'college' => $college?->college_name ?? 'Not set',
+            'college' => $college?->displayName() ?? 'Not set',
             'department' => $department?->dept_name ?? 'Not set',
             'semester' => 'Second Semester',
             'school_year' => $schoolYears->count() === 1 ? $schoolYears->first() : 'Multiple school years',

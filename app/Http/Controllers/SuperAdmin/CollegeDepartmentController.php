@@ -23,11 +23,11 @@ class CollegeDepartmentController extends Controller
         return view('super-admin.colleges.index', [
             'collegeOptions' => College::orderBy('college_name')->get(),
             'colleges' => College::withCount('departments')
-                ->tap(fn ($query) => RecordSearch::apply($query, ['college_name']))
+                ->tap(fn ($query) => RecordSearch::apply($query, ['college_name', 'college_acronym']))
                 ->orderBy('college_name')
                 ->get(),
             'departments' => Department::with('college')
-                ->tap(fn ($query) => RecordSearch::apply($query, ['dept_name', 'college.college_name']))
+                ->tap(fn ($query) => RecordSearch::apply($query, ['dept_name', 'college.college_name', 'college.college_acronym']))
                 ->withCount('instructorProfiles')
                 ->orderBy('dept_name')
                 ->get(),
@@ -36,8 +36,11 @@ class CollegeDepartmentController extends Controller
 
     public function storeCollege(Request $request): RedirectResponse
     {
+        $this->normalizeAcronym($request);
+
         $validated = $request->validate([
             'college_name' => ['required', 'string', 'max:255', 'unique:colleges,college_name'],
+            'college_acronym' => ['nullable', 'string', 'max:50', 'unique:colleges,college_acronym'],
         ]);
 
         $college = College::create($validated);
@@ -86,12 +89,21 @@ class CollegeDepartmentController extends Controller
 
     public function updateCollege(Request $request, College $college): RedirectResponse
     {
+        $this->normalizeAcronym($request);
+
         $validated = $request->validate([
             'college_name' => [
                 'required',
                 'string',
                 'max:255',
                 Rule::unique('colleges', 'college_name')
+                    ->ignore($college->getKey(), $college->getKeyName()),
+            ],
+            'college_acronym' => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('colleges', 'college_acronym')
                     ->ignore($college->getKey(), $college->getKeyName()),
             ],
         ]);
@@ -139,6 +151,14 @@ class CollegeDepartmentController extends Controller
         return redirect()
             ->route('super-admin.colleges')
             ->with('status', 'Department updated successfully.');
+    }
+
+    private function normalizeAcronym(Request $request): void
+    {
+        $acronym = $request->input('college_acronym');
+        if (is_string($acronym)) {
+            $request->merge(['college_acronym' => trim($acronym) !== '' ? mb_strtoupper(trim($acronym)) : null]);
+        }
     }
 
     public function destroyCollege(College $college): RedirectResponse

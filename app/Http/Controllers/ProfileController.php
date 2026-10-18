@@ -348,7 +348,7 @@ SVG;
             $programAndCollege = collect([
                 $program?->program_name,
                 $program?->department?->dept_name,
-                $program?->department?->college?->college_name,
+                $program?->department?->college?->displayName(),
             ])->filter()->join(' - ');
 
             return [
@@ -362,7 +362,7 @@ SVG;
             $department = $user->instructorProfile->department;
             $departmentAndCollege = collect([
                 $department?->dept_name,
-                $department?->college?->college_name,
+                $department?->college?->displayName(),
             ])->filter()->join(' - ');
 
             return [

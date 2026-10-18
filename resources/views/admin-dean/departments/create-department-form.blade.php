@@ -10,7 +10,7 @@
                 @if ($scopedCollege)
                     <div class="mb-3">
                         <label class="form-label fw-bold text-uppercase small" for="college_scope_name">College</label>
-                        <input class="form-control form-control-lg" id="college_scope_name" type="text" value="{{ $scopedCollege->college_name }}" readonly>
+                        <input class="form-control form-control-lg" id="college_scope_name" type="text" value="{{ $scopedCollege->shortName() }}" readonly>
                         <input name="college_id" type="hidden" value="{{ $scopedCollege->college_id }}">
                     </div>
                 @else
@@ -18,7 +18,7 @@
                         <label class="form-label fw-bold text-uppercase small" for="college_id">College</label>
                         <select class="form-select form-select-lg" id="college_id" name="college_id" required @disabled($colleges->isEmpty())>
                             @forelse ($colleges as $college)
-                                <option value="{{ $college->college_id }}" @selected(old('college_id') == $college->college_id)>{{ $college->college_name }}</option>
+                                <option value="{{ $college->college_id }}" @selected(old('college_id') == $college->college_id)>{{ $college->shortName() }}</option>
                             @empty
                                 <option>No colleges available yet</option>
                             @endforelse

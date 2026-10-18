@@ -359,7 +359,16 @@ class UserController extends Controller
             ]);
         });
 
-        AuditLogger::log('UPDATE', 'Users', "Updated {$validated['base_role']} account details (Status: {$validated['status']})", $user);
+        $identifier = $validated['base_role'] === 'student'
+            ? ($validated['student_number'] ?? null)
+            : ($validated['employee_number'] ?? null);
+        $identifierLabel = $validated['base_role'] === 'student' ? 'Student No.' : 'Employee No.';
+        $details = filled($identifier) ? "{$identifierLabel}: {$identifier}; " : '';
+
+        AuditLogger::log('UPDATE', 'Users',
+            "Updated {$validated['base_role']} account for {$user->displayName()} ({$details}Status: {$validated['status']})",
+            $user,
+        );
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'User account updated successfully.']);

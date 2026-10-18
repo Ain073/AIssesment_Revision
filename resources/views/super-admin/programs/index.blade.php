@@ -38,7 +38,7 @@
         @include('partials.record-search', ['inToolbar' => true])
         <form action="{{ route('super-admin.programs') }}" class="record-filter-form" method="GET" data-ajax-page-form data-preserve-page-state="true">
             <input type="hidden" name="search" value="{{ \App\Support\RecordSearch::term() }}">
-            <label class="visually-hidden" for="department-filter">View Department</label>
+            <label class="record-filter-label" for="department-filter">Department</label>
             <select class="form-select department-filter-select" id="department-filter" name="department" data-submit-on-change>
                 <option value="">All Departments</option>
                 @foreach ($departments as $department)
@@ -81,8 +81,8 @@
                             <td class="fw-bold mobile-primary-cell" data-label="Program" style="color: var(--psu-navy);">{{ $program->program_name }}</td>
                             <td data-label="Department">
                                 <span class="fw-semibold d-block">{{ $program->department?->dept_name ?? 'Not assigned' }}</span>
-                                @if ($program->department?->college?->college_name)
-                                    <span class="small text-secondary d-block">{{ $program->department->college->college_name }}</span>
+                                @if ($program->department?->college?->shortName())
+                                    <span class="small text-secondary d-block">{{ $program->department->college->shortName() }}</span>
                                 @endif
                             </td>
                             <td class="count-cell" data-label="Students">{{ $program->student_profiles_count }}</td>

@@ -316,7 +316,7 @@
             let visibleCards = 0;
 
             if (label) {
-                label.textContent = selectedTab === 'published' ? 'Filter by Class' : 'Filter by Subject';
+                label.textContent = selectedTab === 'published' ? 'Class' : 'Subject';
                 label.setAttribute('for', activeSelect?.id || '');
             }
 

@@ -60,7 +60,7 @@
                         <td class="subject-program-cell" data-label="Department">
                             <div class="fw-semibold">{{ $subject->department?->dept_name ?? 'Not assigned' }}</div>
                             <div class="small text-secondary">
-                                {{ $subject->department?->college?->college_name ?? 'No college' }}
+                                {{ $subject->department?->college?->shortName() ?? 'No college' }}
                             </div>
                         </td>
                         <td class="text-center" data-label="Status">

@@ -88,7 +88,6 @@
 
             <div class="modal-header student-import-modal-header">
                 <h3 class="modal-title h4" id="importStudentsModalLabel">Import Student Accounts</h3>
-                <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
             </div>
 
             <div class="modal-body p-4">
@@ -113,7 +112,7 @@
                         <option value="">Select program</option>
                         @foreach ($studentImportPrograms as $program)
                             <option value="{{ $program->program_id }}" @selected((string) old('import_program_id') === (string) $program->program_id)>
-                                {{ $program->program_name }}@if ($program->department) - {{ $program->department->dept_name }}@endif @if ($program->department?->college) - {{ $program->department->college->college_name }}@endif
+                                {{ $program->program_name }}@if ($program->department) - {{ $program->department->dept_name }}@endif @if ($program->department?->college) - {{ $program->department->college->shortName() }}@endif
                             </option>
                         @endforeach
                     </select>
@@ -155,7 +154,6 @@
             <div class="modal-content">
                 <div class="modal-header student-import-modal-header">
                     <h3 class="modal-title h4" id="studentImportPreviewModalLabel">Student Import Preview</h3>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
 
                 <div class="modal-body p-4">

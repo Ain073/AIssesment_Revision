@@ -4,7 +4,6 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="viewProgramModalLabel{{ $program->program_id }}">Program Details</h3>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -15,8 +14,8 @@
                         <div class="col-md-12">
                             <div class="program-detail-label mb-1">Department</div>
                             <div class="fw-semibold">{{ $program->department?->dept_name ?? 'Not assigned' }}</div>
-                            @if ($program->department?->college?->college_name)
-                                <div class="small text-secondary">{{ $program->department->college->college_name }}</div>
+                            @if ($program->department?->college?->shortName())
+                                <div class="small text-secondary">{{ $program->department->college->shortName() }}</div>
                             @endif
                         </div>
                         <div class="col-md-4">
@@ -52,7 +51,6 @@
                 <input name="is_active" type="hidden" value="0">
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="editProgramModalLabel{{ $program->program_id }}">Edit Program</h3>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -71,7 +69,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Discard</button>
+                    <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>
                     <button class="btn btn-psu px-4" type="submit">Save Changes</button>
                 </div>
             </form>
@@ -85,7 +83,6 @@
                 @method('DELETE')
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="deleteProgramModalLabel{{ $program->program_id }}">Delete Program</h3>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p class="mb-2">Delete <strong>{{ $program->program_name }}</strong>?</p>

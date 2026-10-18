@@ -938,7 +938,6 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h2 class="modal-title h5" id="confirmAiDraftModalLabel">Generate AI Draft?</h2>
-                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p class="mb-2">

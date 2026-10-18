@@ -45,7 +45,7 @@ class DashboardController extends Controller
                 return [
                     'name' => $program->program_name,
                     'college_id' => $program->department?->college_id,
-                    'college' => $program->department?->college?->college_name ?? 'No college',
+                    'college' => $program->department?->college?->shortName() ?? 'No college',
                     'students' => $studentCount,
                     'percentage' => $topProgramStudentCount > 0
                         ? max(round(($studentCount / $topProgramStudentCount) * 100), $studentCount > 0 ? 4 : 0)
@@ -54,7 +54,7 @@ class DashboardController extends Controller
             }),
             'programStudentColleges' => College::query()
                 ->orderBy('college_name')
-                ->get(['college_id', 'college_name']),
+                ->get(['college_id', 'college_name', 'college_acronym']),
             'quickActions' => [
                 [
                     'label' => 'Add Program',

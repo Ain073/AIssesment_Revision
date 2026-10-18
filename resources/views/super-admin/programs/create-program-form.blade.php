@@ -13,7 +13,7 @@
                     <select class="form-select form-select-lg" id="department_id" name="department_id" required @disabled($departments->isEmpty())>
                         @forelse ($departments as $department)
                             <option value="{{ $department->department_id }}" @selected(old('department_id', $selectedDepartmentId ?? null) == $department->department_id)>
-                                {{ $department->dept_name }}{{ $department->college?->college_name ? ' - '.$department->college->college_name : '' }}
+                                {{ $department->dept_name }}{{ $department->college?->shortName() ? ' - '.$department->college->shortName() : '' }}
                             </option>
                         @empty
                             <option>No departments available yet</option>

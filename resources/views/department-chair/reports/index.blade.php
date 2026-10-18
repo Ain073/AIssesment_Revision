@@ -49,48 +49,6 @@
             margin-top: 1.25rem;
         }
 
-        .report-filter-toolbar {
-            margin-top: 1rem;
-            padding: 1rem;
-            border: 1px solid var(--psu-line);
-            border-radius: 0.5rem;
-            background: #fff;
-        }
-
-        .report-filter-form {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-            gap: 0.75rem;
-            align-items: end;
-        }
-
-        .report-filter-field {
-            min-width: 0;
-        }
-
-        .report-filter-label {
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-            margin-bottom: 0.35rem;
-            color: var(--psu-navy);
-            font-size: 0.75rem;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-
-        .report-filter-field .form-select {
-            width: 100%;
-            min-width: 0;
-            text-overflow: ellipsis;
-        }
-
-        .report-filter-actions {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
         .report-table-header {
             background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 68%, #8f8a73 120%);
             color: #fff;
@@ -141,13 +99,6 @@
                 padding: 1.25rem;
             }
 
-            .report-filter-form {
-                grid-template-columns: minmax(0, 1fr);
-            }
-
-            .report-filter-actions {
-                justify-content: flex-end;
-            }
         }
 
     </style>
@@ -159,16 +110,13 @@
         <h2 class="brand-text h1 mb-3">Finalized Reports</h2>
     </section>
 
-    <section class="report-filter-toolbar" aria-label="Report filters">
-        <form action="{{ route('department-chair.reports') }}" class="report-filter-form" method="GET" data-ajax-page-form data-preserve-page-state="true">
+    <section class="my-4" aria-label="Report filters">
+        <form action="{{ route('department-chair.reports') }}" class="record-filters" method="GET" data-ajax-page-form data-preserve-page-state="true">
             <input type="hidden" name="search" value="{{ \App\Support\RecordSearch::term() }}">
             <input data-report-type-input name="type" type="hidden" value="{{ $activeReportType }}">
 
-            <div class="report-filter-field">
-                <label class="report-filter-label" for="reportTeacherFilter">
-                    <span class="material-symbols-outlined fs-6">person</span>
-                    Teacher
-                </label>
+            <div class="record-filter-field">
+                <label class="record-filter-label" for="reportTeacherFilter">Teacher</label>
                 <select class="form-select" id="reportTeacherFilter" name="teacher" data-submit-on-change @disabled($teachers->isEmpty())>
                     <option value="">All teachers</option>
                     @foreach ($teachers as $teacher)
@@ -179,11 +127,8 @@
                 </select>
             </div>
 
-            <div class="report-filter-field">
-                <label class="report-filter-label" for="reportSubjectFilter">
-                    <span class="material-symbols-outlined fs-6">menu_book</span>
-                    Subject
-                </label>
+            <div class="record-filter-field">
+                <label class="record-filter-label" for="reportSubjectFilter">Subject</label>
                 <select class="form-select" id="reportSubjectFilter" name="subject" data-submit-on-change @disabled($subjects->isEmpty())>
                     <option value="">All subjects</option>
                     @foreach ($subjects as $subject)
@@ -195,7 +140,7 @@
             </div>
 
             @if ($selectedTeacherId || $selectedSubjectId)
-                <div class="report-filter-actions">
+                <div class="record-filter-actions">
                     <a
                         aria-label="Clear report filters"
                         class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center"

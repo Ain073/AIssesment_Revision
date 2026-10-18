@@ -26,7 +26,7 @@
                         <td>
                             @if ($student?->program)
                                 <div class="fw-semibold">{{ $student->program->program_name }}</div>
-                                <div class="small text-secondary">{{ collect([$student->program->department?->dept_name, $student->program->department?->college?->college_name])->filter()->join(' - ') }}</div>
+                                <div class="small text-secondary">{{ collect([$student->program->department?->dept_name, $student->program->department?->college?->shortName()])->filter()->join(' - ') }}</div>
                             @else
                                 <span class="text-secondary">Not assigned</span>
                             @endif

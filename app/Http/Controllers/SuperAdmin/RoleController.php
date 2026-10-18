@@ -45,7 +45,7 @@ class RoleController extends Controller
 
         $designationHistory = DesignationDetail::with(['instructor.user', 'college', 'department', 'designatedByUser'])
             ->where('designation_id', 1) // Dean
-            ->tap(fn ($query) => RecordSearch::apply($query, ['instructor.user.name', 'instructor.user.first_name', 'instructor.user.last_name', 'instructor.employee_number', 'department.dept_name', 'college.college_name']))
+            ->tap(fn ($query) => RecordSearch::apply($query, ['instructor.user.name', 'instructor.user.first_name', 'instructor.user.last_name', 'instructor.employee_number', 'department.dept_name', 'college.college_name', 'college.college_acronym']))
             ->orderByDesc('created_at')
             ->get();
 

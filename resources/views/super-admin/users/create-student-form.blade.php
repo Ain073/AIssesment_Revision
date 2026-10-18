@@ -50,7 +50,7 @@
                             <option value="">Select program</option>
                             @forelse ($programs as $program)
                                 <option value="{{ $program->program_id }}" @selected((string) old('program_id') === (string) $program->program_id)>
-                                    {{ $program->program_name }} - {{ $program->department?->dept_name }} - {{ $program->department?->college?->college_name }}
+                                    {{ $program->program_name }} - {{ $program->department?->dept_name }} - {{ $program->department?->college?->shortName() }}
                                 </option>
                             @empty
                                 <option value="">No programs available yet</option>

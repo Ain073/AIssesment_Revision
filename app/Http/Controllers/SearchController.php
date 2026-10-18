@@ -81,7 +81,7 @@ class SearchController extends Controller
             ->toBase()
             ->map(fn (Program $program): array => [
                 'title' => $program->program_name,
-                'subtitle' => 'Program - '.(collect([$program->department?->dept_name, $program->department?->college?->college_name])->filter()->join(' - ') ?: 'No department'),
+                'subtitle' => 'Program - '.(collect([$program->department?->dept_name, $program->department?->college?->shortName()])->filter()->join(' - ') ?: 'No department'),
                 'type' => 'Program',
                 'url' => route('super-admin.programs'),
             ]);

@@ -27,7 +27,6 @@
                 @method('PUT')
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="editClassModalLabel{{ $class->class_id }}">Edit Class</h3>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row g-3 mb-3">
@@ -103,7 +102,6 @@
                     @csrf
                     <div class="modal-header">
                         <h3 class="modal-title h4" id="archiveClassModalLabel{{ $class->class_id }}">Archive Class</h3>
-                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <p class="fw-bold mb-2" style="color: var(--psu-navy);">{{ $class->displayName() }}</p>
@@ -125,7 +123,6 @@
                 @method('DELETE')
                 <div class="modal-header">
                     <h3 class="modal-title h4" id="deleteClassModalLabel{{ $class->class_id }}">Delete Class</h3>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p class="fw-bold mb-2" style="color: var(--psu-navy);">{{ $class->displayName() }}</p>

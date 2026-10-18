@@ -87,14 +87,14 @@
                                         <td class="mobile-primary-cell" data-label="College Name">
                                             <div class="d-flex align-items-center gap-3">
                                                 <span class="icon-box"><span class="material-symbols-outlined">account_balance</span></span>
-                                                <span class="fw-bold" style="color: var(--psu-navy);">{{ $college->college_name }}</span>
+                                                <span class="fw-bold" style="color: var(--psu-navy);">{{ $college->shortName() }}</span>
                                             </div>
                                         </td>
                                         <td class="fw-semibold" data-label="Departments">
                                             {{ $college->departments_count }} {{ $college->departments_count === 1 ? 'Department' : 'Departments' }}
                                         </td>
                                         <td class="text-end" data-label="Actions">
-                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewCollegeModal{{ $college->college_id }}" data-bs-toggle="modal" type="button" aria-label="View {{ $college->college_name }}">
+                                            <button class="btn btn-sm record-action-trigger" data-bs-target="#viewCollegeModal{{ $college->college_id }}" data-bs-toggle="modal" type="button" aria-label="View {{ $college->shortName() }}">
                                                 <span class="material-symbols-outlined fs-6">visibility</span>
                                                 View
                                             </button>
@@ -141,7 +141,7 @@
                                 @forelse ($departments as $department)
                                     <tr>
                                         <td class="fw-bold mobile-primary-cell" data-label="Department Name" style="color: var(--psu-navy);">{{ $department->dept_name }}</td>
-                                        <td data-label="College">{{ $department->college?->college_name }}</td>
+                                        <td data-label="College">{{ $department->college?->shortName() }}</td>
                                         <td data-label="Instructors">
                                             {{ $department->instructor_profiles_count }}
                                             {{ $department->instructor_profiles_count === 1 ? 'Instructor' : 'Instructors' }}

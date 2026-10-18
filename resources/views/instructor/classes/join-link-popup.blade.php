@@ -3,7 +3,6 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title h4" id="joinLinkModalLabel">Class Join Code</h3>
-                <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <label class="form-label fw-bold text-uppercase small" for="classJoinCode">Share this code with students</label>

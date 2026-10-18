@@ -139,15 +139,15 @@
                     <p class="stat-label mb-2">Students per Program</p>
                     <h2 class="h4 mb-0" style="color: var(--psu-navy);">Program Distribution</h2>
                 </div>
-                <div class="program-filter-group">
-                    <label class="program-filter-label" for="programCollegeFilter">College</label>
-                    <select class="form-select form-select-sm program-college-filter" id="programCollegeFilter">
+                <div class="record-filter-field">
+                    <label class="record-filter-label" for="programCollegeFilter">College</label>
+                    <select class="form-select program-college-filter" id="programCollegeFilter">
                         <option value="">All colleges</option>
                         @foreach ($programStudentColleges as $college)
-                            <option value="{{ $college->college_id }}">{{ $college->college_name }}</option>
+                            <option value="{{ $college->college_id }}">{{ $college->shortName() }}</option>
                         @endforeach
                     </select>
-                    <span class="badge text-bg-light border rounded-1" id="programShownCount">{{ $programStudentRows->count() }} shown</span>
+                    <span class="badge text-bg-light border rounded-1 mt-2" id="programShownCount">{{ $programStudentRows->count() }} shown</span>
                 </div>
             </div>
 

@@ -11,7 +11,7 @@
                     <label class="form-label fw-bold text-uppercase small" for="college_id">College</label>
                     <select class="form-select form-select-lg" id="college_id" name="college_id" required @disabled($collegeOptions->isEmpty())>
                         @forelse ($collegeOptions as $college)
-                            <option value="{{ $college->college_id }}" @selected(old('college_id') == $college->college_id)>{{ $college->college_name }}</option>
+                            <option value="{{ $college->college_id }}" @selected(old('college_id') == $college->college_id)>{{ $college->shortName() }}</option>
                         @empty
                             <option>No colleges available yet</option>
                         @endforelse

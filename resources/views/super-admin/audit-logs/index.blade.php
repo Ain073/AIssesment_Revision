@@ -24,10 +24,11 @@
     {{-- Filter toolbar --}}
     <form id="auditFilterForm" data-record-search-form method="GET" action="{{ route('super-admin.audit-logs') }}" data-ajax-page-form data-preserve-page-state="true">
 
-        <div class="d-flex flex-wrap align-items-end gap-2 mb-3">
+        <div class="record-filters mb-3">
 
             {{-- Search --}}
-            <div class="flex-grow-1" style="min-width: 220px; max-width: 340px;">
+            <div class="record-filter-field">
+                <label class="visually-hidden" for="auditSearch">Search</label>
                 <div class="input-group">
                     <input
                         class="form-control"
@@ -45,36 +46,48 @@
             </div>
 
             {{-- Role --}}
-            <select class="form-select" id="auditRole" name="role" style="width: auto;" data-submit-on-change>
-                <option value="">All Roles</option>
-                @foreach ($roles as $rKey => $rLabel)
-                    <option value="{{ $rKey }}" @selected(request('role') === $rKey)>
-                        {{ $rLabel }}
-                    </option>
-                @endforeach
-            </select>
+            <div class="record-filter-field record-filter-field--compact">
+                <label class="record-filter-label" for="auditRole">Role</label>
+                <select class="form-select" id="auditRole" name="role" data-submit-on-change>
+                    <option value="">All Roles</option>
+                    @foreach ($roles as $rKey => $rLabel)
+                        <option value="{{ $rKey }}" @selected(request('role') === $rKey)>
+                            {{ $rLabel }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
 
             {{-- Feature --}}
-            <select class="form-select" id="auditModule" name="module" style="width: auto;" data-submit-on-change>
-                <option value="">All Features</option>
-                @foreach ($modules as $m)
-                    <option value="{{ $m }}" @selected(request('module') === $m)>{{ $m }}</option>
-                @endforeach
-            </select>
+            <div class="record-filter-field record-filter-field--compact">
+                <label class="record-filter-label" for="auditModule">Feature</label>
+                <select class="form-select" id="auditModule" name="module" data-submit-on-change>
+                    <option value="">All Features</option>
+                    @foreach ($modules as $m)
+                        <option value="{{ $m }}" @selected(request('module') === $m)>{{ $m }}</option>
+                    @endforeach
+                </select>
+            </div>
 
             {{-- Action --}}
-            <select class="form-select" id="auditAction" name="action" style="width: auto;" data-submit-on-change>
-                <option value="">All Actions</option>
-                @foreach ($actions as $a)
-                    <option value="{{ $a }}" @selected(request('action') === $a)>{{ ucwords(strtolower(str_replace('_', ' ', $a))) }}</option>
-                @endforeach
-            </select>
+            <div class="record-filter-field record-filter-field--compact">
+                <label class="record-filter-label" for="auditAction">Action</label>
+                <select class="form-select" id="auditAction" name="action" data-submit-on-change>
+                    <option value="">All Actions</option>
+                    @foreach ($actions as $a)
+                        <option value="{{ $a }}" @selected(request('action') === $a)>{{ ucwords(strtolower(str_replace('_', ' ', $a))) }}</option>
+                    @endforeach
+                </select>
+            </div>
 
             {{-- Date range --}}
-            <div class="d-flex align-items-center gap-1">
-                <input class="form-control" id="auditFrom" name="from" type="date" value="{{ request('from') }}" title="From" style="width: 148px;" data-submit-on-change>
-                <span class="text-secondary small">–</span>
-                <input class="form-control" id="auditTo"   name="to"   type="date" value="{{ request('to') }}"   title="To"   style="width: 148px;" data-submit-on-change>
+            <div class="record-filter-field record-filter-field--compact">
+                <label class="record-filter-label" for="auditFrom">From Date</label>
+                <input class="form-control" id="auditFrom" name="from" type="date" value="{{ request('from') }}" title="From" data-submit-on-change>
+            </div>
+            <div class="record-filter-field record-filter-field--compact">
+                <label class="record-filter-label" for="auditTo">To Date</label>
+                <input class="form-control" id="auditTo"   name="to"   type="date" value="{{ request('to') }}"   title="To"   data-submit-on-change>
             </div>
 
             @if (request()->hasAny(['search', 'role', 'module', 'action', 'from', 'to']))
@@ -148,6 +161,9 @@
                             {{-- Description --}}
                             <td class="pe-4" data-label="Description">
                                 <span class="text-dark">{{ $log->displayDescription() }}</span>
+                                @if ($accountLabel = $log->currentAccountLabel())
+                                    <div class="small text-secondary mt-1">Current linked account: {{ $accountLabel }}</div>
+                                @endif
                             </td>
                         </tr>
                     @empty

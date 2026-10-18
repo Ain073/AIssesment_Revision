@@ -7,10 +7,11 @@
 
     {{-- Filter toolbar --}}
     <form id="activityFilterForm" method="GET" action="{{ route('profile.activity') }}">
-        <div class="d-flex flex-wrap align-items-end gap-2 mb-3">
+        <div class="record-filters mb-3">
 
             {{-- Search --}}
-            <div class="flex-grow-1" style="min-width: 220px; max-width: 340px;">
+            <div class="record-filter-field">
+                <label class="visually-hidden" for="activitySearch">Search</label>
                 <div class="input-group">
                     <input
                         class="form-control"
@@ -29,19 +30,25 @@
 
             {{-- Feature filter --}}
             @if ($modules->isNotEmpty())
-                <select class="form-select" id="activityModule" name="module" style="width: auto;" onchange="this.form.submit()">
-                    <option value="">All Features</option>
-                    @foreach ($modules as $m)
-                        <option value="{{ $m }}" @selected(request('module') === $m)>{{ $m }}</option>
-                    @endforeach
-                </select>
+                <div class="record-filter-field record-filter-field--compact">
+                    <label class="record-filter-label" for="activityModule">Feature</label>
+                    <select class="form-select" id="activityModule" name="module" onchange="this.form.submit()">
+                        <option value="">All Features</option>
+                        @foreach ($modules as $m)
+                            <option value="{{ $m }}" @selected(request('module') === $m)>{{ $m }}</option>
+                        @endforeach
+                    </select>
+                </div>
             @endif
 
             {{-- Date range --}}
-            <div class="d-flex align-items-center gap-1">
-                <input class="form-control" id="activityFrom" name="from" type="date" value="{{ request('from') }}" title="From" style="width: 148px;" onchange="this.form.submit()">
-                <span class="text-secondary small">–</span>
-                <input class="form-control" id="activityTo"   name="to"   type="date" value="{{ request('to') }}"   title="To"   style="width: 148px;" onchange="this.form.submit()">
+            <div class="record-filter-field record-filter-field--compact">
+                <label class="record-filter-label" for="activityFrom">From Date</label>
+                <input class="form-control" id="activityFrom" name="from" type="date" value="{{ request('from') }}" title="From" onchange="this.form.submit()">
+            </div>
+            <div class="record-filter-field record-filter-field--compact">
+                <label class="record-filter-label" for="activityTo">To Date</label>
+                <input class="form-control" id="activityTo"   name="to"   type="date" value="{{ request('to') }}"   title="To"   onchange="this.form.submit()">
             </div>
 
             @if (request()->hasAny(['search', 'module', 'from', 'to']))

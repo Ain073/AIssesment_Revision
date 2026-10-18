@@ -25,10 +25,6 @@
             gap: 0.5rem;
         }
 
-        .assessment-filter-control {
-            max-width: min(420px, 100%);
-        }
-
         .empty-icon {
             width: 56px;
             height: 56px;
@@ -73,9 +69,9 @@
             </button>
         </div>
 
-        <div class="assessment-filter-bar d-flex flex-wrap align-items-end gap-3 mb-4">
-            <div class="assessment-filter-control flex-grow-1">
-                <label class="form-label small fw-bold text-uppercase mb-1" data-assessment-filter-label for="draftAssessmentFilter">Filter by Subject</label>
+        <div class="record-filters mb-4">
+            <div class="record-filter-field">
+                <label class="record-filter-label" data-assessment-filter-label for="{{ $activeAssessmentTab === 'published' ? 'publishedAssessmentFilter' : 'draftAssessmentFilter' }}">{{ $activeAssessmentTab === 'published' ? 'Class' : 'Subject' }}</label>
                 <select class="form-select {{ $activeAssessmentTab === 'draft' ? '' : 'd-none' }}" id="draftAssessmentFilter" data-assessment-filter-select="draft">
                     <option value="">All Subjects</option>
                     @foreach ($draftSubjectOptions as $subject)

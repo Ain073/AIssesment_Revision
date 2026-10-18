@@ -11,7 +11,6 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h3 class="modal-title h4" id="viewSubjectModalLabel{{ $subject->subject_id }}">Subject Details</h3>
-                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-4">
                         <div class="row g-4">
@@ -33,7 +32,7 @@
                                 <div class="subject-detail-label mb-1">Department</div>
                                 <div class="fw-semibold">{{ $subject->department?->dept_name ?? 'Not assigned' }}</div>
                                 <div class="small text-secondary">
-                                    {{ $subject->department?->college?->college_name ?? 'No college' }}
+                                    {{ $subject->department?->college?->shortName() ?? 'No college' }}
                                 </div>
                             </div>
                         </div>
@@ -54,7 +53,6 @@
                     @method('PUT')
                     <div class="modal-header">
                         <h3 class="modal-title h4" id="editSubjectModalLabel{{ $subject->subject_id }}">Edit Subject</h3>
-                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
@@ -82,7 +80,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Discard</button>
+                        <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>
                         <button class="btn btn-psu px-4" type="submit">Save Changes</button>
                     </div>
                 </form>
@@ -96,7 +94,6 @@
                     @method('DELETE')
                     <div class="modal-header">
                         <h3 class="modal-title h4" id="deleteSubjectModalLabel{{ $subject->subject_id }}">Delete Subject</h3>
-                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <p class="mb-1">Delete <strong>{{ $subject->subject_code }}</strong>?</p>

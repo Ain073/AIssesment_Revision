@@ -6,32 +6,32 @@
     @endphp
 
     <div class="modal fade" id="viewUserModal{{ $user->id }}" tabindex="-1" aria-labelledby="viewUserModalLabel{{ $user->id }}" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header p-3 p-md-4">
                     <div>
                         <h3 class="modal-title h4 mb-1" id="viewUserModalLabel{{ $user->id }}">User Details</h3>
-                        <p class="small text-white-50 mb-0">{{ $user->displayName() }}</p>
+                        <p class="small text-white-50 mb-0 text-break">{{ $user->displayName() }}</p>
                     </div>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
+                    <button class="btn-close btn-close-white flex-shrink-0" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="row g-3">
+                <div class="modal-body p-3 p-md-4">
+                    <div class="row g-3 g-md-4">
                         <div class="col-12">
                             <label class="form-label fw-bold text-uppercase small">Full Name</label>
-                            <div class="form-control bg-light">{{ $user->displayName() }}</div>
+                            <div class="form-control bg-light text-break">{{ $user->displayName() }}</div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-8">
                             <label class="form-label fw-bold text-uppercase small">Email</label>
-                            <div class="form-control bg-light">{{ $user->email }}</div>
+                            <div class="form-control bg-light text-break">{{ $user->email }}</div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold text-uppercase small">Status</label>
-                            <div class="form-control bg-light">{{ ucfirst($user->status) }}</div>
+                            <div class="form-control bg-light text-break">{{ ucfirst($user->status) }}</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-uppercase small">Account Type</label>
-                            <div class="form-control bg-light">
+                            <div class="form-control bg-light text-break">
                                 @if ($user->hasRole('super_admin'))
                                     Admin
                                 @elseif ($user->hasRole('instructor'))
@@ -46,7 +46,7 @@
                         @if (! $isStudentAccount)
                             <div class="col-md-6">
                                 <label class="form-label fw-bold text-uppercase small">Designation</label>
-                                <div class="form-control bg-light">
+                                <div class="form-control bg-light text-break">
                                     @php
                                         $elevatedAccess = collect([
                                             $user->hasRole('admin_dean') ? 'Dean' : null,
@@ -58,36 +58,36 @@
                             </div>
                         @endif
                         @if ($isInstructorAccount)
-                            <div class="col-md-6">
+                            <div class="col-md-8">
                                 <label class="form-label fw-bold text-uppercase small">Department</label>
-                                <div class="form-control bg-light">
+                                <div class="form-control bg-light text-break">
                                     {{ $user->instructorProfile?->department?->dept_name ?? 'Not assigned' }}
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label fw-bold text-uppercase small">Employee Number</label>
-                                <div class="form-control bg-light">
+                                <div class="form-control bg-light text-break">
                                     {{ $user->instructorProfile?->employee_number ?? 'Not assigned' }}
                                 </div>
                             </div>
                         @endif
                         @if ($isStudentAccount)
-                            <div class="col-md-6">
+                            <div class="col-md-8">
                                 <label class="form-label fw-bold text-uppercase small">Program</label>
-                                <div class="form-control bg-light">
+                                <div class="form-control bg-light text-break">
                                     {{ $user->studentProfile?->program?->program_name ?? 'Not assigned' }}
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label fw-bold text-uppercase small">Student Number</label>
-                                <div class="form-control bg-light">
+                                <div class="form-control bg-light text-break">
                                     {{ $user->studentProfile?->student_number ?? 'Not assigned' }}
                                 </div>
                             </div>
                         @endif
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer px-3 px-md-4 py-3">
                     @if (! $user->hasRole('super_admin'))
                         @if ($user->hasRole('admin_dean'))
                             <button class="btn btn-warning px-4" data-bs-target="#removeUserDeanDesignationModal{{ $user->id }}" data-bs-toggle="modal" type="button">Remove Designation</button>
@@ -111,7 +111,6 @@
                         <input name="role_name" type="hidden" value="admin_dean">
                         <div class="modal-header">
                             <h3 class="modal-title h4" id="removeUserDeanDesignationModalLabel{{ $user->id }}">Remove Designation</h3>
-                            <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <p class="mb-2">Remove Dean designation from this teacher?</p>
@@ -152,7 +151,6 @@
                     <input name="user_id" type="hidden" value="{{ $user->id }}">
                     <div class="modal-header">
                         <h3 class="modal-title h4" id="editUserModalLabel{{ $user->id }}">Edit User Account</h3>
-                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row g-3">
@@ -192,7 +190,7 @@
                                     <option value="">Select department</option>
                                     @forelse ($departments as $department)
                                         <option value="{{ $department->department_id }}" @selected((string) $editDepartmentId === (string) $department->department_id)>
-                                            {{ $department->dept_name }} - {{ $department->college?->college_name }}
+                                            {{ $department->dept_name }} - {{ $department->college?->shortName() }}
                                         </option>
                                     @empty
                                         <option value="">No departments available yet</option>
@@ -209,7 +207,7 @@
                                     <option value="">Select program</option>
                                     @forelse ($programs as $program)
                                         <option value="{{ $program->program_id }}" @selected((string) $editProgramId === (string) $program->program_id)>
-                                            {{ $program->program_name }} - {{ $program->department?->dept_name }} - {{ $program->department?->college?->college_name }}
+                                            {{ $program->program_name }} - {{ $program->department?->dept_name }} - {{ $program->department?->college?->shortName() }}
                                         </option>
                                     @empty
                                         <option value="">No programs available yet</option>
@@ -258,7 +256,6 @@
                     @method('DELETE')
                     <div class="modal-header">
                         <h3 class="modal-title h4" id="deleteUserModalLabel{{ $user->id }}">Delete User</h3>
-                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <p class="mb-2">You are about to delete this account:</p>

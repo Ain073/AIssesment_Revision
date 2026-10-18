@@ -97,7 +97,7 @@
 
     @if ($scopedCollege)
         <div class="alert alert-primary border-0 shadow-sm mb-4">
-            You are viewing teachers under <strong>{{ $scopedCollege->college_name }}</strong>.
+            You are viewing teachers under <strong>{{ $scopedCollege->shortName() }}</strong>.
         </div>
     @endif
 
@@ -105,7 +105,7 @@
         @include('partials.record-search', ['inToolbar' => true])
         <form action="{{ route('admin-dean.teachers') }}" class="record-filter-form" method="GET" data-ajax-page-form data-preserve-page-state="true">
             <input type="hidden" name="search" value="{{ \App\Support\RecordSearch::term() }}">
-            <label class="visually-hidden" for="department_filter">Department</label>
+            <label class="record-filter-label" for="department_filter">Department</label>
             <select class="form-select" id="department_filter" name="department" data-submit-on-change>
                 <option value="">All Departments</option>
                 @foreach ($departments as $department)
@@ -165,7 +165,7 @@
                                 @if ($teacher->instructorProfile?->department)
                                     <div>
                                         <p class="fw-semibold mb-0">{{ $teacher->instructorProfile->department->dept_name }}</p>
-                                        <p class="small text-secondary mb-0">{{ $teacher->instructorProfile->department->college?->college_name }}</p>
+                                        <p class="small text-secondary mb-0">{{ $teacher->instructorProfile->department->college?->shortName() }}</p>
                                     </div>
                                 @else
                                     <span class="text-secondary fst-italic">Not assigned</span>

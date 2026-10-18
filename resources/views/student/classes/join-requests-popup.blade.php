@@ -5,7 +5,6 @@
                 <div>
                     <h3 class="modal-title h4" id="joinRequestsModalLabel">Join Requests</h3>
                 </div>
-                <button class="btn-close" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
             </div>
 
             <div class="modal-body p-0" data-poll-url="{{ route('student.classes.requests.live') }}" data-poll-interval="5000">

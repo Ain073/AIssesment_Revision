@@ -39,7 +39,7 @@
                             <option value="">Select department</option>
                             @forelse ($departments as $department)
                                 <option value="{{ $department->department_id }}" @selected((string) old('department_id') === (string) $department->department_id)>
-                                    {{ $department->dept_name }} - {{ $department->college?->college_name }}
+                                    {{ $department->dept_name }} - {{ $department->college?->shortName() }}
                                 </option>
                             @empty
                                 <option value="">No departments available yet</option>

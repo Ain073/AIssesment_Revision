@@ -95,7 +95,7 @@
 
     @if ($scopedCollege)
         <div class="alert alert-primary border-0 shadow-sm mb-4">
-            You are managing Department Chair designations under <strong>{{ $scopedCollege->college_name }}</strong>.
+            You are managing Department Chair designations under <strong>{{ $scopedCollege->shortName() }}</strong>.
         </div>
     @endif
 
@@ -103,7 +103,7 @@
         @include('partials.record-search', ['inToolbar' => true])
         <form action="{{ route('admin-dean.designations') }}" class="record-filter-form" method="GET" data-ajax-page-form data-preserve-page-state="true">
             <input type="hidden" name="search" value="{{ \App\Support\RecordSearch::term() }}">
-            <label class="visually-hidden" for="departmentDesignationFilter">Department</label>
+            <label class="record-filter-label" for="departmentDesignationFilter">Department</label>
             <select class="form-select" id="departmentDesignationFilter" name="department_id" data-submit-on-change>
                 <option value="">All departments</option>
                 @foreach ($departments as $department)
@@ -201,7 +201,6 @@
                         <h3 class="modal-title h4 mb-1" id="chairHistoryModalLabel">Department Chair History & Term Records</h3>
                         <p class="small text-white-50 mb-0">Institutional timeline and past appointments of Department Chairs</p>
                     </div>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-0">
                     <div class="table-responsive">
@@ -390,7 +389,6 @@
                             <h3 class="modal-title h4 mb-1" id="viewDepartmentChairModalLabel{{ $teacher->id }}">Designation Details</h3>
                             <p class="small text-white-50 mb-0">Department Chair Designation</p>
                         </div>
-                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row g-3">
@@ -440,7 +438,6 @@
                     @method('DELETE')
                     <div class="modal-header">
                         <h3 class="modal-title h4" id="removeDepartmentChairModalLabel{{ $teacher->id }}">Remove Designation</h3>
-                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <p class="mb-2">Remove Department Chair designation from this teacher?</p>

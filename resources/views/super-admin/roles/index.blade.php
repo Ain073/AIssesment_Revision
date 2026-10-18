@@ -81,7 +81,7 @@
                                         </td>
                                         <td data-label="Email">{{ $user->email }}</td>
                                         <td data-label="College">
-                                            <div class="fw-semibold">{{ $user->instructorProfile?->department?->college?->college_name ?? 'Not assigned' }}</div>
+                                            <div class="fw-semibold">{{ $user->instructorProfile?->department?->college?->shortName() ?? 'Not assigned' }}</div>
                                             <div class="small text-secondary">{{ $user->instructorProfile?->department?->dept_name ?? 'No department' }}</div>
                                         </td>
                                         <td data-label="Status">
@@ -128,7 +128,6 @@
                         <h3 class="modal-title h4 mb-1" id="deanHistoryModalLabel">Dean Designation History & Term Records</h3>
                         <p class="small text-white-50 mb-0">Institutional timeline and past appointments of College Deans</p>
                     </div>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-0">
                     <div class="table-responsive">
@@ -160,7 +159,7 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td data-label="College">{{ $history->college?->college_name ?? $history->department?->college?->college_name ?? '—' }}</td>
+                                        <td data-label="College">{{ $history->college?->shortName() ?? $history->department?->college?->shortName() ?? '—' }}</td>
                                         <td data-label="Academic Year">
                                             <span class="badge bg-light text-dark border">{{ $history->academic_year }}</span>
                                         </td>

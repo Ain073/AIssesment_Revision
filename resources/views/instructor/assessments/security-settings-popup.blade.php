@@ -5,7 +5,6 @@
                 <div>
                     <h3 class="modal-title h4" id="securitySettingsModalLabel">Security Settings</h3>
                 </div>
-                <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="d-grid gap-3">
