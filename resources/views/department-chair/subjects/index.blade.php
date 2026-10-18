@@ -2,6 +2,7 @@
 
 @section('title', 'Subjects | AIssessment Department Chair')
 @section('header', 'Subjects')
+@section('record-search-toolbar', 'true')
 
 @push('scripts')
     @if (request('action') === 'create-subject')
@@ -31,6 +32,14 @@
             This account has no assigned department yet, so subject scope cannot be resolved.
         </div>
     @endif
+
+    <div class="record-toolbar">
+        @include('partials.record-search', ['inToolbar' => true])
+        <button class="btn btn-psu d-flex align-items-center gap-2 record-toolbar-actions" data-bs-target="#subjectModal" data-bs-toggle="modal" type="button" @disabled(! $scopedDepartment)>
+            <span class="material-symbols-outlined fs-5">add</span>
+            Subject
+        </button>
+    </div>
 
     <div data-subjects-workspace>
         @include('department-chair.subjects.partials.workspace')

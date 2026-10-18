@@ -41,7 +41,20 @@ class LoginController extends Controller
                 ->withErrors(['email' => 'This account does not have an assigned portal yet.']);
         }
 
-        return view('auth.login');
+        $loginEmail = $request->session()->get('login_lockout_email');
+        $loginRetryAfter = 0;
+
+        if (is_string($loginEmail) && $loginEmail !== '') {
+            $key = $this->throttleKey($request, $loginEmail);
+            if (RateLimiter::tooManyAttempts($key, self::MAX_LOGIN_ATTEMPTS)) {
+                $loginRetryAfter = RateLimiter::availableIn($key);
+            } else {
+                $request->session()->forget('login_lockout_email');
+                $loginEmail = null;
+            }
+        }
+
+        return view('auth.login', compact('loginRetryAfter', 'loginEmail'));
     }
 
     public function login(Request $request, AccountSessionService $sessions): RedirectResponse
@@ -60,15 +73,9 @@ class LoginController extends Controller
         $throttleKey = $this->throttleKey($request);
 
         if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_LOGIN_ATTEMPTS)) {
-            $seconds = RateLimiter::availableIn($throttleKey);
-
             Log::warning('Login attempt temporarily blocked.', $this->throttleLogContext($throttleKey));
 
-            return back()
-                ->withErrors([
-                    'email' => "Too many login attempts. Please try again in {$seconds} seconds.",
-                ])
-                ->onlyInput('email');
+            return $this->loginLockoutResponse($request, $throttleKey);
         }
 
         $remember = $request->boolean('remember');
@@ -82,12 +89,17 @@ class LoginController extends Controller
                 ...$this->throttleLogContext($throttleKey),
             ]);
 
+            if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_LOGIN_ATTEMPTS)) {
+                return $this->loginLockoutResponse($request, $throttleKey);
+            }
+
             return back()
                 ->withErrors(['email' => 'Invalid email or password.'])
                 ->onlyInput('email');
         }
 
         RateLimiter::clear($throttleKey);
+        $request->session()->forget('login_lockout_email');
         $request->session()->regenerate();
 
         if (Auth::user()->status !== 'active') {
@@ -173,9 +185,20 @@ class LoginController extends Controller
         return $routeName ? route($routeName) : null;
     }
 
-    private function throttleKey(Request $request): string
+    private function throttleKey(Request $request, ?string $email = null): string
     {
-        return Str::transliterate(Str::lower((string) $request->string('email')).'|'.$request->ip());
+        return Str::transliterate(Str::lower($email ?? (string) $request->string('email')).'|'.$request->ip());
+    }
+
+    private function loginLockoutResponse(Request $request, string $throttleKey): RedirectResponse
+    {
+        // Retain only the email so a refreshed page can recheck the server's limiter.
+        $request->session()->put('login_lockout_email', (string) $request->string('email'));
+        $seconds = RateLimiter::availableIn($throttleKey);
+
+        return back()
+            ->withErrors(['email' => "Too many login attempts. Please try again in {$seconds} seconds."])
+            ->onlyInput('email');
     }
 
     private function throttleLogContext(string $throttleKey): array

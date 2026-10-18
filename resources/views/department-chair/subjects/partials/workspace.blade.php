@@ -26,15 +26,6 @@
     </form>
 </div>
 
-<div class="subject-toolbar super-admin-form-toolbar d-flex flex-wrap align-items-end gap-3 mb-4">
-    <form action="{{ route('department-chair.subjects') }}" class="subject-filter-form d-flex flex-wrap align-items-end gap-3" method="GET">
-        <button class="btn btn-psu d-flex align-items-center gap-2 subject-toolbar-action" data-bs-target="#subjectModal" data-bs-toggle="modal" type="button" @disabled(! $scopedDepartment)>
-            <span class="material-symbols-outlined fs-5">add</span>
-            Subject
-        </button>
-    </form>
-</div>
-
 <section class="directory-card subject-directory-card shadow-sm">
     <div class="directory-header px-4 py-3">
         <h3 class="h4 mb-0">Subjects List</h3>

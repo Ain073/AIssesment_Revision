@@ -2,6 +2,7 @@
 
 @section('title', 'Departments | AIssessment Dean')
 @section('header', 'Departments')
+@section('record-search-toolbar', 'true')
 
 @push('styles')
     <style>
@@ -73,8 +74,9 @@
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
-    <div class="d-flex flex-wrap justify-content-end gap-2 mb-4">
-        <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#departmentModal" data-bs-toggle="modal" type="button">
+    <div class="record-toolbar">
+        @include('partials.record-search', ['inToolbar' => true])
+        <button class="btn btn-psu record-toolbar-actions d-flex align-items-center gap-2" data-bs-target="#departmentModal" data-bs-toggle="modal" type="button">
             <span class="material-symbols-outlined fs-5">add</span>
             Department
         </button>

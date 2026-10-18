@@ -1,3 +1,6 @@
+@php
+    $loginRetryAfter = (int) ($loginRetryAfter ?? 0);
+@endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -198,7 +201,7 @@
                 margin-bottom: 0.85rem !important;
             }
 
-            .login-card form > .d-flex {
+            .login-card .login-options {
                 margin-bottom: 1rem !important;
                 gap: 0.5rem;
             }
@@ -273,10 +276,10 @@
                 </h1>
             </div>
 
-            <form action="{{ route('login.submit') }}" id="loginForm" method="POST">
+            <form action="{{ route('login.submit') }}" id="loginForm" method="POST" data-login-retry-after="{{ $loginRetryAfter }}">
                 @csrf
 
-                @if ($errors->any())
+                @if ($errors->any() && $loginRetryAfter === 0)
                     <div class="alert alert-danger py-2">
                         {{ $errors->first() }}
                     </div>
@@ -288,37 +291,43 @@
                     </div>
                 @endif
 
-                <div class="mb-3">
-                    <label class="form-label fw-bold" for="email">Email Address</label>
-                    <div class="position-relative">
-                        <span class="material-symbols-outlined form-icon">person</span>
-                        <input autocomplete="username" class="form-control form-control-lg with-icon" id="email" name="email" placeholder="Enter your email address" required type="email" value="{{ old('email') }}">
-                    </div>
+                <div class="alert alert-warning py-2" id="loginLockoutMessage" role="status" @if ($loginRetryAfter === 0) hidden @endif>
+                    Too many login attempts. Please try again in <span id="loginCountdown" aria-live="off">{{ $loginRetryAfter }}</span> seconds.
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label fw-bold" for="password">Password</label>
-                    <div class="position-relative">
-                        <span class="material-symbols-outlined form-icon">lock</span>
-                        <input autocomplete="current-password" class="form-control form-control-lg with-icon pe-5" id="password" name="password" placeholder="Password" required type="password">
-                        <button aria-label="Show password" class="password-toggle" id="togglePassword" type="button">
-                            <span class="material-symbols-outlined">visibility</span>
-                        </button>
+                <fieldset class="border-0 p-0 m-0 w-100" id="loginFields" @disabled($loginRetryAfter > 0)>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" for="email">Email Address</label>
+                        <div class="position-relative">
+                            <span class="material-symbols-outlined form-icon">person</span>
+                            <input autocomplete="username" class="form-control form-control-lg with-icon" id="email" name="email" placeholder="Enter your email address" required type="email" value="{{ old('email', $loginEmail ?? '') }}">
+                        </div>
                     </div>
-                </div>
 
-                <div class="d-flex align-items-center justify-content-between mb-4">
-                    <div class="form-check">
-                        <input class="form-check-input" id="remember" name="remember" type="checkbox" value="1" @checked(old('remember'))>
-                        <label class="form-check-label" for="remember">Remember Me</label>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" for="password">Password</label>
+                        <div class="position-relative">
+                            <span class="material-symbols-outlined form-icon">lock</span>
+                            <input autocomplete="current-password" class="form-control form-control-lg with-icon pe-5" id="password" name="password" placeholder="Password" required type="password">
+                            <button aria-label="Show password" class="password-toggle" id="togglePassword" type="button">
+                                <span class="material-symbols-outlined">visibility</span>
+                            </button>
+                        </div>
                     </div>
-                    <a class="auth-link fw-semibold text-decoration-none" href="{{ route('password.request') }}">Forgot Password?</a>
-                </div>
 
-                <button class="btn btn-login btn-lg w-100 d-flex align-items-center justify-content-center gap-2 py-3" type="submit">
-                    Log In
-                    <span class="material-symbols-outlined">login</span>
-                </button>
+                    <div class="login-options d-flex align-items-center justify-content-between mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" id="remember" name="remember" type="checkbox" value="1" @checked(old('remember'))>
+                            <label class="form-check-label" for="remember">Remember Me</label>
+                        </div>
+                        <a class="auth-link fw-semibold text-decoration-none" href="{{ route('password.request') }}">Forgot Password?</a>
+                    </div>
+
+                    <button class="btn btn-login btn-lg w-100 d-flex align-items-center justify-content-center gap-2 py-3" id="loginButton" type="submit" @disabled($loginRetryAfter > 0)>
+                        <span id="loginButtonLabel">{{ $loginRetryAfter > 0 ? 'Try again in '.$loginRetryAfter.'s' : 'Log In' }}</span>
+                        <span class="material-symbols-outlined" id="loginButtonIcon" aria-hidden="true">{{ $loginRetryAfter > 0 ? 'hourglass_top' : 'login' }}</span>
+                    </button>
+                </fieldset>
             </form>
 
         </section>
@@ -343,20 +352,7 @@
             });
         }
 
-        document.getElementById("loginForm").addEventListener("submit", function (event) {
-            const button = event.target.querySelector('button[type="submit"]');
-            button.innerHTML = '<span class="material-symbols-outlined spinner-icon">progress_activity</span> Authenticating...';
-            button.disabled = true;
-        });
-
-        document.getElementById("togglePassword").addEventListener("click", function () {
-            const password = document.getElementById("password");
-            const icon = this.querySelector(".material-symbols-outlined");
-            const isPassword = password.type === "password";
-
-            password.type = isPassword ? "text" : "password";
-            icon.textContent = isPassword ? "visibility_off" : "visibility";
-        });
     </script>
+    <script src="{{ asset('js/login.js') }}?v={{ filemtime(public_path('js/login.js')) }}"></script>
 </body>
 </html>

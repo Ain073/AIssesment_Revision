@@ -3,7 +3,6 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title h4" id="addStudentModalLabel">Add Student to Class</h3>
-                <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form action="{{ route('instructor.classes.students.store', $class) }}" method="POST" data-ajax-form data-reset-on-success="true">
@@ -65,7 +64,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Discard</button>
+                <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>
             </div>
         </div>
     </div>

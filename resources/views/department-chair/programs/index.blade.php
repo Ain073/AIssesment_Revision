@@ -2,6 +2,7 @@
 
 @section('title', 'Programs | AIssessment Department Chair')
 @section('header', 'Programs')
+@section('record-search-toolbar', 'true')
 @section('body_class', 'department-chair-programs')
 
 @push('styles')
@@ -69,8 +70,9 @@
         </div>
     @endif
 
-    <div class="program-toolbar super-admin-toolbar d-flex flex-wrap align-items-end justify-content-end gap-3 mb-4">
-        <button class="btn btn-psu d-flex align-items-center gap-2" data-bs-target="#programModal" data-bs-toggle="modal" type="button" @disabled(! $scopedDepartment)>
+    <div class="record-toolbar">
+        @include('partials.record-search', ['inToolbar' => true])
+        <button class="btn btn-psu record-toolbar-actions d-flex align-items-center gap-2" data-bs-target="#programModal" data-bs-toggle="modal" type="button" @disabled(! $scopedDepartment)>
             <span class="material-symbols-outlined fs-5">add</span>
             Program
         </button>

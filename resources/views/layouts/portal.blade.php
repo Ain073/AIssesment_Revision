@@ -587,7 +587,7 @@
                                 const currentScrollY = window.scrollY;
                                 cleanupStaleBootstrapBackdrops();
                                 section.innerHTML = html;
-                                window.initializeTableTabs?.(section);
+                                window.initializeTableTabs?.(section.closest('[data-table-tabs-root]') || section);
                                 window.initializeAssessmentFilters?.(section);
                                 window.initializeClassSectionSelects?.(section);
                                 window.initializeClassForms?.(section);

@@ -2,6 +2,7 @@
 
 @section('title', 'Assessments | AIssessment Instructor')
 @section('header', 'Assessments')
+@section('record-search-toolbar', 'true')
 
 @push('styles')
     <style>
@@ -50,8 +51,9 @@
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
-    <div class="d-flex flex-wrap justify-content-end gap-2 mb-4">
-        <a class="btn btn-psu d-inline-flex align-items-center gap-2 {{ (! $instructorProfile || $handledSubjects->isEmpty()) ? 'disabled' : '' }}" href="{{ route('instructor.assessments.create') }}" aria-disabled="{{ (! $instructorProfile || $handledSubjects->isEmpty()) ? 'true' : 'false' }}">
+    <div class="record-toolbar">
+        @include('partials.record-search', ['inToolbar' => true])
+        <a class="btn btn-psu record-toolbar-actions d-inline-flex align-items-center gap-2 {{ (! $instructorProfile || $handledSubjects->isEmpty()) ? 'disabled' : '' }}" href="{{ route('instructor.assessments.create') }}" aria-disabled="{{ (! $instructorProfile || $handledSubjects->isEmpty()) ? 'true' : 'false' }}">
             <span class="material-symbols-outlined fs-5">add</span>
             Assessment
         </a>

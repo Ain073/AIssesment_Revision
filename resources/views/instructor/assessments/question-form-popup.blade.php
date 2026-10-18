@@ -5,7 +5,6 @@
 
             <div class="modal-header">
                 <h3 class="modal-title h4" id="questionBuilderModalLabel">Add Questions</h3>
-                <button class="btn-close" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
             </div>
 
             <div class="modal-body">

@@ -214,7 +214,9 @@ class AccountSessionSecurityTest extends TestCase
         for ($attempt = 0; $attempt < 5; $attempt++) {
             $this->resetLoginLimiterCacheInstance();
             $this->requestFrom($browser, 'POST', '/login', ['email' => $user->email, 'password' => 'wrong-password'])
-                ->assertSessionHasErrors(['email' => 'Invalid email or password.']);
+                ->assertSessionHasErrors(['email' => $attempt === 4
+                    ? 'Too many login attempts. Please try again in 60 seconds.'
+                    : 'Invalid email or password.']);
         }
         $this->resetLoginLimiterCacheInstance();
         $this->requestFrom($browser, 'POST', '/login', ['email' => $user->email, 'password' => 'original-password'])
@@ -238,6 +240,63 @@ class AccountSessionSecurityTest extends TestCase
         $this->resetLoginLimiterCacheInstance();
         $this->login($browser, $user);
         $this->requestFrom($browser, 'GET', '/session-security-probe', [], true)->assertOk();
+    }
+
+    public function test_login_form_stays_disabled_on_refresh_until_the_server_lockout_expires(): void
+    {
+        (require database_path('migrations/0001_01_01_000001_create_cache_table.php'))->up();
+        config(['cache.default' => 'database', 'cache.stores.database.connection' => 'sqlite']);
+        $this->freezeTime();
+        $user = $this->user();
+        $browser = [];
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $this->resetLoginLimiterCacheInstance();
+            $this->requestFrom($browser, 'POST', '/login', ['email' => $user->email, 'password' => 'wrong-password']);
+        }
+        $this->requestFrom($browser, 'GET', '/login')->assertOk()
+            ->assertViewHas('loginRetryAfter', 60)
+            ->assertSee('id="loginFields" disabled', false)
+            ->assertSee('data-login-retry-after="60"', false)
+            ->assertSee('Try again in 60s')
+            ->assertDontSee('wrong-password');
+
+        $this->travel(15)->seconds();
+        $this->resetLoginLimiterCacheInstance();
+        // Repeated GETs must not depend on one-request flash data or restart the timer.
+        for ($refresh = 0; $refresh < 2; $refresh++) {
+            $this->requestFrom($browser, 'GET', '/login')->assertOk()
+                ->assertViewHas('loginRetryAfter', 45)
+                ->assertSee('id="loginFields" disabled', false)
+                ->assertSee('value="'.$user->email.'"', false);
+        }
+        // Direct POST bypassing disabled HTML must still be rejected, even with the correct password.
+        $this->requestFrom($browser, 'POST', '/login', ['email' => $user->email, 'password' => 'original-password'])
+            ->assertSessionHasErrors(['email' => 'Too many login attempts. Please try again in 45 seconds.']);
+        $this->requestFrom($browser, 'GET', '/session-security-probe', [], true)->assertUnauthorized();
+        $this->requestFrom($browser, 'GET', '/login')->assertViewHas('loginRetryAfter', 45);
+
+        $this->travel(46)->seconds();
+        $this->resetLoginLimiterCacheInstance();
+        $this->requestFrom($browser, 'GET', '/login')->assertOk()
+            ->assertViewHas('loginRetryAfter', 0)
+            ->assertDontSee('id="loginFields" disabled', false)
+            ->assertSessionMissing('login_lockout_email');
+        $this->login($browser, $user);
+    }
+
+    public function test_login_form_remains_enabled_before_the_failed_attempt_limit(): void
+    {
+        $user = $this->user();
+        $browser = [];
+        $this->requestFrom($browser, 'GET', '/login')->assertOk()
+            ->assertViewHas('loginRetryAfter', 0)
+            ->assertDontSee('id="loginFields" disabled', false);
+        $this->requestFrom($browser, 'POST', '/login', ['email' => $user->email, 'password' => 'wrong-password'])
+            ->assertSessionHasErrors(['email' => 'Invalid email or password.']);
+        $this->requestFrom($browser, 'GET', '/login')->assertOk()
+            ->assertViewHas('loginRetryAfter', 0)
+            ->assertDontSee('id="loginFields" disabled', false);
+        $this->login($browser, $user);
     }
 
     public function test_successful_login_clears_database_failed_attempt_counter(): void

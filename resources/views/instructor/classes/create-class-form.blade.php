@@ -11,7 +11,6 @@
             @csrf
             <div class="modal-header">
                 <h3 class="modal-title h4" id="classModalLabel">New Class</h3>
-                <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="row g-3 mb-3">
@@ -73,7 +72,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Discard</button>
+                <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>
                 <button class="btn btn-psu px-4" type="submit">Create Class</button>
             </div>
         </form>

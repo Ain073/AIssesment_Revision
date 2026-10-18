@@ -7,7 +7,6 @@
 
             <div class="modal-header student-import-modal-header">
                 <h3 class="modal-title h4" id="createStudentModalLabel">Create Student Account</h3>
-                <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
             </div>
 
             <div class="modal-body">
@@ -65,7 +64,7 @@
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+                <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>
                 <button class="btn btn-psu px-4" type="submit">Create Student</button>
             </div>
         </form>

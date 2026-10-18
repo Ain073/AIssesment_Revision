@@ -7,7 +7,6 @@
             <input name="base_role" type="hidden" value="student">
             <div class="modal-header">
                 <h3 class="modal-title h4" id="createStudentModalLabel">Create Student Account</h3>
-                <button class="btn-close btn-close-white" data-bs-dismiss="modal" type="button" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="student-create-mode" role="group" aria-label="Student account creation method">
@@ -65,7 +64,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Discard</button>
+                <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" type="button">Cancel</button>
                 <button class="btn btn-psu px-4" type="submit">Create Student</button>
             </div>
         </form>

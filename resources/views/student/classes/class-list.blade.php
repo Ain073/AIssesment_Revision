@@ -16,10 +16,6 @@
             Requests
             <span class="badge text-bg-light border rounded-1">{{ $joinRequests->count() }}</span>
         </button>
-        <button class="btn btn-psu d-inline-flex align-items-center gap-2" data-bs-target="#joinClassModal" data-bs-toggle="modal" type="button">
-            <span class="material-symbols-outlined fs-5">login</span>
-            Join Class
-        </button>
     </div>
 </div>
 

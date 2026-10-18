@@ -10,13 +10,6 @@
     </div>
 @endif
 
-<div class="class-toolbar d-flex justify-content-end gap-2 mb-3">
-    <button class="btn btn-psu d-flex align-items-center gap-2 {{ $activeClassTab === 'active' ? '' : 'd-none' }}" data-table-tab-panel="active" data-bs-target="#classModal" data-bs-toggle="modal" type="button" @disabled(! $instructorProfile || $subjects->isEmpty() || $activePrograms->isEmpty()) @if ($activeClassTab !== 'active') hidden @endif>
-        <span class="material-symbols-outlined fs-5">add</span>
-        Class
-    </button>
-</div>
-
 <div class="table-switch-tabs class-switch-tabs mb-4">
     <button class="btn btn-outline-primary class-list-tab table-switch-button {{ $activeClassTab === 'active' ? 'active' : '' }} d-inline-flex align-items-center gap-2" data-table-tab-button="active" type="button" aria-pressed="{{ $activeClassTab === 'active' ? 'true' : 'false' }}">
         <span class="material-symbols-outlined fs-5">school</span>
