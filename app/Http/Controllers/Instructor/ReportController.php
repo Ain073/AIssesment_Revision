@@ -121,7 +121,7 @@ class ReportController extends BaseController
             ->with('status', 'Report is ready for review.');
     }
 
-    public function showReportSheet(Request $request, ReportAiService $aiService): View
+    public function showReportSheet(Request $request): View
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
@@ -159,8 +159,6 @@ class ReportController extends BaseController
             'publishAssessmentKeys' => $publishAssessmentKeys,
             'rows' => $rows,
             'reportMeta' => $this->reportSheetMeta($publishAssessments, $rows),
-            'aiCandidates' => $aiService->candidateOptions(),
-            'selectedAiProvider' => (string) config('services.ai_report.provider', 'openai'),
             'isFinalized' => $isFinalized,
         ]);
     }
@@ -278,8 +276,9 @@ class ReportController extends BaseController
             'report_type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
             'publish_assessment_keys' => ['required', 'array', 'min:1'],
             'publish_assessment_keys.*' => ['required', 'uuid'],
-            'ai_provider' => ['required', 'string', Rule::in(['openai', 'claude'])],
+            'ai_provider' => ['sometimes', 'string', Rule::in(['openai'])],
         ]);
+        $provider = 'openai';
 
         $publishAssessmentKeys = $this->selectedPublishAssessmentKeys($validated['publish_assessment_keys']);
         $ownedCompletedAssessments = $this->selectedReportAssessments(
@@ -296,9 +295,9 @@ class ReportController extends BaseController
 
         try {
             $drafts = $ownedCompletedAssessments
-                ->mapWithKeys(function ($publishAssessment) use ($aiService, $validated): array {
+                ->mapWithKeys(function ($publishAssessment) use ($aiService, $provider): array {
                     return [
-                        $publishAssessment->public_id => $aiService->generate($publishAssessment, $validated['ai_provider']),
+                        $publishAssessment->public_id => $aiService->generate($publishAssessment, $provider),
                     ];
                 });
         } catch (\Throwable $exception) {
@@ -312,11 +311,11 @@ class ReportController extends BaseController
             'instructor_profile_id' => $instructorProfile->instructor_profile_id,
             'report_type' => $validated['report_type'],
             'publish_assessment_ids' => $ownedCompletedAssessments->pluck('publish_assessment_id')->all(),
-            'ai_provider' => $validated['ai_provider'],
+            'ai_provider' => $provider,
             'source' => $drafts->pluck('source')->unique()->values()->all(),
         ]);
 
-        $providerName = strtoupper($validated['ai_provider']);
+        $providerName = strtoupper($provider);
         $reportTypeLabel = $this->reportCategories()[$validated['report_type']] ?? ucfirst($validated['report_type']);
 
         AuditLogger::log(

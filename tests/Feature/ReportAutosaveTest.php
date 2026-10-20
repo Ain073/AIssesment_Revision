@@ -9,6 +9,7 @@ use App\Models\PublishAssessment;
 use App\Models\Report;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\ReportAiService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -66,6 +67,38 @@ class ReportAutosaveTest extends TestCase
         $body['revisions'][$this->published->public_id] = 1;
         $this->postJson(route('instructor.reports.autosave'), $body)->assertOk()
             ->assertJsonPath('revisions.'.$this->published->public_id, 1); // Unchanged saves are no-ops.
+    }
+
+    public static function reportAiRequests(): array
+    {
+        return ['without a selector' => [[]], 'previous OpenAI page' => [['ai_provider' => 'openai']]];
+    }
+
+    #[DataProvider('reportAiRequests')]
+    public function test_ai_drafts_use_openai_without_a_provider_selector_even_if_the_default_is_claude(array $providerFields): void
+    {
+        config(['services.ai_report.provider' => 'claude']);
+        $this->get(route('instructor.reports.build', ['type' => 'formative', 'publish_assessment_keys' => [$this->published->public_id]]))
+            ->assertOk()->assertSee('Generate AI Draft')
+            ->assertDontSee('AI Candidate')->assertDontSee('id="aiProvider"', false)
+            ->assertDontSee('id="aiProviderControl"', false)->assertDontSee('the selected AI candidate');
+
+        $draft = ['concepts_most_learned_skills' => 'Most learned text', 'concepts_least_learned_skills' => 'Least learned text', 'source' => 'openai'];
+        $this->mock(ReportAiService::class)->shouldReceive('generate')->once()
+            ->with(\Mockery::on(fn ($assessment) => $assessment->is($this->published)), 'openai')->andReturn($draft);
+        $this->postJson(route('instructor.reports.ai-drafts'), [
+            'report_type' => 'formative', 'publish_assessment_keys' => [$this->published->public_id],
+        ] + $providerFields)->assertOk()->assertJsonPath('drafts.'.$this->published->public_id.'.source', 'openai');
+        $this->assertDatabaseHas('audit_logs', ['action' => 'GENERATE', 'module' => 'Reports', 'user_id' => $this->instructor->id]);
+        $this->assertNull($this->published->report()->first()->concept_most_learned_skills);
+    }
+
+    public function test_claude_cannot_be_selected_through_a_stale_report_page_or_custom_request(): void
+    {
+        $this->mock(ReportAiService::class)->shouldNotReceive('generate');
+        $this->postJson(route('instructor.reports.ai-drafts'), [
+            'report_type' => 'formative', 'publish_assessment_keys' => [$this->published->public_id], 'ai_provider' => 'claude',
+        ])->assertUnprocessable()->assertJsonValidationErrors('ai_provider');
     }
 
     public static function combinedReportSaves(): array

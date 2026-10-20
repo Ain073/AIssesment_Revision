@@ -77,7 +77,6 @@
         const saveDraftButton = document.getElementById('saveDraftButton');
         const finalizeButton = document.getElementById('finalizeButton');
         const aiDraftButton = document.getElementById('aiDraftButton');
-        const aiProviderControl = document.getElementById('aiProviderControl');
         const reportStatusBadge = document.getElementById('reportStatusBadge');
         const reportStatusBadgeIcon = document.getElementById('reportStatusBadgeIcon');
         const reportStatusBadgeText = document.getElementById('reportStatusBadgeText');
@@ -121,7 +120,6 @@
                 toggleElementVisibility(saveDraftButton, false);
                 toggleElementVisibility(finalizeButton, false);
                 toggleElementVisibility(aiDraftButton, false);
-                toggleElementVisibility(aiProviderControl, false);
                 toggleElementVisibility(reportLockedNotice, true);
 
                 if (reportStatusBadge) {
@@ -136,7 +134,6 @@
                 toggleElementVisibility(saveDraftButton, true);
                 toggleElementVisibility(finalizeButton, true);
                 toggleElementVisibility(aiDraftButton, true);
-                toggleElementVisibility(aiProviderControl, true);
                 toggleElementVisibility(reportLockedNotice, false);
 
                 if (reportStatusBadge) {
@@ -257,10 +254,8 @@
         });
 
         const aiButton = document.getElementById('generateAiDraftsButton');
-        const aiProvider = document.getElementById('aiProvider');
         const aiStatus = document.getElementById('reportAiStatus');
         const aiConfirmModal = document.getElementById('confirmAiDraftModal');
-        const aiConfirmProviderLabel = document.getElementById('confirmAiProviderLabel');
 
 
         const showAiStatus = (message, type = 'info') => {
@@ -271,14 +266,6 @@
             aiStatus.className = `alert alert-${type} report-ai-status show`;
             aiStatus.textContent = message;
         };
-
-        const selectedAiLabel = () => aiProvider?.selectedOptions?.[0]?.textContent?.trim() || 'the selected AI candidate';
-
-        aiConfirmModal?.addEventListener('show.bs.modal', () => {
-            if (aiConfirmProviderLabel) {
-                aiConfirmProviderLabel.textContent = selectedAiLabel();
-            }
-        });
 
         const fillAiDrafts = (drafts) => {
             Object.entries(drafts).forEach(([assessmentKey, draft]) => {
@@ -304,9 +291,13 @@
             }
 
             aiButton.disabled = true;
-            const selectedAiName = selectedAiLabel();
+            const draftButtonContent = aiDraftButton?.innerHTML;
+            if (aiDraftButton) {
+                aiDraftButton.disabled = true;
+                aiDraftButton.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Generating...';
+            }
             window.bootstrap?.Modal?.getInstance(aiConfirmModal)?.hide();
-            showAiStatus(`Generating AI draft content with ${selectedAiName}...`, 'info');
+            showAiStatus('Generating AI draft content...', 'info');
 
             try {
                 const response = await (window.portalFetch || fetch)(aiButton.dataset.aiUrl, {
@@ -319,7 +310,6 @@
                     body: JSON.stringify({
                         report_type: @json($reportType),
                         publish_assessment_keys: publishAssessmentKeys,
-                        ai_provider: aiProvider?.value || 'openai',
                     }),
                 });
 
@@ -332,11 +322,15 @@
                 fillAiDrafts(data.drafts ?? {});
                 saveReportDraft();
 
-                showAiStatus(`AI draft generated with ${selectedAiName}. Review and edit before saving.`, 'success');
+                showAiStatus('AI draft generated. Review and edit the text before finalizing your report.', 'success');
             } catch (error) {
                 showAiStatus(error.message || 'Unable to generate AI draft. Please try again.', 'danger');
             } finally {
                 aiButton.disabled = false;
+                if (aiDraftButton) {
+                    aiDraftButton.disabled = false;
+                    aiDraftButton.innerHTML = draftButtonContent;
+                }
             }
         });
     })();

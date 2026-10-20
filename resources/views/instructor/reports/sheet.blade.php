@@ -889,17 +889,9 @@
                     @endforeach
                 </select>
             </div>
-            <div class="report-paper-control {{ $isFinalized ? 'd-none' : '' }}" id="aiProviderControl">
-                <label for="aiProvider">AI Candidate</label>
-                <select class="form-select form-select-sm" id="aiProvider">
-                    @foreach ($aiCandidates as $candidate)
-                        <option value="{{ $candidate['value'] }}" @selected($selectedAiProvider === $candidate['value'])>{{ $candidate['label'] }}</option>
-                    @endforeach
-                </select>
-            </div>
             <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2 {{ $isFinalized ? 'd-none' : '' }}" id="aiDraftButton" type="button" data-bs-toggle="modal" data-bs-target="#confirmAiDraftModal">
                 <span class="material-symbols-outlined fs-5">auto_awesome</span>
-                AI Draft
+                Generate AI Draft
             </button>
             <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2 {{ $isFinalized ? 'd-none' : '' }}" id="saveDraftButton" form="reportSheetForm" name="save_action" value="draft" type="submit">
                 <span class="material-symbols-outlined fs-5">save</span>
@@ -941,10 +933,10 @@
                 </div>
                 <div class="modal-body">
                     <p class="mb-2">
-                        This will call <strong id="confirmAiProviderLabel">the selected AI candidate</strong> and may consume API credits.
+                        Generate an AI draft for the selected reports?
                     </p>
                     <p class="text-secondary mb-0">
-                        Continue only when you are ready to generate report content for the selected assessment results.
+                        This fills the most and least learned concepts. Review and edit the generated text before finalizing your report.
                     </p>
                 </div>
                 <div class="modal-footer">

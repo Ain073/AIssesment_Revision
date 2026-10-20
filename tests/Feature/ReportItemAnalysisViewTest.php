@@ -44,10 +44,13 @@ class ReportItemAnalysisViewTest extends TestCase
                     'college' => 'College', 'department' => 'Department', 'course_code_title' => 'TEST / Subject',
                     'students_count' => 5, 'note' => 'Assessment report',
                 ],
-                'aiCandidates' => [], 'selectedAiProvider' => 'mock', 'errors' => new ViewErrorBag,
+                'errors' => new ViewErrorBag,
             ])->render();
 
             $this->assertStringContainsString('View Item Analysis', $html);
+            $this->assertStringContainsString('Generate AI Draft', $html);
+            $this->assertStringNotContainsString('AI Candidate', $html);
+            $this->assertStringNotContainsString('id="aiProvider"', $html);
             $this->assertStringContainsString(ucfirst($type).' Item Analysis', $html);
             $this->assertStringContainsString('data-item-analysis-panel="0"', $html);
             $this->assertMatchesRegularExpression('/data-item-analysis-panel="1"\s+hidden/', $html);
