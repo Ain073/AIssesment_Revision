@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\InstructorProfile;
 use App\Models\College;
 use App\Models\AuditLog;
+use App\Models\AcademicClass;
+use App\Models\ClassDetail;
 use App\Models\Role;
 use App\Models\StudentProfile;
 use App\Models\Submission;
@@ -877,6 +879,168 @@ class UserAjaxUpdateTest extends TestCase
         $this->assertSame('', $accountCreation->actorSubtitle());
     }
 
+    public function test_enrollment_backfill_recovers_only_approved_rosters_including_archived_classes(): void
+    {
+        $teacher = $this->actor('instructor');
+        $classId = $this->enrollmentClass();
+        $archivedClassId = $this->enrollmentClass(['section_name' => 'BSIT 2-B', 'archived_at' => '2026-09-20 12:00:00']);
+        $expected = [];
+        foreach ([ClassDetail::METHOD_JOIN_CODE, ClassDetail::METHOD_MANUAL_ADD, ClassDetail::METHOD_IMPORT_FILE] as $method) {
+            $student = $this->account(['student']);
+            $expected[] = $this->enrollmentDetail($student, $classId, ['entry_method' => $method]);
+        }
+        $expected[] = $this->enrollmentDetail($student, $archivedClassId);
+        $this->enrollmentDetail($this->account(['student']), $classId, ['status' => ClassDetail::STATUS_PENDING]);
+        $this->enrollmentDetail($this->account(['student']), $classId, ['status' => ClassDetail::STATUS_REJECTED]);
+        DB::table('class_details')->insert([
+            'class_id' => $classId, 'instructor_id' => $teacher->instructorProfile->getKey(),
+            'student_id' => null, 'subject_id' => 1, 'status' => ClassDetail::STATUS_APPROVED,
+            'entry_method' => ClassDetail::METHOD_CLASS_SETUP,
+        ]);
+        $rostersBefore = DB::table('class_details')->orderBy('class_details_id')->get()->toJson();
+        $usersBefore = DB::table('users')->orderBy('id')->get()->toJson();
+
+        $this->enrollmentMigration()->up();
+
+        $this->assertDatabaseCount('audit_logs', 4);
+        $this->assertSame($rostersBefore, DB::table('class_details')->orderBy('class_details_id')->get()->toJson());
+        $this->assertSame($usersBefore, DB::table('users')->orderBy('id')->get()->toJson());
+        $this->assertSame($expected, AuditLog::orderBy('audit_log_id')->pluck('auditable_id')->all());
+        foreach (AuditLog::all() as $event) {
+            $this->assertSame('ENROLL', $event->action);
+            $this->assertSame('Classes', $event->module);
+            $this->assertSame(ClassDetail::class, $event->auditable_type);
+            $this->assertNull($event->user_id);
+            $this->assertNull($event->user_role);
+            $this->assertNull($event->ip_address);
+            $this->assertSame('Enrolling user unavailable', $event->actorName());
+            $this->assertSame('Unknown', $event->userRoleLabel());
+            $this->assertSame('', $event->actorSubtitle());
+            $this->assertSame('2026-08-10 08:00:00', $event->getRawOriginal('created_at'));
+            $this->assertSame('class_details.created_at', $event->metadata['timestamp_source']);
+            $this->assertSame('2026-08-12 09:30:00', $event->metadata['roster_updated_at']);
+            $this->assertStringContainsString('recovered from saved roster', $event->description);
+        }
+    }
+
+    public function test_enrollment_backfill_matches_legacy_audits_by_student_and_class_and_preserves_them(): void
+    {
+        $admin = $this->actor('super_admin');
+        $student = $this->account(['student']);
+        $otherStudent = $this->account(['student']);
+        $student->studentProfile->update(['student_number' => 'STU-(10).%_']);
+        $otherStudent->studentProfile->update(['student_number' => 'STU-(10).%_0']);
+        $classId = $this->enrollmentClass();
+        $otherClassId = $this->enrollmentClass();
+        $this->enrollmentDetail($student, $classId);
+        $missingInSameClass = $this->enrollmentDetail($otherStudent, $classId);
+        $missingInOtherClass = $this->enrollmentDetail($student, $otherClassId);
+        $original = AuditLog::create([
+            'user_id' => $admin->id, 'user_role' => 'super_admin', 'action' => 'ENROLL', 'module' => 'Classes',
+            'description' => 'Enrolled student Previous Name (STU-(10).%_) into Previous Class Name',
+            'auditable_type' => AcademicClass::class, 'auditable_id' => $classId,
+            'created_at' => '2026-09-05 10:00:00',
+        ]);
+        $migration = $this->enrollmentMigration();
+        $originalAttributes = $original->fresh()->getRawOriginal();
+        $migration->up();
+        $migration->up();
+        $migration->down();
+
+        $this->assertDatabaseCount('audit_logs', 3);
+        $this->assertSame($originalAttributes, $original->fresh()->getRawOriginal());
+        $this->assertSame([$missingInSameClass, $missingInOtherClass], AuditLog::where('auditable_type', ClassDetail::class)
+            ->orderBy('audit_log_id')->pluck('auditable_id')->all());
+    }
+
+    public function test_enrollment_backfill_does_not_match_an_event_before_a_student_rejoined(): void
+    {
+        $student = $this->account(['student']);
+        $classId = $this->enrollmentClass();
+        $detailId = $this->enrollmentDetail($student, $classId);
+        AuditLog::create([
+            'action' => 'ENROLL', 'module' => 'Classes',
+            'description' => "Enrolled student Previous Name ({$student->studentProfile->student_number}) into Class",
+            'auditable_type' => AcademicClass::class, 'auditable_id' => $classId,
+            'created_at' => '2026-08-01 08:00:00',
+        ]);
+
+        $this->enrollmentMigration()->up();
+
+        $this->assertDatabaseCount('audit_logs', 2);
+        $this->assertDatabaseHas('audit_logs', ['auditable_type' => ClassDetail::class, 'auditable_id' => $detailId]);
+    }
+
+    public function test_enrollment_backfill_keeps_stable_links_after_names_and_numbers_change(): void
+    {
+        $student = $this->account(['student']);
+        $classId = $this->enrollmentClass();
+        $detailId = $this->enrollmentDetail($student, $classId);
+        $migration = $this->enrollmentMigration();
+        $migration->up();
+        $original = AuditLog::sole()->getRawOriginal();
+        $student->studentProfile->update(['student_number' => 'CHANGED-NUMBER']);
+        $student->update(['first_name' => 'Changed']);
+        DB::table('classes')->where('class_id', $classId)->update(['section_name' => 'Renamed']);
+
+        $migration->up();
+
+        $this->assertDatabaseCount('audit_logs', 1);
+        $this->assertSame($detailId, AuditLog::sole()->auditable_id);
+        $this->assertSame($original, AuditLog::sole()->getRawOriginal());
+    }
+
+    public function test_enrollment_backfill_rolls_back_on_failure_and_can_be_retried(): void
+    {
+        $student = $this->account(['student']);
+        $this->enrollmentDetail($student, $this->enrollmentClass());
+        $second = $this->enrollmentDetail($student, $this->enrollmentClass());
+        $migration = $this->enrollmentMigration();
+        DB::statement("CREATE TRIGGER reject_enrollment_audit BEFORE INSERT ON audit_logs
+            WHEN NEW.auditable_id = {$second}
+            BEGIN SELECT RAISE(ABORT, 'Simulated enrollment recovery failure'); END");
+        try {
+            $migration->up();
+            $this->fail('Enrollment recovery must not silently lose audit entries.');
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString('Simulated enrollment recovery failure', $exception->getMessage());
+        }
+        $this->assertDatabaseCount('audit_logs', 0);
+        $this->assertDatabaseCount('class_details', 2);
+        DB::statement('DROP TRIGGER reject_enrollment_audit');
+        $migration->up();
+        $this->assertDatabaseCount('audit_logs', 2);
+    }
+
+    public function test_enrollment_backfill_covers_multiple_chunks_and_labels_unknown_dates_on_the_audit_page(): void
+    {
+        $admin = $this->actor('super_admin');
+        $student = $this->account(['student']);
+        foreach (range(1, 101) as $number) {
+            $this->enrollmentDetail($student, $this->enrollmentClass());
+        }
+        $missingDate = $this->enrollmentDetail($student, $this->enrollmentClass(), ['created_at' => null, 'updated_at' => null]);
+        $this->enrollmentMigration()->up();
+        $this->assertDatabaseCount('audit_logs', 102);
+        $this->assertNull(AuditLog::where('auditable_id', $missingDate)->sole()->metadata['timestamp_source']);
+
+        $this->signInAccount($admin);
+        foreach ([[], ['X-Requested-With' => 'XMLHttpRequest']] as $headers) {
+            $this->get(route('super-admin.audit-logs', ['module' => 'Classes', 'action' => 'ENROLL']), $headers)
+                ->assertOk()->assertViewHas('logs', fn ($logs) => $logs->total() === 102)
+                ->assertSee('Enrolling user unavailable')->assertSee('Unknown')
+                ->assertSee('Roster record date; enrollment date unavailable')
+                ->assertSee('Recovery date; enrollment date unavailable')
+                ->assertSee('recovered from saved roster')
+                ->assertSee($student->studentProfile->student_number)
+                ->assertDontSee('System Migration');
+            $this->get(route('super-admin.audit-logs', [
+                'module' => 'Classes', 'action' => 'ENROLL', 'search' => $student->studentProfile->student_number,
+                'from' => '2026-08-10', 'to' => '2026-08-10',
+            ]), $headers)->assertOk()->assertViewHas('logs', fn ($logs) => $logs->total() === 101);
+        }
+    }
+
     public function test_missing_account_creation_backfill_is_idempotent_and_preserves_accounts_and_existing_logs(): void
     {
         $admin = $this->actor('super_admin');
@@ -1592,6 +1756,33 @@ class UserAjaxUpdateTest extends TestCase
                 ? ['department_id' => 1, 'employee_number' => 'EMP-987']
                 : ['program_id' => 1, 'student_number' => 'STU-987']),
         ];
+    }
+
+    private function enrollmentMigration(): \Illuminate\Database\Migrations\Migration
+    {
+        if (! Schema::hasColumn('audit_logs', 'metadata')) {
+            Schema::table('audit_logs', fn (Blueprint $table) => $table->json('metadata')->nullable());
+        }
+
+        return require database_path('migrations/2026_10_20_000001_backfill_missing_class_enrollment_audit_logs.php');
+    }
+
+    private function enrollmentClass(array $attributes = []): int
+    {
+        return DB::table('classes')->insertGetId([
+            'program_id' => 1, 'year_level' => 2, 'section_name' => 'BSIT 2-A', ...$attributes,
+        ], 'class_id');
+    }
+
+    private function enrollmentDetail(User $student, int $classId, array $attributes = []): int
+    {
+        return DB::table('class_details')->insertGetId([
+            'class_id' => $classId, 'instructor_id' => 1, 'subject_id' => 1,
+            'student_id' => $student->studentProfile->getKey(), 'status' => ClassDetail::STATUS_APPROVED,
+            'entry_method' => ClassDetail::METHOD_JOIN_CODE,
+            'created_at' => '2026-08-10 08:00:00', 'updated_at' => '2026-08-12 09:30:00',
+            ...$attributes,
+        ], 'class_details_id');
     }
 
     private function signInAccount(User $user): static

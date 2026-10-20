@@ -77,18 +77,18 @@ class AuditLog extends Model
     public function userRoleLabel(): string
     {
         if ($this->isSystemMigration()) {
-            return $this->isHistoricalAccountCreation()
+            return $this->isHistoricalAccountCreation() || $this->isHistoricalEnrollment()
                 ? 'Unknown'
                 : ($this->isHistoricalSubmission() ? 'Student' : 'System');
         }
 
         return match ($this->user_role) {
-            'super_admin'      => 'Admin',
-            'admin_dean'       => 'Dean',
+            'super_admin' => 'Admin',
+            'admin_dean' => 'Dean',
             'department_chair' => 'Department Chair',
-            'instructor'       => 'Instructor',
-            'student'          => 'Student',
-            default            => 'System',
+            'instructor' => 'Instructor',
+            'student' => 'Student',
+            default => 'System',
         };
     }
 
@@ -100,6 +100,10 @@ class AuditLog extends Model
         if ($this->isSystemMigration()) {
             if ($this->isHistoricalAccountCreation()) {
                 return 'Creator unavailable';
+            }
+
+            if ($this->isHistoricalEnrollment()) {
+                return 'Enrolling user unavailable';
             }
 
             return $this->isHistoricalSubmission()
@@ -122,6 +126,15 @@ class AuditLog extends Model
     public function isSystemMigration(): bool
     {
         return $this->user_agent === 'System Migration';
+    }
+
+    public function isHistoricalEnrollment(): bool
+    {
+        return $this->isSystemMigration()
+            && $this->action === 'ENROLL'
+            && $this->module === 'Classes'
+            && $this->auditable_type === ClassDetail::class
+            && ($this->metadata['recovery_method'] ?? null) === 'approved_class_roster';
     }
 
     private function isHistoricalSubmission(): bool
