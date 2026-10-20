@@ -12,6 +12,7 @@ use App\Models\Report;
 use App\Models\Submission;
 use App\Models\Subject;
 use App\Support\AssessmentScoring;
+use App\Support\ReportCourseTitle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -249,7 +250,6 @@ class ReportController extends BaseController
         $first = $publishAssessments->first();
         $assessment = $first?->assessment;
         $class = $first?->class;
-        $subject = $assessment?->subject ?: $class?->subject;
         $instructorProfile = $class?->instructorProfile ?: $assessment?->instructorProfile;
         $department = $instructorProfile?->department;
         $college = $department?->college;
@@ -259,19 +259,6 @@ class ReportController extends BaseController
             ->unique()
             ->values();
         $studentCount = (int) ($rows->first()['analytics']['students_count'] ?? 0);
-        $sectionName = $class?->section_name;
-        $subjectCode = $subject?->subject_code ?? 'No code';
-        $subjectName = $subject?->subject_name ?? 'No subject';
-        $defaultCourseCodeTitle = filled($sectionName)
-            ? trim($subjectCode.' - '.$sectionName.' / '.$subjectName, ' -/')
-            : trim($subjectCode.' / '.$subjectName, ' /');
-        $savedCourseCodeTitle = $rows
-            ->pluck('report.course_code_title')
-            ->filter()
-            ->first();
-        if (filled($savedCourseCodeTitle)) {
-            $savedCourseCodeTitle = trim((string) preg_replace('/\b(?:1st|2nd|3rd|4th)\s+Year\s*-\s*/i', '', $savedCourseCodeTitle));
-        }
 
         return [
             'campus' => 'SAN CARLOS',
@@ -279,7 +266,7 @@ class ReportController extends BaseController
             'department' => $department?->dept_name ?? 'Not set',
             'semester' => 'Second Semester',
             'school_year' => $schoolYears->count() === 1 ? $schoolYears->first() : 'Multiple school years',
-            'course_code_title' => $savedCourseCodeTitle ?: $defaultCourseCodeTitle,
+            'course_code_title' => ReportCourseTitle::forAssessments($publishAssessments),
             'students_count' => $studentCount,
             'note' => ($assessment?->report_category === Report::TYPE_SUMMATIVE)
                 ? 'Note: Summative Assessments include the unit/chapter tests, midterm and final examination.'

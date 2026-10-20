@@ -15,7 +15,7 @@
         const reportContentFontFamily = document.getElementById('reportContentFontFamily');
         const reportContentFontSize = document.getElementById('reportContentFontSize');
         const reportForm = document.getElementById('reportSheetForm');
-        const draftFieldSelector = '.report-edit-textarea, .report-header-input';
+        const draftFieldSelector = '.report-edit-textarea, .report-header-input:not([data-report-generated])';
         const contentFontFamilies = {
             arial: 'Arial, Helvetica, sans-serif',
             calibri: 'Calibri, Arial, sans-serif',
@@ -151,7 +151,7 @@
             editReportButton.addEventListener('click', () => {
                 takeSnapshot();
                 setReportLocked(false);
-                const firstField = document.querySelector('.report-edit-textarea, .report-header-input');
+                const firstField = document.querySelector(draftFieldSelector);
                 firstField?.focus();
             });
         }

@@ -11,8 +11,8 @@ use App\Models\StudentProfile;
 use App\Models\Submission;
 use App\Support\AssessmentScoring;
 use App\Support\ReportItemAnalysis;
+use App\Support\ReportCourseTitle;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 
 trait InstructorReportHelper
 {
@@ -72,7 +72,6 @@ trait InstructorReportHelper
         $first = $publishAssessments->first();
         $assessment = $first?->assessment;
         $class = $first?->class;
-        $subject = $assessment?->subject ?: $class?->subject;
         $instructorProfile = $class?->instructorProfile ?: $assessment?->instructorProfile;
         $department = $instructorProfile?->department;
         $college = $department?->college;
@@ -90,10 +89,6 @@ trait InstructorReportHelper
             ? (int) $distinctClasses->sum(fn ($c) => $c->enrolledStudentsCount() ?? 0)
             : (int) ($rows->first()['analytics']['students_count'] ?? 0);
         $defaultCourseCodeTitle = $this->defaultCourseCodeTitle($publishAssessments);
-        $savedCourseCodeTitle = $rows
-            ->pluck('report.course_code_title')
-            ->filter()
-            ->first();
 
         return [
             'campus' => 'SAN CARLOS',
@@ -102,11 +97,7 @@ trait InstructorReportHelper
             'semester' => 'Second Semester',
             'school_year' => $schoolYears->count() === 1 ? $schoolYears->first() : 'Multiple school years',
             'reporting_term' => ucfirst($reportingTerm),
-            'course_code_title' => $this->cleanReportCourseCodeTitle(
-                $savedCourseCodeTitle,
-                $defaultCourseCodeTitle,
-                $publishAssessments,
-            ),
+            'course_code_title' => $defaultCourseCodeTitle,
             'students_count' => $studentCount,
             'note' => ($assessment?->report_category === Report::TYPE_SUMMATIVE)
                 ? 'Note: Summative Assessments include the unit/chapter tests, midterm and final examination.'
@@ -114,102 +105,9 @@ trait InstructorReportHelper
         ];
     }
 
-    protected function defaultCourseCodeTitle($publishAssessmentsOrSubject, $classes = null): string
+    protected function defaultCourseCodeTitle(Collection $publishAssessments): string
     {
-        if ($publishAssessmentsOrSubject instanceof Collection) {
-            $publishAssessments = $publishAssessmentsOrSubject;
-
-            // Group by subject
-            $groupedBySubject = $publishAssessments->groupBy(function (PublishAssessment $pa) {
-                $subject = $pa->assessment?->subject ?: $pa->class?->subject;
-                return $subject?->getKey() ?? 'no_subject';
-            });
-
-            $parts = $groupedBySubject->map(function (Collection $group): string {
-                $first = $group->first();
-                $subject = $first?->assessment?->subject ?: $first?->class?->subject;
-                $subjectCode = $subject?->subject_code ?? 'No code';
-                $subjectName = $subject?->subject_name ?? 'No subject';
-
-                $sectionLabels = $group
-                    ->map(fn (PublishAssessment $pa) => $pa->class?->section_name ?: $pa->class?->displayName())
-                    ->filter(fn ($label) => filled($label) && $label !== 'Class')
-                    ->unique()
-                    ->values();
-
-                if ($sectionLabels->isNotEmpty()) {
-                    return trim($subjectCode.' - '.$sectionLabels->implode(', ').' / '.$subjectName, ' -/');
-                }
-
-                return trim($subjectCode.' / '.$subjectName, ' /');
-            });
-
-            return $parts->filter()->implode(' | ');
-        }
-
-        // Backward-compatible fallback for ($subject, $class)
-        $subject = $publishAssessmentsOrSubject;
-        $class = $classes instanceof Collection ? $classes->first() : $classes;
-        $subjectCode = $subject?->subject_code ?? 'No code';
-        $subjectName = $subject?->subject_name ?? 'No subject';
-        $sectionLabel = $class?->section_name ?: $class?->displayName();
-
-        if (filled($sectionLabel) && $sectionLabel !== 'Class') {
-            return trim($subjectCode.' - '.$sectionLabel.' / '.$subjectName, ' -/');
-        }
-
-        return trim($subjectCode.' / '.$subjectName, ' /');
-    }
-
-    protected function cleanReportCourseCodeTitle(?string $value, string $defaultCourseCodeTitle, Collection $publishAssessments): string
-    {
-        $courseCodeTitle = trim((string) $value);
-
-        if ($courseCodeTitle === '') {
-            return $defaultCourseCodeTitle;
-        }
-
-        // Clean out legacy "1st Year - ", "2nd Year - ", "3rd Year - ", "4th Year - " if present
-        $courseCodeTitle = trim((string) preg_replace('/\b(?:1st|2nd|3rd|4th)\s+Year\s*-\s*/i', '', $courseCodeTitle));
-
-        $classLabels = $publishAssessments
-            ->map(fn (PublishAssessment $publishAssessment): array => [
-                $publishAssessment->class?->section_name,
-                $publishAssessment->class?->displayName(),
-                $publishAssessment->class?->class_name,
-            ])
-            ->flatten()
-            ->filter(fn ($label): bool => filled($label) && $label !== 'Class')
-            ->unique()
-            ->values();
-
-        $normalizedCourseCodeTitle = Str::lower($courseCodeTitle);
-        $hasKnownClassLabel = $classLabels
-            ->contains(fn ($classLabel): bool => Str::contains($normalizedCourseCodeTitle, Str::lower((string) $classLabel)));
-
-        if ($classLabels->isNotEmpty() && ! $hasKnownClassLabel) {
-            return $defaultCourseCodeTitle;
-        }
-
-        // If multiple distinct classes are in this report, check if they are all represented.
-        // If a previously saved title only has 1 of the classes, update to the default title with all classes.
-        $distinctClasses = $publishAssessments
-            ->map(fn (PublishAssessment $pa) => $pa->class)
-            ->filter()
-            ->unique(fn (AcademicClass $c) => $c->getKey());
-
-        if ($distinctClasses->count() > 1) {
-            $allClassesRepresented = $distinctClasses->every(function (AcademicClass $c) use ($normalizedCourseCodeTitle): bool {
-                $labels = array_filter([$c->section_name, $c->displayName(), $c->class_name]);
-                return collect($labels)->contains(fn ($l) => filled($l) && Str::contains($normalizedCourseCodeTitle, Str::lower((string) $l)));
-            });
-
-            if (! $allClassesRepresented) {
-                return $defaultCourseCodeTitle;
-            }
-        }
-
-        return $courseCodeTitle;
+        return ReportCourseTitle::forAssessments($publishAssessments);
     }
 
     protected function publishAssessmentReportAnalytics(PublishAssessment $publishAssessment): array

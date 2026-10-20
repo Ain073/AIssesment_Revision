@@ -99,7 +99,7 @@ class ReportAutosaveTest extends TestCase
     }
 
     #[DataProvider('combinedReportSaves')]
-    public function test_six_subjects_can_save_their_complete_combined_course_title(string $type, string $action): void
+    public function test_six_subjects_keep_their_own_titles_when_combined_separated_and_recombined(string $type, string $action): void
     {
         DB::statement('CREATE TABLE subjects (subject_id INTEGER PRIMARY KEY, subject_code TEXT, subject_name TEXT)');
         $assessments = new \Illuminate\Database\Eloquent\Collection([$this->published]);
@@ -129,11 +129,53 @@ class ReportAutosaveTest extends TestCase
         }
         foreach ($assessments as $index => $published) {
             $report = $published->report()->firstOrFail();
-            $this->assertSame($body['course_code_title'], $report->course_code_title);
+            $ownTitle = $method->invoke(app(ReportController::class), collect([$published]));
+            $this->assertSame($ownTitle, $report->course_code_title);
             $this->assertSame('Notes for subject '.($index + 1), $report->issues_concern);
             $this->assertSame($action === 'finalized' ? 'finalized' : 'draft', $report->report_status);
             $this->assertSame(1, $report->revision);
+            $this->get(route('instructor.reports.build', ['type' => $type, 'publish_assessment_keys' => [$published->public_id]]))
+                ->assertOk()->assertViewHas('reportMeta', fn ($meta) => $meta['course_code_title'] === $ownTitle);
+            if ($action === 'autosave') {
+                $single = [
+                    'report_type' => $type, 'course_code_title' => $body['course_code_title'],
+                    'publish_assessment_keys' => [$published->public_id],
+                    'reports' => [$published->public_id => $body['reports'][$published->public_id]],
+                    'revisions' => [$published->public_id => 1],
+                ];
+                $this->postJson(route('instructor.reports.autosave'), $single)->assertOk()
+                    ->assertJsonPath('revisions.'.$published->public_id, 1);
+            }
         }
+        $this->get(route('instructor.reports.build', ['type' => $type, 'publish_assessment_keys' => $body['publish_assessment_keys']]))
+            ->assertOk()->assertViewHas('reportMeta', fn ($meta) => $meta['course_code_title'] === $body['course_code_title']);
+        if ($action === 'autosave') {
+            $body['revisions'] = array_fill_keys($body['publish_assessment_keys'], 1);
+            $this->postJson(route('instructor.reports.autosave'), $body)->assertOk();
+            $this->assertSame(6, Report::query()->where('revision', 1)->count(), 'Changing the selection must not rewrite every report title.');
+        }
+    }
+
+    public function test_legacy_combined_titles_are_ignored_when_opening_a_single_report_in_both_portals(): void
+    {
+        DB::statement('CREATE TABLE subjects (subject_id INTEGER PRIMARY KEY, subject_code TEXT, subject_name TEXT)');
+        $subjectId = DB::table('subjects')->insertGetId(['subject_code' => 'IC1', 'subject_name' => 'Personal Development']);
+        $this->published->assessment()->update(['subject_id' => $subjectId]);
+        $legacyTitle = 'IC1 / Personal Development | ELEC2 / Mobile Application Development';
+        $this->published->report()->update(['course_code_title' => $legacyTitle, 'issues_concern' => 'Existing report notes']);
+        $this->withSession(['_old_input' => ['course_code_title' => $legacyTitle]])
+            ->get(route('instructor.reports.build', ['type' => 'formative', 'publish_assessment_keys' => [$this->published->public_id]]))
+            ->assertOk()->assertViewHas('reportMeta', fn ($meta) => $meta['course_code_title'] === 'IC1 / Personal Development')
+            ->assertSee('value="IC1 / Personal Development" readonly', false)
+            ->assertSee('>Existing report notes</textarea>', false)
+            ->assertDontSee($legacyTitle);
+
+        $this->published->load('assessment.subject', 'classDetail');
+        $rows = collect([['report' => $this->published->report()->first(), 'analytics' => ['students_count' => 0]]]);
+        $chair = app(\App\Http\Controllers\DepartmentChair\ReportController::class);
+        $method = new \ReflectionMethod($chair, 'reportSheetMeta');
+        $this->assertSame('IC1 / Personal Development', $method->invoke($chair, collect([$this->published]), $rows)['course_code_title']);
+        $this->assertSame($legacyTitle, $this->published->report()->first()->course_code_title, 'Opening an existing report must not silently rewrite database records.');
     }
 
     public function test_stale_tab_cannot_overwrite_through_autosave_or_manual_finalize(): void

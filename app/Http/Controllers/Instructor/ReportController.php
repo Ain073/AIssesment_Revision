@@ -208,14 +208,10 @@ class ReportController extends BaseController
             ]);
         }
 
-        $courseCodeTitle = $this->cleanReportCourseCodeTitle(
-            $validated['course_code_title'] ?? null,
-            $this->defaultCourseCodeTitle($ownedCompletedAssessments),
-            $ownedCompletedAssessments,
-        );
+        $courseCodeTitle = $this->defaultCourseCodeTitle($ownedCompletedAssessments);
 
         try {
-            $revisions = app(ReportSheetWriter::class)->save($ownedCompletedAssessments, $validated, $courseCodeTitle, $autosave);
+            $revisions = app(ReportSheetWriter::class)->save($ownedCompletedAssessments, $validated, $autosave);
         } catch (ValidationException $exception) {
             if ($autosave && isset($exception->errors()['report_conflict'])) {
                 return response()->json([

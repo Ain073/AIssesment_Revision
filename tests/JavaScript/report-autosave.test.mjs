@@ -43,13 +43,17 @@ const setup = () => {
         setTimeout(fn, delay) { const id = ++timerId; timers.set(id, { fn, delay }); return id; },
         clearTimeout: id => timers.delete(id),
     });
-    const createForm = ({ enabled = true, conflict = false, unsaved = false, revision = 0, value = 'Server text', account = '1' } = {}) => {
+    const createForm = ({ enabled = true, conflict = false, unsaved = false, revision = 0, value = 'Server text', account = '1', courseTitle = null } = {}) => {
         const form = { ...target(), isConnected: true, submissions: [],
             dataset: { reportAccount: account, reportAutosaveUrl: '/instructor/reports/autosave', reportAutosaveEnabled: String(enabled), reportConflict: String(conflict), reportUnsaved: String(unsaved) },
-            fields: [{ name: 'reports[quiz][issues_concern]', value }],
+            fields: [{ name: 'reports[quiz][issues_concern]', value }, ...(courseTitle === null ? [] : [{ name: 'course_code_title', value: courseTitle, generated: true }])],
             revisionInputs: [{ dataset: { reportRevision: 'quiz' }, name: 'revisions[quiz]', value: String(revision) }],
             querySelector: () => ({ value: 'formative' }),
-            querySelectorAll(selector) { return selector.includes('report-revision') ? this.revisionInputs : selector.startsWith('input') ? [{ value: 'quiz' }] : this.fields; },
+            querySelectorAll(selector) {
+                if (selector.includes('report-revision')) return this.revisionInputs;
+                if (selector.startsWith('input')) return [{ value: 'quiz' }];
+                return selector.includes(':not([data-report-generated])') ? this.fields.filter(field => !field.generated) : this.fields;
+            },
             requestSubmit(submitter) {
                 const event = this.emit('submit', { submitter });
                 if (!event.prevented) this.submissions.push({ submitter, revision: this.revisionInputs[0].value, value: this.fields[0].value });
@@ -197,6 +201,22 @@ test('restores a backup only for the same account and server revision', async ()
     assert.equal(env.nodes.download.hidden, false);
     const anotherAccount = env.createForm({ account: '99' });
     assert.equal(anotherAccount.form.fields[0].value, 'Server text');
+});
+
+test('recovering an older backup restores report notes without replacing the current generated course title', async () => {
+    const env = setup();
+    env.storage.set('aissessment:server-report-draft:1:formative:quiz', JSON.stringify({
+        savedAt: Date.now(), revisions: { quiz: 0 },
+        values: { 'reports[quiz][issues_concern]': 'Recovered notes', course_code_title: 'IC1 | ELEC2' },
+    }));
+    const page = env.createForm({ courseTitle: 'IC1 / Personal Development' });
+    assert.equal(page.form.fields[0].value, 'Recovered notes');
+    assert.equal(page.form.fields[1].value, 'IC1 / Personal Development');
+    await env.tick();
+    assert.equal(env.requests[0].options.body.snapshot.course_code_title, 'IC1 / Personal Development');
+    env.requests[0].respond(); await settle();
+    page.form.fields[1].value = 'Updated generated title'; page.api.changed(); await env.tick();
+    assert.equal(env.requests.length, 1, 'A generated header alone is not an unsaved report edit');
 });
 
 test('warns when leaving with unsaved text, flushes on hidden, and does not send detached pages', async () => {

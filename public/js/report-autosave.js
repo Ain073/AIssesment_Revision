@@ -3,7 +3,7 @@
     window.createReportAutosave = (form) => {
         active?.dispose();
         if (!form) return null;
-        const fields = [...form.querySelectorAll('.report-edit-textarea, .report-header-input')];
+        const fields = [...form.querySelectorAll('.report-edit-textarea, .report-header-input:not([data-report-generated])')];
         const revisionInputs = [...form.querySelectorAll('[data-report-revision]')];
         const feedback = document.getElementById('reportAutosaveFeedback');
         const status = feedback?.querySelector('[data-report-autosave-status]');

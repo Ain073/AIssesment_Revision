@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Report;
+use App\Support\ReportCourseTitle;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -10,9 +11,9 @@ use Illuminate\Validation\ValidationException;
 class ReportSheetWriter
 {
     /** The controller supplies assessments selected through its existing ownership/completion scope. */
-    public function save(Collection $assessments, array $validated, string $courseTitle, bool $autosave = false): array
+    public function save(Collection $assessments, array $validated, bool $autosave = false): array
     {
-        return DB::transaction(function () use ($assessments, $validated, $courseTitle, $autosave): array {
+        return DB::transaction(function () use ($assessments, $validated, $autosave): array {
             $reports = Report::query()
                 ->whereIn('publish_assessment_id', $assessments->pluck('publish_assessment_id'))
                 ->where('report_type', $validated['report_type'])
@@ -42,7 +43,7 @@ class ReportSheetWriter
                 $report = $reports->get($assessment->publish_assessment_id);
                 $row = $validated['reports'][$key];
                 $report->fill([
-                    'course_code_title' => $courseTitle,
+                    'course_code_title' => ReportCourseTitle::forAssessment($assessment),
                     'concept_most_learned_skills' => $row['concept_most_learned_skills'] ?? null,
                     'concept_least_learned_skills' => $row['concept_least_learned_skills'] ?? null,
                     'issues_concern' => $row['issues_concern'] ?? null,

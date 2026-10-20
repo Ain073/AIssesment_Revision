@@ -1017,7 +1017,7 @@
                         <td colspan="4">{{ strtoupper($reportMeta['college']) }}</td>
                         <th colspan="2">Course Code/Title</th>
                         <td colspan="2">
-                            <input class="report-header-input" name="course_code_title" type="text" value="{{ old('course_code_title', $reportMeta['course_code_title']) }}" @if ($isFinalized) readonly tabindex="-1" @endif>
+                            <input class="report-header-input" name="course_code_title" type="text" value="{{ $reportMeta['course_code_title'] }}" readonly tabindex="-1" data-report-generated>
                         </td>
                     </tr>
                     <tr>
@@ -1151,7 +1151,7 @@
                         <td colspan="4">{{ strtoupper($reportMeta['college']) }}</td>
                         <th colspan="2">Course Code/Title</th>
                         <td colspan="2">
-                            <span class="report-print-mirror" data-print-field-name="course_code_title">{{ old('course_code_title', $reportMeta['course_code_title']) }}</span>
+                            <span class="report-print-mirror" data-print-field-name="course_code_title">{{ $reportMeta['course_code_title'] }}</span>
                         </td>
                     </tr>
                     <tr>
@@ -1247,7 +1247,7 @@
                     <div class="report-print-cell" style="grid-column: 2 / 6;">{{ strtoupper($reportMeta['college']) }}</div>
                     <div class="report-print-cell report-print-label" style="grid-column: 6 / 7;">Course Code/Title</div>
                     <div class="report-print-cell" style="grid-column: 7 / 10;">
-                        <span class="report-print-mirror" data-print-field-name="course_code_title">{{ old('course_code_title', $reportMeta['course_code_title']) }}</span>
+                        <span class="report-print-mirror" data-print-field-name="course_code_title">{{ $reportMeta['course_code_title'] }}</span>
                     </div>
 
                     <div class="report-print-cell report-print-label" style="grid-column: 1 / 2;">Department</div>
