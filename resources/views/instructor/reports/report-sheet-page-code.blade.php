@@ -77,6 +77,7 @@
         const saveDraftButton = document.getElementById('saveDraftButton');
         const finalizeButton = document.getElementById('finalizeButton');
         const aiDraftButton = document.getElementById('aiDraftButton');
+        const aiModelLabel = document.getElementById('aiModelLabel');
         const reportStatusBadge = document.getElementById('reportStatusBadge');
         const reportStatusBadgeIcon = document.getElementById('reportStatusBadgeIcon');
         const reportStatusBadgeText = document.getElementById('reportStatusBadgeText');
@@ -120,6 +121,7 @@
                 toggleElementVisibility(saveDraftButton, false);
                 toggleElementVisibility(finalizeButton, false);
                 toggleElementVisibility(aiDraftButton, false);
+                toggleElementVisibility(aiModelLabel, false);
                 toggleElementVisibility(reportLockedNotice, true);
 
                 if (reportStatusBadge) {
@@ -134,6 +136,7 @@
                 toggleElementVisibility(saveDraftButton, true);
                 toggleElementVisibility(finalizeButton, true);
                 toggleElementVisibility(aiDraftButton, true);
+                toggleElementVisibility(aiModelLabel, true);
                 toggleElementVisibility(reportLockedNotice, false);
 
                 if (reportStatusBadge) {

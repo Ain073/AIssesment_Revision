@@ -889,6 +889,10 @@
                     @endforeach
                 </select>
             </div>
+            <div class="report-paper-control {{ $isFinalized ? 'd-none' : '' }}" id="aiModelLabel">
+                <span class="small fw-bold text-secondary">AI Model</span>
+                <strong class="text-nowrap">{{ config('services.ai_report.providers.openai.label', 'GPT-4.1') }}</strong>
+            </div>
             <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2 {{ $isFinalized ? 'd-none' : '' }}" id="aiDraftButton" type="button" data-bs-toggle="modal" data-bs-target="#confirmAiDraftModal">
                 <span class="material-symbols-outlined fs-5">auto_awesome</span>
                 Generate AI Draft
@@ -933,7 +937,7 @@
                 </div>
                 <div class="modal-body">
                     <p class="mb-2">
-                        Generate an AI draft for the selected reports?
+                        Generate an AI draft using <strong>{{ config('services.ai_report.providers.openai.label', 'GPT-4.1') }}</strong> for the selected reports?
                     </p>
                     <p class="text-secondary mb-0">
                         This fills the most and least learned concepts. Review and edit the generated text before finalizing your report.
