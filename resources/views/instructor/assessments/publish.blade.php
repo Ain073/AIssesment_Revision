@@ -377,17 +377,38 @@
                         </div>
                     </div>
 
-                    <div class="publish-section d-flex flex-wrap align-items-center justify-content-between gap-3 mt-3">
-                        <div>
-                            <p class="fw-bold mb-1" style="color: var(--psu-navy);">Security Settings</p>
+                    <div class="publish-section mt-3">
+                        <div class="publish-section-title mb-3">Security Settings</div>
+                        <div class="row g-3">
+                            <div class="col-lg-4">
+                                <label class="security-box h-100 mb-0">
+                                    <input class="form-check-input mt-1" name="prevent_copy_paste" type="checkbox" value="1" @checked(old('prevent_copy_paste'))>
+                                    <span>
+                                        <span class="fw-bold d-block" style="color: var(--psu-navy);">No Copy / Paste</span>
+                                        <span class="small text-secondary">Blocks copy, paste, cut, and right click.</span>
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="col-lg-4">
+                                <label class="security-box h-100 mb-0">
+                                    <input class="form-check-input mt-1" name="detect_tab_switch" type="checkbox" value="1" @checked(old('detect_tab_switch'))>
+                                    <span>
+                                        <span class="fw-bold d-block" style="color: var(--psu-navy);">Detect Tab Switch</span>
+                                        <span class="small text-secondary">Adds warning when student leaves the assessment tab.</span>
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="col-lg-4">
+                                <label class="security-box h-100 mb-0">
+                                    <input class="form-check-input mt-1" name="screenshot_protection" type="checkbox" value="1" @checked(old('screenshot_protection'))>
+                                    <span>
+                                        <span class="fw-bold d-block" style="color: var(--psu-navy);">Screenshot Protection</span>
+                                        <span class="small text-secondary">Blocks print/screenshot shortcuts when possible and records a warning.</span>
+                                    </span>
+                                </label>
+                            </div>
                         </div>
-                        <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" data-bs-target="#securitySettingsModal" data-bs-toggle="modal" type="button">
-                            <span class="material-symbols-outlined fs-5">shield_lock</span>
-                            Show Security
-                        </button>
                     </div>
-
-                    @include('instructor.assessments.security-settings-popup')
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <a class="btn btn-outline-secondary px-4" href="{{ route('instructor.assessments') }}">Cancel</a>

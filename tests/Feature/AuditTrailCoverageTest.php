@@ -12,6 +12,8 @@ use App\Models\PublishAssessment;
 use App\Models\Report;
 use App\Models\Role;
 use App\Models\StudentProfile;
+use App\Models\Submission;
+use App\Models\SubmissionSecurityEvent;
 use App\Models\Subject;
 use App\Models\User;
 use App\Services\AccountSessionService;
@@ -258,6 +260,106 @@ class AuditTrailCoverageTest extends TestCase
         }
         $this->assertSame($before, $this->userState());
         $this->assertDatabaseCount('audit_logs', 0);
+    }
+
+    public static function securitySettings(): array
+    {
+        return [
+            'all off' => [false, false, false],
+            'copy only' => [true, false, false],
+            'tab only' => [false, true, false],
+            'screenshot only' => [false, false, true],
+            'copy and tab' => [true, true, false],
+            'copy and screenshot' => [true, false, true],
+            'tab and screenshot' => [false, true, true],
+            'all on' => [true, true, true],
+        ];
+    }
+
+    #[DataProvider('securitySettings')]
+    public function test_security_settings_independently_accept_only_enabled_events(bool $copy, bool $tab, bool $screenshot): void
+    {
+        [$student, $published, $submission] = $this->securityAttempt($copy, $tab, $screenshot);
+        $this->signIn($student);
+        $events = [
+            'copy_attempt' => $copy, 'cut_attempt' => $copy, 'paste_attempt' => $copy, 'context_menu_attempt' => $copy,
+            'tab_hidden' => $tab, 'window_blur' => $tab, 'floating_window' => false,
+            'print_shortcut' => $screenshot, 'screenshot_shortcut' => $screenshot,
+        ];
+        foreach ($events as $type => $enabled) {
+            $response = $this->postJson(route('student.assessments.security-events.store', $published), [
+                'event_uuid' => (string) Str::uuid(), 'event_type' => $type,
+            ]);
+            if ($enabled) {
+                $response->assertOk()->assertJsonPath('recorded', true)->assertJsonPath('should_auto_submit', false);
+                $this->assertDatabaseHas('submission_security_events', ['submission_id' => $submission->getKey(), 'event_type' => $type]);
+            } else {
+                $response->assertUnprocessable()->assertJsonValidationErrors('event_type');
+                $this->assertDatabaseMissing('submission_security_events', ['event_type' => $type]);
+            }
+        }
+        $this->assertSame(count(array_filter($events)), SubmissionSecurityEvent::count());
+        $this->assertSame(0, $submission->fresh()->warning_count);
+    }
+
+    public function test_screenshot_only_warning_limit_returns_auto_submit_and_logs_the_actual_submission(): void
+    {
+        [$student, $published, $submission] = $this->securityAttempt(false, false, true, 1);
+        $this->signIn($student);
+        $payload = ['event_uuid' => (string) Str::uuid(), 'event_type' => 'screenshot_shortcut'];
+
+        $this->postJson(route('student.assessments.security-events.store', $published), $payload)
+            ->assertOk()->assertJsonPath('recorded', true)->assertJsonPath('warning_count', 1)
+            ->assertJsonPath('should_auto_submit', true);
+
+        $event = AuditLog::where('action', 'SUBMIT')->sole();
+        $this->assertSame($student->id, $event->user_id);
+        $this->assertSame(Submission::class, $event->auditable_type);
+        $this->assertSame($submission->getKey(), $event->auditable_id);
+        $this->assertDatabaseHas('app_notifications', ['title' => 'Security Limit Reached']);
+
+        $this->postJson(route('student.assessments.security-events.store', $published), $payload)
+            ->assertOk()->assertJsonPath('recorded', false)->assertJsonPath('warning_count', 1);
+        $this->assertSame(1, AuditLog::where('action', 'SUBMIT')->count());
+        $this->assertSame(1, SubmissionSecurityEvent::count());
+    }
+
+    private function securityAttempt(bool $copy, bool $tab, bool $screenshot, int $limit = 0): array
+    {
+        foreach ([
+            'assessment_items' => 'assessment_item_id INTEGER PRIMARY KEY, assessment_id INTEGER',
+            'assessment_item_choices' => 'assessment_item_choice_id INTEGER PRIMARY KEY, assessment_item_id INTEGER',
+            'publish_assessment' => 'publish_assessment_id INTEGER PRIMARY KEY, public_id TEXT UNIQUE, assessment_id INTEGER, class_details_id INTEGER, publish_status TEXT, prevent_copy_paste INTEGER, detect_tab_switch INTEGER, screenshot_protection INTEGER, warning_limit INTEGER, created_at DATETIME, updated_at DATETIME',
+            'submissions' => 'submission_id INTEGER PRIMARY KEY, publish_assessment_id INTEGER, student_profile_id INTEGER, attempt_number INTEGER, status TEXT, warning_count INTEGER, started_at DATETIME, last_activity_at DATETIME, created_at DATETIME, updated_at DATETIME',
+            'submission_security_events' => 'submission_security_event_id INTEGER PRIMARY KEY, submission_id INTEGER, event_uuid TEXT UNIQUE, event_type TEXT, occurred_at DATETIME, request_fingerprint TEXT, user_agent TEXT, metadata TEXT, created_at DATETIME, updated_at DATETIME',
+        ] as $table => $columns) {
+            DB::statement("CREATE TABLE {$table} ({$columns})");
+        }
+        $teacher = $this->account('instructor');
+        $student = $this->account('student');
+        $subject = Subject::create(['department_id' => 1, 'subject_code' => 'SEC-101', 'subject_name' => 'Security settings']);
+        $class = AcademicClass::create(['program_id' => 1, 'semester_id' => 1, 'year_level' => 1, 'section_name' => 'A', 'school_year' => '2026-2027']);
+        $detail = ClassDetail::create([
+            'class_id' => $class->getKey(), 'instructor_id' => $teacher->instructorProfile->getKey(),
+            'subject_id' => $subject->getKey(), 'status' => ClassDetail::STATUS_APPROVED, 'entry_method' => ClassDetail::METHOD_CLASS_SETUP,
+        ]);
+        ClassDetail::create([
+            'class_id' => $class->getKey(), 'instructor_id' => $teacher->instructorProfile->getKey(),
+            'student_id' => $student->studentProfile->getKey(), 'subject_id' => $subject->getKey(),
+            'status' => ClassDetail::STATUS_APPROVED, 'entry_method' => ClassDetail::METHOD_MANUAL_ADD,
+        ]);
+        $assessment = Assessment::create(['subject_id' => $subject->getKey(), 'instructor_id' => $teacher->instructorProfile->getKey(), 'title' => 'Security assessment']);
+        $published = PublishAssessment::create([
+            'assessment_id' => $assessment->getKey(), 'class_details_id' => $detail->getKey(),
+            'publish_status' => PublishAssessment::STATUS_PUBLISHED, 'prevent_copy_paste' => $copy,
+            'detect_tab_switch' => $tab, 'screenshot_protection' => $screenshot, 'warning_limit' => $limit,
+        ]);
+        $submission = Submission::create([
+            'publish_assessment_id' => $published->getKey(), 'student_profile_id' => $student->studentProfile->getKey(),
+            'attempt_number' => 1, 'status' => Submission::STATUS_IN_PROGRESS, 'warning_count' => 0,
+        ]);
+
+        return [$student, $published, $submission];
     }
 
     private function signIn(User $user): static

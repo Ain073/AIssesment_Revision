@@ -181,7 +181,7 @@ class ReportController extends BaseController
             'report_type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
             'save_action' => [$autosave ? 'nullable' : 'required', 'string', Rule::in(['draft', 'finalized'])],
             'paper_size' => ['nullable', 'string', Rule::in(['a4', 'short', 'long'])],
-            'course_code_title' => ['nullable', 'string', 'max:255'],
+            'course_code_title' => ['nullable', 'string', 'max:65535'],
             'publish_assessment_keys' => ['required', 'array', 'min:1'],
             'publish_assessment_keys.*' => ['required', 'uuid'],
             'reports' => ['required', 'array'],

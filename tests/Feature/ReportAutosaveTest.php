@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\Instructor\ReportController;
 use App\Models\Assessment;
 use App\Models\InstructorProfile;
 use App\Models\PublishAssessment;
@@ -10,6 +11,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class ReportAutosaveTest extends TestCase
@@ -35,11 +37,13 @@ class ReportAutosaveTest extends TestCase
             'submissions' => 'submission_id INTEGER PRIMARY KEY, publish_assessment_id INTEGER',
             'assessment_items' => 'assessment_item_id INTEGER PRIMARY KEY, assessment_id INTEGER, sort_order INTEGER',
             'app_notifications' => 'notification_id INTEGER PRIMARY KEY, public_id TEXT, user_id INTEGER, title TEXT, message TEXT, type TEXT, link TEXT, read_at DATETIME, created_at DATETIME, updated_at DATETIME',
-            'reports' => 'report_id INTEGER PRIMARY KEY, publish_assessment_id INTEGER, report_type TEXT, course_code_title TEXT, concept_most_learned_skills TEXT, concept_least_learned_skills TEXT, issues_concern TEXT, interventions_done TEXT, future_plans_curriculum TEXT, report_status TEXT, created_at DATETIME, updated_at DATETIME, UNIQUE(publish_assessment_id, report_type)',
+            'reports' => 'report_id INTEGER PRIMARY KEY, publish_assessment_id INTEGER, report_type TEXT, course_code_title TEXT, concept_most_learned_skills TEXT, concept_least_learned_skills TEXT, issues_concern TEXT, interventions_done TEXT, future_plans_curriculum TEXT, report_status TEXT, created_at DATETIME, updated_at DATETIME',
         ] as $table => $columns) {
             DB::statement("CREATE TABLE {$table} ({$columns})");
         }
+        DB::statement('CREATE UNIQUE INDEX reports_publish_assessment_id_report_type_unique ON reports (publish_assessment_id, report_type)');
         (require database_path('migrations/2026_10_17_000001_add_revision_to_reports_table.php'))->up();
+        (require database_path('migrations/2026_10_21_000001_expand_report_course_code_title.php'))->up();
         $this->createAuditTables();
         $this->instructor = $this->account();
         $this->published = $this->assessmentFor($this->instructor);
@@ -62,6 +66,74 @@ class ReportAutosaveTest extends TestCase
         $body['revisions'][$this->published->public_id] = 1;
         $this->postJson(route('instructor.reports.autosave'), $body)->assertOk()
             ->assertJsonPath('revisions.'.$this->published->public_id, 1); // Unchanged saves are no-ops.
+    }
+
+    public static function combinedReportSaves(): array
+    {
+        return [
+            'formative autosave' => ['formative', 'autosave'],
+            'summative autosave' => ['summative', 'autosave'],
+            'formative draft' => ['formative', 'draft'],
+            'summative finalize' => ['summative', 'finalized'],
+        ];
+    }
+
+    public function test_course_title_migration_preserves_values_and_refuses_a_lossy_rollback(): void
+    {
+        $migration = require database_path('migrations/2026_10_21_000001_expand_report_course_code_title.php');
+        $report = $this->published->report()->firstOrFail();
+        $report->update(['course_code_title' => 'Existing course title']);
+        $migration->down();
+        $migration->up();
+        $this->assertSame('Existing course title', $report->fresh()->course_code_title);
+
+        $title = str_repeat('Combined course title | ', 20);
+        $report->update(['course_code_title' => $title]);
+        try {
+            $migration->down();
+            $this->fail('Rollback must not truncate existing course titles.');
+        } catch (\RuntimeException $exception) {
+            $this->assertStringContainsString('exceed 255 characters', $exception->getMessage());
+        }
+        $this->assertSame($title, $report->fresh()->course_code_title);
+    }
+
+    #[DataProvider('combinedReportSaves')]
+    public function test_six_subjects_can_save_their_complete_combined_course_title(string $type, string $action): void
+    {
+        DB::statement('CREATE TABLE subjects (subject_id INTEGER PRIMARY KEY, subject_code TEXT, subject_name TEXT)');
+        $assessments = new \Illuminate\Database\Eloquent\Collection([$this->published]);
+        for ($i = 1; $i < 6; $i++) {
+            $assessments->push($this->assessmentFor($this->instructor));
+        }
+        $body = ['report_type' => $type, 'publish_assessment_keys' => [], 'reports' => [], 'revisions' => []];
+        foreach ($assessments as $index => $published) {
+            $subjectId = DB::table('subjects')->insertGetId([
+                'subject_code' => 'IT-'.($index + 1),
+                'subject_name' => 'Information Technology and Computing Course Number '.($index + 1),
+            ]);
+            $published->assessment()->update(['subject_id' => $subjectId, 'report_category' => $type]);
+            $published->report()->update(['report_type' => $type]);
+            $body['publish_assessment_keys'][] = $published->public_id;
+            $body['reports'][$published->public_id] = ['issues_concern' => 'Notes for subject '.($index + 1)];
+            $body['revisions'][$published->public_id] = 0;
+        }
+        $assessments->load('assessment.subject', 'classDetail');
+        $method = new \ReflectionMethod(ReportController::class, 'defaultCourseCodeTitle');
+        $body['course_code_title'] = $method->invoke(app(ReportController::class), $assessments);
+        $this->assertGreaterThan(255, mb_strlen($body['course_code_title']));
+        if ($action === 'autosave') {
+            $this->postJson(route('instructor.reports.autosave'), $body)->assertOk();
+        } else {
+            $this->post(route('instructor.reports.save'), $body + ['save_action' => $action])->assertSessionHasNoErrors()->assertRedirect();
+        }
+        foreach ($assessments as $index => $published) {
+            $report = $published->report()->firstOrFail();
+            $this->assertSame($body['course_code_title'], $report->course_code_title);
+            $this->assertSame('Notes for subject '.($index + 1), $report->issues_concern);
+            $this->assertSame($action === 'finalized' ? 'finalized' : 'draft', $report->report_status);
+            $this->assertSame(1, $report->revision);
+        }
     }
 
     public function test_stale_tab_cannot_overwrite_through_autosave_or_manual_finalize(): void

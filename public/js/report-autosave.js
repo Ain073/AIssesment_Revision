@@ -79,8 +79,12 @@
                         } else if ([401, 403, 419].includes(response.status)) {
                             blocked = true;
                             show('Sign in or reload to continue saving. Copy or download your unsaved text first.');
+                        } else if (response.status === 422) {
+                            const validationMessage = Object.values(data?.errors || {}).flat()
+                                .find(message => typeof message === 'string' && message.trim());
+                            show(`Draft was not saved. ${validationMessage || 'Check the report fields and try again.'}`, true);
                         } else {
-                            show(response.status === 422 ? 'Draft was not saved. Check the report fields and try again.' : 'Save could not be confirmed. Keep this page open and retry.', true);
+                            show('Save could not be confirmed. Keep this page open and retry.', true);
                         }
                         return;
                     }

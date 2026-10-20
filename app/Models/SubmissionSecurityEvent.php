@@ -59,15 +59,15 @@ class SubmissionSecurityEvent extends Model
     public static function labels(): array
     {
         return [
-            self::TYPE_COPY => 'Copy attempted',
-            self::TYPE_CUT => 'Cut attempted',
-            self::TYPE_PASTE => 'Paste attempted',
-            self::TYPE_CONTEXT_MENU => 'Context menu opened',
-            self::TYPE_TAB_HIDDEN => 'Assessment tab hidden',
-            self::TYPE_WINDOW_BLUR => 'Assessment window lost focus',
-            self::TYPE_FLOATING_WINDOW => 'Floating or split screen detected',
-            self::TYPE_PRINT_SHORTCUT => 'Print shortcut attempted',
-            self::TYPE_SCREENSHOT_SHORTCUT => 'Screenshot shortcut attempted',
+            self::TYPE_COPY => 'Attempted to copy assessment content',
+            self::TYPE_CUT => 'Attempted to cut assessment content',
+            self::TYPE_PASTE => 'Attempted to paste content',
+            self::TYPE_CONTEXT_MENU => 'Attempted to open the right-click menu',
+            self::TYPE_TAB_HIDDEN => 'Assessment tab was no longer visible',
+            self::TYPE_WINDOW_BLUR => 'Assessment window became inactive',
+            self::TYPE_FLOATING_WINDOW => 'Possible floating or split-screen window detected',
+            self::TYPE_PRINT_SHORTCUT => 'Attempted to print the assessment',
+            self::TYPE_SCREENSHOT_SHORTCUT => 'Screenshot shortcut detected',
         ];
     }
 

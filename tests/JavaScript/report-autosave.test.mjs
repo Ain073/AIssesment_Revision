@@ -151,6 +151,17 @@ test('validation and throttling allow retry while session failures stop network 
     }
 });
 
+test('validation feedback identifies the rejected report field and preserves unsaved text', async () => {
+    const env = setup(); const page = env.createForm();
+    env.edit(page); await env.tick();
+    env.requests[0].respond(422, { errors: { course_code_title: ['The course code/title field is too long.'] } });
+    await settle();
+    assert.equal(env.nodes.status.textContent, 'Draft was not saved. The course code/title field is too long.');
+    assert.equal(page.form.fields[0].value, 'Edited text');
+    assert.equal(env.storage.size, 1);
+    assert.equal(env.nodes.retry.hidden, false);
+});
+
 test('manual Finalize waits for autosave then submits latest edits and updated revision once', async () => {
     const env = setup(); const page = env.createForm();
     env.edit(page); await env.tick();
