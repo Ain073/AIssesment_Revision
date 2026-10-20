@@ -37,6 +37,7 @@ class AccountSessionSecurityTest extends TestCase
         DB::statement('CREATE TABLE student_profiles (student_profile_id INTEGER PRIMARY KEY AUTOINCREMENT, public_id TEXT UNIQUE, user_id INTEGER, program_id INTEGER, student_number TEXT, created_at DATETIME, updated_at DATETIME)');
         DB::statement('CREATE TABLE password_reset_tokens (email TEXT PRIMARY KEY, token TEXT, created_at DATETIME)');
         DB::statement('CREATE TABLE sessions (id TEXT PRIMARY KEY, user_id INTEGER, ip_address TEXT, user_agent TEXT, payload TEXT, last_activity INTEGER)');
+        $this->createAuditTables();
         Role::create(['role_name' => 'student']);
         Route::middleware(['web', 'auth', 'password_changed'])->get('/session-security-probe', fn () => response()->json(['ok' => true]));
     }

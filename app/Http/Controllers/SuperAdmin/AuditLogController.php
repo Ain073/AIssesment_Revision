@@ -42,7 +42,7 @@ class AuditLogController extends Controller
         }
 
         // -- Filters ---------------------------------------------------
-        RecordSearch::apply($query, ['description', 'user.first_name', 'user.last_name', 'user.email']);
+        RecordSearch::apply($query, ['description', 'user.first_name', 'user.last_name', 'user.email', 'metadata->actor->name', 'metadata->actor->email']);
 
         if ($role = $request->input('role')) {
             $query->where('user_role', $role);

@@ -137,7 +137,13 @@ class ClassStudentController extends BaseController
                 ->withErrors(['student_file' => 'That student is not currently enrolled in this class.']);
         }
 
+        $before = $ownedClass->classDetails()->where('student_id', $studentProfile->getKey())->get();
         $ownedClass->removeStudent($studentProfile);
+        AuditLogger::logOrFail('UNENROLL', 'Classes',
+            "Removed student {$studentProfile->user?->displayName()} ({$studentProfile->student_number}) from {$ownedClass->class_name}",
+            $ownedClass, ['changes' => $before->map(fn ($detail) => [
+                'model' => ClassDetail::class, 'id' => $detail->getKey(), 'before' => $detail->getRawOriginal(), 'after' => null,
+            ])->all()]);
 
         Log::warning('Student removed from class by instructor.', [
             'actor_id' => $user->id,

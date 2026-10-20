@@ -6,6 +6,7 @@ use App\Models\Program;
 use App\Models\Role;
 use App\Models\StudentProfile;
 use App\Models\User;
+use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -92,9 +93,9 @@ class StudentAccountImportService
 
     /**
      * @param  Collection<int, Program>  $programs
-     * @return array{created_count: int, initial_password_emails_sent: int}
+     * @param  Closure(array{created_count: int, initial_password_emails_sent: int}): void  $onCommitted
      */
-    public function confirm(Request $request, Collection $programs, string $scope): array
+    public function confirm(Request $request, Collection $programs, string $scope, Closure $onCommitted): void
     {
         $validated = $request->validate([
             'import_token' => ['required', 'uuid'],
@@ -178,26 +179,29 @@ class StudentAccountImportService
             return $accounts;
         });
 
-        $request->session()->forget($sessionKey);
-        $sentInitialPasswordEmails = 0;
-
-        foreach ($createdAccounts as $account) {
-            if ($this->accounts->sendInitialPasswordEmail($account['user'], $account['initial_password'])) {
-                $sentInitialPasswordEmails++;
+        // The HTTP audit transaction also has to commit before credentials leave
+        // the app. A rolled-back import keeps its preview available for retry.
+        DB::afterCommit(function () use ($request, $sessionKey, $createdAccounts, $scope, $onCommitted): void {
+            $request->session()->forget($sessionKey);
+            $sentInitialPasswordEmails = 0;
+            foreach ($createdAccounts as $account) {
+                if ($this->accounts->sendInitialPasswordEmail($account['user'], $account['initial_password'])) {
+                    $sentInitialPasswordEmails++;
+                }
             }
-        }
 
-        Log::info('Student accounts imported.', [
-            'actor_id' => $request->user()->id,
-            'scope' => $scope,
-            'created_count' => count($createdAccounts),
-            'initial_password_emails_sent' => $sentInitialPasswordEmails,
-        ]);
+            $result = [
+                'created_count' => count($createdAccounts),
+                'initial_password_emails_sent' => $sentInitialPasswordEmails,
+            ];
+            Log::info('Student accounts imported.', [
+                'actor_id' => $request->user()->id,
+                'scope' => $scope,
+                ...$result,
+            ]);
 
-        return [
-            'created_count' => count($createdAccounts),
-            'initial_password_emails_sent' => $sentInitialPasswordEmails,
-        ];
+            $onCommitted($result);
+        });
     }
 
     public function sampleCsv(): StreamedResponse

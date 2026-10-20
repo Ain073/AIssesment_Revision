@@ -142,14 +142,13 @@ class UserController extends Controller
 
         abort_if($programs->isEmpty(), 403);
 
-        $result = $importer->confirm($request, $programs, 'super-admin');
-        $redirect = redirect()
-            ->route('super-admin.users')
-            ->with('status', $result['created_count'].' student accounts created successfully.');
-
-        if ($result['initial_password_emails_sent'] < $result['created_count']) {
-            $redirect->with('mail_warning', 'Some initial password emails were not delivered.');
-        }
+        $redirect = redirect()->route('super-admin.users');
+        $importer->confirm($request, $programs, 'super-admin', function (array $result) use ($redirect): void {
+            $redirect->with('status', $result['created_count'].' student accounts created successfully.');
+            if ($result['initial_password_emails_sent'] < $result['created_count']) {
+                $redirect->with('mail_warning', 'Some initial password emails were not delivered.');
+            }
+        });
 
         return $redirect;
     }
@@ -240,24 +239,29 @@ class UserController extends Controller
         });
 
         $accounts->sendAccountCreatedNotification($createdUser);
-        $passwordEmailSent = $accounts->sendInitialPasswordEmail($createdUser, $initialPassword);
-
-        if ($request->expectsJson()) {
-            return response()->json([
+        $response = $request->expectsJson()
+            ? response()->json([
                 'message' => 'User account created successfully.',
-                'warning' => $passwordEmailSent ? null : 'Account was created, but the initial password email was not delivered.',
-            ], 201);
-        }
+                'warning' => null,
+            ], 201)
+            : redirect()->route('super-admin.users');
 
-        $redirect = redirect()
-            ->route('super-admin.users')
-            ->with('status', 'User account created successfully.');
+        DB::afterCommit(function () use ($accounts, $createdUser, $initialPassword, $response): void {
+            if ($response instanceof RedirectResponse) {
+                $response->with('status', 'User account created successfully.');
+            }
+            if ($accounts->sendInitialPasswordEmail($createdUser, $initialPassword)) {
+                return;
+            }
+            $warning = 'Account was created, but the initial password email was not delivered.';
+            if ($response instanceof JsonResponse) {
+                $response->setData([...$response->getData(true), 'warning' => $warning]);
+            } else {
+                $response->with('mail_warning', $warning);
+            }
+        });
 
-        if (! $passwordEmailSent) {
-            $redirect->with('mail_warning', 'Account was created, but the initial password email was not delivered.');
-        }
-
-        return $redirect;
+        return $response;
     }
 
     public function update(Request $request, User $user, UserAccountService $accounts): JsonResponse|RedirectResponse

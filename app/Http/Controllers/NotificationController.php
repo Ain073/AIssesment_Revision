@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AppNotification;
+use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,10 @@ class NotificationController extends Controller
 
         if ($notification->read_at === null) {
             $notification->update(['read_at' => now()]);
+            AuditLogger::logOrFail('READ', 'Notifications', 'Marked notification as read', $notification, ['changes' => [[
+                'model' => AppNotification::class, 'id' => $notification->getKey(),
+                'before' => ['read_at' => null], 'after' => ['read_at' => $notification->getRawOriginal('read_at')],
+            ]]]);
         }
 
         $url = $notification->link ?: url()->previous();
@@ -35,10 +40,20 @@ class NotificationController extends Controller
     public function readAll(Request $request): JsonResponse|RedirectResponse
     {
         abort_unless($request->user()->status === 'active', 403);
-        AppNotification::query()
+        $unread = AppNotification::query()
             ->where('user_id', $request->user()->id)
             ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+            ->lockForUpdate()->pluck('notification_id');
+        $readAt = now();
+        $count = AppNotification::whereKey($unread)->update(['read_at' => $readAt]);
+        if ($count > 0) {
+            AuditLogger::logOrFail('READ_ALL', 'Notifications', "Marked {$count} notification/s as read", metadata: [
+                'count' => $count, 'changes' => $unread->map(fn ($id) => [
+                    'model' => AppNotification::class, 'id' => $id,
+                    'before' => ['read_at' => null], 'after' => ['read_at' => $readAt->toDateTimeString()],
+                ])->all(),
+            ]);
+        }
 
         if ($request->expectsJson()) {
             return response()->json($this->snapshot($request) + ['message' => 'Notifications marked as read.']);

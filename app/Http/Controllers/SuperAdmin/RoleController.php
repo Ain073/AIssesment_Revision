@@ -10,6 +10,7 @@ use App\Models\DesignationDetail;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\AuditTrailRecorder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -85,6 +86,8 @@ class RoleController extends Controller
                 ->withErrors(new MessageBag(['role' => 'Teacher must have an assigned college before receiving Dean designation.']));
         }
 
+        app(AuditTrailRecorder::class)->rememberDesignations($user);
+
         // If the teacher was a Department Chair, cleanly transition them to Dean
         if ($user->hasRole('department_chair')) {
             $chairRoleId = Role::where('role_name', 'department_chair')->value('role_id');
@@ -117,6 +120,7 @@ class RoleController extends Controller
             ->get();
 
         foreach ($previousDeans as $prevDean) {
+            app(AuditTrailRecorder::class)->remember($prevDean);
             DB::table('user_roles')
                 ->where('user_id', $prevDean->id)
                 ->where('role_id', $roleId)
@@ -191,6 +195,8 @@ class RoleController extends Controller
         ]);
 
         $roleId = Role::where('role_name', $validated['role_name'])->value('role_id');
+        $user = User::with('instructorProfile')->findOrFail($validated['user_id']);
+        app(AuditTrailRecorder::class)->rememberDesignations($user);
 
         DB::table('user_roles')
             ->where('user_id', $validated['user_id'])
@@ -198,7 +204,6 @@ class RoleController extends Controller
             ->delete();
 
         // Mark active Dean designation as concluded with end_date
-        $user = User::with('instructorProfile')->find($validated['user_id']);
         if ($user?->instructorProfile) {
             DesignationDetail::query()
                 ->where('instructor_id', $user->instructorProfile->instructor_profile_id)
@@ -217,7 +222,7 @@ class RoleController extends Controller
             'role_name' => $validated['role_name'],
         ]);
 
-        AuditLogger::log('REVOKE', 'Designations', "Revoked Dean designation from {$user?->displayName()}");
+        AuditLogger::log('REVOKE', 'Designations', "Revoked Dean designation from {$user?->displayName()}", $user);
 
         return redirect()
             ->route('super-admin.roles')

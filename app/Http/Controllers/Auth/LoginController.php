@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -124,7 +125,14 @@ class LoginController extends Controller
             'ip' => $request->ip(),
         ]);
 
-        AuditLogger::log('LOGIN', 'Auth', 'User logged in successfully.');
+        try {
+            DB::transaction(fn () => AuditLogger::logOrFail('LOGIN', 'Auth', 'User logged in successfully.'));
+        } catch (\Throwable $exception) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            throw $exception;
+        }
 
         $redirectPath = $this->redirectPath();
 

@@ -113,6 +113,7 @@ class UserAjaxUpdateTest extends TestCase
             $table->string('ip_address')->nullable();
             $table->text('user_agent')->nullable();
             $table->timestamp('created_at');
+            $table->json('metadata')->nullable();
         });
         Schema::create('app_notifications', function (Blueprint $table) {
             $table->id('notification_id');
@@ -241,6 +242,19 @@ class UserAjaxUpdateTest extends TestCase
             $this->post(route('admin-dean.teachers.department-chair.grant', $outside))->assertForbidden();
         }
         $this->assertDatabaseCount('designation_details', 1);
+        $grant = AuditLog::where('action', 'DESIGNATE')->sole();
+        $grantChange = collect($grant->metadata['changes'])->firstWhere('model', User::class);
+        $this->assertNotContains($roleName, $grantChange['before']['roles']);
+        $this->assertContains($roleName, $grantChange['after']['roles']);
+
+        $revokeUrl = $isDean ? route('super-admin.roles.revoke') : route('admin-dean.teachers.department-chair.revoke', $teacher);
+        $this->from($page)->delete($revokeUrl, $isDean ? ['user_id' => $teacher->id, 'role_name' => $roleName] : [])->assertRedirect($page);
+        $revoke = AuditLog::where('action', 'REVOKE')->sole();
+        $revokeChange = collect($revoke->metadata['changes'])->firstWhere('model', User::class);
+        $this->assertContains($roleName, $revokeChange['before']['roles']);
+        $this->assertNotContains($roleName, $revokeChange['after']['roles']);
+        $this->assertSame($actor->id, $revoke->user_id);
+        $this->assertFalse($teacher->fresh()->hasRole($roleName));
     }
 
     #[DataProvider('designationTypes')]
@@ -1012,33 +1026,127 @@ class UserAjaxUpdateTest extends TestCase
         $this->assertDatabaseCount('audit_logs', 2);
     }
 
-    public function test_enrollment_backfill_covers_multiple_chunks_and_labels_unknown_dates_on_the_audit_page(): void
+    public function test_enrollment_backfill_covers_multiple_chunks_and_displays_instructors_like_regular_logs(): void
     {
         $admin = $this->actor('super_admin');
+        $teacher = $this->actor('instructor');
+        $teacher->update(['first_name' => 'Enrollment', 'last_name' => 'Teacher']);
         $student = $this->account(['student']);
         foreach (range(1, 101) as $number) {
             $this->enrollmentDetail($student, $this->enrollmentClass());
         }
         $missingDate = $this->enrollmentDetail($student, $this->enrollmentClass(), ['created_at' => null, 'updated_at' => null]);
         $this->enrollmentMigration()->up();
+        $this->enrollmentActorMigration()->up();
         $this->assertDatabaseCount('audit_logs', 102);
+        $this->assertSame(102, AuditLog::where('user_id', $teacher->id)->where('user_role', 'instructor')->count());
         $this->assertNull(AuditLog::where('auditable_id', $missingDate)->sole()->metadata['timestamp_source']);
 
         $this->signInAccount($admin);
         foreach ([[], ['X-Requested-With' => 'XMLHttpRequest']] as $headers) {
             $this->get(route('super-admin.audit-logs', ['module' => 'Classes', 'action' => 'ENROLL']), $headers)
                 ->assertOk()->assertViewHas('logs', fn ($logs) => $logs->total() === 102)
-                ->assertSee('Enrolling user unavailable')->assertSee('Unknown')
-                ->assertSee('Roster record date; enrollment date unavailable')
-                ->assertSee('Recovery date; enrollment date unavailable')
-                ->assertSee('recovered from saved roster')
+                ->assertSee('Enrollment Teacher')->assertSee($teacher->email)
+                ->assertDontSee('Enrolling user unavailable')->assertDontSee('Unknown')
+                ->assertDontSee('Roster record date')->assertDontSee('Recovery date')
+                ->assertDontSee('recovered from saved roster')->assertDontSee('Based on')
                 ->assertSee($student->studentProfile->student_number)
                 ->assertDontSee('System Migration');
             $this->get(route('super-admin.audit-logs', [
                 'module' => 'Classes', 'action' => 'ENROLL', 'search' => $student->studentProfile->student_number,
                 'from' => '2026-08-10', 'to' => '2026-08-10',
             ]), $headers)->assertOk()->assertViewHas('logs', fn ($logs) => $logs->total() === 101);
+            $this->get(route('super-admin.audit-logs', [
+                'module' => 'Classes', 'action' => 'ENROLL', 'role' => 'instructor', 'search' => 'Enrollment',
+            ]), $headers)->assertOk()->assertViewHas('logs', fn ($logs) => $logs->total() === 102);
         }
+    }
+
+    public function test_enrollment_actor_recovery_links_profile_ids_to_users_and_preserves_original_history(): void
+    {
+        $admin = $this->actor('super_admin');
+        $firstTeacher = $this->actor('instructor');
+        $secondTeacher = $this->actor('instructor');
+        $student = $this->account(['student']);
+        $detailIds = [
+            $this->enrollmentDetail($student, $this->enrollmentClass(), ['instructor_id' => $firstTeacher->instructorProfile->getKey()]),
+            $this->enrollmentDetail($student, $this->enrollmentClass(), ['instructor_id' => $secondTeacher->instructorProfile->getKey()]),
+        ];
+        $this->enrollmentMigration()->up();
+        $recovered = AuditLog::orderBy('audit_log_id')->get();
+        $originals = collect([
+            AuditLog::create([
+                'user_id' => $admin->id, 'user_role' => 'super_admin', 'action' => 'ENROLL', 'module' => 'Classes',
+                'description' => 'Original recorded event', 'auditable_type' => ClassDetail::class,
+                'auditable_id' => $detailIds[0], 'created_at' => '2026-08-10 09:00:00',
+            ]),
+            AuditLog::create([
+                'action' => 'ENROLL', 'module' => 'Assessments', 'description' => 'Unrelated migration event',
+                'auditable_type' => ClassDetail::class, 'auditable_id' => $detailIds[0],
+                'user_agent' => 'System Migration', 'metadata' => ['recovery_method' => 'approved_class_roster'],
+                'created_at' => now(),
+            ]),
+            AuditLog::create([
+                'action' => 'ENROLL', 'module' => 'Classes', 'description' => 'Enrollment with a missing source',
+                'auditable_type' => ClassDetail::class, 'auditable_id' => 999999,
+                'user_agent' => 'System Migration', 'metadata' => ['recovery_method' => 'approved_class_roster'],
+                'created_at' => now(),
+            ]),
+        ])->mapWithKeys(fn ($event) => [$event->getKey() => $event->fresh()->getRawOriginal()]);
+        $sourceBefore = DB::table('class_details')->orderBy('class_details_id')->get()->toJson();
+
+        $migration = $this->enrollmentActorMigration();
+        $migration->up();
+
+        foreach ([$firstTeacher, $secondTeacher] as $index => $teacher) {
+            $before = $recovered[$index];
+            $after = $before->fresh();
+            $this->assertSame($teacher->id, $after->user_id);
+            $this->assertSame('instructor', $after->user_role);
+            $this->assertSame($teacher->displayName(), $after->actorName());
+            $this->assertSame($teacher->email, $after->actorSubtitle());
+            $this->assertSame('Instructor', $after->userRoleLabel());
+            $this->assertSame($before->description, $after->description);
+            $this->assertSame($before->getRawOriginal('created_at'), $after->getRawOriginal('created_at'));
+            $this->assertSame('class_details.instructor_id', $after->metadata['actor_source']);
+            $this->assertSame($teacher->instructorProfile->getKey(), $after->metadata['instructor_profile_id']);
+            $this->assertSame($before->metadata, array_intersect_key($after->metadata, $before->metadata));
+            $this->assertStringNotContainsString('recovered from saved roster', $after->displayDescription());
+        }
+        $afterFirstRun = DB::table('audit_logs')->orderBy('audit_log_id')->get()->toJson();
+        $migration->up();
+        $migration->down();
+        $this->assertSame($afterFirstRun, DB::table('audit_logs')->orderBy('audit_log_id')->get()->toJson());
+        $this->assertSame($sourceBefore, DB::table('class_details')->orderBy('class_details_id')->get()->toJson());
+        foreach ($originals as $id => $attributes) {
+            $this->assertSame($attributes, AuditLog::findOrFail($id)->getRawOriginal());
+        }
+    }
+
+    public function test_enrollment_actor_recovery_rolls_back_if_an_actor_update_fails(): void
+    {
+        $this->actor('instructor');
+        $student = $this->account(['student']);
+        $this->enrollmentDetail($student, $this->enrollmentClass());
+        $this->enrollmentDetail($student, $this->enrollmentClass());
+        $this->enrollmentMigration()->up();
+        $before = DB::table('audit_logs')->orderBy('audit_log_id')->get()->toJson();
+        $secondId = AuditLog::orderByDesc('audit_log_id')->first()->getKey();
+        DB::statement("CREATE TRIGGER reject_enrollment_actor BEFORE UPDATE ON audit_logs
+            WHEN NEW.audit_log_id = {$secondId}
+            BEGIN SELECT RAISE(ABORT, 'Simulated actor recovery failure'); END");
+
+        try {
+            $this->enrollmentActorMigration()->up();
+            $this->fail('Actor recovery must roll back a failed batch.');
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString('Simulated actor recovery failure', $exception->getMessage());
+        }
+
+        $this->assertSame($before, DB::table('audit_logs')->orderBy('audit_log_id')->get()->toJson());
+        DB::statement('DROP TRIGGER reject_enrollment_actor');
+        $this->enrollmentActorMigration()->up();
+        $this->assertSame(2, AuditLog::whereNotNull('user_id')->count());
     }
 
     public function test_missing_account_creation_backfill_is_idempotent_and_preserves_accounts_and_existing_logs(): void
@@ -1592,15 +1700,139 @@ class UserAjaxUpdateTest extends TestCase
         Mail::assertNothingSent();
     }
 
-    public function test_ajax_creation_reports_email_failure_as_a_warning_after_saving(): void
+    #[DataProvider('portals')]
+    public function test_account_creation_does_not_email_after_a_late_audit_failure_and_can_be_retried(string $portal, string $actorRole): void
+    {
+        Mail::fake();
+        $this->signInAccount($this->actor($actorRole));
+        $payload = $this->creationPayload('student');
+        DB::statement("CREATE TRIGGER reject_audit_metadata BEFORE UPDATE ON audit_logs
+            BEGIN SELECT RAISE(ABORT, 'Late audit failure'); END");
+
+        $this->postJson(route("{$portal}.users.store"), $payload)->assertStatus(500);
+
+        $this->assertDatabaseMissing('users', ['email' => $payload['email']]);
+        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseCount('student_profiles', 0);
+        $this->assertDatabaseCount('audit_logs', 0);
+        $this->assertDatabaseCount('app_notifications', 0);
+        Mail::assertNothingSent();
+
+        DB::statement('DROP TRIGGER reject_audit_metadata');
+        $this->postJson(route("{$portal}.users.store"), $payload)->assertCreated();
+        $this->assertDatabaseHas('users', ['email' => $payload['email']]);
+        $this->assertDatabaseCount('audit_logs', 1);
+        Mail::assertSent(\App\Mail\InitialAccountPasswordMail::class, 1);
+    }
+
+    #[DataProvider('portals')]
+    public function test_failed_creation_does_not_flash_a_success_message(string $portal, string $actorRole): void
+    {
+        Mail::fake();
+        $this->signInAccount($this->actor($actorRole));
+        DB::statement("CREATE TRIGGER reject_audit_metadata BEFORE UPDATE ON audit_logs
+            BEGIN SELECT RAISE(ABORT, 'Late audit failure'); END");
+
+        $this->post(route("{$portal}.users.store"), $this->creationPayload('student'))
+            ->assertStatus(500)->assertSessionMissing('status')->assertSessionMissing('mail_warning');
+        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseCount('audit_logs', 0);
+        Mail::assertNothingSent();
+    }
+
+    #[DataProvider('studentImportPortals')]
+    public function test_import_does_not_email_after_a_late_audit_failure_and_keeps_its_preview_for_retry(string $actorRole, string $routePrefix): void
+    {
+        Mail::fake();
+        $this->signInAccount($this->actor($actorRole));
+        $token = $this->previewStudentImport($routePrefix,
+            "student_number,first_name,last_name,email\n"
+            ."2026-90001,Juan,Dela Cruz,juan.import@example.test\n"
+            ."2026-90002,Maria,Santos,maria.import@example.test\n"
+        );
+        DB::statement("CREATE TRIGGER reject_audit_metadata BEFORE UPDATE ON audit_logs
+            BEGIN SELECT RAISE(ABORT, 'Late audit failure'); END");
+
+        $this->post(route("{$routePrefix}.confirm"), ['import_token' => $token])->assertStatus(500);
+
+        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseCount('student_profiles', 0);
+        $this->assertDatabaseCount('audit_logs', 0);
+        Mail::assertNothingSent();
+
+        DB::statement('DROP TRIGGER reject_audit_metadata');
+        $this->post(route("{$routePrefix}.confirm"), ['import_token' => $token])
+            ->assertRedirect()->assertSessionHasNoErrors()
+            ->assertSessionHas('status', '2 student accounts created successfully.')
+            ->assertSessionMissing('mail_warning');
+        $this->assertDatabaseCount('users', 3);
+        $this->assertDatabaseCount('audit_logs', 2);
+        Mail::assertSent(\App\Mail\InitialAccountPasswordMail::class, 2);
+    }
+
+    #[DataProvider('studentImportPortals')]
+    public function test_import_reports_email_failure_after_accounts_and_audits_have_committed(string $actorRole, string $routePrefix): void
+    {
+        Mail::fake();
+        $this->signInAccount($this->actor($actorRole));
+        $token = $this->previewStudentImport($routePrefix,
+            "student_number,first_name,last_name,email\n"
+            ."2026-90001,Juan,Dela Cruz,juan.import@example.test\n"
+            ."2026-90002,Maria,Santos,maria.import@example.test\n"
+        );
+        $this->partialMock(UserAccountService::class, function ($mock): void {
+            $mock->shouldReceive('sendInitialPasswordEmail')->twice()->andReturnUsing(function (User $user): bool {
+                $this->assertSame(0, DB::transactionLevel());
+                $this->assertDatabaseHas('users', ['id' => $user->id]);
+                $this->assertDatabaseCount('audit_logs', 2);
+
+                return false;
+            });
+        });
+
+        $this->post(route("{$routePrefix}.confirm"), ['import_token' => $token])
+            ->assertRedirect()->assertSessionHasNoErrors()
+            ->assertSessionHas('status', '2 student accounts created successfully.')
+            ->assertSessionHas('mail_warning', 'Some initial password emails were not delivered.');
+        $this->assertDatabaseCount('users', 3);
+        $this->assertDatabaseCount('audit_logs', 2);
+    }
+
+    #[DataProvider('portals')]
+    public function test_ajax_creation_reports_email_failure_as_a_warning_after_saving(string $portal, string $actorRole): void
     {
         $this->partialMock(UserAccountService::class, function ($mock) {
             $mock->shouldReceive('sendAccountCreatedNotification')->once();
-            $mock->shouldReceive('sendInitialPasswordEmail')->once()->andReturn(false);
+            $mock->shouldReceive('sendInitialPasswordEmail')->once()->andReturnUsing(function (User $user): bool {
+                $this->assertSame(0, DB::transactionLevel());
+                $this->assertDatabaseHas('users', ['id' => $user->id]);
+                $this->assertNotEmpty(AuditLog::sole()->metadata['changes']);
+
+                return false;
+            });
         });
-        $this->signInAccount($this->actor('super_admin'))->postJson(route('super-admin.users.store'), $this->creationPayload('student'))
+        $this->signInAccount($this->actor($actorRole))->postJson(route("{$portal}.users.store"), $this->creationPayload('student'))
             ->assertCreated()->assertJson(['warning' => 'Account was created, but the initial password email was not delivered.']);
         $this->assertDatabaseHas('users', ['email' => 'new-account@example.test']);
+    }
+
+    public function test_normal_creation_preserves_its_email_warning_after_commit(): void
+    {
+        $this->partialMock(UserAccountService::class, function ($mock): void {
+            $mock->shouldReceive('sendAccountCreatedNotification')->once();
+            $mock->shouldReceive('sendInitialPasswordEmail')->once()->andReturnUsing(function (): bool {
+                $this->assertSame(0, DB::transactionLevel());
+
+                return false;
+            });
+        });
+        $this->signInAccount($this->actor('super_admin'))->from(route('super-admin.users'))
+            ->post(route('super-admin.users.store'), $this->creationPayload('student'))
+            ->assertRedirect(route('super-admin.users'))
+            ->assertSessionHas('status', 'User account created successfully.')
+            ->assertSessionHas('mail_warning', 'Account was created, but the initial password email was not delivered.');
+        $this->assertDatabaseHas('users', ['email' => 'new-account@example.test']);
+        $this->assertDatabaseCount('audit_logs', 1);
     }
 
     public function test_normal_creation_still_redirects_with_a_success_message(): void
@@ -1772,6 +2004,11 @@ class UserAjaxUpdateTest extends TestCase
         return DB::table('classes')->insertGetId([
             'program_id' => 1, 'year_level' => 2, 'section_name' => 'BSIT 2-A', ...$attributes,
         ], 'class_id');
+    }
+
+    private function enrollmentActorMigration(): \Illuminate\Database\Migrations\Migration
+    {
+        return require database_path('migrations/2026_10_20_000002_restore_instructor_actors_for_recovered_enrollments.php');
     }
 
     private function enrollmentDetail(User $student, int $classId, array $attributes = []): int

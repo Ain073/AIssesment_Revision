@@ -7,6 +7,7 @@ use App\Support\RecordSearch;
 use App\Models\Program;
 use App\Models\Semester;
 use App\Models\Subject;
+use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -70,7 +71,14 @@ class SubjectController extends BaseController
             'semester_name' => ['required', 'string', Rule::in(Semester::names())],
         ]);
 
+        $before = Semester::orderBy('semester_id')->get(['semester_id', 'semester_name', 'is_active'])->toArray();
         $semester = Semester::activate($validated['semester_name']);
+        AuditLogger::logOrFail('ACTIVATE', 'Subjects', "Activated semester '{$semester->semester_name}'", $semester, [
+            'changes' => [[
+                'model' => Semester::class, 'id' => $semester->getKey(), 'before' => $before,
+                'after' => Semester::orderBy('semester_id')->get(['semester_id', 'semester_name', 'is_active'])->toArray(),
+            ]],
+        ]);
 
         Log::info('Active semester updated by department chair.', [
             'actor_id' => Auth::id(),

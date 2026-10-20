@@ -55,15 +55,13 @@ class StudentController extends BaseController
 
         abort_unless($department && $programs->isNotEmpty(), 403);
 
-        $result = $importer->confirm($request, $programs, $this->studentImportScope($department));
-
-        $redirect = redirect()
-            ->route('department-chair.students')
-            ->with('status', $result['created_count'].' student accounts created successfully.');
-
-        if ($result['initial_password_emails_sent'] < $result['created_count']) {
-            $redirect->with('mail_warning', 'Some initial password emails were not delivered.');
-        }
+        $redirect = redirect()->route('department-chair.students');
+        $importer->confirm($request, $programs, $this->studentImportScope($department), function (array $result) use ($redirect): void {
+            $redirect->with('status', $result['created_count'].' student accounts created successfully.');
+            if ($result['initial_password_emails_sent'] < $result['created_count']) {
+                $redirect->with('mail_warning', 'Some initial password emails were not delivered.');
+            }
+        });
 
         return $redirect;
     }

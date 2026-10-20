@@ -42,6 +42,7 @@ class NotificationAjaxTest extends TestCase
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
         });
+        $this->createAuditTables();
     }
 
     public function test_poll_returns_only_the_latest_eight_owned_notifications_and_total_unread_count(): void

@@ -1,9 +1,19 @@
 <?php
 
+use App\Http\Middleware\EnsureAccountSessionIsValid;
+use App\Http\Middleware\EnsureAdminDean;
+use App\Http\Middleware\EnsureDepartmentChair;
+use App\Http\Middleware\EnsureInstructor;
+use App\Http\Middleware\EnsurePasswordIsChanged;
+use App\Http\Middleware\EnsureStudent;
+use App\Http\Middleware\EnsureSuperAdmin;
+use App\Http\Middleware\PreventBrowserCache;
+use App\Http\Middleware\RecordAuditTrail;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Auth\Middleware\Authorize;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -15,16 +25,23 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
         $middleware->authenticateSessions();
-        $middleware->web(append: [\App\Http\Middleware\EnsureAccountSessionIsValid::class]);
+        $middleware->web(append: [
+            EnsureAccountSessionIsValid::class,
+            RecordAuditTrail::class,
+        ]);
+        $middleware->appendToPriorityList(
+            after: Authorize::class,
+            append: RecordAuditTrail::class,
+        );
 
         $middleware->alias([
-            'admin_dean' => \App\Http\Middleware\EnsureAdminDean::class,
-            'department_chair' => \App\Http\Middleware\EnsureDepartmentChair::class,
-            'instructor' => \App\Http\Middleware\EnsureInstructor::class,
-            'no_cache' => \App\Http\Middleware\PreventBrowserCache::class,
-            'password_changed' => \App\Http\Middleware\EnsurePasswordIsChanged::class,
-            'student' => \App\Http\Middleware\EnsureStudent::class,
-            'super_admin' => \App\Http\Middleware\EnsureSuperAdmin::class,
+            'admin_dean' => EnsureAdminDean::class,
+            'department_chair' => EnsureDepartmentChair::class,
+            'instructor' => EnsureInstructor::class,
+            'no_cache' => PreventBrowserCache::class,
+            'password_changed' => EnsurePasswordIsChanged::class,
+            'student' => EnsureStudent::class,
+            'super_admin' => EnsureSuperAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -23,6 +23,7 @@ class AccountSessionService
 
     public function changePassword(User $user, string $password, ?Request $currentRequest = null): void
     {
+        app(AuditTrailRecorder::class)->verifiedPasswordResetActor($user);
         $passwordHash = Hash::make($password);
         $startingVersion = (int) $user->session_version;
 
@@ -31,7 +32,7 @@ class AccountSessionService
 
             // Reject an authenticated change if another request already revoked this session.
             if ($currentRequest && (int) $lockedUser->session_version !== $startingVersion) {
-                throw new AuthenticationException();
+                throw new AuthenticationException;
             }
 
             $user->setRawAttributes($lockedUser->getAttributes(), true);
@@ -44,8 +45,10 @@ class AccountSessionService
         });
 
         if ($currentRequest) {
-            $currentRequest->session()->regenerate(true);
-            $this->rememberCurrentSession($currentRequest, $user);
+            $user->getConnection()->afterCommit(function () use ($currentRequest, $user): void {
+                $currentRequest->session()->regenerate(true);
+                $this->rememberCurrentSession($currentRequest, $user);
+            });
         }
     }
 

@@ -29,9 +29,15 @@ class AuditLogger
         string $module,
         string $description,
         ?Model $model = null,
+        array $metadata = [],
     ): void {
+        if (app(AuditTrailRecorder::class)->active()) {
+            self::logOrFail($action, $module, $description, $model, $metadata);
+
+            return;
+        }
         try {
-            self::logOrFail($action, $module, $description, $model);
+            self::logOrFail($action, $module, $description, $model, $metadata);
         } catch (\Throwable $exception) {
             Log::error('Audit log could not be recorded.', [
                 'action' => strtoupper($action),
@@ -52,8 +58,10 @@ class AuditLogger
         string $module,
         string $description,
         ?Model $model = null,
+        array $metadata = [],
     ): void {
-        $user = Auth::user();
+        $recorder = app(AuditTrailRecorder::class);
+        $user = $recorder->active() ? $recorder->actor() : Auth::user();
 
         // Determine the user's highest-priority role for snapshot
         $userRole = null;
@@ -72,7 +80,11 @@ class AuditLogger
             };
         }
 
-        AuditLog::create([
+        if ($user) {
+            $metadata['actor'] = ['id' => $user->id, 'name' => $user->displayName(), 'email' => $user->email];
+        }
+
+        $event = AuditLog::create([
             'user_id' => $user?->id,
             'user_role' => $userRole,
             'action' => strtoupper($action),
@@ -83,6 +95,8 @@ class AuditLogger
             'ip_address' => Request::ip(),
             'user_agent' => Request::userAgent(),
             'created_at' => now(),
+            ...($recorder->active() || $metadata !== [] ? ['metadata' => $metadata] : []),
         ]);
+        $recorder->explicit($event);
     }
 }

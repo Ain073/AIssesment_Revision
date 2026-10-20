@@ -77,7 +77,11 @@ class AuditLog extends Model
     public function userRoleLabel(): string
     {
         if ($this->isSystemMigration()) {
-            return $this->isHistoricalAccountCreation() || $this->isHistoricalEnrollment()
+            if ($this->isHistoricalEnrollment() || $this->isHistoricalInstructorEvent()) {
+                return $this->user_role === 'instructor' ? 'Instructor' : 'Unknown';
+            }
+
+            return $this->isHistoricalAccountCreation()
                 ? 'Unknown'
                 : ($this->isHistoricalSubmission() ? 'Student' : 'System');
         }
@@ -97,13 +101,22 @@ class AuditLog extends Model
      */
     public function actorName(): string
     {
+        if (! $this->isSystemMigration() && filled($this->metadata['actor']['name'] ?? null)) {
+            return $this->metadata['actor']['name'];
+        }
+
         if ($this->isSystemMigration()) {
             if ($this->isHistoricalAccountCreation()) {
                 return 'Creator unavailable';
             }
 
             if ($this->isHistoricalEnrollment()) {
-                return 'Enrolling user unavailable';
+                return $this->user?->displayName()
+                    ?? ($this->user_role === 'instructor' ? 'Deleted Account' : 'Enrolling user unavailable');
+            }
+
+            if ($this->isHistoricalInstructorEvent()) {
+                return $this->user?->displayName() ?? 'Deleted Account';
             }
 
             return $this->isHistoricalSubmission()
@@ -116,8 +129,13 @@ class AuditLog extends Model
 
     public function actorSubtitle(): string
     {
+        if (! $this->isSystemMigration() && filled($this->metadata['actor']['email'] ?? null)) {
+            return $this->metadata['actor']['email'];
+        }
+
         if ($this->isSystemMigration()) {
-            return $this->isHistoricalSubmission() ? ($this->user?->email ?? '') : '';
+            return $this->isHistoricalSubmission() || $this->isHistoricalEnrollment() || $this->isHistoricalInstructorEvent()
+                ? ($this->user?->email ?? '') : '';
         }
 
         return $this->user?->email ?? 'Deleted account';
@@ -139,11 +157,26 @@ class AuditLog extends Model
 
     private function isHistoricalSubmission(): bool
     {
-        // Only submission backfills identify a student; other backfills may identify a record owner.
+        // Submission backfills retain the submitting student's account reference.
         return $this->isSystemMigration()
             && $this->action === 'SUBMIT'
             && $this->module === 'Assessments'
             && $this->auditable_type === Submission::class;
+    }
+
+    private function isHistoricalInstructorEvent(): bool
+    {
+        if (! $this->isSystemMigration() || $this->user_role !== 'instructor') {
+            return false;
+        }
+
+        return match ([$this->module, $this->action, $this->auditable_type]) {
+            ['Classes', 'CREATE', AcademicClass::class],
+            ['Assessments', 'CREATE', Assessment::class],
+            ['Assessments', 'PUBLISH', PublishAssessment::class],
+            ['Reports', 'FINALIZE', Report::class] => true,
+            default => false,
+        };
     }
 
     private function isHistoricalAccountCreation(): bool
@@ -186,6 +219,11 @@ class AuditLog extends Model
 
     public function displayDescription(): string
     {
+        if ($this->isHistoricalEnrollment()) {
+            return preg_replace('/ \(recovered from saved roster\)\.$/', '', (string) $this->description)
+                ?? (string) $this->description;
+        }
+
         if ($this->isHistoricalAccountCreation()) {
             return preg_replace(
                 '/^Reconstructed creation entry for account (.+); original creator unavailable\.$/s',

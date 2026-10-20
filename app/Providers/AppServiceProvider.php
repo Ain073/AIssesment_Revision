@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Services\AuditTrailRecorder;
 use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +18,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->scoped(AuditTrailRecorder::class);
     }
 
     /**
@@ -25,6 +26,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        foreach (array_keys(AuditTrailRecorder::MODELS) as $model) {
+            $model::saving(fn ($record) => app(AuditTrailRecorder::class)->remember($record));
+            $model::deleting(fn ($record) => app(AuditTrailRecorder::class)->remember($record));
+        }
+
         if (app()->environment('production')) {
             URL::forceScheme('https');
         }

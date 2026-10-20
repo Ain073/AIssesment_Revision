@@ -9,6 +9,7 @@ use App\Models\DesignationDetail;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\AuditTrailRecorder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -86,6 +87,7 @@ class DesignationController extends BaseController
                 ->withErrors(new MessageBag(['designation' => 'Teacher must have an assigned department before receiving Department Chair designation.']));
         }
 
+        app(AuditTrailRecorder::class)->rememberDesignations($teacher);
         $roleId = Role::query()->where('role_name', 'department_chair')->value('role_id');
 
         // Conclude any prior active Department Chair appointment for this department
@@ -96,6 +98,7 @@ class DesignationController extends BaseController
             ->get();
 
         foreach ($priorChairs as $priorChair) {
+            app(AuditTrailRecorder::class)->remember($priorChair);
             DB::table('user_roles')->where('user_id', $priorChair->id)->where('role_id', $roleId)->delete();
         }
 
@@ -161,6 +164,7 @@ class DesignationController extends BaseController
     {
         $actor = $this->currentUser();
         $teacher = $this->scopedTeacher($user);
+        app(AuditTrailRecorder::class)->rememberDesignations($teacher);
         $roleId = Role::query()->where('role_name', 'department_chair')->value('role_id');
 
         DB::table('user_roles')
@@ -188,7 +192,7 @@ class DesignationController extends BaseController
             'email' => $teacher->email,
         ]);
 
-        AuditLogger::log('REVOKE', 'Designations', "Revoked Department Chair designation from {$teacher->displayName()}");
+        AuditLogger::log('REVOKE', 'Designations', "Revoked Department Chair designation from {$teacher->displayName()}", $teacher);
 
         return redirect()
             ->back()

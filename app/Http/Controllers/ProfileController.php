@@ -86,12 +86,14 @@ class ProfileController extends Controller
         $previousPhoto = clone $user;
         $user->update($photoAttributes);
 
-        // Keep the existing file until its replacement has been saved successfully.
-        try {
-            $this->deleteExistingProfilePhoto($previousPhoto);
-        } catch (\Throwable) {
-            Log::warning('Previous profile picture could not be cleaned up.', ['user_id' => $user->id]);
-        }
+        // Retain the previous image if the database or required audit write fails.
+        $user->getConnection()->afterCommit(function () use ($previousPhoto, $user): void {
+            try {
+                $this->deleteExistingProfilePhoto($previousPhoto);
+            } catch (\Throwable) {
+                Log::warning('Previous profile picture could not be cleaned up.', ['user_id' => $user->id]);
+            }
+        });
 
         if ($request->expectsJson()) {
             return response()->json([

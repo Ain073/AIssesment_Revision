@@ -32,6 +32,7 @@ class ProfilePhotoAjaxTest extends TestCase
         DB::statement('CREATE TABLE instructor_profiles (instructor_profile_id INTEGER PRIMARY KEY, user_id INTEGER, department_id INTEGER)');
         DB::statement('CREATE TABLE student_profiles (student_profile_id INTEGER PRIMARY KEY, user_id INTEGER, program_id INTEGER)');
         DB::statement('CREATE TABLE app_notifications (notification_id INTEGER PRIMARY KEY, public_id TEXT, user_id INTEGER, title TEXT, message TEXT, type TEXT, link TEXT, read_at DATETIME, created_at DATETIME, updated_at DATETIME)');
+        $this->createAuditTables();
         Storage::fake('public');
         Storage::fake('s3', ['url' => 'https://assets.example.test']);
         Http::preventStrayRequests();

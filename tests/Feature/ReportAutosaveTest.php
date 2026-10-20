@@ -40,6 +40,7 @@ class ReportAutosaveTest extends TestCase
             DB::statement("CREATE TABLE {$table} ({$columns})");
         }
         (require database_path('migrations/2026_10_17_000001_add_revision_to_reports_table.php'))->up();
+        $this->createAuditTables();
         $this->instructor = $this->account();
         $this->published = $this->assessmentFor($this->instructor);
         $this->signIn($this->instructor);

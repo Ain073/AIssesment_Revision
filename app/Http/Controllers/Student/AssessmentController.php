@@ -249,7 +249,7 @@ class AssessmentController extends BaseController
 
             $publishAssessment->loadMissing('assessment', 'classDetail.class.instructorProfile.user');
 
-        AuditLogger::log('SUBMIT', 'Assessments', "Submitted attempt for '{$publishAssessment->assessment?->title}' ({$publishAssessment->classDetail?->class?->class_name})", $publishAssessment->assessment);
+        AuditLogger::log('SUBMIT', 'Assessments', "Submitted attempt for '{$publishAssessment->assessment?->title}' ({$publishAssessment->classDetail?->class?->class_name})", $submission);
 
             if ($publishAssessment->class?->instructorProfile?->user) {
                 app(NotificationService::class)->send(
@@ -376,7 +376,7 @@ class AssessmentController extends BaseController
 
         $publishAssessment->loadMissing('assessment', 'classDetail.class.instructorProfile.user');
 
-        AuditLogger::log('SUBMIT', 'Assessments', "Submitted attempt for '{$publishAssessment->assessment?->title}' ({$publishAssessment->classDetail?->class?->class_name})", $publishAssessment->assessment);
+        AuditLogger::log('SUBMIT', 'Assessments', "Submitted attempt for '{$publishAssessment->assessment?->title}' ({$publishAssessment->classDetail?->class?->class_name})", $submission);
 
         if ($publishAssessment->class?->instructorProfile?->user) {
             app(NotificationService::class)->send(

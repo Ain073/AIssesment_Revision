@@ -126,9 +126,6 @@
                             <td class="ps-4 mobile-primary-cell" data-label="Timestamp">
                                 <p class="fw-semibold mb-0" style="color: var(--psu-navy);">{{ $log->created_at->format('M d, Y') }}</p>
                                 <p class="small text-secondary mb-0">{{ $log->created_at->format('h:i A') }}</p>
-                                @if ($log->isHistoricalEnrollment())
-                                    <p class="small text-secondary mb-0">{{ ($log->metadata['timestamp_source'] ?? null) === 'class_details.created_at' ? 'Roster record date; enrollment date unavailable' : 'Recovery date; enrollment date unavailable' }}</p>
-                                @endif
                             </td>
 
                             {{-- Actor --}}
