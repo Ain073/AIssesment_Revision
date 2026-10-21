@@ -136,6 +136,15 @@ class UserController extends Controller
         return redirect()->route('super-admin.users', ['import_token' => $token]);
     }
 
+    public function reviewStudentImport(Request $request, StudentAccountImportService $importer): RedirectResponse
+    {
+        $programs = Program::query()->orderBy('program_name')->get();
+        abort_if($programs->isEmpty(), 403);
+        $token = $importer->review($request, $programs, 'super-admin');
+
+        return redirect()->route('super-admin.users', ['import_token' => $token]);
+    }
+
     public function confirmStudentImport(Request $request, StudentAccountImportService $importer): RedirectResponse
     {
         $programs = Program::query()->orderBy('program_name')->get();

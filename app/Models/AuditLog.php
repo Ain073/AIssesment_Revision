@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class AuditLog extends Model
 {
+    public const APPLICATION_SOURCE = 'application';
+
     protected $primaryKey = 'audit_log_id';
 
     // Audit logs are append-only — no updated_at
@@ -58,13 +60,16 @@ class AuditLog extends Model
             $placeholder->where('module', 'Users')->where('action', 'CREATE')
                 ->where('auditable_type', User::class)
                 ->whereNotNull('user_agent')->where('user_agent', 'System Migration')
+                ->where(fn ($source) => $source->whereNull('metadata->event_source')
+                    ->orWhere('metadata->event_source', '!=', self::APPLICATION_SOURCE))
                 ->whereExists(function ($actual) {
                     $actual->selectRaw('1')->from('audit_logs as actual_creation')
                         ->whereColumn('actual_creation.auditable_id', 'audit_logs.auditable_id')
                         ->where('actual_creation.auditable_type', User::class)
                         ->where('actual_creation.module', 'Users')->where('actual_creation.action', 'CREATE')
                         ->where(fn ($agent) => $agent->whereNull('actual_creation.user_agent')
-                            ->orWhere('actual_creation.user_agent', '!=', 'System Migration'));
+                            ->orWhere('actual_creation.user_agent', '!=', 'System Migration')
+                            ->orWhere('actual_creation.metadata->event_source', self::APPLICATION_SOURCE));
                 });
         });
     }
@@ -143,7 +148,8 @@ class AuditLog extends Model
 
     public function isSystemMigration(): bool
     {
-        return $this->user_agent === 'System Migration';
+        return $this->user_agent === 'System Migration'
+            && ($this->metadata['event_source'] ?? null) !== self::APPLICATION_SOURCE;
     }
 
     public function isHistoricalEnrollment(): bool
@@ -219,6 +225,17 @@ class AuditLog extends Model
 
     public function displayDescription(): string
     {
+        if ($this->module === 'Users' && $this->action === 'CREATE'
+            && $this->auditable_type === User::class
+            && $this->user_agent === 'Manual Creator Confirmation'
+            && ($this->metadata['recovery_method'] ?? null) === 'administrator_confirmed_creator') {
+            // Keep correction provenance in storage; use ordinary creation wording in the UI.
+            return preg_replace([
+                '/^Created account for (.+) \(creator confirmed by administrator\)\.$/s',
+                '/^User account for (.+) created\. Creator confirmed by administrator\.$/s',
+            ], 'Created account for $1', (string) $this->description) ?? (string) $this->description;
+        }
+
         if ($this->isHistoricalEnrollment()) {
             return preg_replace('/ \(recovered from saved roster\)\.$/', '', (string) $this->description)
                 ?? (string) $this->description;

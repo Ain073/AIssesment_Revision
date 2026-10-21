@@ -17,8 +17,10 @@ use App\Models\SubmissionSecurityEvent;
 use App\Models\Subject;
 use App\Models\User;
 use App\Services\AccountSessionService;
+use App\Services\AuditLogger;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -166,6 +168,230 @@ class AuditTrailCoverageTest extends TestCase
         $this->assertSame(1, AuditLog::where('action', 'REQUEST_JOIN')->count());
     }
 
+    public static function classRosterFormats(): array
+    {
+        return ['csv' => ['csv', '23-SC-4217'], 'xlsx' => ['xlsx', '23-Sc-4217']];
+    }
+
+    #[DataProvider('classRosterFormats')]
+    public function test_class_import_matches_student_numbers_without_case_and_enrolls_each_student_once(string $format, string $storedNumber): void
+    {
+        $teacher = $this->account('instructor');
+        $student = $this->account('student');
+        $student->studentProfile->update(['student_number' => $storedNumber]);
+        $class = $this->classFor($teacher);
+        $before = $this->userState();
+        $response = $this->signIn($teacher)->post(route('instructor.classes.students.import.preview', $class), [
+            'student_file' => $this->classRosterFile($format, [' 23-sc-4217 ', '23-SC-4217', '23-sC-4217', '23-sc-missing']),
+        ])->assertSessionHasNoErrors()->assertRedirect();
+        parse_str(parse_url($response->headers->get('Location'), PHP_URL_QUERY), $query);
+        $token = $query['import_token'];
+        $preview = session("class_student_imports.{$token}");
+        $this->assertSame(['total' => 2, 'ready' => 1, 'already_enrolled' => 0, 'inactive' => 0, 'not_found' => 1], $preview['summary']);
+        $this->assertSame([$student->studentProfile->getKey()], $preview['student_profile_ids']);
+        $this->assertSame('23-sc-4217', $preview['rows'][0]['student_number']);
+        $this->assertSame('Ready', $preview['rows'][0]['status_badge']);
+        $this->assertSame($before, $this->userState());
+        $this->assertFalse($class->hasStudent($student->studentProfile));
+
+        $this->post(route('instructor.classes.students.import.confirm', $class), ['import_token' => $token])
+            ->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertSame(1, $class->classDetails()->where('student_id', $student->studentProfile->getKey())->count());
+        $this->assertSame($before, $this->userState());
+        $this->assertSame($teacher->id, AuditLog::where('action', 'ENROLL')->sole()->user_id);
+    }
+
+    public function test_class_import_rejects_txt_uploads_without_changing_accounts_or_enrollments(): void
+    {
+        $teacher = $this->account('instructor');
+        $student = $this->account('student');
+        $class = $this->classFor($teacher);
+        $before = $this->userState();
+
+        $this->signIn($teacher)->post(route('instructor.classes.students.import.preview', $class), [
+            'student_file' => $this->classRosterFile('txt', [$student->studentProfile->student_number]),
+        ])->assertRedirect()->assertSessionHasErrors('student_file')->assertSessionMissing('class_student_imports');
+
+        $this->assertSame($before, $this->userState());
+        $this->assertFalse($class->hasStudent($student->studentProfile));
+        $this->assertDatabaseCount('audit_logs', 0);
+        $this->assertDatabaseCount('app_notifications', 0);
+    }
+
+    public function test_case_insensitive_class_import_keeps_inactive_and_already_enrolled_checks(): void
+    {
+        $teacher = $this->account('instructor');
+        $enrolled = $this->account('student');
+        $inactive = $this->account('student');
+        $enrolled->studentProfile->update(['student_number' => '23-SC-1001']);
+        $inactive->studentProfile->update(['student_number' => '23-SC-1002']);
+        $inactive->update(['status' => 'inactive']);
+        StudentProfile::create(['user_id' => $teacher->id, 'program_id' => 1, 'student_number' => '23-SC-1003']);
+        $class = $this->classFor($teacher);
+        $class->addStudentWithMethod($enrolled->studentProfile, ClassDetail::METHOD_MANUAL_ADD);
+        $before = $this->userState();
+        $response = $this->signIn($teacher)->post(route('instructor.classes.students.import.preview', $class), [
+            'student_file' => $this->classRosterFile('csv', ['23-sc-1001', '23-sc-1002', '23-sc-1003']),
+        ])->assertSessionHasNoErrors()->assertRedirect();
+        parse_str(parse_url($response->headers->get('Location'), PHP_URL_QUERY), $query);
+        $preview = session('class_student_imports.'.$query['import_token']);
+        $this->assertSame(['total' => 3, 'ready' => 0, 'already_enrolled' => 1, 'inactive' => 1, 'not_found' => 1], $preview['summary']);
+        $this->assertSame([], $preview['student_profile_ids']);
+        $this->assertSame($before, $this->userState());
+    }
+
+    public function test_class_import_exclusions_preserve_accounts_and_existing_enrollments(): void
+    {
+        $teacher = $this->account('instructor');
+        $kept = $this->account('student');
+        $extra = $this->account('student');
+        $already = $this->account('student');
+        $inactive = $this->account('student');
+        $inactive->update(['status' => 'inactive']);
+        $class = $this->classFor($teacher);
+        $class->addStudentWithMethod($already->studentProfile, ClassDetail::METHOD_MANUAL_ADD);
+        $existingDetails = $class->classDetails()->where('student_id', $already->studentProfile->getKey())->get()->toJson();
+        $this->signIn($teacher);
+        [$token, $preview] = $this->previewClassRoster($class, [
+            $kept->studentProfile->student_number, $extra->studentProfile->student_number,
+            $already->studentProfile->student_number, $inactive->studentProfile->student_number, 'MISSING-STUDENT',
+        ]);
+        $before = $this->userState();
+        $this->assertSame(2, $preview['summary']['ready']);
+        $this->assertSame($extra->studentProfile->getKey(), $preview['rows'][1]['student_profile_id']);
+
+        $html = view('instructor.classes.import-preview-popup', ['class' => $class, 'importPreview' => ['token' => $token, ...$preview]])->render();
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($html);
+        $xpath = new \DOMXPath($dom);
+        $this->assertSame(1, $xpath->query('//form[@data-class-roster-import]')->length);
+        $this->assertSame(5, $xpath->query('//form[@data-class-roster-import]//input[@name="excluded_rows[]" and @disabled]')->length);
+        $this->assertSame(5, $xpath->query('//form[@data-class-roster-import]//button[@data-roster-toggle and @type="button"]')->length);
+        $this->assertSame($before, $this->userState());
+        $this->assertFalse($class->hasStudent($kept->studentProfile));
+
+        $this->post(route('instructor.classes.students.import.confirm', $class), [
+            'import_token' => $token, 'excluded_rows' => ['1', '2', '3', '4'],
+        ])->assertRedirect()->assertSessionHasNoErrors()->assertSessionHas('status', '1 student imported successfully.');
+        $this->assertTrue($class->hasStudent($kept->studentProfile));
+        $this->assertFalse($class->hasStudent($extra->studentProfile));
+        $this->assertTrue($class->hasStudent($already->studentProfile));
+        $this->assertFalse($class->hasStudent($inactive->studentProfile));
+        $this->assertSame($existingDetails, $class->classDetails()->where('student_id', $already->studentProfile->getKey())->get()->toJson());
+        $this->assertSame($before, $this->userState());
+        $event = AuditLog::where('action', 'ENROLL')->sole();
+        $this->assertSame($teacher->id, $event->user_id);
+        $detail = ClassDetail::findOrFail($event->auditable_id);
+        $this->assertSame($kept->studentProfile->getKey(), $detail->student_id);
+        $this->assertDatabaseCount('app_notifications', 1);
+        $this->assertDatabaseHas('app_notifications', ['user_id' => $kept->id]);
+    }
+
+    public function test_class_import_cannot_confirm_when_all_ready_students_are_removed(): void
+    {
+        $teacher = $this->account('instructor');
+        $student = $this->account('student');
+        $class = $this->classFor($teacher);
+        $this->signIn($teacher);
+        [$token] = $this->previewClassRoster($class, [$student->studentProfile->student_number]);
+        $before = $this->userState();
+        $this->post(route('instructor.classes.students.import.confirm', $class), ['import_token' => $token, 'excluded_rows' => ['0']])
+            ->assertSessionHasErrors('student_file')->assertSessionHas("class_student_imports.{$token}");
+        $this->assertFalse($class->hasStudent($student->studentProfile));
+        $this->assertSame($before, $this->userState());
+        $this->assertDatabaseCount('audit_logs', 0);
+        $this->assertDatabaseCount('app_notifications', 0);
+    }
+
+    public static function invalidRosterExclusions(): array
+    {
+        return ['outside preview' => [[999]], 'negative row' => [[-1]], 'non-numeric row' => [['invalid']], 'duplicates' => [[0, 0]], 'not an array' => ['0']];
+    }
+
+    #[DataProvider('invalidRosterExclusions')]
+    public function test_class_import_rejects_invalid_exclusion_rows_without_enrollment(mixed $excluded): void
+    {
+        $teacher = $this->account('instructor');
+        $student = $this->account('student');
+        $class = $this->classFor($teacher);
+        $this->signIn($teacher);
+        [$token] = $this->previewClassRoster($class, [$student->studentProfile->student_number]);
+        $this->post(route('instructor.classes.students.import.confirm', $class), ['import_token' => $token, 'excluded_rows' => $excluded])
+            ->assertSessionHasErrors()->assertSessionHas("class_student_imports.{$token}");
+        $this->assertFalse($class->hasStudent($student->studentProfile));
+        $this->assertDatabaseCount('audit_logs', 0);
+        $this->assertDatabaseCount('app_notifications', 0);
+    }
+
+    public function test_class_import_does_not_silently_ignore_removals_from_an_older_preview(): void
+    {
+        $teacher = $this->account('instructor');
+        $student = $this->account('student');
+        $class = $this->classFor($teacher);
+        $this->signIn($teacher);
+        [$token, $preview] = $this->previewClassRoster($class, [$student->studentProfile->student_number]);
+        unset($preview['rows'][0]['student_profile_id'], $preview['rows'][0]['status_key']);
+        $this->withSession(["class_student_imports.{$token}" => $preview])->post(route('instructor.classes.students.import.confirm', $class), [
+            'import_token' => $token, 'excluded_rows' => ['0'],
+        ])->assertSessionHasErrors('student_file');
+        $this->assertFalse($class->hasStudent($student->studentProfile));
+        $this->assertDatabaseCount('audit_logs', 0);
+    }
+
+    public function test_class_import_cannot_add_a_student_outside_its_validated_preview(): void
+    {
+        $teacher = $this->account('instructor');
+        $allowed = $this->account('student');
+        $outsider = $this->account('student');
+        $class = $this->classFor($teacher);
+        $this->signIn($teacher);
+        [$token] = $this->previewClassRoster($class, [$allowed->studentProfile->student_number]);
+        $this->post(route('instructor.classes.students.import.confirm', $class), [
+            'import_token' => $token, 'student_profile_ids' => [$outsider->studentProfile->getKey()],
+        ])->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertTrue($class->hasStudent($allowed->studentProfile));
+        $this->assertFalse($class->hasStudent($outsider->studentProfile));
+    }
+
+    public static function changedRosterAccounts(): array
+    {
+        return ['inactive account' => ['inactive'], 'student role removed' => ['role']];
+    }
+
+    #[DataProvider('changedRosterAccounts')]
+    public function test_class_import_rechecks_remaining_students_and_can_exclude_a_changed_account(string $change): void
+    {
+        $teacher = $this->account('instructor');
+        $kept = $this->account('student');
+        $changed = $this->account('student');
+        $class = $this->classFor($teacher);
+        $this->signIn($teacher);
+        [$token] = $this->previewClassRoster($class, [$kept->studentProfile->student_number, $changed->studentProfile->student_number]);
+        if ($change === 'inactive') $changed->update(['status' => 'inactive']);
+        else $changed->roles()->detach();
+        $before = $this->userState();
+        $this->post(route('instructor.classes.students.import.confirm', $class), ['import_token' => $token])
+            ->assertSessionHasErrors('student_file')->assertSessionHas("class_student_imports.{$token}");
+        $this->assertFalse($class->hasStudent($kept->studentProfile));
+        $this->assertDatabaseCount('audit_logs', 0);
+        $this->post(route('instructor.classes.students.import.confirm', $class), ['import_token' => $token, 'excluded_rows' => ['1']])
+            ->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertTrue($class->hasStudent($kept->studentProfile));
+        $this->assertFalse($class->hasStudent($changed->studentProfile));
+        $this->assertSame($before, $this->userState());
+        $this->assertDatabaseCount('audit_logs', 1);
+    }
+
+    private function previewClassRoster(AcademicClass $class, array $numbers): array
+    {
+        $response = $this->post(route('instructor.classes.students.import.preview', $class), [
+            'student_file' => $this->classRosterFile('csv', $numbers),
+        ])->assertSessionHasNoErrors()->assertRedirect();
+        parse_str(parse_url($response->headers->get('Location'), PHP_URL_QUERY), $query);
+
+        return [$query['import_token'], session('class_student_imports.'.$query['import_token'])];
+    }
+
     public function test_a_caught_nested_rollback_does_not_create_a_false_audit_entry(): void
     {
         Route::middleware('web')->post('/audit-tests/rollback', function () {
@@ -182,6 +408,135 @@ class AuditTrailCoverageTest extends TestCase
         $this->signIn($this->account('department_chair'))->postJson('/audit-tests/rollback')->assertOk();
         $this->assertSame('Program', Program::findOrFail(1)->program_name);
         $this->assertDatabaseCount('audit_logs', 0);
+    }
+
+    public static function partialAccountEvents(): array
+    {
+        return ['one account' => ['account'], 'import summary' => ['summary'], 'different action' => ['update']];
+    }
+
+    #[DataProvider('partialAccountEvents')]
+    public function test_each_new_account_gets_its_own_creation_event(string $mode): void
+    {
+        $actor = $this->account('super_admin');
+        $historical = AuditLog::create([
+            'user_id' => $actor->id, 'user_role' => 'super_admin', 'module' => 'Auth', 'action' => 'LOGIN',
+            'description' => 'Existing history', 'created_at' => '2026-09-01 08:00:00',
+            'metadata' => ['legacy' => 'preserve this record'],
+        ]);
+        $before = $historical->fresh()->getRawOriginal();
+        $accountIds = [];
+        Route::middleware('web')->post('/audit-tests/account-batch', function () use ($mode, &$accountIds) {
+            $first = $this->account('student');
+            $second = $this->account('student');
+            $accountIds = [$first->id, $second->id];
+            if ($mode === 'summary') {
+                AuditLogger::logOrFail('IMPORT', 'Users', 'Imported two accounts');
+            } else {
+                AuditLogger::logOrFail($mode === 'account' ? 'CREATE' : 'UPDATE', 'Users', 'Account operation', $first);
+            }
+
+            return response()->json(['ok' => true]);
+        });
+
+        $this->signIn($actor)->postJson('/audit-tests/account-batch')->assertOk();
+        $events = AuditLog::where('module', 'Users')->where('action', 'CREATE')->get();
+        $this->assertCount(2, $events);
+        $this->assertEqualsCanonicalizing($accountIds, $events->pluck('auditable_id')->all());
+        foreach ($events as $event) {
+            $this->assertSame($actor->id, $event->user_id);
+            $this->assertSame('super_admin', $event->user_role);
+            $this->assertSame(User::class, $event->auditable_type);
+            $this->assertSame([$event->auditable_id], collect($event->metadata['changes'])
+                ->where('model', User::class)->pluck('id')->all());
+        }
+        $this->assertSame($before, $historical->fresh()->getRawOriginal());
+    }
+
+    public function test_missing_account_event_failure_rolls_back_the_entire_batch(): void
+    {
+        $actor = $this->account('super_admin');
+        $before = $this->userState();
+        $secondAccountId = $actor->id + 2;
+        DB::statement("CREATE TRIGGER reject_second_account_event BEFORE INSERT ON audit_logs
+            WHEN NEW.module = 'Users' AND NEW.action = 'CREATE' AND NEW.auditable_id = {$secondAccountId}
+            BEGIN SELECT RAISE(ABORT, 'Second account audit failed'); END");
+        Route::middleware('web')->post('/audit-tests/account-batch-failure', function () {
+            $first = $this->account('student');
+            $this->account('student');
+            AuditLogger::logOrFail('CREATE', 'Users', 'First account created', $first);
+
+            return response()->json(['ok' => true]);
+        });
+        $this->withoutExceptionHandling();
+        try {
+            $this->signIn($actor)->postJson('/audit-tests/account-batch-failure');
+            $this->fail('Every account in the batch must have a durable creation event.');
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString('Second account audit failed', $exception->getMessage());
+        }
+        $this->assertSame($before, $this->userState());
+        $this->assertDatabaseCount('audit_logs', 0);
+    }
+
+    public function test_audit_failure_outside_the_recorder_rolls_back_its_transaction(): void
+    {
+        $this->actingAs($this->account('department_chair'));
+        DB::statement("CREATE TRIGGER reject_direct_audit BEFORE INSERT ON audit_logs
+            BEGIN SELECT RAISE(ABORT, 'Direct audit failed'); END");
+        try {
+            DB::transaction(function (): void {
+                $program = Program::findOrFail(1);
+                $program->update(['program_name' => 'Must roll back']);
+                AuditLogger::log('UPDATE', 'Programs', 'Updated program', $program);
+            });
+            $this->fail('An audit failure must propagate outside HTTP recording too.');
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString('Direct audit failed', $exception->getMessage());
+        }
+        $this->assertSame('Program', Program::findOrFail(1)->program_name);
+        $this->assertDatabaseCount('audit_logs', 0);
+    }
+
+    public function test_actor_identity_and_role_are_snapshotted_before_the_action(): void
+    {
+        $actor = $this->account('department_chair');
+        $identity = ['id' => $actor->id, 'name' => $actor->displayName(), 'email' => $actor->email];
+        Route::middleware('web')->post('/audit-tests/actor-rename', function () {
+            $user = Auth::user();
+            $user->update(['first_name' => 'Renamed', 'email' => 'after@example.test']);
+            $user->roles->firstWhere('role_name', 'department_chair')->role_name = 'student';
+            $user->roles()->sync([Role::firstOrCreate(['role_name' => 'student'])->getKey()]);
+            $user->unsetRelation('roles');
+            AuditLogger::logOrFail('UPDATE', 'Users', 'Changed account details', $user,
+                ['actor' => ['id' => 99999, 'name' => 'Untrusted actor'], 'event_source' => 'System Migration']);
+
+            return response()->json(['ok' => true]);
+        });
+        $this->signIn($actor)->postJson('/audit-tests/actor-rename')->assertOk();
+        $event = AuditLog::where('module', 'Users')->sole();
+        $this->assertSame($identity, $event->metadata['actor']);
+        $this->assertSame('department_chair', $event->user_role);
+        $this->assertSame('application', $event->metadata['event_source']);
+        $this->assertSame('after@example.test', $actor->fresh()->email);
+    }
+
+    public function test_adding_a_profile_to_an_existing_account_is_an_update(): void
+    {
+        $actor = $this->account('super_admin');
+        $target = $this->account('student');
+        $target->studentProfile->delete();
+        Route::middleware('web')->post('/audit-tests/profile-create', function () use ($target) {
+            StudentProfile::create(['user_id' => $target->id, 'program_id' => 1, 'student_number' => 'RESTORED-123']);
+
+            return response()->json(['ok' => true]);
+        });
+        $this->signIn($actor)->postJson('/audit-tests/profile-create')->assertOk();
+        $event = AuditLog::where('module', 'Users')->sole();
+        $this->assertSame('UPDATE', $event->action);
+        $this->assertSame(User::class, $event->auditable_type);
+        $this->assertSame($target->id, $event->auditable_id);
+        $this->assertDatabaseCount('users', 2);
     }
 
     public function test_historical_instructor_events_display_their_saved_actor_and_role(): void
@@ -360,6 +715,32 @@ class AuditTrailCoverageTest extends TestCase
         ]);
 
         return [$student, $published, $submission];
+    }
+
+    private function classRosterFile(string $format, array $numbers): UploadedFile
+    {
+        $contents = implode("\n", $format === 'txt' ? $numbers : ['student_number', ...$numbers])."\n";
+        if ($format === 'xlsx') {
+            $path = tempnam(sys_get_temp_dir(), 'class-roster-');
+            try {
+                $zip = new \ZipArchive;
+                $zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+                $rows = '';
+                foreach (['student_number', ...$numbers] as $index => $number) {
+                    $row = $index + 1;
+                    $value = htmlspecialchars($number, ENT_XML1);
+                    $rows .= "<row r=\"{$row}\"><c r=\"A{$row}\" t=\"inlineStr\"><is><t>{$value}</t></is></c></row>";
+                }
+                $zip->addFromString('xl/worksheets/sheet1.xml', '<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'.$rows.'</sheetData></worksheet>');
+                $zip->close();
+                $contents = file_get_contents($path);
+            } finally {
+                @unlink($path);
+            }
+        }
+
+        return UploadedFile::fake()->createWithContent('roster.'.$format, $contents)
+            ->mimeType($format === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/plain');
     }
 
     private function signIn(User $user): static

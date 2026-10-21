@@ -17,18 +17,45 @@ const target = () => ({
 });
 const settle = async () => { for (let i = 0; i < 8; i++) await Promise.resolve(); };
 
-const setup = ({ copy = false, tab = true, screenshot = false, limit = 0 } = {}) => {
+const setup = ({ copy = false, tab = true, screenshot = false, limit = 0, oneQuestion = false, questionSeconds = 0, count = 3, modalDelay = 0 } = {}) => {
     let now = 10000;
     let focused = true;
     let timerId = 0;
     const timers = new Map();
+    const intervals = new Set();
+    const modals = new Map();
     const requests = [];
     const window = target();
-    const element = () => ({ ...target(), style: {}, classList: { add() {}, remove() {}, toggle() {} }, matches: () => false });
+    const element = () => {
+        const classes = new Set();
+        return { ...target(), style: {}, textContent: '', disabled: false,
+            classList: { add: (...names) => names.forEach(name => classes.add(name)), remove: (...names) => names.forEach(name => classes.delete(name)),
+                toggle: (name, on) => on ? classes.add(name) : classes.delete(name), contains: name => classes.has(name) },
+            matches: () => false, focus() { this.focused = true; } };
+    };
     const nodes = Object.fromEntries([
         'assessmentAttemptForm', 'submitConfirmModal', 'warningCount', 'answeredCount',
         'progressBar', 'timeRemaining', 'submitConfirmMessage', 'submitConfirmAnswered',
+        'confirmSubmitAssessment',
     ].map(id => [id, element()]));
+    if (oneQuestion) {
+        nodes.currentQuestion = element();
+        for (const id of ['nextQuestionConfirmModal', 'nextQuestionNumber', 'leavingQuestionNumber', 'nextQuestionAnswerStatus', 'confirmNextQuestion', 'stayOnQuestion']) nodes[id] = element();
+    }
+    const cards = oneQuestion ? Array.from({ length: count }, (_, index) => {
+        const card = { ...element(), radio: { ...element(), checked: false }, remaining: element(), bar: element(), next: index < count - 1 ? element() : null,
+            dataset: { questionIndex: String(index) }, scrollIntoView() {},
+            querySelector(selector) {
+                if (selector === '[data-next-question]') return this.next;
+                if (selector === '[data-question-time-remaining]') return this.remaining;
+                if (selector === '[data-question-time-bar]') return this.bar;
+                return selector === 'input[type="radio"]:checked' && this.radio.checked ? this.radio : null;
+            },
+            querySelectorAll(selector) { return selector === 'input[type="radio"]' ? [this.radio] : []; },
+        };
+        return card;
+    }) : [];
+    const jumps = cards.map(element);
     nodes.assessmentAttemptForm.submit = () => { nodes.assessmentAttemptForm.submitted = true; };
     nodes.assessmentAttemptForm.requestSubmit = () => {
         if (!nodes.assessmentAttemptForm.emit('submit').prevented) nodes.assessmentAttemptForm.submit();
@@ -36,14 +63,16 @@ const setup = ({ copy = false, tab = true, screenshot = false, limit = 0 } = {})
     const document = {
         ...target(), hidden: false, activeElement: element(), hasFocus: () => focused,
         documentElement: { clientWidth: 1000, clientHeight: 800 },
-        querySelectorAll: () => [], querySelector: () => ({ value: 'test-csrf' }),
+        querySelectorAll: selector => selector === '[data-question-card]' ? cards : selector === '[data-question-jump]' ? jumps : [],
+        querySelector: () => ({ value: 'test-csrf' }),
         getElementById: id => nodes[id] || null,
     };
     Object.assign(window, {
         innerWidth: 1000, innerHeight: 800,
         visualViewport: { ...target(), width: 1000, height: 800, scale: 1 },
         setTimeout(fn, delay) { const id = ++timerId; timers.set(id, { fn, at: now + delay }); return id; },
-        setInterval: () => 1, clearInterval() {},
+        setInterval(fn, delay) { const id = ++timerId; intervals.add(id); timers.set(id, { fn, at: now + delay, interval: delay }); return id; },
+        clearInterval(id) { intervals.delete(id); timers.delete(id); },
         portalFetch: async (url, options) => {
             requests.push(JSON.parse(options.body).event_type);
             const warningCount = limit > 0 ? Math.min(requests.length, limit) : 0;
@@ -55,8 +84,8 @@ const setup = ({ copy = false, tab = true, screenshot = false, limit = 0 } = {})
         '$publishAssessment->prevent_copy_paste': copy,
         '$publishAssessment->detect_tab_switch': tab,
         '$publishAssessment->screenshot_protection': screenshot,
-        '$isOneQuestionMode': false,
-        '$questionTimeLimitSeconds': 0,
+        '$isOneQuestionMode': oneQuestion,
+        '$questionTimeLimitSeconds': questionSeconds,
         "route('student.assessments.security-events.store', $publishAssessment)": '/security-events',
         '$dueIso': null,
         '$submission->warning_count': 0,
@@ -67,7 +96,20 @@ const setup = ({ copy = false, tab = true, screenshot = false, limit = 0 } = {})
     vm.runInNewContext(script, {
         window, document, console,
         Date: class extends Date { static now() { return now; } },
-        bootstrap: { Modal: class { show() { nodes.submitConfirmModal.emit('shown.bs.modal'); } } },
+        bootstrap: { Modal: class {
+            constructor(node) { this.node = node; this.shown = false; this.transitioning = false; modals.set(node, this); }
+            transition(done) { if (modalDelay) window.setTimeout(done, modalDelay); else done(); }
+            show() {
+                if (this.shown || this.transitioning) return;
+                this.shown = true; this.transitioning = true; this.node.emit('show.bs.modal');
+                this.transition(() => { this.transitioning = false; this.node.emit('shown.bs.modal'); });
+            }
+            hide() {
+                if (!this.shown || this.transitioning) return;
+                this.transitioning = true;
+                this.transition(() => { this.shown = false; this.transitioning = false; this.node.emit('hidden.bs.modal'); });
+            }
+        } },
     });
     const advance = async (milliseconds = 150) => {
         const until = now + milliseconds;
@@ -76,10 +118,11 @@ const setup = ({ copy = false, tab = true, screenshot = false, limit = 0 } = {})
             if (!next) break;
             const [id, timer] = next;
             timers.delete(id); now = timer.at; timer.fn(); await settle();
+            if (timer.interval && intervals.has(id)) timers.set(id, { ...timer, at: now + timer.interval });
         }
         now = until; await settle();
     };
-    return { window, document, nodes, requests, advance, focus(value) { focused = value; window.emit(value ? 'focus' : 'blur'); } };
+    return { window, document, nodes, cards, jumps, modals, requests, advance, focus(value) { focused = value; window.emit(value ? 'focus' : 'blur'); } };
 };
 
 test('switching tabs records a warning and returning permits a later warning', async () => {
@@ -148,6 +191,136 @@ test('a window departure still triggers automatic submission at the warning limi
     env.focus(false); await env.advance();
     await env.advance(1200);
     assert.deepEqual(env.requests, ['window_blur']);
+    assert.equal(env.nodes.assessmentAttemptForm.submitted, true);
+});
+
+test('accidental Next only opens confirmation; cancelling keeps the question editable', () => {
+    const env = setup({ oneQuestion: true });
+    env.cards[0].next.emit('click');
+    assert.equal(env.nodes.currentQuestion.textContent, '1');
+    assert.equal(env.cards[0].classList.contains('question-expired'), false);
+    assert.equal(env.nodes.stayOnQuestion.focused, true);
+    assert.match(env.nodes.nextQuestionAnswerStatus.textContent, /not answered/);
+    env.modals.get(env.nodes.nextQuestionConfirmModal).hide();
+    assert.equal(env.nodes.currentQuestion.textContent, '1');
+    assert.equal(env.cards[0].radio.tabIndex, undefined);
+    assert.equal(env.nodes.assessmentAttemptForm.submitted, undefined);
+});
+
+test('Confirm and Next locks only the previous question and ignores duplicate confirmation taps', () => {
+    const env = setup({ oneQuestion: true });
+    env.cards[0].radio.checked = true;
+    env.cards[0].next.emit('click');
+    assert.match(env.nodes.nextQuestionAnswerStatus.textContent, /answer will be kept/);
+    env.nodes.confirmNextQuestion.emit('click');
+    env.nodes.confirmNextQuestion.emit('click');
+    assert.equal(env.nodes.currentQuestion.textContent, '2');
+    assert.equal(env.cards[0].classList.contains('question-expired'), true);
+    assert.equal(env.cards[0].radio.tabIndex, -1);
+    assert.equal(env.cards[1].classList.contains('active-question'), true);
+    assert.equal(env.cards[1].classList.contains('question-expired'), false);
+    env.cards[0].next.emit('click');
+    assert.equal(env.modals.get(env.nodes.nextQuestionConfirmModal).shown, false);
+});
+
+test('early implicit submission is blocked; the last question retains submission confirmation', () => {
+    const env = setup({ oneQuestion: true });
+    env.nodes.assessmentAttemptForm.requestSubmit();
+    env.nodes.confirmSubmitAssessment.emit('click');
+    assert.equal(env.nodes.assessmentAttemptForm.submitted, undefined);
+    assert.equal(env.modals.get(env.nodes.submitConfirmModal).shown, false);
+    for (let index = 0; index < 2; index++) {
+        env.cards[index].next.emit('click');
+        env.nodes.confirmNextQuestion.emit('click');
+    }
+    env.nodes.assessmentAttemptForm.requestSubmit();
+    assert.equal(env.modals.get(env.nodes.submitConfirmModal).shown, true);
+    assert.equal(env.nodes.assessmentAttemptForm.submitted, undefined);
+    env.nodes.confirmSubmitAssessment.emit('click');
+    assert.equal(env.nodes.assessmentAttemptForm.submitted, true);
+});
+
+test('a single-question assessment can submit immediately with confirmation', () => {
+    const env = setup({ oneQuestion: true, count: 1 });
+    env.nodes.assessmentAttemptForm.requestSubmit();
+    assert.equal(env.modals.get(env.nodes.submitConfirmModal).shown, true);
+    assert.equal(env.nodes.assessmentAttemptForm.submitted, undefined);
+});
+
+test('question timer keeps running during confirmation and expiry discards stale confirmation', async () => {
+    const env = setup({ oneQuestion: true, questionSeconds: 2 });
+    env.cards[0].next.emit('click');
+    await env.advance(1000);
+    assert.equal(env.cards[0].remaining.textContent, '00:01');
+    await env.advance(1700);
+    assert.equal(env.nodes.currentQuestion.textContent, '2');
+    assert.equal(env.modals.get(env.nodes.nextQuestionConfirmModal).shown, false);
+    env.nodes.confirmNextQuestion.emit('click');
+    assert.equal(env.nodes.currentQuestion.textContent, '2');
+    assert.equal(env.cards[1].classList.contains('question-expired'), false);
+});
+
+test('cancelling Next does not reset or pause the remaining question time', async () => {
+    const env = setup({ oneQuestion: true, questionSeconds: 4 });
+    env.cards[0].next.emit('click');
+    await env.advance(1000);
+    env.modals.get(env.nodes.nextQuestionConfirmModal).hide();
+    await env.advance(1000);
+    assert.equal(env.nodes.currentQuestion.textContent, '1');
+    assert.equal(env.cards[0].remaining.textContent, '00:02');
+});
+
+test('expiry during the modal opening transition still closes it and advances once', async () => {
+    const env = setup({ oneQuestion: true, questionSeconds: 1, modalDelay: 400 });
+    await env.advance(800);
+    env.cards[0].next.emit('click');
+    await env.advance(900);
+    assert.equal(env.nodes.currentQuestion.textContent, '2');
+    assert.equal(env.modals.get(env.nodes.nextQuestionConfirmModal).shown, false);
+});
+
+test('expiry while a confirmed modal is closing advances once without skipping the next question', async () => {
+    const env = setup({ oneQuestion: true, questionSeconds: 1, modalDelay: 400 });
+    env.cards[0].next.emit('click');
+    await env.advance(800);
+    env.nodes.confirmNextQuestion.emit('click');
+    await env.advance(900);
+    assert.equal(env.nodes.currentQuestion.textContent, '2');
+    assert.equal(env.cards[1].classList.contains('question-expired'), false);
+});
+
+test('confirmation tapped during its opening transition is applied after it closes', async () => {
+    const env = setup({ oneQuestion: true, modalDelay: 400 });
+    env.cards[0].next.emit('click');
+    env.nodes.confirmNextQuestion.emit('click');
+    await env.advance(800);
+    assert.equal(env.nodes.currentQuestion.textContent, '2');
+    assert.equal(env.modals.get(env.nodes.nextQuestionConfirmModal).shown, false);
+});
+
+test('last-question timer expiry still auto-submits without manual confirmation', async () => {
+    const env = setup({ oneQuestion: true, questionSeconds: 1, count: 1 });
+    await env.advance(1900);
+    assert.equal(env.nodes.assessmentAttemptForm.submitted, true);
+});
+
+test('Next confirmation does not disable tab-switch warnings', async () => {
+    const env = setup({ oneQuestion: true });
+    env.cards[0].next.emit('click');
+    env.document.hidden = true;
+    env.document.emit('visibilitychange');
+    await settle();
+    assert.deepEqual(env.requests, ['tab_hidden']);
+});
+
+test('security auto-submission still works before the last question with Next confirmation open', async () => {
+    const env = setup({ oneQuestion: true, limit: 1 });
+    env.cards[0].next.emit('click');
+    env.document.hidden = true;
+    env.document.emit('visibilitychange');
+    await settle();
+    await env.advance(1200);
+    assert.equal(env.nodes.currentQuestion.textContent, '1');
     assert.equal(env.nodes.assessmentAttemptForm.submitted, true);
 });
 

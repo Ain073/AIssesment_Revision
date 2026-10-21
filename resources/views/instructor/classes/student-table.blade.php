@@ -60,14 +60,19 @@
                         </td>
                         <td>
                             @if (! $class->archived_at)
-                                <form action="{{ route('instructor.classes.students.destroy', ['class' => $class, 'studentProfile' => $student]) }}" method="POST" onsubmit="return confirm('Remove this student from the class?');" data-ajax-form>
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1" type="submit">
-                                        <span class="material-symbols-outlined fs-6">delete</span>
-                                        Remove
-                                    </button>
-                                </form>
+                                <button
+                                    class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#removeClassStudentModal"
+                                    data-remove-class-student
+                                    data-remove-student-url="{{ route('instructor.classes.students.destroy', ['class' => $class, 'studentProfile' => $student]) }}"
+                                    data-student-name="{{ $studentDisplayName }}"
+                                    data-student-number="{{ $student->student_number ?? 'No student number' }}"
+                                    type="button"
+                                >
+                                    <span class="material-symbols-outlined fs-6">delete</span>
+                                    Remove
+                                </button>
                             @else
                                 <span class="text-secondary small">Record only</span>
                             @endif

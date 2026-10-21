@@ -91,6 +91,28 @@ class StudentAccountImportService
         ];
     }
 
+    /** Save and validate edits in the session without creating accounts. */
+    public function review(Request $request, Collection $programs, string $scope): string
+    {
+        $validated = $request->validateWithBag('studentImport', ['import_token' => ['required', 'uuid']]);
+        $oldKey = $this->sessionKey($validated['import_token']);
+        $storedImport = $request->session()->get($oldKey);
+        if (! $this->storedImportIsValid($storedImport, $request, $scope)) {
+            $this->throwValidationError('The import preview has expired. Upload the file again.');
+        }
+
+        $preview = $this->validateRows($this->draftRowsFromRequest($request, $storedImport), $programs);
+        $token = (string) Str::uuid();
+        $request->session()->put($this->sessionKey($token), array_replace($storedImport, [
+            'rows' => $preview['rows'], 'ready_rows' => $preview['ready_rows'], 'summary' => $preview['summary'],
+            'expires_at' => now()->addMinutes(15)->timestamp,
+        ]));
+        // An older tab must not create accounts from a superseded draft.
+        $request->session()->forget($oldKey);
+
+        return $token;
+    }
+
     /**
      * @param  Collection<int, Program>  $programs
      * @param  Closure(array{created_count: int, initial_password_emails_sent: int}): void  $onCommitted
@@ -109,6 +131,14 @@ class StudentAccountImportService
             $this->throwValidationError('The import preview has expired. Upload the file again.');
         }
 
+        if ($request->exists('draft_rows')) {
+            $submittedRows = $this->draftRowsFromRequest($request, $storedImport);
+            $savedRows = collect($storedImport['rows'])->map(fn (array $row): array => $this->editableRow($row));
+            if ($submittedRows->all() !== $savedRows->all()) {
+                $this->throwValidationError('Your edits have not been validated. Select Save & Validate before creating accounts.');
+            }
+        }
+
         $rows = collect($storedImport['ready_rows'] ?? [])
             ->filter(fn ($row) => is_array($row))
             ->values();
@@ -121,8 +151,8 @@ class StudentAccountImportService
         $hasInvalidProgram = $rows->contains(
             fn (array $row) => ! in_array((int) ($row['program_id'] ?? 0), $programIds, true)
         );
-        $emailConflict = User::query()->whereIn('email', $rows->pluck('email'))->exists();
-        $numberConflict = StudentProfile::query()->whereIn('student_number', $rows->pluck('student_number'))->exists();
+        $emailConflict = User::query()->whereIn(DB::raw('LOWER(email)'), $rows->pluck('email')->map(fn ($value) => Str::lower($value)))->exists();
+        $numberConflict = StudentProfile::query()->whereIn(DB::raw('LOWER(student_number)'), $rows->pluck('student_number')->map(fn ($value) => Str::lower($value)))->exists();
 
         if ($hasInvalidProgram || $emailConflict || $numberConflict) {
             $request->session()->forget($sessionKey);
@@ -268,25 +298,36 @@ class StudentAccountImportService
             'middle_name' => $valueAt($row, 'middle_name'),
             'last_name' => $valueAt($row, 'last_name'),
             'email' => Str::lower($valueAt($row, 'email')),
+            'program_id' => (int) $program->program_id,
         ]);
 
+        return $this->validateRows($parsedRows, collect([$program]));
+    }
+
+    private function validateRows(Collection $parsedRows, Collection $programs): array
+    {
+        $programsById = $programs->keyBy('program_id');
         $emailCounts = $parsedRows->pluck('email')->map(fn ($value) => Str::lower($value))->countBy();
         $numberCounts = $parsedRows->pluck('student_number')->map(fn ($value) => Str::lower($value))->countBy();
         $existingEmails = User::query()
-            ->whereIn('email', $parsedRows->pluck('email')->filter()->unique())
+            ->whereIn(DB::raw('LOWER(email)'), $parsedRows->pluck('email')->map(fn ($value) => Str::lower($value))->filter()->unique())
             ->pluck('email')->map(fn ($value) => Str::lower($value))->flip();
         $existingNumbers = StudentProfile::query()
-            ->whereIn('student_number', $parsedRows->pluck('student_number')->filter()->unique())
+            ->whereIn(DB::raw('LOWER(student_number)'), $parsedRows->pluck('student_number')->map(fn ($value) => Str::lower($value))->filter()->unique())
             ->pluck('student_number')->map(fn ($value) => Str::lower($value))->flip();
         $previewRows = [];
         $readyRows = [];
         $summary = ['total' => $parsedRows->count(), 'ready' => 0, 'duplicate' => 0, 'invalid' => 0];
 
         foreach ($parsedRows as $row) {
+            $program = $programsById->get($row['program_id']);
             $errors = [];
             $isDuplicate = false;
             $normalizedEmail = Str::lower($row['email']);
             $normalizedNumber = Str::lower($row['student_number']);
+            if (! $program) {
+                $errors[] = 'The selected program is invalid or outside your assigned scope.';
+            }
             foreach (['student_number', 'first_name', 'last_name', 'email'] as $field) {
                 if ($row[$field] === '') {
                     $errors[] = str_replace('_', ' ', ucfirst($field)).' is required.';
@@ -338,11 +379,12 @@ class StudentAccountImportService
             }
 
             $previewRows[] = [
+                ...$this->editableRow($row),
                 'line' => $row['line'],
                 'student_number' => $row['student_number'],
                 'student_name' => collect([$row['first_name'], $row['middle_name'], $row['last_name']])->filter()->implode(' '),
                 'email' => $row['email'],
-                'program_name' => $program->program_name,
+                'program_name' => $program?->program_name ?? 'Unavailable',
                 'result' => $result,
                 'result_class' => $resultClass,
                 'message' => implode(' ', $errors),
@@ -350,6 +392,42 @@ class StudentAccountImportService
         }
 
         return ['rows' => $previewRows, 'ready_rows' => $readyRows, 'summary' => $summary];
+    }
+
+    private function editableRow(array $row): array
+    {
+        return [
+            'line' => (int) $row['line'],
+            'student_number' => trim((string) ($row['student_number'] ?? '')),
+            'first_name' => trim((string) ($row['first_name'] ?? '')),
+            'middle_name' => trim((string) ($row['middle_name'] ?? '')),
+            'last_name' => trim((string) ($row['last_name'] ?? '')),
+            'email' => Str::lower(trim((string) ($row['email'] ?? ''))),
+            'program_id' => (int) ($row['program_id'] ?? 0),
+        ];
+    }
+
+    private function draftRowsFromRequest(Request $request, array $storedImport): Collection
+    {
+        // One JSON field also supports 200 editable rows without PHP's input-variable limit.
+        $validated = $request->validateWithBag('studentImport', ['draft_rows' => ['required', 'string', 'json', 'max:1000000']]);
+        $rows = json_decode($validated['draft_rows'], true, 512, JSON_THROW_ON_ERROR);
+        $savedRows = $storedImport['rows'] ?? [];
+        if (! is_array($rows) || ! array_is_list($rows) || count($rows) !== count($savedRows) || count($rows) < 1 || count($rows) > 200) {
+            $this->throwValidationError('The edited rows do not match this preview. Refresh the preview and try again.');
+        }
+        foreach ($rows as $index => &$row) {
+            if (! is_array($row)) $this->throwValidationError('The edited student record is invalid.');
+            foreach (['student_number', 'first_name', 'middle_name', 'last_name', 'email'] as $field) {
+                if (isset($row[$field]) && ! is_string($row[$field])) $this->throwValidationError('The edited student fields must be text.');
+            }
+            $programId = $row['program_id'] ?? '';
+            $row['program_id'] = is_int($programId) || (is_string($programId) && ctype_digit($programId)) ? (int) $programId : 0;
+            $row['line'] = $savedRows[$index]['line'];
+        }
+        unset($row);
+
+        return collect($rows)->map(fn (array $row): array => $this->editableRow($row));
     }
 
     private function storedImportIsValid(mixed $storedImport, Request $request, string $scope): bool

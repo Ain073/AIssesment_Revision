@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Models\AuditLog;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
+use LogicException;
 
 class AuditLogger
 {
@@ -31,11 +33,6 @@ class AuditLogger
         ?Model $model = null,
         array $metadata = [],
     ): void {
-        if (app(AuditTrailRecorder::class)->active()) {
-            self::logOrFail($action, $module, $description, $model, $metadata);
-
-            return;
-        }
         try {
             self::logOrFail($action, $module, $description, $model, $metadata);
         } catch (\Throwable $exception) {
@@ -46,6 +43,7 @@ class AuditLogger
                 'auditable_id' => $model?->getKey(),
                 'exception_type' => get_class($exception),
             ]);
+            throw $exception;
         }
     }
 
@@ -62,6 +60,7 @@ class AuditLogger
     ): void {
         $recorder = app(AuditTrailRecorder::class);
         $user = $recorder->active() ? $recorder->actor() : Auth::user();
+        $action = strtoupper($action);
 
         // Determine the user's highest-priority role for snapshot
         $userRole = null;
@@ -80,6 +79,15 @@ class AuditLogger
             };
         }
 
+        if ($module === 'Users' && $action === 'CREATE'
+            && (! $model instanceof User || ! $model->exists || $model->getKey() === null
+                || $user?->getKey() === null || $userRole === null)) {
+            throw new LogicException('User creation audit requires a saved account and a known actor with an assigned role.');
+        }
+
+        // Provenance comes from the server, never from caller metadata or a
+        // client-controlled User-Agent that happens to match a backfill label.
+        $metadata['event_source'] = AuditLog::APPLICATION_SOURCE;
         if ($user) {
             $metadata['actor'] = ['id' => $user->id, 'name' => $user->displayName(), 'email' => $user->email];
         }
@@ -87,7 +95,7 @@ class AuditLogger
         $event = AuditLog::create([
             'user_id' => $user?->id,
             'user_role' => $userRole,
-            'action' => strtoupper($action),
+            'action' => $action,
             'module' => $module,
             'description' => $description,
             'auditable_type' => $model ? get_class($model) : null,
@@ -95,7 +103,7 @@ class AuditLogger
             'ip_address' => Request::ip(),
             'user_agent' => Request::userAgent(),
             'created_at' => now(),
-            ...($recorder->active() || $metadata !== [] ? ['metadata' => $metadata] : []),
+            'metadata' => $metadata,
         ]);
         $recorder->explicit($event);
     }

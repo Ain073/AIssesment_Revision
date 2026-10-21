@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class ClassStudentController extends BaseController
@@ -173,7 +174,9 @@ class ClassStudentController extends BaseController
                 'required',
                 'file',
                 'max:2048',
+                'extensions:csv,xlsx',
                 'mimetypes:text/plain,text/csv,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                // Single-column CSV content can be detected as plain text.
                 'mimes:csv,txt,xlsx',
             ],
         ]);
@@ -240,6 +243,30 @@ class ClassStudentController extends BaseController
             ->unique()
             ->values();
 
+        $selection = $request->validate([
+            'excluded_rows' => ['sometimes', 'array', 'max:200'],
+            'excluded_rows.*' => ['required', 'integer', 'distinct', Rule::in(array_keys($storedImport['rows'] ?? []))],
+        ]);
+        $excludedIds = collect($selection['excluded_rows'] ?? [])->map(function ($index) use ($storedImport) {
+            $row = $storedImport['rows'][(int) $index];
+            if (($row['status_key'] ?? null) === 'ready' || ($row['status_badge'] ?? null) === 'Ready') {
+                if (empty($row['student_profile_id'])) {
+                    throw ValidationException::withMessages([
+                        'student_file' => 'This older preview needs refreshing. Upload the roster again before removing students.',
+                    ]);
+                }
+            }
+
+            return $row['student_profile_id'] ?? null;
+        })->filter();
+        // The session preview is the allowlist; the browser can only exclude rows.
+        $studentProfileIds = $studentProfileIds->diff($excludedIds)->values();
+        if ($studentProfileIds->isEmpty()) {
+            throw ValidationException::withMessages([
+                'student_file' => 'Select at least one Ready student. Use Undo to restore a removed student before confirming.',
+            ]);
+        }
+
         $alreadyEnrolledIds = collect($ownedClass->enrolledStudentIds())
             ->intersect($studentProfileIds);
 
@@ -253,7 +280,15 @@ class ClassStudentController extends BaseController
             $addedStudentProfiles = StudentProfile::query()
                 ->with('user')
                 ->whereIn('student_profile_id', $attachIds->all())
+                ->whereHas('user', fn ($query) => $query->where('status', 'active')
+                    ->whereHas('roles', fn ($role) => $role->where('role_name', 'student')))
                 ->get();
+
+            if ($addedStudentProfiles->count() !== $attachIds->count()) {
+                throw ValidationException::withMessages([
+                    'student_file' => 'Some selected student accounts changed after validation. Review or upload the roster again before importing.',
+                ]);
+            }
 
             $addedStudentProfiles->each(
                 fn (StudentProfile $studentProfile) => $ownedClass->addStudentWithMethod($studentProfile, ClassDetail::METHOD_IMPORT_FILE)

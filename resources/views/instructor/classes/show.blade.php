@@ -84,6 +84,36 @@
             min-width: 980px;
         }
 
+        .class-import-excluded .class-import-identity {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+
+        @media (max-width: 767.98px) {
+            .table-responsive > .class-import-preview-table { min-width: 0; }
+            .class-import-preview-table,
+            .class-import-preview-table tbody,
+            .class-import-preview-table tbody > tr,
+            .class-import-preview-table tbody > tr > td {
+                display: block;
+                width: 100%;
+            }
+            .class-import-preview-table thead { display: none; }
+            .class-import-preview-table tr[data-roster-row] {
+                padding: 1rem;
+                border-bottom: 1px solid var(--psu-line);
+            }
+            .class-import-preview-table tr[data-roster-row] > td { padding: 0.3rem 0; border: 0; overflow-wrap: anywhere; }
+            .class-import-preview-table td[data-label]::before {
+                content: attr(data-label);
+                display: block;
+                color: var(--psu-muted);
+                font-size: 0.7rem;
+                font-weight: 700;
+                text-transform: uppercase;
+            }
+        }
+
         .student-performance {
             min-width: 190px;
         }
@@ -350,6 +380,7 @@
         </div>
 
         @if (! $class->archived_at)
+            @include('instructor.classes.remove-student-popup')
             @include('instructor.classes.join-link-popup')
             <div class="modal fade" id="joinRequestsModal" tabindex="-1" aria-labelledby="joinRequestsModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">

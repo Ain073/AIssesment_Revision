@@ -93,6 +93,7 @@ Route::middleware(['auth', 'super_admin', 'password_changed', 'no_cache'])
         Route::get('/users', [UserController::class, 'index'])->name('users');
         Route::get('/users/student-import-sample', [UserController::class, 'downloadStudentImportSample'])->name('users.students.import.sample');
         Route::post('/users/student-import-preview', [UserController::class, 'previewStudentImport'])->middleware('throttle:10,1')->name('users.students.import.preview');
+        Route::post('/users/student-import-review', [UserController::class, 'reviewStudentImport'])->middleware('throttle:10,1')->name('users.students.import.review');
         Route::post('/users/student-import-confirm', [UserController::class, 'confirmStudentImport'])->middleware('throttle:10,1')->name('users.students.import.confirm');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::post('/users/check-availability', [UserController::class, 'checkAvailability'])->middleware('throttle:60,1,user-availability:')->name('users.availability');
@@ -185,6 +186,7 @@ Route::middleware(['auth', 'department_chair', 'password_changed', 'no_cache'])
         Route::delete('/subjects/{subject}', [DepartmentChairSubjectController::class, 'destroy'])->name('subjects.destroy');
         Route::get('/students/import-sample', [DepartmentChairStudentController::class, 'downloadImportSample'])->name('students.import.sample');
         Route::post('/students/import-preview', [DepartmentChairStudentController::class, 'previewImport'])->middleware('throttle:10,1')->name('students.import.preview');
+        Route::post('/students/import-review', [DepartmentChairStudentController::class, 'reviewImport'])->middleware('throttle:10,1')->name('students.import.review');
         Route::post('/students/import-confirm', [DepartmentChairStudentController::class, 'confirmImport'])->middleware('throttle:10,1')->name('students.import.confirm');
         Route::post('/users', [DepartmentChairUserController::class, 'store'])->name('users.store');
         Route::post('/users/check-availability', [DepartmentChairUserController::class, 'checkAvailability'])->middleware('throttle:60,1,user-availability:')->name('users.availability');

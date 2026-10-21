@@ -17,6 +17,10 @@
     let isFinalSubmitting = false;
     let isSubmitConfirmOpen = false;
     let questionTimerInterval = null;
+    let pendingNextQuestionIndex = null;
+    let nextQuestionConfirmed = false;
+    const nextQuestionModalElement = document.getElementById('nextQuestionConfirmModal');
+    const nextQuestionModal = nextQuestionModalElement ? new bootstrap.Modal(nextQuestionModalElement) : null;
     let currentQuestionSecondsLeft = questionTimeLimitSeconds;
     const questionSecondsLeft = new Map(cards.map((card, index) => [index, questionTimeLimitSeconds]));
     const expiredQuestions = new Set();
@@ -101,8 +105,8 @@
     };
 
     const updateQuestionTimerDisplay = () => {
-        const questionTimer = document.getElementById('questionTimeRemaining');
-        const questionTimerBar = document.getElementById('questionTimeBar');
+        const questionTimer = cards[currentIndex]?.querySelector('[data-question-time-remaining]');
+        const questionTimerBar = cards[currentIndex]?.querySelector('[data-question-time-bar]');
 
         if (questionTimer) {
             questionTimer.textContent = expiredQuestions.has(currentIndex)
@@ -174,7 +178,7 @@
 
         isFinalSubmitting = true;
 
-        const questionTimer = document.getElementById('questionTimeRemaining');
+        const questionTimer = cards[currentIndex]?.querySelector('[data-question-time-remaining]');
 
         if (questionTimer) {
             questionTimer.textContent = 'Submitting...';
@@ -185,6 +189,9 @@
 
     const handleQuestionTimerExpired = () => {
         stopQuestionTimer();
+        pendingNextQuestionIndex = null;
+        nextQuestionConfirmed = false;
+        nextQuestionModal?.hide();
         questionSecondsLeft.set(currentIndex, 0);
         lockQuestion(currentIndex, true);
         updateProgress();
@@ -248,15 +255,6 @@
         });
 
         cards[currentIndex]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        const nextBtn = document.getElementById('nextQuestion');
-        if (nextBtn) {
-            if (currentIndex === cards.length - 1) {
-                nextBtn.style.display = 'none';
-            } else {
-                nextBtn.style.display = '';
-                nextBtn.innerHTML = 'Next Question <span class="material-symbols-outlined">chevron_right</span>';
-            }
-        }
         startQuestionTimer();
     };
 
@@ -398,14 +396,51 @@
     document.getElementById('closeSecurityWarning')?.addEventListener('click', closeSecurityWarning);
 
     if (oneQuestionMode) {
-        document.getElementById('nextQuestion')?.addEventListener('click', () => {
-            if (currentIndex < cards.length - 1) {
-                stopQuestionTimer();
-                questionSecondsLeft.set(currentIndex, 0);
-                lockQuestion(currentIndex, false);
-                updateProgress();
-                setCurrentQuestion(currentIndex + 1);
-            }
+        cards.forEach((card, index) => {
+            card.querySelector('[data-next-question]')?.addEventListener('click', () => {
+                if (!nextQuestionModal || index !== currentIndex || index >= cards.length - 1
+                    || pendingNextQuestionIndex !== null || expiredQuestions.has(index) || isAutoSubmitting || isFinalSubmitting) return;
+
+                pendingNextQuestionIndex = index;
+                nextQuestionConfirmed = false;
+                document.getElementById('leavingQuestionNumber').textContent = String(index + 1);
+                document.getElementById('nextQuestionNumber').textContent = String(index + 2);
+                document.getElementById('nextQuestionAnswerStatus').textContent = isQuestionAnswered(card)
+                    ? 'Your current answer will be kept.'
+                    : 'You have not answered this question. Continuing will leave it blank.';
+                nextQuestionModal.show();
+            });
+        });
+
+        nextQuestionModalElement?.addEventListener('shown.bs.modal', () => {
+            // Expiry may occur while Bootstrap is still opening the modal.
+            if (pendingNextQuestionIndex === null || nextQuestionConfirmed) nextQuestionModal.hide();
+            else document.getElementById('stayOnQuestion')?.focus();
+        });
+
+        document.getElementById('confirmNextQuestion')?.addEventListener('click', () => {
+            if (pendingNextQuestionIndex !== currentIndex || expiredQuestions.has(currentIndex)
+                || nextQuestionConfirmed || isAutoSubmitting || isFinalSubmitting) return;
+
+            nextQuestionConfirmed = true;
+            document.getElementById('confirmNextQuestion').disabled = true;
+            nextQuestionModal?.hide();
+        });
+
+        nextQuestionModalElement?.addEventListener('hidden.bs.modal', () => {
+            const index = pendingNextQuestionIndex;
+            const shouldAdvance = nextQuestionConfirmed && index === currentIndex
+                && !expiredQuestions.has(index) && !isAutoSubmitting && !isFinalSubmitting;
+            pendingNextQuestionIndex = null;
+            nextQuestionConfirmed = false;
+            document.getElementById('confirmNextQuestion').disabled = false;
+
+            if (!shouldAdvance) return;
+            stopQuestionTimer();
+            questionSecondsLeft.set(index, 0);
+            lockQuestion(index, false);
+            updateProgress();
+            setCurrentQuestion(index + 1);
         });
     }
 
@@ -549,7 +584,7 @@
     });
 
     document.getElementById('confirmSubmitAssessment')?.addEventListener('click', () => {
-        if (! assessmentForm) {
+        if (! assessmentForm || (oneQuestionMode && currentIndex < cards.length - 1)) {
             return;
         }
 
@@ -572,6 +607,7 @@
         }
 
         event.preventDefault();
+        if (oneQuestionMode && currentIndex < cards.length - 1) return;
         updateProgress();
 
         const answered = answeredQuestions().length;

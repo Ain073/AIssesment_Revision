@@ -2,6 +2,7 @@
 
 @section('title', $assessment->title . ' | Assessment Attempt')
 @section('attempt-label', 'Quiz Attempt #1')
+@section('body_class', $publishAssessment->display_mode === \App\Models\PublishAssessment::DISPLAY_ONE_QUESTION ? 'one-question-attempt' : '')
 
 @section('navbar-actions')
     <a class="btn btn-sm btn-outline-light d-inline-flex align-items-center gap-2" href="{{ route('student.assessments.take', $publishAssessment) }}">
@@ -12,6 +13,10 @@
 
 @push('styles')
     <style>
+        body.one-question-attempt {
+            padding-bottom: 1.5rem;
+        }
+
         .status-card,
         .question-card {
             background: #fff;
@@ -48,6 +53,11 @@
             color: var(--psu-muted);
             font-size: 1rem;
             font-weight: 700;
+        }
+
+        .question-timer {
+            width: 170px;
+            max-width: 100%;
         }
 
         .question-timer-track {
@@ -102,6 +112,20 @@
             border-radius: inherit;
             background: var(--psu-gold);
             animation: pulse 1.5s infinite;
+        }
+
+        .monitoring-badge-inactive {
+            border-left-color: #adb5bd;
+            background: #eef1f5;
+            color: #6c757d;
+        }
+
+        .monitoring-badge-inactive .pulse-dot {
+            background: #adb5bd;
+        }
+
+        .monitoring-badge-inactive .pulse-dot::after {
+            display: none;
         }
 
         @keyframes pulse {
@@ -192,6 +216,10 @@
 
         .one-question-mode .question-card.active-question {
             display: block;
+        }
+
+        .question-actions .btn {
+            min-height: 44px;
         }
 
         .option-label {
@@ -423,20 +451,25 @@
             }
 
             .question-card {
-                padding: 0.85rem;
+                padding: 1rem;
                 border-radius: 0.45rem;
                 scroll-margin-top: 4.75rem;
             }
 
             .question-card .mb-3.d-flex {
-                gap: 0.45rem !important;
-                margin-bottom: 0.85rem !important;
+                gap: 0.85rem !important;
+                margin-bottom: 1rem !important;
+            }
+
+            .question-timer,
+            .question-timer-track {
+                width: 100%;
             }
 
             .question-card h2 {
                 margin-bottom: 1rem !important;
-                font-size: 1.02rem;
-                line-height: 1.35;
+                font-size: 1.1rem;
+                line-height: 1.45;
                 overflow-wrap: anywhere;
             }
 
@@ -448,8 +481,8 @@
 
             .option-label {
                 gap: 0.6rem;
-                min-height: 3rem;
-                padding: 0.7rem 0.75rem;
+                min-height: 3.25rem;
+                padding: 0.8rem;
                 line-height: 1.35;
             }
 
@@ -500,6 +533,9 @@
         $isOneQuestionMode = $publishAssessment->display_mode === \App\Models\PublishAssessment::DISPLAY_ONE_QUESTION;
         $questionTimeLimitSeconds = $isOneQuestionMode ? (int) ($publishAssessment->question_time_limit_seconds ?? 0) : 0;
         $dueIso = $publishAssessment->due_at?->toIso8601String();
+        $isMonitoringActive = $publishAssessment->prevent_copy_paste
+            || $publishAssessment->detect_tab_switch
+            || $publishAssessment->screenshot_protection;
         $enabledSecurities = collect([
             ['enabled' => $publishAssessment->prevent_copy_paste, 'icon' => 'content_paste_off', 'label' => 'No copy / paste'],
             ['enabled' => $publishAssessment->detect_tab_switch, 'icon' => 'tab', 'label' => 'Tab/floating monitor'],
@@ -534,6 +570,33 @@
             </div>
         </div>
     </div>
+
+    @if ($isOneQuestionMode && $itemCount > 1)
+        <div class="modal fade" id="nextQuestionConfirmModal" tabindex="-1" aria-labelledby="nextQuestionConfirmTitle" aria-describedby="nextQuestionConfirmDescription" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-body p-4">
+                        <div class="submit-confirm-icon mb-3" aria-hidden="true">
+                            <span class="material-symbols-outlined fs-1">lock</span>
+                        </div>
+                        <h2 class="brand-text h4 mb-2" id="nextQuestionConfirmTitle" style="color: var(--psu-navy);">Go to Question <span id="nextQuestionNumber">2</span>?</h2>
+                        <p class="text-secondary mb-3" id="nextQuestionConfirmDescription">Question <span id="leavingQuestionNumber">1</span> will be locked. You cannot return to it or change its answer.</p>
+                        <div class="submit-confirm-summary rounded-2 small p-3 mb-3" id="nextQuestionAnswerStatus"></div>
+                        @if ($questionTimeLimitSeconds > 0)
+                            <p class="small text-danger mb-3">The question timer keeps running while this confirmation is open.</p>
+                        @endif
+                        <div class="d-flex flex-wrap justify-content-end gap-2">
+                            <button class="btn btn-outline-secondary" id="stayOnQuestion" data-bs-dismiss="modal" type="button">Stay on Question</button>
+                            <button class="btn btn-psu d-inline-flex align-items-center gap-1" id="confirmNextQuestion" type="button">
+                                Confirm &amp; Next
+                                <span class="material-symbols-outlined fs-5" aria-hidden="true">chevron_right</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <div class="modal fade" id="submitConfirmModal" tabindex="-1" aria-labelledby="submitConfirmTitle" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
@@ -596,15 +659,6 @@
                     <span class="stat-value" id="currentQuestion">{{ $isOneQuestionMode ? 1 : $itemCount }}</span>
                     <span class="stat-sub">/ {{ $itemCount }}</span>
                 </div>
-                @if ($questionTimeLimitSeconds > 0)
-                    <div class="small fw-bold text-danger mt-1">
-                        <span>Question Time:</span>
-                        <span id="questionTimeRemaining">--</span>
-                    </div>
-                    <div class="question-timer-track mt-2" aria-hidden="true">
-                        <div class="question-timer-fill" id="questionTimeBar"></div>
-                    </div>
-                @endif
             </div>
 
             <div class="col-6 col-md-3 col-lg-3">
@@ -621,9 +675,9 @@
             </div>
 
             <div class="col-12 col-lg-3 text-lg-end">
-                <div class="monitoring-badge">
-                    <span class="pulse-dot"></span>
-                    <span class="small">Monitoring Active</span>
+                <div @class(['monitoring-badge', 'monitoring-badge-inactive' => ! $isMonitoringActive])>
+                    <span class="pulse-dot" aria-hidden="true"></span>
+                    <span class="small">{{ $isMonitoringActive ? 'Monitoring Active' : 'Monitoring Off' }}</span>
                 </div>
             </div>
         </div>
@@ -677,10 +731,23 @@
                         Time is up for this question. Your saved answer is locked.
                     </div>
 
-                    <div class="mb-3 d-flex flex-wrap gap-2">
-                        <span class="badge rounded-pill px-3 py-2" style="background: var(--psu-navy);">Question {{ $loop->iteration }}</span>
-                        <span class="badge bg-light text-primary border rounded-pill px-3 py-2">{{ ucfirst(str_replace('_', ' ', $item->item_type)) }}</span>
-                        <span class="badge bg-light text-primary border rounded-pill px-3 py-2">{{ number_format((float) $item->points, 2) }} pts</span>
+                    <div class="mb-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge rounded-pill px-3 py-2" style="background: var(--psu-navy);">Question {{ $loop->iteration }}</span>
+                            <span class="badge bg-light text-primary border rounded-pill px-3 py-2">{{ ucfirst(str_replace('_', ' ', $item->item_type)) }}</span>
+                            <span class="badge bg-light text-primary border rounded-pill px-3 py-2">{{ number_format((float) $item->points, 2) }} pts</span>
+                        </div>
+                        @if ($questionTimeLimitSeconds > 0)
+                            <div class="question-timer">
+                                <div class="small fw-bold text-danger text-nowrap">
+                                    <span>Question Time:</span>
+                                    <span data-question-time-remaining>--</span>
+                                </div>
+                                <div class="question-timer-track mt-2" aria-hidden="true">
+                                    <div class="question-timer-fill" data-question-time-bar></div>
+                                </div>
+                            </div>
+                        @endif
                     </div>
 
                     <h2 class="h4 brand-text mb-4" style="color: var(--psu-navy);">{{ $item->question_text }}</h2>
@@ -724,31 +791,27 @@
                     @else
                         <input class="form-control form-control-lg" name="answers[{{ $item->assessment_item_id }}]" type="text" placeholder="Type your answer">
                     @endif
+                    @if ($isOneQuestionMode)
+                        <div class="question-actions d-flex justify-content-end mt-4">
+                            @if ($loop->last)
+                                <button class="btn btn-psu d-inline-flex align-items-center justify-content-center gap-2" id="submitAssessmentBtn" type="submit">
+                                    <span class="material-symbols-outlined fs-5" aria-hidden="true">send</span>
+                                    Submit Assessment
+                                </button>
+                            @else
+                                <button class="btn btn-psu d-inline-flex align-items-center justify-content-center gap-2" data-next-question type="button">
+                                    Next Question
+                                    <span class="material-symbols-outlined fs-5" aria-hidden="true">chevron_right</span>
+                                </button>
+                            @endif
+                        </div>
+                    @endif
                 </article>
             @endforeach
         </div>
     </form>
 
-    @if ($isOneQuestionMode)
-        <div class="sticky-action-bar py-3">
-            <div class="container d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
-                <div class="text-secondary small d-flex align-items-center gap-1">
-                    <span class="material-symbols-outlined fs-6 text-muted">lock_clock</span>
-                    <span>No backtracking: Questions cannot be reopened once you move forward or time expires.</span>
-                </div>
-                <div class="d-flex flex-column flex-sm-row gap-2">
-                    <button class="btn btn-outline-primary d-inline-flex align-items-center justify-content-center gap-2" id="nextQuestion" type="button">
-                        Next Question
-                        <span class="material-symbols-outlined">chevron_right</span>
-                    </button>
-                    <button class="btn btn-psu shadow-sm d-inline-flex align-items-center justify-content-center gap-2" form="assessmentAttemptForm" id="submitAssessmentBtn" type="submit">
-                        <span class="material-symbols-outlined">send</span>
-                        Submit Assessment
-                    </button>
-                </div>
-            </div>
-        </div>
-    @else
+    @if (! $isOneQuestionMode)
         <div class="sticky-action-bar py-3">
             <div class="container d-flex justify-content-end">
                 <button class="btn btn-psu shadow-sm d-inline-flex align-items-center justify-content-center gap-2" form="assessmentAttemptForm" type="submit">

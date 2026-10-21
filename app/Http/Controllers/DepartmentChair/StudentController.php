@@ -47,6 +47,16 @@ class StudentController extends BaseController
         return redirect()->route('department-chair.students', ['import_token' => $token]);
     }
 
+    public function reviewImport(Request $request, StudentAccountImportService $importer): RedirectResponse
+    {
+        $department = $this->scopedDepartment($this->currentUser());
+        $programs = $this->scopedPrograms($department);
+        abort_unless($department && $programs->isNotEmpty(), 403);
+        $token = $importer->review($request, $programs, $this->studentImportScope($department));
+
+        return redirect()->route('department-chair.students', ['import_token' => $token]);
+    }
+
     public function confirmImport(Request $request, StudentAccountImportService $importer): RedirectResponse
     {
         $user = $this->currentUser();

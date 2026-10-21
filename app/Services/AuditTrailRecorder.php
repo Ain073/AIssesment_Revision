@@ -67,19 +67,36 @@ class AuditTrailRecorder
         $this->reset();
         $this->active = true;
         $this->request = $request;
-        $this->actor = $request->user();
+        $this->actor = $this->snapshotActor($request->user());
     }
 
     public function actor(): ?User
     {
-        return $this->actor ?? $this->request?->user();
+        if ($this->actor === null) {
+            $this->actor = $this->snapshotActor($this->request?->user());
+        }
+
+        return $this->actor;
     }
 
     public function verifiedPasswordResetActor(User $user): void
     {
         if ($this->active && $this->request?->routeIs('password.update')) {
-            $this->actor = $user;
+            $this->actor = $this->snapshotActor($user);
         }
+    }
+
+    private function snapshotActor(?User $user): ?User
+    {
+        if ($user === null) {
+            return null;
+        }
+
+        $actor = clone $user;
+        $roles = $user->relationLoaded('roles') ? $user->roles : $user->roles()->get();
+        $actor->setRelations(['roles' => $roles->map(fn ($role) => clone $role)]);
+
+        return $actor;
     }
 
     public function remember(Model $model): void
@@ -203,14 +220,28 @@ class AuditTrailRecorder
             $id = $change['model'] === User::class ? $change['id'] : ($change['after']['user_id'] ?? $change['before']['user_id'] ?? 0);
             $userChanges[$id][] = $change;
         }
+        $coveredAccounts = [];
+        $createdAccounts = [];
         foreach ($this->explicitEvents as $id => $event) {
             if (! isset($present[$id])) {
                 continue;
             }
             $metadata = $event->metadata ?? [];
             $changes = $groups[$event->module] ?? [];
-            if ($event->module === 'Users' && $event->auditable_type === User::class) {
-                $changes = $userChanges[$event->auditable_id] ?? [];
+            if ($event->module === 'Users') {
+                $accountId = $event->auditable_type === User::class ? $event->auditable_id : null;
+                if (in_array($event->auditable_type, [InstructorProfile::class, StudentProfile::class], true)) {
+                    $profile = collect($changes)->first(fn ($change) => $change['model'] === $event->auditable_type
+                        && (string) $change['id'] === (string) $event->auditable_id);
+                    $accountId = $profile['after']['user_id'] ?? $profile['before']['user_id'] ?? null;
+                }
+                if ($accountId !== null) {
+                    $changes = $userChanges[$accountId] ?? [];
+                    $coveredAccounts[$accountId] = true;
+                    if ($event->auditable_type === User::class && $event->action === 'CREATE') {
+                        $createdAccounts[$accountId] = true;
+                    }
+                }
             }
             $metadata['changes'] = array_merge($metadata['changes'] ?? [], $changes);
             AuditLog::whereKey($id)->update(['metadata' => json_encode($metadata, JSON_THROW_ON_ERROR)]);
@@ -219,6 +250,21 @@ class AuditTrailRecorder
         $covered = collect($this->explicitEvents)->filter(fn ($event) => isset($present[$event->getKey()]))
             ->pluck('module')->all();
         foreach ($groups as $module => $changes) {
+            if ($module === 'Users') {
+                // A summary or an event for one account cannot cover another
+                // account. New accounts always need their own CREATE reference.
+                foreach ($userChanges as $accountId => $accountChanges) {
+                    $isNew = collect($accountChanges)->contains(fn ($change) => $change['model'] === User::class
+                        && $change['before'] === null && $change['after'] !== null);
+                    if ($isNew ? isset($createdAccounts[$accountId]) : isset($coveredAccounts[$accountId])) {
+                        continue;
+                    }
+                    [$action, $description, $target] = $this->describe($module, $accountChanges);
+                    AuditLogger::logOrFail($action, $module, $description, $target, ['changes' => $accountChanges]);
+                }
+
+                continue;
+            }
             if (in_array($module, $covered, true)) {
                 continue;
             }
@@ -280,6 +326,7 @@ class AuditTrailRecorder
         $type = $change['model'];
         $target = new $type;
         $target->setRawAttributes(($change['after'] ?? $change['before']) + [$target->getKeyName() => $change['id']], true);
+        $target->exists = $change['after'] !== null;
         $action = $change['before'] === null ? 'CREATE' : ($change['after'] === null ? 'DELETE' : 'UPDATE');
         $state = $change['after'] ?? $change['before'];
         $label = $state['title'] ?? $state['subject_name'] ?? $state['program_name'] ?? $state['dept_name']
@@ -290,6 +337,10 @@ class AuditTrailRecorder
         } elseif ($target instanceof StudentProfile || $target instanceof InstructorProfile) {
             $target = User::find($state['user_id']) ?? $target;
             $label = $target instanceof User ? $target->displayName() : $label;
+            if ($target instanceof User) {
+                // Adding/removing a profile does not create/delete its account.
+                $action = 'UPDATE';
+            }
         }
 
         $routes = [

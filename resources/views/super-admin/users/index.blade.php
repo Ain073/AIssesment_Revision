@@ -311,6 +311,7 @@
         'studentImportPrograms' => $programs,
         'studentImportSampleRoute' => route('super-admin.users.students.import.sample'),
         'studentImportPreviewRoute' => route('super-admin.users.students.import.preview'),
+        'studentImportReviewRoute' => route('super-admin.users.students.import.review'),
         'studentImportConfirmRoute' => route('super-admin.users.students.import.confirm'),
     ])
 @endsection

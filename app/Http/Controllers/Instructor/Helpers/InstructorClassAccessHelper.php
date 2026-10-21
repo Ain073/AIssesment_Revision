@@ -6,6 +6,7 @@ use App\Models\AcademicClass;
 use App\Models\ClassDetail;
 use App\Models\StudentProfile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 trait InstructorClassAccessHelper
@@ -77,7 +78,7 @@ trait InstructorClassAccessHelper
                 return trim((string) ($row[0] ?? ''));
             })
             ->filter()
-            ->unique()
+            ->unique(fn (string $number) => Str::lower($number))
             ->values()
             ->all();
 
@@ -86,11 +87,12 @@ trait InstructorClassAccessHelper
 
     protected function buildImportPreview(AcademicClass $class, array $studentNumbers): array
     {
+        $lookupNumbers = array_map(fn (string $number) => Str::lower($number), $studentNumbers);
         $studentProfiles = StudentProfile::query()
             ->with(['user.roles', 'program.department.college'])
-            ->whereIn('student_number', $studentNumbers)
+            ->whereIn(DB::raw('LOWER(student_number)'), $lookupNumbers)
             ->get()
-            ->keyBy('student_number');
+            ->keyBy(fn (StudentProfile $student) => Str::lower($student->student_number));
 
         $enrolledIds = $class->enrolledStudentIds();
 
@@ -105,7 +107,7 @@ trait InstructorClassAccessHelper
         ];
 
         foreach ($studentNumbers as $studentNumber) {
-            $studentProfile = $studentProfiles->get($studentNumber);
+            $studentProfile = $studentProfiles->get(Str::lower($studentNumber));
 
             if (! $studentProfile || ! $studentProfile->user || ! $studentProfile->user->hasRole('student')) {
                 $summary['not_found']++;
@@ -114,6 +116,7 @@ trait InstructorClassAccessHelper
                     'student_name' => 'No matching student account',
                     'program_name' => 'Unavailable',
                     'status_badge' => 'Not Found',
+                    'status_key' => 'not_found',
                     'status_class' => 'text-bg-secondary',
                 ];
 
@@ -127,6 +130,7 @@ trait InstructorClassAccessHelper
                     'student_name' => $studentProfile->user->displayName(),
                     'program_name' => $studentProfile->program?->program_name ?? 'Not assigned',
                     'status_badge' => 'Inactive',
+                    'status_key' => 'inactive',
                     'status_class' => 'text-bg-warning',
                 ];
 
@@ -140,6 +144,7 @@ trait InstructorClassAccessHelper
                     'student_name' => $studentProfile->user->displayName(),
                     'program_name' => $studentProfile->program?->program_name ?? 'Not assigned',
                     'status_badge' => 'Already Enrolled',
+                    'status_key' => 'already_enrolled',
                     'status_class' => 'text-bg-info',
                 ];
 
@@ -153,6 +158,8 @@ trait InstructorClassAccessHelper
                 'student_name' => $studentProfile->user->displayName(),
                 'program_name' => $studentProfile->program?->program_name ?? 'Not assigned',
                 'status_badge' => 'Ready',
+                'status_key' => 'ready',
+                'student_profile_id' => $studentProfile->student_profile_id,
                 'status_class' => 'text-bg-success',
             ];
         }

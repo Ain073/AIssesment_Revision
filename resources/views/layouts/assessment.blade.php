@@ -172,7 +172,7 @@
 
     @stack('styles')
 </head>
-<body>
+<body class="@yield('body_class')">
     <nav class="assessment-navbar sticky-top">
         <div class="assessment-navbar-inner">
             <div class="assessment-navbar-title">

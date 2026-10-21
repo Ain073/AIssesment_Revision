@@ -158,8 +158,6 @@ trait InstructorAssessmentHelper
         return [
             'quiz' => 'Quiz',
             'exam' => 'Exam',
-            'activity' => 'Activity',
-            'assignment' => 'Assignment',
         ];
     }
 

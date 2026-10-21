@@ -37,7 +37,6 @@
                     <div class="student-import-panel">
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                             <div class="d-flex align-items-center gap-2 small">
-                                <span class="badge text-bg-light border">.txt</span>
                                 <span class="badge text-bg-light border">.csv</span>
                                 <span class="badge text-bg-light border">.xlsx</span>
                             </div>
@@ -50,7 +49,7 @@
                             @csrf
                             <div class="mb-3">
                                 <label class="form-label fw-bold text-uppercase small" for="student_file">Roster File</label>
-                                <input class="form-control" id="student_file" name="student_file" type="file" accept=".csv,.txt,.xlsx" required>
+                                <input class="form-control" id="student_file" name="student_file" type="file" accept=".csv,.xlsx" required>
                                 <div class="form-text">Maximum file size: 2 MB.</div>
                             </div>
                             <div class="d-flex justify-content-end">

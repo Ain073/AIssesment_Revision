@@ -10,22 +10,10 @@
     </script>
 @endif
 
-@if ($activeTab === 'students' && $errors->has('student_file'))
+@if ($activeTab === 'students' && $errors->has('student_file') && ! $importPreview)
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const modalElement = document.getElementById('addStudentModal');
-
-            if (modalElement) {
-                bootstrap.Modal.getOrCreateInstance(modalElement).show();
-            }
-        });
-    </script>
-@endif
-
-@if ($activeTab === 'students' && $importPreview)
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const modalElement = document.getElementById('importPreviewModal');
 
             if (modalElement) {
                 bootstrap.Modal.getOrCreateInstance(modalElement).show();

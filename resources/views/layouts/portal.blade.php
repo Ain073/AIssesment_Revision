@@ -127,6 +127,9 @@
     <script src="{{ asset('js/user-availability.js') }}?v={{ filemtime(public_path('js/user-availability.js')) }}"></script>
     <script src="{{ asset('js/record-search.js') }}?v={{ filemtime(public_path('js/record-search.js')) }}"></script>
     <script src="{{ asset('js/designation-picker.js') }}?v={{ filemtime(public_path('js/designation-picker.js')) }}"></script>
+    <script src="{{ asset('js/class-student-removal.js') }}?v={{ filemtime(public_path('js/class-student-removal.js')) }}"></script>
+    <script src="{{ asset('js/class-roster-import.js') }}?v={{ filemtime(public_path('js/class-roster-import.js')) }}"></script>
+    <script src="{{ asset('js/student-account-import.js') }}?v={{ filemtime(public_path('js/student-account-import.js')) }}"></script>
     <script>
         window.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
@@ -290,6 +293,8 @@
             window.initializeTableTabs?.();
             window.initializeUserDirectory?.();
             window.initializeDesignationPickers?.();
+            window.initializeStudentAccountImports?.();
+            window.initializeClassRosterImports?.();
             window.initializeAssessmentFilters?.();
             window.initializeClassSectionSelects?.();
             window.initializeClassForms?.();
@@ -872,6 +877,8 @@
                 window.initializeTableTabs?.();
                 window.initializeUserDirectory?.();
                 window.initializeDesignationPickers?.();
+                window.initializeStudentAccountImports?.();
+                window.initializeClassRosterImports?.();
                 window.initializeAssessmentFilters?.();
                 window.initializeClassSectionSelects?.();
                 window.initializeClassForms?.();

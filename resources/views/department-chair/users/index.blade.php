@@ -314,6 +314,7 @@
         'studentImportPrograms' => $scopedPrograms,
         'studentImportSampleRoute' => route('department-chair.students.import.sample'),
         'studentImportPreviewRoute' => route('department-chair.students.import.preview'),
+        'studentImportReviewRoute' => route('department-chair.students.import.review'),
         'studentImportConfirmRoute' => route('department-chair.students.import.confirm'),
     ])
 @endsection
