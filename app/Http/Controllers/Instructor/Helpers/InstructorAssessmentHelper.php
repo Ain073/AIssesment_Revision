@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Instructor\Helpers;
 
 use App\Models\Assessment;
-use App\Models\PublishAssessment;
 use App\Models\InstructorProfile;
+use App\Models\PublishAssessment;
 use App\Models\Subject;
 use App\Models\User;
 use App\Services\AuditLogger;
@@ -223,5 +223,14 @@ trait InstructorAssessmentHelper
         );
 
         return $publishAssessment;
+    }
+
+    protected function ensureAssessmentIsEditable(Assessment $assessment, string $message): void
+    {
+        if ($assessment->status === Assessment::STATUS_ARCHIVED || $assessment->publishAssessments()->exists()) {
+            throw ValidationException::withMessages([
+                'assessment' => $message,
+            ]);
+        }
     }
 }

@@ -11,9 +11,7 @@ class ReportItemAnalysis
 {
     public static function bestSubmissions(Collection $submissions, Collection $items): Collection
     {
-        return $submissions
-            ->where('status', Submission::STATUS_SUBMITTED)
-            ->reject(fn (Submission $submission): bool => $submission->completion_reason === Submission::COMPLETION_WARNING_LIMIT)
+        return ReportAnalytics::reportableSubmissions($submissions)
             ->groupBy('student_profile_id')
             ->map(fn (Collection $attempts): Submission => $attempts->sort(fn (Submission $a, Submission $b): int => [
                 AssessmentScoring::scoreSubmission($b, $items), (int) $b->attempt_number, (int) $b->getKey(),

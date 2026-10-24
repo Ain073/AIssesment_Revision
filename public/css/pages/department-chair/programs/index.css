@@ -1,0 +1,45 @@
+.department-chair-programs .directory-card {
+    background: #fff;
+    border: 1px solid var(--psu-line);
+    border-radius: 0.5rem;
+    box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
+}
+
+.department-chair-programs .table thead th {
+    background: #edf2ff;
+    color: var(--psu-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 1rem 1.25rem;
+}
+
+.department-chair-programs .table tbody td {
+    padding: 1rem 1.25rem;
+    vertical-align: middle;
+}
+
+.department-chair-programs .programs-table {
+    min-width: 920px;
+}
+
+.department-chair-programs .programs-table .count-cell {
+    text-align: center;
+}
+
+.department-chair-programs .empty-icon {
+    width: 56px;
+    height: 56px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--psu-gold-soft);
+    color: var(--psu-navy);
+}
+
+@media (max-width: 991.98px) {
+    .department-chair-programs .programs-table {
+        min-width: 0;
+    }
+}

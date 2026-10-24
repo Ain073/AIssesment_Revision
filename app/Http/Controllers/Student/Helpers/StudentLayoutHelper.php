@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student\Helpers;
 
 use App\Models\User;
+use App\Support\PortalNavigation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -31,25 +32,10 @@ trait StudentLayoutHelper
             'profileInitials' => strtoupper(Str::substr($user->first_name ?? $user->displayName(), 0, 1)),
             'profileName' => $user->displayName(),
             'profileMeta' => $user->portalProfileMeta(),
-            'navItems' => $this->navItems($activeNav),
+            'navItems' => PortalNavigation::forUser($user),
             'showTopbarSearch' => true,
             'topbarSearchPlaceholder' => 'Search classes or assessments...',
         ];
-    }
-
-    protected function navItems(string $activeNav): array
-    {
-        $items = [
-            ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('student.dashboard')],
-            ['key' => 'classes', 'label' => 'Classes', 'icon' => 'school', 'href' => route('student.classes')],
-            ['key' => 'assessments', 'label' => 'Assessments', 'icon' => 'assignment', 'href' => route('student.assessments')],
-            ['key' => 'results', 'label' => 'Results', 'icon' => 'grading', 'href' => route('student.results')],
-        ];
-
-        return array_map(
-            fn (array $item) => $item + ['active' => $item['key'] === $activeNav],
-            $items,
-        );
     }
 
     protected function currentUser(): User

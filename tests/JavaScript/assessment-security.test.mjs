@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 
-const template = readFileSync(new URL('../../resources/views/student/assessments/assessment-attempt-page-code.blade.php', import.meta.url), 'utf8');
+const script = readFileSync(new URL('../../public/js/assessment-attempt.js', import.meta.url), 'utf8');
 const target = () => ({
     listeners: new Map(),
     addEventListener(name, listener) {
@@ -79,20 +79,11 @@ const setup = ({ copy = false, tab = true, screenshot = false, limit = 0, oneQue
             return { ok: true, json: async () => ({ warning_count: warningCount, should_auto_submit: limit > 0 && warningCount >= limit }) };
         },
     });
-    const values = {
-        '$warningLimit': limit,
-        '$publishAssessment->prevent_copy_paste': copy,
-        '$publishAssessment->detect_tab_switch': tab,
-        '$publishAssessment->screenshot_protection': screenshot,
-        '$isOneQuestionMode': oneQuestion,
-        '$questionTimeLimitSeconds': questionSeconds,
-        "route('student.assessments.security-events.store', $publishAssessment)": '/security-events',
-        '$dueIso': null,
-        '$submission->warning_count': 0,
-    };
-    let script = template.replace(/^<script>\s*|\s*<\/script>\s*$/g, '');
-    for (const [expression, value] of Object.entries(values)) script = script.replaceAll(`@json(${expression})`, JSON.stringify(value));
-    assert.equal(script.includes('@json'), false, 'Every Blade value must have an explicit test fixture');
+    nodes.assessmentAttemptConfig = { textContent: JSON.stringify({
+        warningLimit: limit, preventCopyPaste: copy, detectTabSwitch: tab,
+        screenshotProtection: screenshot, oneQuestionMode: oneQuestion,
+        questionTimeLimitSeconds: questionSeconds, securityEventUrl: '/security-events', dueAt: null, warnings: 0,
+    }) };
     vm.runInNewContext(script, {
         window, document, console,
         Date: class extends Date { static now() { return now; } },

@@ -1,0 +1,195 @@
+.stat-card,
+.detail-card,
+.directory-card {
+    background: #fff;
+    border: 1px solid var(--psu-line);
+    border-radius: 0.5rem;
+    box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
+}
+
+.hero-card,
+.directory-header,
+.modal-header {
+    background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 100%);
+    color: #fff;
+}
+
+.class-tabbar {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--psu-line);
+}
+
+.class-tablink {
+    padding: 0.65rem 0.2rem;
+    color: var(--psu-muted);
+    text-decoration: none;
+    font-weight: 700;
+    border-bottom: 2px solid transparent;
+}
+
+.class-tablink.active {
+    color: var(--psu-navy);
+    border-bottom-color: var(--psu-gold);
+}
+
+.table thead th {
+    background: #edf2ff;
+    color: var(--psu-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 1rem 1.25rem;
+}
+
+.table tbody td {
+    padding: 1rem 1.25rem;
+    vertical-align: middle;
+}
+
+.avatar,
+.empty-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--psu-gold-soft);
+    color: var(--psu-navy);
+    font-weight: 700;
+}
+
+.empty-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--psu-gold-soft);
+    color: var(--psu-navy-2);
+}
+
+.students-table {
+    min-width: 980px;
+}
+
+.class-import-excluded .class-import-identity {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+
+@media (max-width: 767.98px) {
+    .table-responsive > .class-import-preview-table { min-width: 0; }
+    .class-import-preview-table,
+    .class-import-preview-table tbody,
+    .class-import-preview-table tbody > tr,
+    .class-import-preview-table tbody > tr > td {
+        display: block;
+        width: 100%;
+    }
+    .class-import-preview-table thead { display: none; }
+    .class-import-preview-table tr[data-roster-row] {
+        padding: 1rem;
+        border-bottom: 1px solid var(--psu-line);
+    }
+    .class-import-preview-table tr[data-roster-row] > td { padding: 0.3rem 0; border: 0; overflow-wrap: anywhere; }
+    .class-import-preview-table td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        color: var(--psu-muted);
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+}
+
+.student-performance {
+    min-width: 190px;
+}
+
+.student-performance-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.student-performance-track {
+    flex: 1;
+    min-width: 0;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 3px;
+}
+
+.student-performance-track.passed {
+    background: #d1e7dd;
+}
+
+.student-performance-track.failed {
+    background: #f8d7da;
+}
+
+.student-performance-fill {
+    display: block;
+    height: 100%;
+    min-width: 4px;
+}
+
+.student-performance-fill.passed {
+    background: #198754;
+}
+
+.student-performance-fill.failed {
+    background: #dc3545;
+}
+
+.student-performance-percent {
+    flex: 0 0 44px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-align: right;
+}
+
+.join-link-field,
+.join-code-field {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 0.9rem;
+}
+
+.join-code-field {
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-align: center;
+}
+
+.student-import-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.5rem 0 1rem;
+    color: var(--psu-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.student-import-divider::before,
+.student-import-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--psu-line);
+}
+
+.student-import-panel {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8faff;
+    border: 1px solid var(--psu-line);
+    border-radius: 0.5rem;
+}

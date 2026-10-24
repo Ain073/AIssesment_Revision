@@ -5,7 +5,7 @@
 @section('record-search-toolbar', 'true')
 
 @push('styles')
-    <style>
+    <style data-page-style>
         .assessment-card,
         .directory-card {
             background: #fff;

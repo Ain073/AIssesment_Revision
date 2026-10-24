@@ -4,7 +4,7 @@
 @section('header', 'Assessments')
 
 @push('styles')
-    <style>
+    <style data-page-style>
         .assessment-card,
         .directory-card {
             background: #fff;

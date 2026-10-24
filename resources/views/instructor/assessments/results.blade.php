@@ -4,79 +4,7 @@
 @section('header', $isCompleted ? 'Assessment Results' : 'Assessment Submissions')
 
 @push('styles')
-    <style>
-        .result-summary,
-        .results-panel {
-            background: #fff;
-            border: 1px solid var(--psu-line);
-            border-radius: 0.5rem;
-            box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
-        }
-
-        .result-summary {
-            padding: 1.25rem;
-            height: 100%;
-        }
-
-        .results-panel {
-            overflow: hidden;
-        }
-
-        .results-panel-header {
-            background: linear-gradient(90deg, var(--psu-navy), var(--psu-navy-2));
-            color: #fff;
-            padding: 1rem 1.25rem;
-        }
-
-        .results-table {
-            min-width: 980px;
-        }
-
-        .results-table thead th {
-            background: #edf2ff;
-            color: var(--psu-muted);
-            font-size: 0.76rem;
-            text-transform: uppercase;
-            padding: 0.9rem 1rem;
-        }
-
-        .results-table tbody td {
-            padding: 1rem;
-            vertical-align: middle;
-        }
-
-        .student-avatar {
-            align-items: center;
-            background: var(--psu-gold-soft);
-            border-radius: 50%;
-            color: var(--psu-navy);
-            display: inline-flex;
-            flex: 0 0 42px;
-            font-weight: 800;
-            height: 42px;
-            justify-content: center;
-            width: 42px;
-        }
-
-        .security-history summary {
-            color: var(--psu-navy-2);
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .security-history-list {
-            border-left: 2px solid var(--psu-line);
-            margin: 0.6rem 0 0 0.3rem;
-            padding-left: 0.8rem;
-            width: 250px;
-        }
-
-        .security-history-item + .security-history-item {
-            margin-top: 0.6rem;
-        }
-    </style>
+    <x-page-style path="css/pages/instructor/assessments/results.css" />
 @endpush
 
 @section('content')
@@ -223,7 +151,7 @@
                                 </td>
                                 <td>
                                     @if ($latestSubmittedAttempt)
-                                        <a class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" href="{{ route('instructor.assessments.submissions.grade', $latestSubmittedAttempt['submission_id']) }}">
+                                        <a class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" href="{{ route('instructor.assessments.submissions.grade', $latestSubmittedAttempt['submission_key']) }}">
                                             <span class="material-symbols-outlined fs-6">rate_review</span>
                                             Check
                                         </a>

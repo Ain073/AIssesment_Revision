@@ -2,17 +2,14 @@
 
 namespace App\Http\Controllers\DepartmentChair;
 
-use App\Support\RecordSearch;
-
-use App\Models\PassingRateSetting;
-use App\Models\PublishAssessment;
 use App\Models\Department;
 use App\Models\InstructorProfile;
+use App\Models\PublishAssessment;
 use App\Models\Report;
-use App\Models\Submission;
 use App\Models\Subject;
-use App\Support\AssessmentScoring;
-use App\Support\ReportCourseTitle;
+use App\Support\RecordSearch;
+use App\Support\ReportAnalytics;
+use App\Support\ReportMetadata;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -195,82 +192,14 @@ class ReportController extends BaseController
 
     private function reportAnalytics(PublishAssessment $publishAssessment): array
     {
-        $items = $publishAssessment->assessment?->items ?? collect();
-        $submissions = $this->reportableSubmissions($publishAssessment->submissions);
-        $maxScore = (float) $items->sum(fn ($item) => (float) $item->points);
-        $studentScores = $submissions
-            ->groupBy('student_profile_id')
-            ->map(function (Collection $studentSubmissions) use ($items): float {
-                return (float) $studentSubmissions
-                    ->map(fn (Submission $submission): float => $this->submissionScore($submission, $items))
-                    ->max();
-            })
-            ->values();
-        $passingScore = $maxScore > 0
-            ? PassingRateSetting::passingScore($maxScore, $publishAssessment->class?->year_level)
-            : 0;
-
-        return [
-            'students_count' => $publishAssessment->class?->enrolledStudentsCount() ?? 0,
-            'takers_count' => $studentScores->count(),
-            'item_count' => $items->count(),
-            'highest_score' => $studentScores->isNotEmpty() ? $this->formatNumber((float) $studentScores->max()) : '0',
-            'lowest_score' => $studentScores->isNotEmpty() ? $this->formatNumber((float) $studentScores->min()) : '0',
-            'mean_score' => $studentScores->isNotEmpty() ? $this->formatNumber((float) $studentScores->avg()) : '0',
-            'mean_percentage' => $studentScores->isNotEmpty() && $maxScore > 0
-                ? round(((float) $studentScores->avg() / $maxScore) * 100, 2)
-                : 0,
-            'passing_rate' => $studentScores->isNotEmpty() && $maxScore > 0
-                ? round(($studentScores->filter(fn (float $score): bool => $score >= $passingScore)->count() / $studentScores->count()) * 100, 2)
-                : 0,
-            'max_score' => $this->formatNumber($maxScore),
-        ];
-    }
-
-    private function submissionScore(Submission $submission, Collection $items): float
-    {
-        return AssessmentScoring::scoreSubmission($submission, $items);
-    }
-
-    private function reportableSubmissions(Collection $submissions): Collection
-    {
-        return $submissions
-            ->where('status', Submission::STATUS_SUBMITTED)
-            ->reject(fn (Submission $submission): bool => $submission->completion_reason === Submission::COMPLETION_WARNING_LIMIT)
-            ->values();
-    }
-
-    private function formatNumber(float $value): string
-    {
-        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
+        return ReportAnalytics::summarize($publishAssessment);
     }
 
     private function reportSheetMeta(Collection $publishAssessments, Collection $rows): array
     {
-        $first = $publishAssessments->first();
-        $assessment = $first?->assessment;
-        $class = $first?->class;
-        $instructorProfile = $class?->instructorProfile ?: $assessment?->instructorProfile;
-        $department = $instructorProfile?->department;
-        $college = $department?->college;
-        $schoolYears = $publishAssessments
-            ->pluck('class.school_year')
-            ->filter()
-            ->unique()
-            ->values();
-        $studentCount = (int) ($rows->first()['analytics']['students_count'] ?? 0);
-
-        return [
-            'campus' => 'SAN CARLOS',
-            'college' => $college?->displayName() ?? 'Not set',
-            'department' => $department?->dept_name ?? 'Not set',
-            'semester' => 'Second Semester',
-            'school_year' => $schoolYears->count() === 1 ? $schoolYears->first() : 'Multiple school years',
-            'course_code_title' => ReportCourseTitle::forAssessments($publishAssessments),
-            'students_count' => $studentCount,
-            'note' => ($assessment?->report_category === Report::TYPE_SUMMATIVE)
-                ? 'Note: Summative Assessments include the unit/chapter tests, midterm and final examination.'
-                : 'Note: Graded Formative Assessments include the short quizzes, pre-class open-ended questions, end-in-class poll, concept map, homework completion, self-assessment, mind mapping, discussion, identifying misconceptions, exit slips, comprehension questions, doodle notes, quiz poll, think-pair-share, word journal.',
-        ];
+        return ReportMetadata::forAssessments(
+            $publishAssessments,
+            (int) ($rows->first()['analytics']['students_count'] ?? 0),
+        );
     }
 }

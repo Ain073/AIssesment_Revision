@@ -5,64 +5,7 @@
 @section('record-search-toolbar', 'true')
 
 @push('styles')
-    <style>
-        .directory-card {
-            background: #fff;
-            border: 1px solid var(--psu-line);
-            border-radius: 0.5rem;
-            box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
-        }
-
-        .directory-header {
-            background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 100%);
-            color: #fff;
-        }
-
-        .table thead th {
-            background: #edf2ff;
-            color: var(--psu-muted);
-            font-size: 0.78rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            padding: 1rem 1.25rem;
-        }
-
-        .table tbody td {
-            padding: 1rem 1.25rem;
-            vertical-align: middle;
-        }
-
-        .icon-box {
-            width: 40px;
-            height: 40px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--psu-gold-soft);
-            color: var(--psu-navy-2);
-            border-radius: 0.25rem;
-        }
-
-        .empty-icon {
-            width: 56px;
-            height: 56px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            background: var(--psu-gold-soft);
-            color: var(--psu-navy);
-        }
-
-        .departments-table {
-            min-width: 880px;
-        }
-
-        .modal-header {
-            background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 100%);
-            color: #fff;
-        }
-    </style>
+    <x-page-style path="css/pages/admin-dean/departments/index.css" />
 @endpush
 
 @section('content')

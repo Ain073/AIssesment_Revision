@@ -5,15 +5,7 @@
     $profileInitials = 'A';
     $profileName     = 'Admin';
     $profileMeta     = 'Admin Account';
-    $navItems = [
-        ['label' => 'Dashboard',              'icon' => 'dashboard',            'href' => route('super-admin.dashboard'),     'active' => request()->routeIs('super-admin.dashboard')],
-        ['label' => 'Colleges & Departments', 'icon' => 'account_balance',      'href' => route('super-admin.colleges'),      'active' => request()->routeIs('super-admin.colleges')],
-        ['label' => 'Programs',               'icon' => 'school',               'href' => route('super-admin.programs'),      'active' => request()->routeIs('super-admin.programs')],
-        ['label' => 'Dean Designation',       'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'),         'active' => request()->routeIs('super-admin.roles')],
-        ['label' => 'Passing Rates',          'icon' => 'percent',              'href' => route('super-admin.passing-rates'), 'active' => request()->routeIs('super-admin.passing-rates')],
-        ['label' => 'Users',                  'icon' => 'person_search',        'href' => route('super-admin.users'),         'active' => request()->routeIs('super-admin.users')],
-        ['label' => 'Audit Trail',            'icon' => 'fact_check',           'href' => route('super-admin.audit-logs'),    'active' => request()->routeIs('super-admin.audit-logs')],
-    ];
+    $navItems = \App\Support\PortalNavigation::forUser(auth()->user());
 @endphp
 
 @section('title', 'Audit Trail | AIssessment Admin')
@@ -231,45 +223,6 @@
 @endsection
 
 @push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const searchInput = document.getElementById('auditSearch');
-    const tableBody = document.querySelector('.audit-log-table tbody');
-    if (!searchInput || !tableBody) return;
-
-    const dataRows = Array.from(tableBody.querySelectorAll('tr:not(.mobile-empty-cell)'));
-    if (dataRows.length === 0) return;
-
-    let noMatchRow = null;
-
-    function filterTable() {
-        const query = searchInput.value.trim().toLowerCase();
-        let visibleCount = 0;
-
-        dataRows.forEach(row => {
-            const text = row.innerText.toLowerCase();
-            const matches = query === '' || text.includes(query);
-            row.style.display = matches ? '' : 'none';
-            if (matches) visibleCount++;
-        });
-
-        if (visibleCount === 0 && query !== '') {
-            if (!noMatchRow) {
-                noMatchRow = document.createElement('tr');
-                noMatchRow.className = 'no-live-match-row';
-                noMatchRow.innerHTML = '<td colspan="6" class="text-center py-4 text-secondary small"><span class="material-symbols-outlined fs-3 d-block mb-1 text-muted">search_off</span>No matching entries on this page. Press <strong>Enter</strong> or click <strong>Search</strong> to query the full database.</td>';
-                tableBody.appendChild(noMatchRow);
-            }
-            noMatchRow.style.display = '';
-        } else if (noMatchRow) {
-            noMatchRow.style.display = 'none';
-        }
-
-    }
-
-    searchInput.addEventListener('input', filterTable);
-    searchInput.addEventListener('search', filterTable);
-});
-</script>
+<script src="{{ asset('js/pages/super-admin/audit-logs/index.js') }}?v={{ filemtime(public_path('js/pages/super-admin/audit-logs/index.js')) }}"></script>
 @endpush
 

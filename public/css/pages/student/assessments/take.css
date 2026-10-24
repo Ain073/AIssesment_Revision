@@ -1,0 +1,75 @@
+.assessment-panel,
+.detail-card {
+    background: #fff;
+    border: 1px solid var(--psu-line);
+    border-radius: 0.5rem;
+    box-shadow: 0 14px 28px rgba(0, 26, 112, 0.05);
+}
+
+.assessment-header {
+    background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 100%);
+    color: #fff;
+}
+
+.security-line {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--psu-line);
+    border-radius: 0.5rem;
+    background: #f8faff;
+}
+
+@media (max-width: 575.98px) {
+    .assessment-panel {
+        border-radius: 0.45rem;
+    }
+
+    .assessment-header {
+        padding: 0.85rem 1rem !important;
+    }
+
+    .assessment-header h2 {
+        font-size: 1.1rem;
+    }
+
+    .assessment-panel > .p-4 {
+        padding: 1rem !important;
+    }
+
+    h1.brand-text {
+        font-size: 1.45rem;
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+    }
+
+    .detail-card {
+        padding: 0.85rem !important;
+    }
+
+    .detail-card .small {
+        font-size: 0.68rem;
+    }
+
+    .detail-card p:last-child {
+        font-size: 0.9rem;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+    }
+
+    .security-line {
+        padding: 0.85rem;
+        font-size: 0.86rem;
+    }
+
+    .security-line .badge {
+        white-space: normal;
+        text-align: left;
+    }
+
+    .assessment-panel .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}

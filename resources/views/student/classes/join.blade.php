@@ -4,7 +4,7 @@
 @section('header', 'Join Class')
 
 @push('styles')
-    <style>
+    <style data-page-style>
         .join-card {
             background: #fff;
             border: 1px solid var(--psu-line);

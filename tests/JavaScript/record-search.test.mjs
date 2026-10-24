@@ -4,7 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 
 const searchScript = readFileSync(new URL('../../public/js/record-search.js', import.meta.url), 'utf8');
-const portalScript = readFileSync(new URL('../../resources/views/layouts/portal.blade.php', import.meta.url), 'utf8');
+const portalScript = readFileSync(new URL('../../public/js/portal.js', import.meta.url), 'utf8');
 
 const searchContext = () => {
     const handlers = {};
@@ -91,9 +91,10 @@ const runSearchForm = (fields, recordSearch = true, audit = false) => {
         document: { addEventListener(_event, callback) { context.submit = callback; } },
         loadPortalPage: async (...args) => { calls.push(args); return true; },
     };
-    const start = portalScript.indexOf("        document.addEventListener('submit', (event) => {\n            const form = event.target.closest('form[data-ajax-page-form]')");
+    const start = portalScript.indexOf("    document.addEventListener('submit', (event) => {\n        const form = event.target.closest('form[data-ajax-page-form]')");
     assert.ok(start >= 0);
-    const end = portalScript.indexOf("\n        document.addEventListener('click'", start);
+    const end = portalScript.indexOf("\n    window.addEventListener('popstate'", start);
+    assert.ok(end > start);
     vm.createContext(context);
     vm.runInContext(portalScript.slice(start, end), context);
     context.submit({ target: { closest: () => form }, preventDefault() {} });
@@ -154,9 +155,9 @@ test('audit Action filtering and clearing filters keep the audit URL and selecte
 
 test('audit feature changes clear the action before submitting, including after AJAX replaces the form', () => {
     let change;
-    const start = portalScript.indexOf("        document.addEventListener('change', (event) => {\n            const field = event.target.closest('[data-submit-on-change]')");
+    const start = portalScript.indexOf("    document.addEventListener('change', (event) => {\n        const field = event.target.closest('[data-submit-on-change]')");
     assert.ok(start >= 0);
-    const end = portalScript.indexOf("\n        document.addEventListener('submit'", start);
+    const end = portalScript.indexOf("\n    document.addEventListener('submit'", start);
     vm.runInNewContext(portalScript.slice(start, end), {
         document: { addEventListener(_event, callback) { change = callback; } },
     });

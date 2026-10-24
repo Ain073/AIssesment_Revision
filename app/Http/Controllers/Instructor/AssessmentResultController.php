@@ -62,6 +62,7 @@ class AssessmentResultController extends BaseController
 
                         return [
                             'submission_id' => $submission->submission_id,
+                            'submission_key' => $submission->public_id,
                             'status' => $submission->status,
                             'score' => $score !== null ? $this->formatReportNumber($score) : null,
                             'score_value' => $score,
@@ -127,11 +128,24 @@ class AssessmentResultController extends BaseController
         ]);
     }
 
+    public function redirectLegacyGradeSubmission(string $legacySubmission): RedirectResponse
+    {
+        $profile = $this->instructorProfile($this->currentUser());
+        abort_unless($profile, 403);
+        $submission = Submission::query()->whereKey($legacySubmission)
+            ->whereHas('publishAssessment.assessment', fn ($query) => $query->where('instructor_id', $profile->getKey()))
+            ->firstOrFail();
+
+        return redirect()->route('instructor.assessments.submissions.grade', $submission)
+            ->header('Cache-Control', 'private, no-store');
+    }
+
     public function gradeSubmission(Submission $submission): View|RedirectResponse
     {
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
 
+        $this->ownedPublishAssessment($submission->publishAssessment, $instructorProfile);
         $submission->load([
             'studentProfile.user',
             'publishAssessment.assessment.items.choices',
@@ -141,7 +155,7 @@ class AssessmentResultController extends BaseController
             'answers.checker',
         ]);
 
-        $ownedPublishAssessment = $this->ownedPublishAssessment($submission->publishAssessment, $instructorProfile);
+        $ownedPublishAssessment = $submission->publishAssessment;
 
         if ($submission->status !== Submission::STATUS_SUBMITTED) {
             return redirect()
@@ -182,12 +196,13 @@ class AssessmentResultController extends BaseController
         $user = $this->currentUser();
         $instructorProfile = $this->instructorProfile($user);
 
+        $this->ownedPublishAssessment($submission->publishAssessment, $instructorProfile);
         $submission->load([
             'publishAssessment.assessment.items',
             'answers.item',
         ]);
 
-        $ownedPublishAssessment = $this->ownedPublishAssessment($submission->publishAssessment, $instructorProfile);
+        $ownedPublishAssessment = $submission->publishAssessment;
 
         if ($submission->status !== Submission::STATUS_SUBMITTED) {
             return redirect()

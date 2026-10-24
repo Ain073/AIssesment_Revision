@@ -3,8 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 
-const portalScript = readFileSync(new URL('../../resources/views/layouts/portal.blade.php', import.meta.url), 'utf8')
-    .split('    <script>')[1].split('</script>')[0];
+const portalScript = readFileSync(new URL('../../public/js/portal.js', import.meta.url), 'utf8');
 const directoryScript = readFileSync(new URL('../../public/js/user-directory.js', import.meta.url), 'utf8');
 
 const scriptSection = (start, end) => {
@@ -14,7 +13,7 @@ const scriptSection = (start, end) => {
     return portalScript.slice(startIndex, endIndex);
 };
 
-// Check the complete inline script too; it runs after Blade has rendered the page.
+// Check the complete portal navigation script as well as individual behaviors.
 test('portal script has valid JavaScript syntax', () => {
     new vm.Script(portalScript);
 });
@@ -59,7 +58,7 @@ const createPageContext = () => {
         movePageFlashAlertsToToast() {}, autoDismissPageInfoAlerts() {}, cleanupStaleBootstrapBackdrops() {},
     };
     vm.createContext(context);
-    vm.runInContext(scriptSection('        let latestPortalPageRequest', "\n        document.addEventListener('click'") + '\nglobalThis.loadPortalPage = loadPortalPage;', context);
+    vm.runInContext(scriptSection('    let latestPortalPageRequest', "\n    document.addEventListener('click'") + '\nglobalThis.loadPortalPage = loadPortalPage;', context);
     return { context, window, container, sidebar, topbar, getTables: () => tables };
 };
 
@@ -245,7 +244,7 @@ const createFormContext = () => {
         loadPortalPage: async (...args) => { refreshCalls.push(args); return true; },
     };
     vm.createContext(context);
-    vm.runInContext(portalScript.slice(portalScript.lastIndexOf("        document.addEventListener('submit', async")), context);
+    vm.runInContext(scriptSection("    document.addEventListener('submit', async", "    window.navigatePortalPage ="), context);
     const submit = () => context.submit({ target: form, preventDefault() {} });
     return { context, form, errorBox, button, modal, messages, refreshCalls, submit };
 };

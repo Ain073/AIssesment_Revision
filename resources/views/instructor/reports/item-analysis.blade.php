@@ -1,5 +1,5 @@
 @push('styles')
-    <style>
+    <style data-page-style>
         #reportItemAnalysisModal .item-analysis-table { min-width: 720px; }
         #reportItemAnalysisModal .item-analysis-question { min-width: 220px; max-width: 360px; overflow-wrap: anywhere; white-space: pre-line; }
         #reportItemAnalysisModal .item-analysis-basis { overflow-wrap: anywhere; }

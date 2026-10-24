@@ -1,0 +1,141 @@
+.submitted-panel {
+    background: #fff;
+    border: 1px solid var(--psu-line);
+    border-radius: 0.5rem;
+    box-shadow: 0 14px 28px rgba(0, 26, 112, 0.06);
+}
+
+.submitted-check {
+    width: 5rem;
+    height: 5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #e7f8ef;
+    color: #168a4a;
+    border: 1px solid #bce8cc;
+}
+
+.submitted-score {
+    background: #f8faff;
+    border: 1px solid var(--psu-line);
+    border-radius: 0.5rem;
+}
+
+.answer-review-card {
+    border: 1px solid var(--psu-line);
+    border-radius: 0.5rem;
+    background: #fff;
+}
+
+.answer-text-box {
+    min-height: 3.25rem;
+    border: 1px solid var(--psu-line);
+    border-radius: 0.5rem;
+    background: #f8faff;
+    padding: 0.9rem 1rem;
+}
+
+.choice-review-list {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.choice-review-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: #f8faff;
+    border: 1px solid var(--psu-line);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+}
+
+.choice-review-option.choice-review-correct {
+    background: #ecfdf3;
+    border-color: #198754;
+    color: #0f5132;
+}
+
+.choice-review-option.choice-review-wrong {
+    background: #fff1f2;
+    border-color: #dc3545;
+    color: #842029;
+}
+
+.choice-review-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.choice-review-badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    flex: 0 0 auto;
+}
+
+.submitted-results-modal .modal-content {
+    border: 0;
+    border-radius: 0.5rem;
+    box-shadow: 0 24px 60px rgba(0, 26, 112, 0.24);
+}
+
+.submitted-results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 58%, rgba(117, 125, 145, 0.92) 100%);
+    color: #fff;
+    padding: 1rem 1.5rem;
+}
+
+.submitted-results-title {
+    min-width: 0;
+}
+
+.submitted-results-title h2 {
+    line-height: 1.1;
+}
+
+.submitted-results-meta {
+    overflow-wrap: anywhere;
+}
+
+.submitted-results-actions {
+    flex: 0 0 auto;
+}
+
+@media (max-width: 575.98px) {
+    .submitted-results-header {
+        align-items: flex-start;
+        padding: 0.85rem 1rem;
+    }
+
+    .submitted-results-title h2 {
+        font-size: 1.35rem;
+    }
+
+    .submitted-results-meta {
+        font-size: 0.78rem;
+    }
+
+    .submitted-results-actions .badge {
+        padding: 0.45rem 0.6rem !important;
+        font-size: 0.72rem;
+    }
+
+    .choice-review-option {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .choice-review-badges {
+        justify-content: flex-start;
+    }
+}

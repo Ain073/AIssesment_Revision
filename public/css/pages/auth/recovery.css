@@ -1,0 +1,85 @@
+:root {
+    --psu-navy: #030351;
+    --psu-gold: #ffda27;
+    --psu-blue: #2ea3f2;
+    --psu-text: #001550;
+}
+
+body {
+    min-height: 100vh;
+    font-family: "Open Sans", sans-serif;
+    color: var(--psu-text);
+    background: #000;
+}
+
+.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+.topbar {
+    height: 56px;
+    background: var(--psu-navy);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.22);
+    z-index: 20;
+}
+
+.brand-title,
+.auth-title,
+.btn-auth,
+.footer-brand {
+    font-family: "Oswald", sans-serif;
+}
+
+.auth-shell {
+    min-height: calc(100vh - 56px);
+    padding: 80px 16px 72px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.auth-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.auth-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.auth-card {
+    position: relative;
+    width: min(100%, 430px);
+    background: rgba(255, 255, 255, 0.95);
+    border-top: 4px solid var(--psu-navy);
+    border-radius: 0.5rem;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.auth-logo {
+    width: 88px;
+    height: 88px;
+    object-fit: contain;
+}
+
+.form-icon {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #777681;
+}
+
+.form-control.with-icon {
+    padding-left: 2.65rem;
+}
+

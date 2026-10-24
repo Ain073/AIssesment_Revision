@@ -1,0 +1,220 @@
+.hero-card {
+    background:
+        linear-gradient(118deg, rgba(5, 33, 171, 0.98) 0%, rgba(13, 49, 221, 0.96) 58%, rgba(226, 196, 48, 0.9) 150%),
+        radial-gradient(circle at 100% 0%, rgba(255, 226, 76, 0.44) 0%, rgba(255, 226, 76, 0) 34%),
+        linear-gradient(180deg, #021063 0%, #0828c9 58%, #d4b736 100%);
+    color: #fff;
+    border: 1px solid rgba(255, 218, 39, 0.28);
+    border-radius: 0.5rem;
+    box-shadow: 0 16px 34px rgba(9, 39, 216, 0.14);
+    padding: 1.75rem;
+}
+
+.hero-title {
+    font-size: clamp(2.3rem, 3vw, 3.2rem);
+    line-height: 1;
+    margin-bottom: 0.75rem;
+}
+
+.hero-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 260px);
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.hero-eyebrow {
+    color: rgba(255, 245, 191, 0.92);
+    letter-spacing: 0.04em;
+}
+
+.stat-card,
+.performance-card {
+    background: #fff;
+    border: 1px solid var(--psu-line);
+    border-radius: 0.5rem;
+}
+
+.hero-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    min-width: 180px;
+    max-width: 240px;
+    justify-self: end;
+}
+
+.hero-action-link {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 0.8rem;
+    min-height: 42px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 0.45rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-weight: 700;
+    text-decoration: none;
+    justify-content: flex-start;
+}
+
+.hero-action-link:hover,
+.hero-action-link:focus {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+}
+
+.hero-action-icon {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 28px;
+    border-radius: 0.35rem;
+    background: rgba(255, 245, 191, 0.2);
+    color: var(--psu-gold);
+}
+
+.hero-action-icon .material-symbols-outlined {
+    font-size: 1.15rem;
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.85rem;
+    margin-top: 1.5rem;
+}
+
+.stat-card {
+    padding: 1rem;
+}
+
+.stat-label {
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 0.65rem;
+}
+
+.stat-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--psu-navy);
+}
+
+.section-title {
+    color: var(--psu-navy);
+    margin-bottom: 1rem;
+}
+
+.performance-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.performance-card {
+    padding: 1.25rem;
+}
+
+.performance-heading {
+    color: var(--psu-navy);
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+}
+
+.performance-percent {
+    font-size: 1.8rem;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.performance-track {
+    height: 0.65rem;
+    overflow: hidden;
+    background: #e5e7eb;
+    border-radius: 999px;
+}
+
+.performance-fill {
+    height: 100%;
+    border-radius: inherit;
+}
+
+.performance-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.performance-stat {
+    padding-top: 0.75rem;
+    border-top: 1px solid #edf0f7;
+}
+
+.performance-stat-label {
+    color: var(--psu-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+}
+
+.performance-stat-value {
+    color: var(--psu-navy);
+    font-weight: 900;
+    margin-bottom: 0;
+}
+
+.performance-empty {
+    border: 1px dashed #b9c5e7;
+    border-radius: 0.5rem;
+    background: #fbfcff;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.flash-alert {
+    border-radius: 0.5rem;
+}
+
+@media (max-width: 991.98px) {
+    .hero-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-grid,
+    .performance-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+}
+
+@media (max-width: 575.98px) {
+    .stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.65rem;
+    }
+
+    .stat-card {
+        padding: 0.75rem;
+    }
+
+    .stat-label {
+        font-size: 0.64rem;
+        line-height: 1.15;
+        margin-bottom: 0.35rem;
+    }
+
+    .stat-value {
+        font-size: 1.3rem;
+    }
+
+    .performance-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,80 @@
+.student-import-modal-header {
+    background: linear-gradient(90deg, var(--psu-navy) 0%, var(--psu-navy-2) 100%);
+    color: #fff;
+}
+
+.student-import-dropzone,
+.student-import-summary {
+    background: #f8faff;
+    border: 1px solid var(--psu-line);
+    border-radius: 0.5rem;
+}
+
+.student-import-dropzone {
+    padding: 1.25rem;
+}
+
+.student-import-summary {
+    padding: 1rem;
+}
+
+.student-import-summary-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.student-create-mode {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem;
+    padding: 0.35rem;
+    margin-bottom: 1.25rem;
+    background: #edf2ff;
+    border-radius: 0.5rem;
+}
+
+.student-create-mode .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    border: 0;
+    font-weight: 700;
+}
+
+.student-create-mode .btn.active {
+    background: #fff;
+    color: var(--psu-navy);
+    box-shadow: 0 2px 8px rgba(0, 26, 112, 0.1);
+}
+
+@media (max-width: 767.98px) {
+    .table-responsive > .student-import-preview-table { min-width: 0; }
+    .student-import-preview-table,
+    .student-import-preview-table tbody,
+    .student-import-preview-table tbody > tr,
+    .student-import-preview-table tbody > tr > td {
+        display: block;
+        width: 100%;
+    }
+
+    .student-import-preview-table thead { display: none; }
+    .student-import-preview-table tr[data-import-preview-row] {
+        padding: 1rem;
+        border-bottom: 1px solid var(--psu-line);
+    }
+    .student-import-preview-table tr[data-import-preview-row] > td {
+        padding: 0.3rem 0;
+        border: 0;
+        overflow-wrap: anywhere;
+    }
+    .student-import-preview-table td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        color: var(--psu-muted);
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+}

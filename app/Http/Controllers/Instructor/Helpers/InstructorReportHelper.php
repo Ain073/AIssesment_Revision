@@ -3,15 +3,17 @@
 namespace App\Http\Controllers\Instructor\Helpers;
 
 use App\Models\AcademicClass;
+use App\Models\InstructorProfile;
 use App\Models\PassingRateSetting;
 use App\Models\PublishAssessment;
-use App\Models\InstructorProfile;
 use App\Models\Report;
 use App\Models\StudentProfile;
 use App\Models\Submission;
 use App\Support\AssessmentScoring;
-use App\Support\ReportItemAnalysis;
+use App\Support\ReportAnalytics;
 use App\Support\ReportCourseTitle;
+use App\Support\ReportItemAnalysis;
+use App\Support\ReportMetadata;
 use Illuminate\Support\Collection;
 
 trait InstructorReportHelper
@@ -69,40 +71,15 @@ trait InstructorReportHelper
 
     protected function reportSheetMeta(Collection $publishAssessments, Collection $rows): array
     {
-        $first = $publishAssessments->first();
-        $assessment = $first?->assessment;
-        $class = $first?->class;
-        $instructorProfile = $class?->instructorProfile ?: $assessment?->instructorProfile;
-        $department = $instructorProfile?->department;
-        $college = $department?->college;
-        $reportingTerm = (string) ($assessment?->reporting_term ?: 'General');
-        $schoolYears = $publishAssessments
-            ->pluck('class.school_year')
-            ->filter()
-            ->unique()
-            ->values();
         $distinctClasses = $publishAssessments
-            ->map(fn (PublishAssessment $pa) => $pa->class)
+            ->map(fn (PublishAssessment $assessment) => $assessment->class)
             ->filter()
-            ->unique(fn ($c) => $c->getKey());
+            ->unique(fn ($class) => $class->getKey());
         $studentCount = $distinctClasses->isNotEmpty()
-            ? (int) $distinctClasses->sum(fn ($c) => $c->enrolledStudentsCount() ?? 0)
+            ? (int) $distinctClasses->sum(fn ($class) => $class->enrolledStudentsCount() ?? 0)
             : (int) ($rows->first()['analytics']['students_count'] ?? 0);
-        $defaultCourseCodeTitle = $this->defaultCourseCodeTitle($publishAssessments);
 
-        return [
-            'campus' => 'SAN CARLOS',
-            'college' => $college?->displayName() ?? 'Not set',
-            'department' => $department?->dept_name ?? 'Not set',
-            'semester' => 'Second Semester',
-            'school_year' => $schoolYears->count() === 1 ? $schoolYears->first() : 'Multiple school years',
-            'reporting_term' => ucfirst($reportingTerm),
-            'course_code_title' => $defaultCourseCodeTitle,
-            'students_count' => $studentCount,
-            'note' => ($assessment?->report_category === Report::TYPE_SUMMATIVE)
-                ? 'Note: Summative Assessments include the unit/chapter tests, midterm and final examination.'
-                : 'Note: Graded Formative Assessments include the short quizzes, pre-class open-ended questions, end-in-class poll, concept map, homework completion, self-assessment, mind mapping, discussion, identifying misconceptions, exit slips, comprehension questions, doodle notes, quiz poll, think-pair-share, word journal.',
-        ];
+        return ReportMetadata::forAssessments($publishAssessments, $studentCount);
     }
 
     protected function defaultCourseCodeTitle(Collection $publishAssessments): string
@@ -112,36 +89,11 @@ trait InstructorReportHelper
 
     protected function publishAssessmentReportAnalytics(PublishAssessment $publishAssessment): array
     {
+        $analytics = ReportAnalytics::summarize($publishAssessment);
         $items = $publishAssessment->assessment?->items ?? collect();
-        $submissions = $this->reportableSubmissions($publishAssessment->submissions);
-        $maxScore = (float) $items->sum(fn ($item) => (float) $item->points);
-        $studentScores = $submissions
-            ->groupBy('student_profile_id')
-            ->map(function (Collection $studentSubmissions) use ($items): float {
-                return (float) $studentSubmissions
-                    ->map(fn (Submission $submission): float => $this->submissionScore($submission, $items))
-                    ->max();
-            })
-            ->values();
-        $passingScore = $maxScore > 0
-            ? PassingRateSetting::passingScore($maxScore, $publishAssessment->class?->year_level)
-            : 0;
-        $itemAnalysis = collect(ReportItemAnalysis::summarize($items, $submissions));
+        $itemAnalysis = collect(ReportItemAnalysis::summarize($items, $publishAssessment->submissions));
 
-        return [
-            'students_count' => $publishAssessment->class?->enrolledStudentsCount() ?? 0,
-            'takers_count' => $studentScores->count(),
-            'item_count' => $items->count(),
-            'highest_score' => $studentScores->isNotEmpty() ? $this->formatReportNumber((float) $studentScores->max()) : '0',
-            'lowest_score' => $studentScores->isNotEmpty() ? $this->formatReportNumber((float) $studentScores->min()) : '0',
-            'mean_score' => $studentScores->isNotEmpty() ? $this->formatReportNumber((float) $studentScores->avg()) : '0',
-            'mean_percentage' => $studentScores->isNotEmpty() && $maxScore > 0
-                ? round(((float) $studentScores->avg() / $maxScore) * 100, 2)
-                : 0,
-            'passing_rate' => $studentScores->isNotEmpty() && $maxScore > 0
-                ? round(($studentScores->filter(fn (float $score): bool => $score >= $passingScore)->count() / $studentScores->count()) * 100, 2)
-                : 0,
-            'max_score' => $this->formatReportNumber($maxScore),
+        return $analytics + [
             'item_analysis' => $itemAnalysis->all(),
             'strongest_items' => ReportItemAnalysis::strongestItems($itemAnalysis),
             'weakest_items' => ReportItemAnalysis::weakestItems($itemAnalysis),
@@ -218,10 +170,7 @@ trait InstructorReportHelper
 
     protected function reportableSubmissions(Collection $submissions): Collection
     {
-        return $submissions
-            ->where('status', Submission::STATUS_SUBMITTED)
-            ->reject(fn (Submission $submission): bool => $submission->completion_reason === Submission::COMPLETION_WARNING_LIMIT)
-            ->values();
+        return ReportAnalytics::reportableSubmissions($submissions);
     }
 
     protected function isSubmissionAnswerCorrect($item, $answer): bool

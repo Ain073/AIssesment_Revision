@@ -5,15 +5,7 @@
     $profileInitials = 'A';
     $profileName = 'Admin';
     $profileMeta = 'Admin Account';
-    $navItems = [
-        ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('super-admin.dashboard'), 'active' => true],
-        ['label' => 'Colleges & Departments', 'icon' => 'account_balance', 'href' => route('super-admin.colleges'), 'active' => false],
-        ['label' => 'Programs', 'icon' => 'school', 'href' => route('super-admin.programs'), 'active' => false],
-        ['label' => 'Dean Designation', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active' => false],
-        ['label' => 'Passing Rates', 'icon' => 'percent', 'href' => route('super-admin.passing-rates'), 'active' => false],
-        ['label' => 'Users', 'icon' => 'person_search', 'href' => route('super-admin.users'), 'active' => false],
-        ['label' => 'Audit Trail', 'icon' => 'fact_check', 'href' => route('super-admin.audit-logs'), 'active' => false],
-    ];
+    $navItems = \App\Support\PortalNavigation::forUser(auth()->user());
 @endphp
 
 @section('title', 'Dashboard | AIssessment Admin')

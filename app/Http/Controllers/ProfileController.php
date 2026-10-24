@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Services\AccountSessionService;
+use App\Support\PortalNavigation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -53,7 +54,7 @@ class ProfileController extends Controller
         }
 
         if ($request->filled('search')) {
-            $term = '%' . $request->search . '%';
+            $term = '%'.$request->search.'%';
             $query->where(function ($q) use ($term) {
                 $q->where('action', 'like', $term)
                     ->orWhere('module', 'like', $term)
@@ -338,7 +339,7 @@ SVG;
             'profileInitials' => strtoupper(Str::substr($user->first_name ?? $user->displayName(), 0, 1)),
             'profileName' => $user->displayName(),
             'profileMeta' => $user->portalProfileMeta(),
-            'navItems' => $this->navItems($user),
+            'navItems' => PortalNavigation::forUser($user),
             'showTopbarSearch' => false,
         ];
     }
@@ -378,98 +379,4 @@ SVG;
             ['label' => 'Email', 'value' => $user->email],
         ];
     }
-
-    private function navItems(User $user): array
-    {
-        if ($user->hasRole('super_admin')) {
-            return $this->markNavActive([
-                ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('super-admin.dashboard'), 'active_route' => 'super-admin.dashboard'],
-                ['label' => 'Colleges & Departments', 'icon' => 'account_balance', 'href' => route('super-admin.colleges'), 'active_route' => 'super-admin.colleges'],
-                ['label' => 'Programs', 'icon' => 'school', 'href' => route('super-admin.programs'), 'active_route' => 'super-admin.programs'],
-                ['label' => 'Dean Designation', 'icon' => 'admin_panel_settings', 'href' => route('super-admin.roles'), 'active_route' => 'super-admin.roles'],
-                ['label' => 'Users', 'icon' => 'person_search', 'href' => route('super-admin.users'), 'active_route' => 'super-admin.users*'],
-                ['label' => 'Audit Trail', 'icon' => 'history', 'href' => route('super-admin.audit-logs'), 'active_route' => 'super-admin.audit-logs*'],
-            ]);
-        }
-
-        $items = [];
-
-        if ($user->hasRole('instructor') || $user->hasRole('department_chair')) {
-            $items = array_merge($items, [
-                ['label' => 'Classes', 'icon' => 'school', 'href' => route('instructor.classes'), 'active_route' => 'instructor.classes*'],
-                ['label' => 'Assessments', 'icon' => 'assignment', 'href' => route('instructor.assessments'), 'active_route' => 'instructor.assessments*'],
-                ['label' => 'Reports', 'icon' => 'summarize', 'href' => route('instructor.reports'), 'active_route' => 'instructor.reports*'],
-            ]);
-        }
-
-        if ($user->hasRole('admin_dean')) {
-            $items = array_merge($items, [
-                ['label' => 'Departments', 'icon' => 'apartment', 'href' => route('admin-dean.departments'), 'active_route' => 'admin-dean.departments'],
-                ['label' => 'Users', 'icon' => 'groups', 'href' => route('admin-dean.teachers'), 'active_route' => 'admin-dean.teachers'],
-                ['label' => 'Chair Designation', 'icon' => 'admin_panel_settings', 'href' => route('admin-dean.designations'), 'active_route' => 'admin-dean.designations'],
-            ]);
-        }
-
-        if ($user->hasRole('department_chair')) {
-            $items = array_merge($items, [
-                ['label' => 'Users', 'icon' => 'groups', 'href' => route('department-chair.teachers'), 'active_route' => ['department-chair.teachers', 'department-chair.students*']],
-                ['label' => 'Subjects', 'icon' => 'menu_book', 'href' => route('department-chair.subjects'), 'active_route' => 'department-chair.subjects*'],
-            ]);
-        }
-
-        if (! empty($items)) {
-            array_unshift($items, $this->dashboardNavItem($user));
-
-            return $this->markNavActive($items);
-        }
-
-        return $this->markNavActive([
-            ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('student.dashboard'), 'active_route' => 'student.dashboard'],
-            ['label' => 'Classes', 'icon' => 'school', 'href' => route('student.classes'), 'active_route' => 'student.classes*'],
-            ['label' => 'Assessments', 'icon' => 'assignment', 'href' => route('student.assessments'), 'active_route' => 'student.assessments*'],
-            ['label' => 'Results', 'icon' => 'grading', 'href' => route('student.results'), 'active_route' => 'student.results'],
-        ]);
-    }
-
-    private function markNavActive(array $items): array
-    {
-        return array_map(function (array $item): array {
-            $activeRoute = (array) $item['active_route'];
-            unset($item['active_route']);
-
-            return $item + ['active' => request()->routeIs(...$activeRoute)];
-        }, $items);
-    }
-
-    private function dashboardNavItem(User $user): array
-    {
-        $href = route('instructor.dashboard');
-        $activeRoutes = [];
-
-        if ($user->hasRole('instructor') || $user->hasRole('department_chair')) {
-            $activeRoutes[] = 'instructor.dashboard';
-        }
-
-        if ($user->hasRole('admin_dean')) {
-            $activeRoutes[] = 'admin-dean.dashboard';
-        }
-
-        if ($user->hasRole('department_chair')) {
-            $activeRoutes[] = 'department-chair.dashboard';
-        }
-
-        if (request()->routeIs('admin-dean.*') && $user->hasRole('admin_dean')) {
-            $href = route('admin-dean.dashboard');
-        } elseif (request()->routeIs('department-chair.*') && $user->hasRole('department_chair')) {
-            $href = route('department-chair.dashboard');
-        }
-
-        return [
-            'label' => 'Dashboard',
-            'icon' => 'dashboard',
-            'href' => $href,
-            'active_route' => $activeRoutes ?: 'instructor.dashboard',
-        ];
-    }
-
 }

@@ -35,8 +35,8 @@ class ReportAutosaveTest extends TestCase
             'departments' => 'department_id INTEGER PRIMARY KEY, college_id INTEGER',
             'assessments' => 'assessment_id INTEGER PRIMARY KEY, public_id TEXT, instructor_id INTEGER, subject_id INTEGER, title TEXT, report_category TEXT, created_at DATETIME, updated_at DATETIME',
             'publish_assessment' => 'publish_assessment_id INTEGER PRIMARY KEY, public_id TEXT, assessment_id INTEGER, class_details_id INTEGER, publish_status TEXT, due_at DATETIME, created_at DATETIME, updated_at DATETIME',
-            'submissions' => 'submission_id INTEGER PRIMARY KEY, publish_assessment_id INTEGER',
-            'assessment_items' => 'assessment_item_id INTEGER PRIMARY KEY, assessment_id INTEGER, sort_order INTEGER',
+            'submissions' => 'submission_id INTEGER PRIMARY KEY, public_id TEXT UNIQUE, publish_assessment_id INTEGER',
+            'assessment_items' => 'assessment_item_id INTEGER PRIMARY KEY, public_id TEXT UNIQUE, assessment_id INTEGER, sort_order INTEGER',
             'app_notifications' => 'notification_id INTEGER PRIMARY KEY, public_id TEXT, user_id INTEGER, title TEXT, message TEXT, type TEXT, link TEXT, read_at DATETIME, created_at DATETIME, updated_at DATETIME',
             'reports' => 'report_id INTEGER PRIMARY KEY, publish_assessment_id INTEGER, report_type TEXT, course_code_title TEXT, concept_most_learned_skills TEXT, concept_least_learned_skills TEXT, issues_concern TEXT, interventions_done TEXT, future_plans_curriculum TEXT, report_status TEXT, created_at DATETIME, updated_at DATETIME',
         ] as $table => $columns) {

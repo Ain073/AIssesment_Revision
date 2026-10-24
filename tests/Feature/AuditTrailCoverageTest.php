@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AcademicClass;
 use App\Models\Assessment;
+use App\Models\AssessmentItem;
 use App\Models\AuditLog;
 use App\Models\ClassDetail;
 use App\Models\InstructorProfile;
@@ -13,6 +14,7 @@ use App\Models\Report;
 use App\Models\Role;
 use App\Models\StudentProfile;
 use App\Models\Submission;
+use App\Models\SubmissionAnswer;
 use App\Models\SubmissionSecurityEvent;
 use App\Models\Subject;
 use App\Models\User;
@@ -46,8 +48,8 @@ class AuditTrailCoverageTest extends TestCase
             'subjects' => 'subject_id INTEGER PRIMARY KEY, public_id TEXT, department_id INTEGER, subject_code TEXT UNIQUE, subject_name TEXT, is_active INTEGER DEFAULT 1, created_at DATETIME, updated_at DATETIME',
             'semesters' => 'semester_id INTEGER PRIMARY KEY, semester_name TEXT, is_active INTEGER, created_at DATETIME, updated_at DATETIME',
             'classes' => 'class_id INTEGER PRIMARY KEY, public_id TEXT UNIQUE, program_id INTEGER, semester_id INTEGER, section_name TEXT, year_level INTEGER, school_year TEXT, join_code TEXT, join_token TEXT, archived_at DATETIME, created_at DATETIME, updated_at DATETIME',
-            'class_details' => 'class_details_id INTEGER PRIMARY KEY, class_id INTEGER, instructor_id INTEGER, student_id INTEGER, subject_id INTEGER, status TEXT, entry_method TEXT, created_at DATETIME, updated_at DATETIME',
-            'assessments' => 'assessment_id INTEGER PRIMARY KEY, public_id TEXT, subject_id INTEGER, instructor_id INTEGER, title TEXT, created_at DATETIME, updated_at DATETIME',
+            'class_details' => 'class_details_id INTEGER PRIMARY KEY, public_id TEXT UNIQUE, class_id INTEGER, instructor_id INTEGER, student_id INTEGER, subject_id INTEGER, status TEXT, entry_method TEXT, created_at DATETIME, updated_at DATETIME',
+            'assessments' => 'assessment_id INTEGER PRIMARY KEY, public_id TEXT, subject_id INTEGER, instructor_id INTEGER, title TEXT, status TEXT, created_at DATETIME, updated_at DATETIME',
             'app_notifications' => 'notification_id INTEGER PRIMARY KEY, public_id TEXT, user_id INTEGER, title TEXT, message TEXT, type TEXT, link TEXT, read_at DATETIME, created_at DATETIME, updated_at DATETIME',
         ] as $table => $columns) {
             DB::statement("CREATE TABLE {$table} ({$columns})");
@@ -617,6 +619,147 @@ class AuditTrailCoverageTest extends TestCase
         $this->assertDatabaseCount('audit_logs', 0);
     }
 
+    public function test_all_model_bound_record_routes_use_public_ids(): void
+    {
+        $checked = [];
+        foreach (app('router')->getRoutes() as $route) {
+            foreach ($route->signatureParameters(['subClass' => \Illuminate\Database\Eloquent\Model::class]) as $parameter) {
+                $model = $parameter->getType()->getName();
+                $this->assertContains('auth', $route->gatherMiddleware(), $route->getName().' must require authentication.');
+                $this->assertSame('public_id', (new $model)->getRouteKeyName(), $route->getName().' exposes a primary key.');
+                $checked[$model] = true;
+            }
+        }
+        foreach ([Subject::class, ClassDetail::class, AssessmentItem::class, Submission::class] as $model) {
+            $this->assertArrayHasKey($model, $checked);
+        }
+    }
+
+    public function test_uuid_grading_links_render_and_owners_can_grade_without_changing_record_identifiers(): void
+    {
+        [$student, $published, $submission] = $this->securityAttempt(false, false, false);
+        $teacher = $published->assessment->instructorProfile->user;
+        $submission->update(['status' => Submission::STATUS_SUBMITTED, 'submitted_at' => now()]);
+        $item = AssessmentItem::create(['assessment_id' => $published->assessment_id, 'question_text' => 'Explain the answer', 'item_type' => 'essay', 'points' => 5, 'sort_order' => 1]);
+        $answer = SubmissionAnswer::create(['submission_id' => $submission->getKey(), 'assessment_item_id' => $item->getKey(), 'answer_text' => 'Private student answer']);
+        $anotherAttempt = Submission::create(['publish_assessment_id' => $published->getKey(), 'student_profile_id' => $student->studentProfile->getKey(), 'attempt_number' => 2, 'status' => Submission::STATUS_IN_PROGRESS]);
+        $anotherAnswer = SubmissionAnswer::create(['submission_id' => $anotherAttempt->getKey(), 'assessment_item_id' => $item->getKey(), 'answer_text' => 'Different attempt']);
+        $anotherBefore = $anotherAnswer->fresh()->getRawOriginal();
+        $key = $submission->public_id;
+        $gradeUrl = route('instructor.assessments.submissions.grade', $submission);
+
+        $this->signIn($teacher)->get($gradeUrl)->assertOk()->assertSee('Private student answer')
+            ->assertSee('action="'.route('instructor.assessments.submissions.grade.update', $submission).'"', false);
+        $this->get(route('instructor.assessments.results', $published))->assertOk()
+            ->assertSee('href="'.$gradeUrl.'"', false)
+            ->assertDontSee('/submissions/'.$submission->getKey().'/grade', false);
+        $this->put(route('instructor.assessments.submissions.grade.update', $submission), [
+            'essay_scores' => [$answer->getKey() => 3, $anotherAnswer->getKey() => 5],
+            'essay_feedback' => [$answer->getKey() => 'Reviewed', $anotherAnswer->getKey() => 'Must not save'],
+        ])->assertRedirect($gradeUrl)->assertSessionHasNoErrors();
+        $this->assertSame('3.00', $answer->fresh()->earned_points);
+        $this->assertSame($teacher->id, $answer->fresh()->checked_by);
+        $this->assertSame($key, $submission->fresh()->public_id);
+        $this->assertSame($submission->getKey(), $answer->fresh()->submission_id);
+        $this->assertSame($student->studentProfile->getKey(), $submission->fresh()->student_profile_id);
+        $this->assertSame($anotherBefore, $anotherAnswer->fresh()->getRawOriginal());
+    }
+
+    public function test_other_instructors_and_students_cannot_read_or_grade_a_guessed_submission_uuid(): void
+    {
+        [$student, $published, $submission] = $this->securityAttempt(false, false, false);
+        $otherTeacher = $this->account('instructor');
+        $submission->update(['status' => Submission::STATUS_SUBMITTED]);
+        $item = AssessmentItem::create(['assessment_id' => $published->assessment_id, 'question_text' => 'Private item', 'item_type' => 'essay', 'points' => 5]);
+        $answer = SubmissionAnswer::create(['submission_id' => $submission->getKey(), 'assessment_item_id' => $item->getKey(), 'answer_text' => 'Private answer']);
+        $before = $answer->fresh()->getRawOriginal();
+        $this->signIn($otherTeacher)->getJson(route('instructor.assessments.submissions.grade', $submission))
+            ->assertForbidden()->assertDontSee('Private answer');
+        $this->putJson(route('instructor.assessments.submissions.grade.update', $submission), ['essay_scores' => [$answer->getKey() => 5]])->assertForbidden();
+        $this->signIn($student)->getJson(route('instructor.assessments.submissions.grade', $submission))->assertForbidden();
+        $this->assertSame($before, $answer->fresh()->getRawOriginal());
+        $this->assertDatabaseCount('audit_logs', 0);
+        $this->assertDatabaseCount('app_notifications', 0);
+    }
+
+    public function test_old_numeric_grading_links_redirect_only_for_the_owner_and_cannot_accept_updates(): void
+    {
+        [$student, $published, $submission] = $this->securityAttempt(false, false, false);
+        $teacher = $published->assessment->instructorProfile->user;
+        $legacyUrl = '/instructor/submissions/'.$submission->getKey().'/grade';
+        $before = $submission->fresh()->getRawOriginal();
+        $this->get($legacyUrl)->assertRedirect(route('login'));
+        $response = $this->signIn($teacher)->get($legacyUrl)->assertRedirect(route('instructor.assessments.submissions.grade', $submission));
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+        $this->putJson($legacyUrl, ['essay_scores' => [1 => 999]])->assertStatus(405);
+        $this->get('/instructor/submissions/999999/grade')->assertNotFound();
+        $this->get('/instructor/submissions/not-a-uuid/grade')->assertNotFound();
+        $this->get('/instructor/submissions/'.Str::uuid().'/grade')->assertNotFound();
+        $this->signIn($this->account('instructor'))->get($legacyUrl)->assertNotFound();
+        $this->signIn($student)->getJson($legacyUrl)->assertForbidden();
+        $this->assertSame($before, $submission->fresh()->getRawOriginal());
+        $this->assertDatabaseCount('audit_logs', 0);
+    }
+
+    public function test_question_uuid_routes_require_the_correct_owner_and_parent_assessment(): void
+    {
+        [, $published] = $this->securityAttempt(false, false, false);
+        $teacher = $published->assessment->instructorProfile->user;
+        $assessment = Assessment::create(['instructor_id' => $teacher->instructorProfile->getKey(), 'subject_id' => $published->assessment->subject_id, 'title' => 'Editable draft', 'status' => Assessment::STATUS_DRAFT]);
+        $item = AssessmentItem::create(['assessment_id' => $assessment->getKey(), 'question_text' => 'Original question', 'item_type' => 'essay', 'points' => 5]);
+        $otherParentItem = AssessmentItem::create(['assessment_id' => $published->assessment_id, 'question_text' => 'Another assessment question', 'item_type' => 'essay', 'points' => 5]);
+        $payload = ['question_text' => 'Updated question', 'item_type' => 'essay', 'points' => 5, 'is_required' => true];
+
+        $this->signIn($teacher)->putJson(route('instructor.assessments.items.update', [$assessment, $otherParentItem]), $payload)->assertUnprocessable();
+        $this->deleteJson(route('instructor.assessments.items.destroy', [$assessment, $otherParentItem]))->assertUnprocessable();
+        $this->putJson('/instructor/assessments/'.$assessment->public_id.'/items/'.$item->getKey(), $payload)->assertNotFound();
+        $this->deleteJson('/instructor/assessments/'.$assessment->public_id.'/items/'.$item->getKey())->assertNotFound();
+        $this->signIn($this->account('instructor'))->putJson(route('instructor.assessments.items.update', [$assessment, $item]), $payload)->assertForbidden();
+        $this->assertSame('Original question', $item->fresh()->question_text);
+        $this->assertSame('Another assessment question', $otherParentItem->fresh()->question_text);
+        $this->signIn($teacher)->put(route('instructor.assessments.items.update', [$assessment, $item]), $payload)->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame('Updated question', $item->fresh()->question_text);
+    }
+
+    public function test_subject_uuid_routes_preserve_department_scope_and_reject_numeric_mutations(): void
+    {
+        $chair = $this->account('department_chair');
+        $own = Subject::create(['department_id' => 1, 'subject_code' => 'OWN-UUID', 'subject_name' => 'Own subject']);
+        $foreign = Subject::create(['department_id' => 2, 'subject_code' => 'OTHER-UUID', 'subject_name' => 'Other subject']);
+        $payload = ['subject_code' => 'UPDATED-UUID', 'subject_name' => 'Changed subject', 'is_active' => true];
+        $this->signIn($chair)->putJson(route('department-chair.subjects.update', $foreign), $payload)->assertUnprocessable();
+        $this->deleteJson(route('department-chair.subjects.destroy', $foreign))->assertUnprocessable();
+        $this->putJson('/department-chair/subjects/'.$own->getKey(), $payload)->assertNotFound();
+        $this->deleteJson('/department-chair/subjects/'.$own->getKey())->assertNotFound();
+        $this->assertSame('Other subject', $foreign->fresh()->subject_name);
+        $this->assertDatabaseCount('audit_logs', 0);
+        $this->putJson(route('department-chair.subjects.update', $own), $payload)->assertOk();
+        $this->assertSame('Changed subject', $own->fresh()->subject_name);
+        $this->assertTrue(Str::isUuid($own->fresh()->public_id));
+    }
+
+    public function test_join_request_uuid_cannot_be_moved_between_classes_or_approved_by_another_teacher(): void
+    {
+        [, $published] = $this->securityAttempt(false, false, false);
+        $teacher = $published->assessment->instructorProfile->user;
+        $class = $published->class;
+        $waitingStudent = $this->account('student');
+        $request = ClassDetail::create(['class_id' => $class->getKey(), 'instructor_id' => $teacher->instructorProfile->getKey(), 'student_id' => $waitingStudent->studentProfile->getKey(), 'subject_id' => $published->assessment->subject_id, 'status' => ClassDetail::STATUS_PENDING, 'entry_method' => ClassDetail::METHOD_JOIN_CODE]);
+        $otherTeacher = $this->account('instructor');
+        $otherClass = $this->classFor($otherTeacher);
+        $foreign = ClassDetail::create(['class_id' => $otherClass->getKey(), 'instructor_id' => $otherTeacher->instructorProfile->getKey(), 'student_id' => $waitingStudent->studentProfile->getKey(), 'subject_id' => $otherClass->subject_id, 'status' => ClassDetail::STATUS_PENDING, 'entry_method' => ClassDetail::METHOD_JOIN_CODE]);
+        $this->signIn($teacher)->postJson(route('instructor.classes.join-requests.approve', [$class, $foreign]))->assertUnprocessable();
+        $this->postJson(route('instructor.classes.join-requests.reject', [$class, $foreign]))->assertUnprocessable();
+        $this->postJson('/instructor/classes/'.$class->public_id.'/join-requests/'.$request->getKey().'/approve')->assertNotFound();
+        $this->signIn($otherTeacher)->postJson(route('instructor.classes.join-requests.approve', [$class, $request]))->assertForbidden();
+        $this->assertSame(ClassDetail::STATUS_PENDING, $foreign->fresh()->status);
+        $this->assertSame(ClassDetail::STATUS_PENDING, $request->fresh()->status);
+        $this->assertDatabaseCount('audit_logs', 0);
+        $this->signIn($teacher)->postJson(route('instructor.classes.join-requests.approve', [$class, $request]))->assertOk();
+        $this->assertSame(ClassDetail::STATUS_APPROVED, $request->fresh()->status);
+        $this->assertSame(ClassDetail::STATUS_PENDING, $foreign->fresh()->status);
+    }
+
     public static function securitySettings(): array
     {
         return [
@@ -682,10 +825,12 @@ class AuditTrailCoverageTest extends TestCase
     private function securityAttempt(bool $copy, bool $tab, bool $screenshot, int $limit = 0): array
     {
         foreach ([
-            'assessment_items' => 'assessment_item_id INTEGER PRIMARY KEY, assessment_id INTEGER',
-            'assessment_item_choices' => 'assessment_item_choice_id INTEGER PRIMARY KEY, assessment_item_id INTEGER',
+            'assessment_items' => 'assessment_item_id INTEGER PRIMARY KEY, public_id TEXT UNIQUE, assessment_id INTEGER, question_text TEXT, item_type TEXT, points REAL, is_required INTEGER, sort_order INTEGER, order_sensitive INTEGER, created_at DATETIME, updated_at DATETIME',
+            'assessment_item_choices' => 'assessment_item_choice_id INTEGER PRIMARY KEY, assessment_item_id INTEGER, choice_text TEXT, is_correct INTEGER, sort_order INTEGER, created_at DATETIME, updated_at DATETIME',
             'publish_assessment' => 'publish_assessment_id INTEGER PRIMARY KEY, public_id TEXT UNIQUE, assessment_id INTEGER, class_details_id INTEGER, publish_status TEXT, prevent_copy_paste INTEGER, detect_tab_switch INTEGER, screenshot_protection INTEGER, warning_limit INTEGER, created_at DATETIME, updated_at DATETIME',
-            'submissions' => 'submission_id INTEGER PRIMARY KEY, publish_assessment_id INTEGER, student_profile_id INTEGER, attempt_number INTEGER, status TEXT, warning_count INTEGER, started_at DATETIME, last_activity_at DATETIME, created_at DATETIME, updated_at DATETIME',
+            'submissions' => 'submission_id INTEGER PRIMARY KEY, public_id TEXT UNIQUE, publish_assessment_id INTEGER, student_profile_id INTEGER, attempt_number INTEGER, status TEXT, completion_reason TEXT, warning_count INTEGER, started_at DATETIME, last_activity_at DATETIME, submitted_at DATETIME, created_at DATETIME, updated_at DATETIME',
+            'submission_answers' => 'submission_answer_id INTEGER PRIMARY KEY, submission_id INTEGER, assessment_item_id INTEGER, assessment_item_choice_id INTEGER, answer_text TEXT, earned_points REAL, feedback TEXT, checked_by INTEGER, checked_at DATETIME, created_at DATETIME, updated_at DATETIME',
+            'passing_rate_settings' => 'year_level INTEGER PRIMARY KEY, passing_rate REAL',
             'submission_security_events' => 'submission_security_event_id INTEGER PRIMARY KEY, submission_id INTEGER, event_uuid TEXT UNIQUE, event_type TEXT, occurred_at DATETIME, request_fingerprint TEXT, user_agent TEXT, metadata TEXT, created_at DATETIME, updated_at DATETIME',
         ] as $table => $columns) {
             DB::statement("CREATE TABLE {$table} ({$columns})");
