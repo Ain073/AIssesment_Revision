@@ -18,8 +18,8 @@ return new class extends Migration
         app(RoutePublicIds::class)->fillMissing();
 
         foreach (RoutePublicIds::TABLES as $name => $primaryKey) {
-            if (Schema::hasTable($name) && ! Schema::hasIndex($name, ['public_id'], 'unique')) {
-                Schema::table($name, fn (Blueprint $table) => $table->unique('public_id'));
+            if (Schema::hasTable($name)) {
+                app(RoutePublicIds::class)->ensureUniqueIndex($name);
             }
         }
     }

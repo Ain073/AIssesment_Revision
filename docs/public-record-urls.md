@@ -32,6 +32,13 @@ backfills only missing/empty public IDs in bounded transactions. It does not
 update business fields, primary keys, foreign keys, timestamps, or audit history.
 Existing nonempty public IDs are retained; rollback does not remove them.
 
+TiDB can keep an `ADD INDEX` DDL job running after an interrupted startup. If a
+retry receives error 1061 because the same index is being built, the migration
+waits up to five minutes and proceeds only after the expected unique index is
+visible. Other index errors still stop the migration. Inspect the live job with
+`ADMIN SHOW DDL JOBS` if the retry times out; do not manually mark an incomplete
+migration as run.
+
 Drain old application instances/workers that can still create records before
 considering cutover complete. If old code wrote records during deployment, run
 `php artisan public-ids:backfill` after those instances stop. This idempotent
