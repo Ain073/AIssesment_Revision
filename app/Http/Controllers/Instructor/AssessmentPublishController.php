@@ -135,7 +135,7 @@ class AssessmentPublishController extends BaseController
             'class_keys' => ['required', 'array', 'min:1'],
             'class_keys.*' => ['required', 'uuid'],
             'available_at' => ['nullable', 'date', 'after_or_equal:'.$currentDateTimeFloor],
-            'due_at' => ['nullable', 'date', 'after_or_equal:'.$currentDateTimeFloor, 'after:available_at'],
+            'due_at' => ['required', 'date', 'after_or_equal:'.$currentDateTimeFloor, 'after:available_at'],
             'attempt_limit' => ['required', 'integer', 'min:1', 'max:10'],
             'warning_limit' => ['nullable', 'integer', 'min:0', 'max:20'],
             'display_mode' => ['required', 'string', Rule::in([
@@ -158,6 +158,7 @@ class AssessmentPublishController extends BaseController
         return [
             'available_at.date' => 'Enter a valid available date and time.',
             'available_at.after_or_equal' => 'The available date and time cannot be in the past.',
+            'due_at.required' => 'Set a due date before publishing the assessment.',
             'due_at.date' => 'Enter a valid due date and time.',
             'due_at.after_or_equal' => 'The due date and time cannot be in the past.',
             'due_at.after' => 'Set the due date and time after the available date and time.',

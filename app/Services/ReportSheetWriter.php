@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Report;
 use App\Support\ReportCourseTitle;
+use App\Support\ReportMetadata;
+use App\Support\ReportSignatures;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -37,6 +39,22 @@ class ReportSheetWriter
                 }
             }
 
+            $defaultColumns = array_replace(config('reports.columns'), config('reports.'.$validated['report_type'], []));
+            $firstReport = $reports->get($assessments->first()->publish_assessment_id);
+            $columnsChanged = isset($validated['column_headers'])
+                && $validated['column_headers'] !== array_replace($defaultColumns, $firstReport->column_headers ?? []);
+            $campusChanged = isset($validated['campus'])
+                && $validated['campus'] !== ($firstReport->campus ?: ReportMetadata::DEFAULT_CAMPUS);
+            $documentChanges = [];
+            foreach (['document_code', 'document_revision', 'document_date'] as $field) {
+                if (array_key_exists($field, $validated) && $validated[$field] !== $firstReport->$field) {
+                    $documentChanges[$field] = $validated[$field];
+                }
+            }
+            $signatureNames = ! $autosave && $validated['save_action'] === Report::STATUS_FINALIZED
+                ? ReportSignatures::forAssessment($assessments->first())
+                : null;
+
             $revisions = [];
             foreach ($assessments as $assessment) {
                 $key = $assessment->public_id;
@@ -51,6 +69,16 @@ class ReportSheetWriter
                     'future_plans_curriculum' => $validated['report_type'] === Report::TYPE_SUMMATIVE ? ($row['future_plans_curriculum'] ?? null) : null,
                     'report_status' => $autosave ? Report::STATUS_DRAFT : $validated['save_action'],
                 ]);
+                if ($columnsChanged) {
+                    $report->column_headers = $validated['column_headers'];
+                }
+                if ($campusChanged) {
+                    $report->campus = $validated['campus'];
+                }
+                $report->fill($documentChanges);
+                if ($signatureNames !== null) {
+                    $report->fill($signatureNames);
+                }
                 if ($report->isDirty()) {
                     $report->revision = (int) $report->revision + 1;
                     $report->save();

@@ -2,21 +2,23 @@
 
 namespace App\Http\Controllers\Instructor;
 
-use App\Support\RecordSearch;
-
 use App\Models\Report;
 use App\Services\AuditLogger;
 use App\Services\ReportAiService;
 use App\Services\ReportSheetWriter;
+use App\Support\RecordSearch;
+use App\Support\ReportPdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class ReportController extends BaseController
 {
@@ -163,6 +165,14 @@ class ReportController extends BaseController
         ]);
     }
 
+    public function showPdf(Request $request): Response
+    {
+        $view = $this->showReportSheet($request);
+        $paper = $request->query('paper');
+
+        return ReportPdf::stream($view->getData(), is_string($paper) ? $paper : 'long');
+    }
+
     public function autosaveReportSheet(Request $request): JsonResponse
     {
         return $this->saveReportSheet($request, true);
@@ -175,11 +185,17 @@ class ReportController extends BaseController
 
         abort_unless($instructorProfile, 403, 'Instructor profile is required before saving reports.');
 
-        $validated = $request->validate([
+        $columnKeys = array_keys(config('reports.columns'));
+        $rules = [
             'report_type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
             'save_action' => [$autosave ? 'nullable' : 'required', 'string', Rule::in(['draft', 'finalized'])],
             'paper_size' => ['nullable', 'string', Rule::in(['a4', 'short', 'long'])],
             'course_code_title' => ['nullable', 'string', 'max:65535'],
+            'campus' => ['sometimes', 'required', 'string', 'max:120'],
+            'document_code' => ['sometimes', 'nullable', 'string', 'max:80'],
+            'document_revision' => ['sometimes', 'nullable', 'string', 'max:40'],
+            'document_date' => ['sometimes', 'nullable', 'string', 'max:40'],
+            'column_headers' => ['sometimes', 'array:'.implode(',', $columnKeys), 'size:'.count($columnKeys)],
             'publish_assessment_keys' => ['required', 'array', 'min:1'],
             'publish_assessment_keys.*' => ['required', 'uuid'],
             'reports' => ['required', 'array'],
@@ -191,7 +207,11 @@ class ReportController extends BaseController
             'reports.*.issues_concern' => ['nullable', 'string'],
             'reports.*.interventions_done' => ['nullable', 'string'],
             'reports.*.future_plans_curriculum' => ['nullable', 'string'],
-        ]);
+        ];
+        foreach ($columnKeys as $key) {
+            $rules['column_headers.'.$key] = ['required_with:column_headers', 'string', 'max:120'];
+        }
+        $validated = $request->validate($rules);
 
         $publishAssessmentKeys = $this->selectedPublishAssessmentKeys($validated['publish_assessment_keys']);
         $ownedCompletedAssessments = $this->selectedReportAssessments(
@@ -263,6 +283,84 @@ class ReportController extends BaseController
             ->with('status', $validated['save_action'] === 'finalized'
                 ? 'Report finalized successfully.'
                 : 'Report draft saved.');
+    }
+
+    public function updateReportLogo(Request $request): RedirectResponse
+    {
+        $instructorProfile = $this->instructorProfile($this->currentUser());
+        abort_unless($instructorProfile, 403, 'Instructor profile is required before changing the report logo.');
+
+        $validated = $request->validate([
+            'report_type' => ['required', 'string', Rule::in(array_keys($this->reportCategories()))],
+            'publish_assessment_keys' => ['required', 'array', 'min:1'],
+            'publish_assessment_keys.*' => ['required', 'uuid'],
+            'paper_size' => ['nullable', 'string', Rule::in(['a4', 'short', 'long'])],
+            'logo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
+
+        $keys = $this->selectedPublishAssessmentKeys($validated['publish_assessment_keys']);
+        $assessments = $this->selectedReportAssessments($instructorProfile, $keys, $validated['report_type']);
+        if ($assessments->count() !== $keys->count()) {
+            throw ValidationException::withMessages([
+                'publish_assessment_keys' => 'Select completed assessments under your account with the same report type.',
+            ]);
+        }
+
+        $disk = config('reports.logo_disk');
+        if (! in_array($disk, ['public', 's3'], true)) {
+            throw ValidationException::withMessages(['logo' => 'Report logo storage is not configured.']);
+        }
+        $path = $validated['logo']->store('report-logos', $disk);
+        if ($path === false) {
+            throw ValidationException::withMessages(['logo' => 'Logo could not be uploaded. Please try again.']);
+        }
+        $storedPath = $disk === 's3' ? 's3:'.$path : $path;
+
+        try {
+            DB::transaction(function () use ($assessments, $validated, $storedPath): void {
+                $reports = Report::query()
+                    ->whereIn('publish_assessment_id', $assessments->pluck('publish_assessment_id'))
+                    ->where('report_type', $validated['report_type'])
+                    ->orderBy('report_id')
+                    ->lockForUpdate()
+                    ->get();
+                if ($reports->count() !== $assessments->count()) {
+                    throw ValidationException::withMessages(['logo' => 'Reload the report sheet before uploading a logo.']);
+                }
+
+                $oldPaths = $reports->pluck('logo_path')->filter()->unique();
+                foreach ($reports as $report) {
+                    $report->logo_path = $storedPath;
+                    $report->revision = (int) $report->revision + 1;
+                    $report->save();
+                }
+
+                DB::afterCommit(function () use ($oldPaths): void {
+                    foreach ($oldPaths as $oldPath) {
+                        try {
+                            if (Report::query()->where('logo_path', $oldPath)->exists()) {
+                                continue;
+                            }
+                            $isCloud = Str::startsWith($oldPath, 's3:');
+                            Storage::disk($isCloud ? 's3' : 'public')->delete($isCloud ? Str::after($oldPath, 's3:') : $oldPath);
+                        } catch (\Throwable) {
+                            Log::warning('Previous report logo could not be cleaned up.');
+                        }
+                    }
+                });
+            }, 3);
+        } catch (\Throwable $exception) {
+            Storage::disk($disk)->delete($path);
+            throw $exception;
+        }
+
+        AuditLogger::log('UPDATE', 'Reports', 'Updated report logo', $assessments->first());
+
+        return redirect()->route('instructor.reports.build', [
+            'type' => $validated['report_type'],
+            'paper' => $validated['paper_size'] ?? 'long',
+            'publish_assessment_keys' => $keys->all(),
+        ])->with('status', 'Report logo updated.');
     }
 
     public function generateAiDrafts(Request $request, ReportAiService $aiService): JsonResponse

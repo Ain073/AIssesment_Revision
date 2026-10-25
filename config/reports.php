@@ -1,6 +1,9 @@
 <?php
 
 return [
+    // Keep report logos on the same persistent object store as profile photos when configured.
+    'logo_disk' => env('REPORT_LOGO_DISK', in_array(env('PROFILE_PHOTO_DRIVER'), ['s3', 'r2'], true) ? 's3' : 'public'),
+
     'paper_sizes' => [
         'a4' => [
             'label' => 'A4',
@@ -19,7 +22,7 @@ return [
             'preview_ratio' => '0.846',
         ],
         'long' => [
-            'label' => 'Long / Legal',
+            'label' => 'Long Bond / Folio',
             'description' => '13 x 8.5 in',
             'width' => '13in',
             'height' => '8.5in',

@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Report extends Model
 {
@@ -22,13 +24,21 @@ class Report extends Model
 
     protected function casts(): array
     {
-        return ['revision' => 'integer'];
+        return ['revision' => 'integer', 'column_headers' => 'array'];
     }
 
     protected $fillable = [
         'publish_assessment_id',
         'report_type',
         'course_code_title',
+        'column_headers',
+        'campus',
+        'logo_path',
+        'document_code',
+        'document_revision',
+        'document_date',
+        'prepared_by_name',
+        'reviewed_by_name',
         'concept_most_learned_skills',
         'concept_least_learned_skills',
         'issues_concern',
@@ -40,5 +50,16 @@ class Report extends Model
     public function publishAssessment(): BelongsTo
     {
         return $this->belongsTo(PublishAssessment::class, 'publish_assessment_id', 'publish_assessment_id');
+    }
+
+    public function logoUrl(): string
+    {
+        if (! $this->logo_path) {
+            return asset('images/psu-logo-transparent.png');
+        }
+
+        return Str::startsWith($this->logo_path, 's3:')
+            ? Storage::disk('s3')->url(Str::after($this->logo_path, 's3:'))
+            : asset('storage/'.$this->logo_path);
     }
 }

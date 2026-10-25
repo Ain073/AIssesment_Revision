@@ -1,13 +1,13 @@
 <?php
 
 use App\Http\Controllers\AdminDean\DashboardController as AdminDeanDashboardController;
-use App\Http\Controllers\AdminDean\DesignationController as AdminDeanDesignationController;
 use App\Http\Controllers\AdminDean\DepartmentController as AdminDeanDepartmentController;
+use App\Http\Controllers\AdminDean\DesignationController as AdminDeanDesignationController;
 use App\Http\Controllers\AdminDean\TeacherController as AdminDeanTeacherController;
 use App\Http\Controllers\AdminDean\UserController as AdminDeanUserController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\PasswordSetupController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\PasswordSetupController;
 use App\Http\Controllers\DepartmentChair\DashboardController as DepartmentChairDashboardController;
 use App\Http\Controllers\DepartmentChair\ProgramController as DepartmentChairProgramController;
 use App\Http\Controllers\DepartmentChair\ReportController as DepartmentChairReportController;
@@ -30,11 +30,11 @@ use App\Http\Controllers\Student\AssessmentController as StudentAssessmentContro
 use App\Http\Controllers\Student\ClassController as StudentClassController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\ResultController as StudentResultController;
+use App\Http\Controllers\SuperAdmin\AuditLogController;
 use App\Http\Controllers\SuperAdmin\CollegeDepartmentController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\PassingRateController;
 use App\Http\Controllers\SuperAdmin\ProgramController;
-use App\Http\Controllers\SuperAdmin\AuditLogController;
 use App\Http\Controllers\SuperAdmin\RoleController;
 use App\Http\Controllers\SuperAdmin\UserController;
 use Illuminate\Support\Facades\Route;
@@ -147,8 +147,10 @@ Route::middleware(['auth', 'instructor', 'password_changed', 'no_cache'])
         Route::get('/reports', [InstructorReportController::class, 'reports'])->name('reports');
         Route::post('/reports/prepare', [InstructorReportController::class, 'prepareReports'])->name('reports.prepare');
         Route::get('/reports/build', [InstructorReportController::class, 'showReportSheet'])->name('reports.build');
+        Route::get('/reports/pdf', [InstructorReportController::class, 'showPdf'])->name('reports.pdf');
         Route::post('/reports/build', [InstructorReportController::class, 'saveReportSheet'])->name('reports.save');
         Route::post('/reports/autosave', [InstructorReportController::class, 'autosaveReportSheet'])->middleware('throttle:60,1,report-autosave:')->name('reports.autosave');
+        Route::post('/reports/logo', [InstructorReportController::class, 'updateReportLogo'])->middleware('throttle:10,1,report-logo:')->name('reports.logo');
         Route::post('/reports/ai-drafts', [InstructorReportController::class, 'generateAiDrafts'])->middleware('throttle:10,1')->name('reports.ai-drafts');
     });
 
@@ -197,6 +199,7 @@ Route::middleware(['auth', 'department_chair', 'password_changed', 'no_cache'])
         Route::delete('/users/{user}', [DepartmentChairUserController::class, 'destroy'])->name('users.destroy');
         Route::get('/reports', [DepartmentChairReportController::class, 'index'])->name('reports');
         Route::get('/reports/{publishAssessment}/{type}', [DepartmentChairReportController::class, 'show'])->name('reports.show');
+        Route::get('/reports/{publishAssessment}/{type}/pdf', [DepartmentChairReportController::class, 'showPdf'])->name('reports.pdf');
     });
 
 Route::middleware(['auth', 'student', 'password_changed', 'no_cache'])

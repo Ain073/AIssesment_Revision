@@ -10,12 +10,14 @@ use App\Models\Subject;
 use App\Support\RecordSearch;
 use App\Support\ReportAnalytics;
 use App\Support\ReportMetadata;
+use App\Support\ReportPdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class ReportController extends BaseController
 {
@@ -124,6 +126,17 @@ class ReportController extends BaseController
         ]);
     }
 
+    public function showPdf(Request $request, PublishAssessment $publishAssessment, string $type): Response|RedirectResponse
+    {
+        $view = $this->show($publishAssessment, $type);
+        if ($view instanceof RedirectResponse) {
+            return $view;
+        }
+        $paper = $request->query('paper');
+
+        return ReportPdf::stream($view->getData(), is_string($paper) ? $paper : 'long');
+    }
+
     private function finalizedReportsForDepartment(?Department $department): Builder
     {
         $query = Report::query()
@@ -200,6 +213,7 @@ class ReportController extends BaseController
         return ReportMetadata::forAssessments(
             $publishAssessments,
             (int) ($rows->first()['analytics']['students_count'] ?? 0),
+            $rows->first()['report'] ?? null,
         );
     }
 }

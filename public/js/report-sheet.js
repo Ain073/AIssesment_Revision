@@ -17,7 +17,11 @@
     const reportContentFontFamily = document.getElementById('reportContentFontFamily');
     const reportContentFontSize = document.getElementById('reportContentFontSize');
     const reportForm = document.getElementById('reportSheetForm');
-    const draftFieldSelector = '.report-edit-textarea, .report-header-input:not([data-report-generated])';
+    const reportLogoForm = document.getElementById('reportLogoForm');
+    const editReportLogoButton = document.getElementById('editReportLogoButton');
+    const reportLogoInput = document.getElementById('reportLogoInput');
+    const reportLogoPreview = document.getElementById('reportLogoPreview');
+    const draftFieldSelector = '.report-edit-textarea, .report-column-input, .report-header-input:not([data-report-generated])';
     const contentFontFamilies = {
         arial: 'Arial, Helvetica, sans-serif',
         calibri: 'Calibri, Arial, sans-serif',
@@ -117,6 +121,7 @@
         });
 
         if (locked) {
+            toggleElementVisibility(editReportLogoButton, false);
             reportSheetWrap?.classList.add('is-locked');
             toggleElementVisibility(editReportButton, true);
             toggleElementVisibility(cancelEditButton, false);
@@ -132,6 +137,7 @@
                 if (reportStatusBadgeText) reportStatusBadgeText.textContent = 'Finalized';
             }
         } else {
+            toggleElementVisibility(editReportLogoButton, true);
             reportSheetWrap?.classList.remove('is-locked');
             toggleElementVisibility(editReportButton, false);
             toggleElementVisibility(cancelEditButton, true);
@@ -148,6 +154,27 @@
             }
         }
     };
+
+    let logoPreviewUrl;
+    const resetLogoSelection = () => {
+        reportLogoForm?.reset();
+        if (logoPreviewUrl) URL.revokeObjectURL(logoPreviewUrl);
+        logoPreviewUrl = null;
+        if (reportLogoPreview) reportLogoPreview.src = reportLogoPreview.dataset.currentSrc;
+    };
+    reportLogoInput?.addEventListener('change', () => {
+        if (logoPreviewUrl) URL.revokeObjectURL(logoPreviewUrl);
+        logoPreviewUrl = reportLogoInput.files?.[0] ? URL.createObjectURL(reportLogoInput.files[0]) : null;
+        if (reportLogoPreview) reportLogoPreview.src = logoPreviewUrl || reportLogoPreview.dataset.currentSrc;
+    });
+    reportLogoForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (await window.beforeReportNavigation?.() !== false) reportLogoForm.submit();
+    });
+    document.getElementById('reportLogoModal')?.addEventListener('hidden.bs.modal', resetLogoSelection);
+    if (settings.logoUploadError) {
+        window.bootstrap?.Modal?.getOrCreateInstance(document.getElementById('reportLogoModal'))?.show();
+    }
 
     if (editReportButton) {
         editReportButton.addEventListener('click', () => {
@@ -170,6 +197,7 @@
                 }
             });
             clearReportDraft();
+            resetLogoSelection();
             setReportLocked(true);
         });
     }
@@ -200,7 +228,7 @@
             document
                 .querySelectorAll(`.report-print-mirror[data-print-field-name="${CSS.escape(field.name)}"]`)
                 .forEach((printMirror) => {
-                    printMirror.textContent = field.value;
+                    printMirror.textContent = field.name === 'campus' ? field.value.toUpperCase() : field.value;
                 });
         }
     };
@@ -221,6 +249,17 @@
         });
         textarea.addEventListener('change', () => {
             autosize(textarea);
+            queueReportDraftSave();
+        });
+    });
+
+    document.querySelectorAll('.report-column-input').forEach((input) => {
+        input.addEventListener('input', () => {
+            syncPrintText(input);
+            queueReportDraftSave();
+        });
+        input.addEventListener('change', () => {
+            syncPrintText(input);
             queueReportDraftSave();
         });
     });

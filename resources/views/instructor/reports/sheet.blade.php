@@ -6,13 +6,15 @@
 
 @php
     $paperOptions = config('reports.paper_sizes');
-    $reportColumns = array_replace(config('reports.columns'), config('reports.'.$reportType, []));
+    $reportColumns = array_replace(config('reports.columns'), config('reports.'.$reportType, []), $rows->first()['report']?->column_headers ?? []);
+    $reportLogoUrl = $rows->first()['report']?->logoUrl() ?? asset('images/psu-logo-transparent.png');
     $selectedPaper = array_key_exists(request('paper'), $paperOptions) ? request('paper') : 'long';
     $paper = $paperOptions[$selectedPaper];
 @endphp
 
 @push('styles')
     <x-page-style path="css/pages/instructor/reports/sheet.css" />
+    <x-page-style path="css/pages/reports/signatures.css" />
     <style data-page-style>
         :root {
             --report-paper-width: {{ $paper['width'] }};
@@ -59,7 +61,7 @@
                 <span class="material-symbols-outlined fs-5" aria-hidden="true">analytics</span>
                 View Item Analysis
             </button>
-            {{-- Paper Size Control (commented out - paper size is set directly in the print dialog; defaults to Long / Legal)
+            {{-- Paper Size Control (commented out - paper size is set directly in the print dialog; defaults to Long Bond / Folio)
             <div class="report-paper-control">
                 <label for="paperSize">Paper</label>
                 <select class="form-select form-select-sm" id="paperSize">
@@ -114,6 +116,44 @@
                 <span class="material-symbols-outlined fs-5">print</span>
                 Export
             </button>
+            <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.reports.pdf', ['type' => $reportType, 'paper' => $selectedPaper, 'publish_assessment_keys' => $publishAssessmentKeys->all()]) }}" rel="noopener" target="_blank" title="Save changes before opening the PDF">
+                <span class="material-symbols-outlined fs-5">picture_as_pdf</span>
+                Open Saved PDF
+            </a>
+        </div>
+    </div>
+
+    <div aria-hidden="true" aria-labelledby="reportLogoModalLabel" class="modal fade d-print-none" id="reportLogoModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form action="{{ route('instructor.reports.logo') }}" enctype="multipart/form-data" id="reportLogoForm" method="POST">
+                    @csrf
+                    <input name="report_type" type="hidden" value="{{ $reportType }}">
+                    <input name="paper_size" type="hidden" value="{{ $selectedPaper }}">
+                    @foreach ($publishAssessmentKeys as $publishAssessmentKey)
+                        <input name="publish_assessment_keys[]" type="hidden" value="{{ $publishAssessmentKey }}">
+                    @endforeach
+                    <div class="modal-header">
+                        <h2 class="modal-title h5" id="reportLogoModalLabel">Edit Report Logo</h2>
+                        <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center mb-3">
+                            <img alt="Logo preview" class="report-logo-upload-preview" data-current-src="{{ $reportLogoUrl }}" id="reportLogoPreview" src="{{ $reportLogoUrl }}">
+                        </div>
+                        <label class="form-label fw-semibold" for="reportLogoInput">Choose a logo</label>
+                        <input accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="form-control @error('logo') is-invalid @enderror" id="reportLogoInput" name="logo" type="file" required>
+                        @error('logo')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <p class="small text-secondary mt-2 mb-0">JPG, PNG or WebP; up to 2 MB. The new logo will be used on the selected report.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+                        <button class="btn btn-psu" type="submit">Upload Logo</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -161,7 +201,7 @@
     <form action="{{ route('instructor.reports.save') }}" id="reportSheetForm" method="POST"
           data-report-autosave-url="{{ route('instructor.reports.autosave') }}"
           data-report-account="{{ auth()->id() }}"
-          data-report-unsaved="{{ $errors->any() ? 'true' : 'false' }}"
+          data-report-unsaved="{{ $errors->any() && ! $errors->has('logo') ? 'true' : 'false' }}"
           data-report-autosave-enabled="{{ $rows->contains(fn ($row) => $row['report']?->report_status === \App\Models\Report::STATUS_FINALIZED) ? 'false' : 'true' }}"
           data-report-conflict="{{ $errors->has('report_conflict') ? 'true' : 'false' }}">
         @csrf
@@ -176,6 +216,7 @@
 
         <div class="report-sheet-wrap {{ $isFinalized ? 'is-locked' : '' }}">
         <section class="report-sheet">
+            @include('partials.reports.document-control', ['editable' => true])
             <table class="report-header">
                 @include('partials.reports.column-widths')
                 <tbody>
@@ -187,7 +228,7 @@
             <table class="report-matrix">
                 @include('partials.reports.column-widths')
                 <thead>
-                    @include('partials.reports.column-headings')
+                    @include('partials.reports.column-headings', ['editable' => true])
                 </thead>
                 <tbody>
                     @foreach ($rows as $row)
@@ -254,7 +295,7 @@
                 <tbody>
                     @include('partials.reports.header-rows', ['courseFieldMode' => 'mirror'])
 
-                    @include('partials.reports.column-headings')
+                    @include('partials.reports.column-headings', ['printMirror' => true])
                     @foreach ($rows as $row)
                         @php
                             $assessment = $row['assessment'];
@@ -311,7 +352,7 @@
             <div class="report-print-grid-sheet" aria-hidden="true">
                 <div class="report-print-grid">
                     <div class="report-print-cell report-print-logo-cell" style="grid-column: 1 / 2; grid-row: 1 / span 2;">
-                        <img alt="PSU logo" class="report-logo" src="{{ asset('images/psu-logo-transparent.png') }}">
+                        <img alt="Report logo" class="report-logo" src="{{ $reportLogoUrl }}">
                     </div>
                     <div class="report-print-cell report-print-title-cell" style="grid-column: 2 / 10; grid-row: 1;">
                         <div class="report-title">STUDENTS PERFORMANCE MONITORING ({{ strtoupper($reportTypeLabel) }} ASSESSMENTS)</div>
@@ -322,7 +363,7 @@
                     </div>
 
                     <div class="report-print-cell report-print-label" style="grid-column: 1 / 2;">Campus</div>
-                    <div class="report-print-cell" style="grid-column: 2 / 10;">{{ strtoupper($reportMeta['campus']) }}</div>
+                    <div class="report-print-cell" style="grid-column: 2 / 10;"><span class="report-print-mirror" data-print-field-name="campus">{{ strtoupper(old('campus', $reportMeta['campus'])) }}</span></div>
 
                     <div class="report-print-cell report-print-label" style="grid-column: 1 / 2;">College</div>
                     <div class="report-print-cell" style="grid-column: 2 / 6;">{{ strtoupper($reportMeta['college']) }}</div>
@@ -338,15 +379,9 @@
 
                     <div class="report-print-cell report-print-note-cell" style="grid-column: 1 / 10;">{{ $reportMeta['note'] }}</div>
 
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['takers'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['items'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['high'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['low'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['mean'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['most'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['least'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['issues'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['action'] }}</div>
+                    @foreach ($reportColumns as $key => $label)
+                        <div class="report-print-cell report-print-column report-print-mirror" data-print-field-name="column_headers[{{ $key }}]">{{ $label }}</div>
+                    @endforeach
 
                     @foreach ($rows as $row)
                         @php
@@ -398,6 +433,7 @@
                     @endforeach
                 </div>
             </div>
+            @include('partials.reports.signatures')
         </section>
         </div>
     </form>

@@ -43,10 +43,10 @@ const setup = () => {
         setTimeout(fn, delay) { const id = ++timerId; timers.set(id, { fn, delay }); return id; },
         clearTimeout: id => timers.delete(id),
     });
-    const createForm = ({ enabled = true, conflict = false, unsaved = false, revision = 0, value = 'Server text', account = '1', courseTitle = null } = {}) => {
+    const createForm = ({ enabled = true, conflict = false, unsaved = false, revision = 0, value = 'Server text', account = '1', courseTitle = null, columnHeading = null } = {}) => {
         const form = { ...target(), isConnected: true, submissions: [],
             dataset: { reportAccount: account, reportAutosaveUrl: '/instructor/reports/autosave', reportAutosaveEnabled: String(enabled), reportConflict: String(conflict), reportUnsaved: String(unsaved) },
-            fields: [{ name: 'reports[quiz][issues_concern]', value }, ...(courseTitle === null ? [] : [{ name: 'course_code_title', value: courseTitle, generated: true }])],
+            fields: [{ name: 'reports[quiz][issues_concern]', value }, ...(columnHeading === null ? [] : [{ name: 'column_headers[issues]', value: columnHeading }]), ...(courseTitle === null ? [] : [{ name: 'course_code_title', value: courseTitle, generated: true }])],
             revisionInputs: [{ dataset: { reportRevision: 'quiz' }, name: 'revisions[quiz]', value: String(revision) }],
             querySelector: () => ({ value: 'formative' }),
             querySelectorAll(selector) {
@@ -86,6 +86,17 @@ test('debounces typing and reports Saved only after a validated server acknowled
     assert.equal(env.nodes.status.textContent, 'Saved to server.');
     assert.equal(page.form.revisionInputs[0].value, '1');
     assert.equal(env.storage.size, 0);
+});
+
+test('edited column headings are included in draft autosave and the local backup', async () => {
+    const env = setup(); const page = env.createForm({ columnHeading: 'Issues / Concerns Encountered' });
+    page.form.fields[1].value = 'Updated issues heading';
+    page.api.changed();
+    assert.equal(JSON.parse([...env.storage.values()][0]).values['column_headers[issues]'], 'Updated issues heading');
+    await env.tick();
+    assert.equal(env.requests[0].options.body.snapshot['column_headers[issues]'], 'Updated issues heading');
+    env.requests[0].respond(); await settle();
+    assert.equal(env.nodes.status.textContent, 'Saved to server.');
 });
 
 test('serializes saves and sends edits made during a request with the acknowledged revision', async () => {

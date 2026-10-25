@@ -146,8 +146,8 @@
                             @enderror
                         </div>
                         <div>
-                            <label class="form-label fw-bold text-uppercase small" for="due_at">Due At</label>
-                            <input class="form-control compact-input @error('due_at') is-invalid @enderror" id="due_at" min="{{ $minimumScheduleTime }}" name="due_at" type="datetime-local" value="{{ old('due_at') }}">
+                            <label class="form-label fw-bold text-uppercase small" for="due_at">Due At (Required)</label>
+                            <input class="form-control compact-input @error('due_at') is-invalid @enderror" id="due_at" min="{{ $minimumScheduleTime }}" name="due_at" type="datetime-local" value="{{ old('due_at') }}" required>
                             @error('due_at')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror

@@ -6,13 +6,15 @@
 
 @php
     $paperOptions = config('reports.paper_sizes');
-    $reportColumns = array_replace(config('reports.columns'), config('reports.'.$reportType, []));
+    $reportColumns = array_replace(config('reports.columns'), config('reports.'.$reportType, []), $report->column_headers ?? []);
+    $reportLogoUrl = $report->logoUrl();
     $selectedPaper = array_key_exists(request('paper'), $paperOptions) ? request('paper') : 'long';
     $paper = $paperOptions[$selectedPaper];
 @endphp
 
 @push('styles')
     <x-page-style path="css/pages/department-chair/reports/show.css" />
+    <x-page-style path="css/pages/reports/signatures.css" />
     <style data-page-style>
         :root {
             --report-paper-width: {{ $paper['width'] }};
@@ -54,11 +56,16 @@
                 <span class="material-symbols-outlined fs-5">print</span>
                 Export
             </button>
+            <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('department-chair.reports.pdf', ['publishAssessment' => $rows->first()['publishAssessment'], 'type' => $reportType, 'paper' => $selectedPaper]) }}" rel="noopener" target="_blank" title="Opens the saved report as a PDF">
+                <span class="material-symbols-outlined fs-5">picture_as_pdf</span>
+                Open PDF
+            </a>
         </div>
     </div>
 
     <div class="report-sheet-wrap">
         <section class="report-sheet">
+            @include('partials.reports.document-control', ['editable' => false])
             <table class="report-table">
                 @include('partials.reports.column-widths')
                 <tbody>
@@ -106,7 +113,7 @@
             <div class="report-print-grid-sheet" aria-hidden="true">
                 <div class="report-print-grid">
                     <div class="report-print-cell report-print-logo-cell" style="grid-column: 1 / 2; grid-row: 1 / span 2;">
-                        <img alt="PSU logo" class="report-logo" src="{{ asset('images/psu-logo-transparent.png') }}">
+                        <img alt="Report logo" class="report-logo" src="{{ $reportLogoUrl }}">
                     </div>
                     <div class="report-print-cell report-print-title-cell" style="grid-column: 2 / 10; grid-row: 1;">
                         <div class="report-title">STUDENTS PERFORMANCE MONITORING ({{ strtoupper($reportTypeLabel) }} ASSESSMENTS)</div>
@@ -131,15 +138,9 @@
 
                     <div class="report-print-cell report-print-note-cell" style="grid-column: 1 / 10;">{{ $reportMeta['note'] }}</div>
 
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['takers'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['items'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['high'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['low'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['mean'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['most'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['least'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['issues'] }}</div>
-                    <div class="report-print-cell report-print-column">{{ $reportColumns['action'] }}</div>
+                    @foreach ($reportColumns as $label)
+                        <div class="report-print-cell report-print-column">{{ $label }}</div>
+                    @endforeach
 
                     @foreach ($rows as $row)
                         @php
@@ -184,6 +185,7 @@
                     @endforeach
                 </div>
             </div>
+            @include('partials.reports.signatures')
         </section>
     </div>
 @endsection

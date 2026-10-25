@@ -2,6 +2,7 @@
     $pageConfig = [
         'paperOptions' => collect($paperOptions)->map(fn ($option) => $option['description']),
         'reportType' => $reportType,
+        'logoUploadError' => $errors->has('logo'),
     ];
 @endphp
 

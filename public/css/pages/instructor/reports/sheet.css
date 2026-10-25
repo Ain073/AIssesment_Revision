@@ -199,6 +199,49 @@ body.report-focus-mode .page-container {
     object-fit: contain;
 }
 
+.report-logo-edit {
+    display: block;
+    margin: 0.25rem auto 0;
+    padding: 0.1rem 0.35rem;
+    font-size: 0.65rem;
+    line-height: 1.2;
+}
+
+.report-logo-upload-preview {
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+}
+
+.report-document-control {
+    display: grid;
+    align-content: start;
+    justify-items: end;
+    min-height: 0.48in;
+    padding-right: 0.1in;
+    color: #6b7280;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 7pt;
+    font-style: italic;
+    line-height: 1.05;
+    text-align: right;
+}
+
+.report-document-control-line {
+    min-height: 0.12in;
+    white-space: nowrap;
+}
+
+.report-document-control-input {
+    width: 1.45in;
+    text-align: right;
+}
+
+.report-document-control-input::placeholder {
+    color: #9ca3af;
+    opacity: 1;
+}
+
 .report-title {
     font-size: 1.18rem;
     font-weight: 800;
@@ -244,6 +287,33 @@ body.report-focus-mode .page-container {
 .report-matrix-head th {
     border-top: 0;
     border-bottom: 2px solid #111827;
+}
+
+.report-column-input {
+    display: block;
+    width: 100%;
+    min-height: 5rem;
+    padding: 0.25rem;
+    border: 1px dashed #94a3b8;
+    border-radius: 0.2rem;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: inherit;
+    line-height: 1.15;
+    text-align: center;
+    text-transform: uppercase;
+    resize: vertical;
+}
+
+.report-column-input:focus {
+    outline: 2px solid #1d4ed8;
+    outline-offset: 1px;
+}
+
+.report-column-input[readonly] {
+    border-color: transparent;
+    resize: none;
 }
 
 .report-col-takers { width: 12%; }
@@ -309,6 +379,7 @@ body.report-focus-mode .page-container {
 }
 
 .report-sheet-wrap.is-locked .report-edit-textarea,
+.report-sheet-wrap.is-locked .report-column-input,
 .report-sheet-wrap.is-locked .report-header-input {
     cursor: default;
     user-select: text;
@@ -316,6 +387,7 @@ body.report-focus-mode .page-container {
 }
 
 .report-sheet-wrap.is-locked .report-edit-textarea:focus,
+.report-sheet-wrap.is-locked .report-column-input:focus,
 .report-sheet-wrap.is-locked .report-header-input:focus {
     outline: none !important;
     background: transparent !important;
@@ -342,6 +414,14 @@ body.report-focus-mode .page-container {
 }
 
 @media print {
+
+    .report-document-control-input {
+        display: none !important;
+    }
+
+    .report-logo-edit {
+        display: none !important;
+    }
 
 
     .report-ai-status,

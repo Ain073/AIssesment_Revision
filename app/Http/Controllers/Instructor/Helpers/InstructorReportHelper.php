@@ -79,7 +79,7 @@ trait InstructorReportHelper
             ? (int) $distinctClasses->sum(fn ($class) => $class->enrolledStudentsCount() ?? 0)
             : (int) ($rows->first()['analytics']['students_count'] ?? 0);
 
-        return ReportMetadata::forAssessments($publishAssessments, $studentCount);
+        return ReportMetadata::forAssessments($publishAssessments, $studentCount, $rows->first()['report'] ?? null);
     }
 
     protected function defaultCourseCodeTitle(Collection $publishAssessments): string

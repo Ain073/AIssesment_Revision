@@ -74,7 +74,7 @@ trait InstructorAssessmentHelper
                     'assessment_id' => $publishedAssessment->assessment_id,
                     'class_details_id' => $classDetail->class_details_id,
                     'available_at' => $validated['available_at'] ?? null,
-                    'due_at' => $validated['due_at'] ?? null,
+                    'due_at' => $validated['due_at'],
                     'publish_status' => PublishAssessment::STATUS_PUBLISHED,
                     'score_visibility' => $request->boolean('score_visibility'),
                     'answer_visibility' => $request->boolean('answer_visibility'),
