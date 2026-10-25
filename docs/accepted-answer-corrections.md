@@ -3,7 +3,11 @@
 An instructor can add an accepted alternative from **Check Submission** or the
 published assessment's **Saved Questions** section. Choose **Add Accepted
 Alternative**, enter one alternative, select **Preview Score Changes**, review
-the affected students and question scores, then save.
+the affected students and question scores, then save. Preview, validation, and
+saving happen in a modal on the same page. The accepted-answer list updates in
+place. On Check Submission, the score badges and total also refresh without
+replacing unsaved essay inputs. The same modal works after portal AJAX navigation.
+There is no standalone correction page; its endpoints provide JSON for the modal.
 
 For example, accepting `Humanistic psychologist` alongside the existing
 `Humanistic psychologists` gives matching submitted answers credit immediately

@@ -205,7 +205,7 @@
                                 <div class="saved-question-actions">
                                     <span class="badge text-bg-light border rounded-1">{{ $item->points }} point{{ (float) $item->points == 1.0 ? '' : 's' }}</span>
                                     @if ($isPublishedSnapshot && $assessment->publishAssessments->isNotEmpty() && $item->item_type === 'identification')
-                                        <a class="btn btn-outline-primary btn-sm" href="{{ route('instructor.assessments.items.accepted-answers.edit', [$assessment, $item]) }}">Add Accepted Alternative</a>
+                                        <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#acceptedAnswerModal" data-accepted-answer-url="{{ route('instructor.assessments.items.accepted-answers.edit', [$assessment, $item]) }}">Add Accepted Alternative</button>
                                     @endif
                                     <button
                                         class="btn btn-outline-primary btn-sm saved-question-action d-inline-flex align-items-center justify-content-center"
@@ -235,9 +235,9 @@
                             <div class="p-3">
                                 <p class="fw-semibold mb-3" style="color: var(--psu-navy);">{{ $item->question_text }}</p>
 
-                                @if ($item->choices->isNotEmpty())
+                                @if ($item->choices->isNotEmpty() || ($isPublishedSnapshot && $item->item_type === 'identification'))
                                     <p class="compact-label">{{ $item->item_type === 'identification' ? 'Accepted Answers' : 'Saved Answers' }}</p>
-                                    <ul class="saved-choice-list">
+                                    <ul class="saved-choice-list" @if($isPublishedSnapshot && $item->item_type === 'identification') data-accepted-answer-list="{{ $item->public_id }}" @endif>
                                         @foreach ($item->choices as $ci => $choice)
                                             <li class="saved-choice">
                                                 <span>{{ $choice->choice_text }}</span>
@@ -435,6 +435,9 @@
     @unless($isPublishedSnapshot)
         @include('instructor.assessments.question-form-popup')
     @endunless
+    @if($isPublishedSnapshot)
+        @include('instructor.assessments.accepted-answer-modal')
+    @endif
 @endsection
 
 @push('scripts')

@@ -26,7 +26,7 @@
 
         <section class="grading-summary px-4 py-3">
             <p class="small fw-bold text-secondary text-uppercase mb-1">Current Score</p>
-            <p class="h4 fw-bold mb-0" style="color: var(--psu-navy);">{{ $scoreText }} / {{ $maxScoreText }}</p>
+            <p class="h4 fw-bold mb-0" style="color: var(--psu-navy);" data-grading-score-summary>{{ $scoreText }} / {{ $maxScoreText }}</p>
             @if ($pendingEssayCount > 0)
                 <span class="badge text-bg-warning rounded-1 mt-2">{{ $pendingEssayCount }} essay pending</span>
             @endif
@@ -81,7 +81,7 @@
                             : collect();
                     @endphp
 
-                    <article class="border rounded-2 overflow-hidden">
+                    <article class="border rounded-2 overflow-hidden" data-grading-item="{{ $item->public_id }}">
                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 p-3" style="background:#edf2ff;">
                             <div class="d-flex flex-wrap gap-2 align-items-center">
                                 <span class="badge rounded-pill px-3 py-2" style="background: var(--psu-navy);">Question {{ $loop->iteration }}</span>
@@ -90,7 +90,7 @@
                             </div>
 
                             @if (! $isEssay && ! $isEnumeration)
-                                <span class="badge {{ $row['is_correct'] ? 'text-bg-success' : 'text-bg-danger' }} rounded-1 px-3 py-2">
+                                <span class="badge {{ $row['is_correct'] ? 'text-bg-success' : 'text-bg-danger' }} rounded-1 px-3 py-2" data-grading-item-score>
                                     {{ $earnedPoints }} / {{ $maxPoints }}
                                 </span>
                             @elseif ($isEnumeration)
@@ -197,15 +197,15 @@
                                 <div class="row g-3">
                                     <div class="col-lg-{{ $isEssay ? '8' : '6' }}">
                                         <p class="small fw-bold text-secondary text-uppercase mb-2">Student Answer</p>
-                                        <div class="answer-box {{ ! $isEssay ? ($row['is_correct'] ? 'answer-box-correct' : 'answer-box-wrong') : '' }}">{{ $studentAnswer }}</div>
+                                        <div class="answer-box {{ ! $isEssay ? ($row['is_correct'] ? 'answer-box-correct' : 'answer-box-wrong') : '' }}" data-grading-student-answer>{{ $studentAnswer }}</div>
                                     </div>
 
                                     @if (! $isEssay)
                                         <div class="col-lg-6">
                                             <p class="small fw-bold text-secondary text-uppercase mb-2">Correct Answer</p>
-                                            <div class="answer-box answer-box-correct">{{ $correctAnswer }}</div>
+                                            <div class="answer-box answer-box-correct" @if($item->item_type === 'identification') data-accepted-answer-text="{{ $item->public_id }}" @endif>{{ $correctAnswer }}</div>
                                             @if ($item->item_type === 'identification')
-                                                <a class="btn btn-sm btn-outline-primary mt-2" href="{{ route('instructor.assessments.items.accepted-answers.edit', [$assessment, $item]) }}">Add Accepted Alternative</a>
+                                                <button class="btn btn-sm btn-outline-primary mt-2" type="button" data-bs-toggle="modal" data-bs-target="#acceptedAnswerModal" data-accepted-answer-url="{{ route('instructor.assessments.items.accepted-answers.edit', [$assessment, $item]) }}">Add Accepted Alternative</button>
                                             @endif
                                         </div>
                                     @endif
@@ -264,4 +264,5 @@
             </button>
         </div>
     </form>
+    @include('instructor.assessments.accepted-answer-modal')
 @endsection

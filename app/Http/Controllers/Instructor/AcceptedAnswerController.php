@@ -8,8 +8,7 @@ use App\Models\PublishAssessment;
 use App\Services\AcceptedAnswerCorrection;
 use App\Services\AuditLogger;
 use Illuminate\Contracts\Encryption\DecryptException;
-use Illuminate\Contracts\View\View;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -18,14 +17,21 @@ use JsonException;
 
 class AcceptedAnswerController extends BaseController
 {
-    public function edit(Assessment $assessment, AssessmentItem $item): View
+    public function edit(Assessment $assessment, AssessmentItem $item): JsonResponse
     {
         $this->authorizeCorrection($assessment, $item);
 
-        return $this->correctionView($assessment, $item);
+        return response()->json([
+            'item_key' => $item->public_id,
+            'question' => $item->question_text,
+            'points' => (float) $item->points,
+            'accepted_answers' => $item->choices->where('is_correct', true)->pluck('choice_text')->values(),
+            'preview_url' => route('instructor.assessments.items.accepted-answers.preview', [$assessment, $item]),
+            'store_url' => route('instructor.assessments.items.accepted-answers.store', [$assessment, $item]),
+        ]);
     }
 
-    public function preview(Request $request, Assessment $assessment, AssessmentItem $item, AcceptedAnswerCorrection $correction): View
+    public function preview(Request $request, Assessment $assessment, AssessmentItem $item, AcceptedAnswerCorrection $correction): JsonResponse
     {
         $this->authorizeCorrection($assessment, $item);
         $validated = $request->validate(['alternative_answer' => ['required', 'string', 'max:1000']]);
@@ -40,10 +46,16 @@ class AcceptedAnswerController extends BaseController
             'expires_at' => now()->addMinutes(20)->timestamp,
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
 
-        return $this->correctionView($assessment, $item, $preview, $token);
+        return response()->json([
+            'alternative' => $preview['alternative'],
+            'students_count' => $preview['students_count'],
+            'attempts_count' => $preview['attempts_count'],
+            'changes' => $preview['changes']->take(50)->values(),
+            'preview_token' => $token,
+        ]);
     }
 
-    public function store(Request $request, Assessment $assessment, AssessmentItem $item, AcceptedAnswerCorrection $correction): RedirectResponse
+    public function store(Request $request, Assessment $assessment, AssessmentItem $item, AcceptedAnswerCorrection $correction): JsonResponse
     {
         $this->authorizeCorrection($assessment, $item);
         $validated = $request->validate(['preview_token' => ['required', 'string', 'max:12000']]);
@@ -92,8 +104,11 @@ class AcceptedAnswerController extends BaseController
             return $preview;
         });
 
-        return redirect()->route('instructor.assessments.items.accepted-answers.edit', [$assessment, $item])
-            ->with('status', "Alternative saved. Scores now include this answer for all students using this published question ({$preview['attempts_count']} existing submitted attempt(s) gained credit). Reload results to see the updated scores.");
+        return response()->json([
+            'message' => "Alternative saved. {$preview['attempts_count']} submitted attempt(s) gained credit.",
+            'item_key' => $item->public_id,
+            'accepted_answers' => [...$preview['accepted'], $preview['alternative']],
+        ]);
     }
 
     private function authorizeCorrection(Assessment $assessment, AssessmentItem $item): void
@@ -104,16 +119,5 @@ class AcceptedAnswerController extends BaseController
             ->whereIn('publish_status', [PublishAssessment::STATUS_PUBLISHED, PublishAssessment::STATUS_CLOSED])
             ->exists(), 404);
         $item->load('choices');
-    }
-
-    private function correctionView(Assessment $assessment, AssessmentItem $item, ?array $preview = null, ?string $token = null): View
-    {
-        return view('instructor.assessments.accepted-answers', $this->sharedData($this->currentUser(), 'assessments') + [
-            'assessment' => $assessment,
-            'item' => $item,
-            'preview' => $preview,
-            'previewToken' => $token,
-            'publications' => $assessment->publishAssessments()->with('classDetail.class')->get(),
-        ]);
     }
 }

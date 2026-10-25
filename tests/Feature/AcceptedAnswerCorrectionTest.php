@@ -16,6 +16,7 @@ use App\Support\ReportAnalytics;
 use App\Support\ReportItemAnalysis;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\View;
 use Tests\Support\AccountFeatureTestCase;
 
 class AcceptedAnswerCorrectionTest extends AccountFeatureTestCase
@@ -89,17 +90,16 @@ class AcceptedAnswerCorrectionTest extends AccountFeatureTestCase
         $questionBefore = $this->item->fresh()->getAttributes();
         $primaryId = $this->item->choices()->sole()->getKey();
 
-        $this->get($this->url('edit'))->assertOk()->assertSee('Preview Score Changes');
-        $preview = $this->post($this->url('preview'), ['alternative_answer' => ' Humanistic psychologist ']);
-        $preview->assertOk()->assertViewHas('preview', fn ($data) => $data['students_count'] === 2 && $data['attempts_count'] === 3)
-            ->assertSee('Save Alternative and Apply to All Attempts');
+        $this->getJson($this->url('edit'))->assertOk()->assertJsonPath('accepted_answers', ['Humanistic psychologists']);
+        $preview = $this->postJson($this->url('preview'), ['alternative_answer' => ' Humanistic psychologist ']);
+        $preview->assertOk()->assertJsonPath('students_count', 2)->assertJsonPath('attempts_count', 3);
         $this->assertDatabaseCount('assessment_item_choices', 1);
 
-        $this->post($this->url('store'), [
-            'preview_token' => $preview->viewData('previewToken'),
+        $this->postJson($this->url('store'), [
+            'preview_token' => $preview->json('preview_token'),
             'question_text' => 'Injected replacement', 'points' => 99, 'item_type' => 'essay',
             'alternative_answer' => 'Unreviewed alternative',
-        ])->assertRedirect($this->url('edit'))->assertSessionHasNoErrors();
+        ])->assertOk();
 
         $this->assertSame($before, DB::table('submission_answers')->orderBy('submission_answer_id')->get()->toJson());
         $this->assertSame($questionBefore, $this->item->fresh()->getAttributes());
@@ -158,20 +158,20 @@ class AcceptedAnswerCorrectionTest extends AccountFeatureTestCase
         $otherPublication->save();
         $answer = $this->answer('Humanistic psychologist');
         $answer->submission->update(['publish_assessment_id' => $otherPublication->getKey()]);
-        $preview = $this->post($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
-        $preview->assertOk()->assertViewHas('preview', fn ($data) => $data['attempts_count'] === 1);
-        $this->post($this->url('store'), ['preview_token' => $preview->viewData('previewToken')])->assertSessionHasNoErrors();
+        $preview = $this->postJson($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
+        $preview->assertOk()->assertJsonPath('attempts_count', 1);
+        $this->postJson($this->url('store'), ['preview_token' => $preview->json('preview_token')])->assertOk();
         $this->assertSame(1.0, $this->score($answer));
     }
 
     public function test_other_instructors_and_students_cannot_preview_or_save_corrections(): void
     {
-        $preview = $this->post($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
+        $preview = $this->postJson($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
         foreach ([$this->account(['instructor']), $this->account(['student'])] as $other) {
             $this->signInAccount($other);
-            $this->get($this->url('edit'))->assertForbidden();
-            $this->post($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist'])->assertForbidden();
-            $this->post($this->url('store'), ['preview_token' => $preview->viewData('previewToken')])->assertForbidden();
+            $this->getJson($this->url('edit'))->assertForbidden();
+            $this->postJson($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist'])->assertForbidden();
+            $this->postJson($this->url('store'), ['preview_token' => $preview->json('preview_token')])->assertForbidden();
         }
         $this->assertDatabaseCount('assessment_item_choices', 1);
     }
@@ -187,12 +187,12 @@ class AcceptedAnswerCorrectionTest extends AccountFeatureTestCase
             ($action === 'edit' ? $this->get($url) : $this->post($url))->assertNotFound();
         }
         $this->item->update(['item_type' => 'multiple_choice']);
-        $this->post($this->url('preview'), ['alternative_answer' => 'Anything'])->assertNotFound();
+        $this->postJson($this->url('preview'), ['alternative_answer' => 'Anything'])->assertNotFound();
         $this->item->update(['item_type' => 'identification']);
         $this->published->update(['publish_status' => PublishAssessment::STATUS_DRAFT]);
-        $this->post($this->url('preview'), ['alternative_answer' => 'Anything'])->assertNotFound();
+        $this->postJson($this->url('preview'), ['alternative_answer' => 'Anything'])->assertNotFound();
         $this->published->delete();
-        $this->post($this->url('preview'), ['alternative_answer' => 'Anything'])->assertNotFound();
+        $this->postJson($this->url('preview'), ['alternative_answer' => 'Anything'])->assertNotFound();
     }
 
     public function test_numeric_and_malformed_urls_are_rejected(): void
@@ -206,7 +206,7 @@ class AcceptedAnswerCorrectionTest extends AccountFeatureTestCase
     public function test_blank_duplicate_and_oversized_alternatives_are_rejected(): void
     {
         foreach (['', '   ', '  HUMANISTIC PSYCHOLOGISTS ', str_repeat('a', 1001), ['invalid']] as $value) {
-            $this->post($this->url('preview'), ['alternative_answer' => $value])->assertSessionHasErrors('alternative_answer');
+            $this->postJson($this->url('preview'), ['alternative_answer' => $value])->assertUnprocessable()->assertJsonValidationErrors('alternative_answer');
         }
         $this->assertDatabaseCount('assessment_item_choices', 1);
     }
@@ -216,51 +216,51 @@ class AcceptedAnswerCorrectionTest extends AccountFeatureTestCase
         for ($index = 2; $index <= 10; $index++) {
             $this->item->choices()->create(['choice_text' => 'Alternative '.$index, 'is_correct' => true, 'sort_order' => $index]);
         }
-        $this->post($this->url('preview'), ['alternative_answer' => 'Eleventh answer'])->assertSessionHasErrors('alternative_answer');
+        $this->postJson($this->url('preview'), ['alternative_answer' => 'Eleventh answer'])->assertUnprocessable()->assertJsonValidationErrors('alternative_answer');
         $this->assertDatabaseCount('assessment_item_choices', 10);
     }
 
     public function test_save_requires_an_untampered_unexpired_preview_for_this_item(): void
     {
-        $this->post($this->url('store'), ['alternative_answer' => 'Humanistic psychologist'])->assertSessionHasErrors('preview_token');
-        $this->post($this->url('store'), ['preview_token' => 'invalid'])->assertSessionHasErrors('preview_token');
-        $preview = $this->post($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
-        $token = $preview->viewData('previewToken');
-        $this->post($this->url('store'), ['preview_token' => $token.'tampered'])->assertSessionHasErrors('preview_token');
+        $this->postJson($this->url('store'), ['alternative_answer' => 'Humanistic psychologist'])->assertUnprocessable()->assertJsonValidationErrors('preview_token');
+        $this->postJson($this->url('store'), ['preview_token' => 'invalid'])->assertUnprocessable()->assertJsonValidationErrors('preview_token');
+        $preview = $this->postJson($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
+        $token = $preview->json('preview_token');
+        $this->postJson($this->url('store'), ['preview_token' => $token.'tampered'])->assertUnprocessable()->assertJsonValidationErrors('preview_token');
         $this->travel(21)->minutes();
-        $this->post($this->url('store'), ['preview_token' => $token])->assertSessionHasErrors('preview_token');
+        $this->postJson($this->url('store'), ['preview_token' => $token])->assertUnprocessable()->assertJsonValidationErrors('preview_token');
         $this->assertDatabaseCount('assessment_item_choices', 1);
     }
 
     public function test_stale_key_or_changed_submissions_require_another_preview(): void
     {
-        $preview = $this->post($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
+        $preview = $this->postJson($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
         $this->item->choices()->create(['choice_text' => 'Humanist', 'is_correct' => true, 'sort_order' => 2]);
-        $this->post($this->url('store'), ['preview_token' => $preview->viewData('previewToken')])->assertSessionHasErrors('preview_token');
+        $this->postJson($this->url('store'), ['preview_token' => $preview->json('preview_token')])->assertUnprocessable()->assertJsonValidationErrors('preview_token');
 
-        $preview = $this->post($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
+        $preview = $this->postJson($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
         $this->answer('Humanistic psychologist');
-        $this->post($this->url('store'), ['preview_token' => $preview->viewData('previewToken')])->assertSessionHasErrors('preview_token');
+        $this->postJson($this->url('store'), ['preview_token' => $preview->json('preview_token')])->assertUnprocessable()->assertJsonValidationErrors('preview_token');
         $this->assertDatabaseCount('assessment_item_choices', 2);
     }
 
     public function test_saving_twice_does_not_duplicate_the_alternative(): void
     {
-        $preview = $this->post($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
-        $token = $preview->viewData('previewToken');
-        $this->post($this->url('store'), ['preview_token' => $token])->assertSessionHasNoErrors();
-        $this->post($this->url('store'), ['preview_token' => $token])->assertSessionHasErrors();
+        $preview = $this->postJson($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
+        $token = $preview->json('preview_token');
+        $this->postJson($this->url('store'), ['preview_token' => $token])->assertOk();
+        $this->postJson($this->url('store'), ['preview_token' => $token])->assertUnprocessable();
         $this->assertDatabaseCount('assessment_item_choices', 2);
         $this->assertSame(1, AuditLog::where('action', 'ADD_ACCEPTED_ANSWER')->count());
     }
 
     public function test_audit_failure_rolls_back_the_added_answer(): void
     {
-        $preview = $this->post($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
+        $preview = $this->postJson($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
         Event::listen('eloquent.creating: '.AuditLog::class, function (): void {
             throw new \RuntimeException('Audit unavailable');
         });
-        $this->post($this->url('store'), ['preview_token' => $preview->viewData('previewToken')])->assertServerError();
+        $this->postJson($this->url('store'), ['preview_token' => $preview->json('preview_token')])->assertServerError();
         $this->assertDatabaseCount('assessment_item_choices', 1);
     }
 
@@ -275,13 +275,13 @@ class AcceptedAnswerCorrectionTest extends AccountFeatureTestCase
 
     public function test_preview_token_cannot_be_used_for_another_owned_question(): void
     {
-        $preview = $this->post($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
+        $preview = $this->postJson($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist']);
         $otherItem = $this->assessment->items()->create([
             'question_text' => 'Different question', 'item_type' => 'identification', 'points' => 2, 'sort_order' => 31,
         ]);
         $otherItem->choices()->create(['choice_text' => 'Primary', 'is_correct' => true, 'sort_order' => 1]);
         $url = route('instructor.assessments.items.accepted-answers.store', [$this->assessment, $otherItem]);
-        $this->post($url, ['preview_token' => $preview->viewData('previewToken')])->assertSessionHasErrors('preview_token');
+        $this->postJson($url, ['preview_token' => $preview->json('preview_token')])->assertUnprocessable()->assertJsonValidationErrors('preview_token');
         $this->assertSame(1, $otherItem->choices()->count());
     }
 
@@ -298,6 +298,70 @@ class AcceptedAnswerCorrectionTest extends AccountFeatureTestCase
     {
         $this->get(route('instructor.assessments.show', $this->assessment))->assertOk()
             ->assertSee($this->url('edit'), false)->assertSee('Add Accepted Alternative');
+    }
+
+    public function test_modal_json_flow_previews_and_saves_without_a_page_redirect(): void
+    {
+        $answer = $this->answer('Humanistic psychologist');
+        $this->getJson($this->url('edit'))->assertOk()
+            ->assertJsonPath('item_key', $this->item->public_id)
+            ->assertJsonPath('accepted_answers', ['Humanistic psychologists']);
+        $preview = $this->postJson($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist'])
+            ->assertOk()->assertJsonPath('attempts_count', 1)->assertJsonPath('students_count', 1)
+            ->assertJsonPath('changes.0.before', 0)->assertJsonPath('changes.0.after', 1);
+        $this->assertDatabaseCount('assessment_item_choices', 1);
+        $this->postJson($this->url('store'), ['preview_token' => $preview->json('preview_token')])
+            ->assertOk()->assertJsonPath('accepted_answers', ['Humanistic psychologists', 'Humanistic psychologist']);
+        $this->assertSame(1.0, $this->score($answer));
+        $this->assertSame(1, AuditLog::where('action', 'ADD_ACCEPTED_ANSWER')->count());
+    }
+
+    public function test_standalone_form_is_removed_and_endpoints_only_provide_modal_data(): void
+    {
+        $this->assertFalse(View::exists('instructor.assessments.accepted-answers'));
+        $this->get($this->url('edit'))->assertOk()->assertHeader('Content-Type', 'application/json')
+            ->assertHeaderMissing('Location')->assertJsonPath('item_key', $this->item->public_id);
+        $preview = $this->post($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist'])
+            ->assertOk()->assertHeader('Content-Type', 'application/json')->assertHeaderMissing('Location');
+        $this->post($this->url('store'), ['preview_token' => $preview->json('preview_token')])
+            ->assertOk()->assertHeader('Content-Type', 'application/json')->assertHeaderMissing('Location')
+            ->assertJsonPath('accepted_answers', ['Humanistic psychologists', 'Humanistic psychologist']);
+    }
+
+    public function test_modal_json_validation_and_stale_previews_return_errors_without_saving(): void
+    {
+        $this->postJson($this->url('preview'), ['alternative_answer' => '   '])
+            ->assertUnprocessable()->assertJsonValidationErrors('alternative_answer');
+        $preview = $this->postJson($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist'])->assertOk();
+        $this->answer('Humanistic psychologist');
+        $this->postJson($this->url('store'), ['preview_token' => $preview->json('preview_token')])
+            ->assertUnprocessable()->assertJsonValidationErrors('preview_token');
+        $this->assertDatabaseCount('assessment_item_choices', 1);
+    }
+
+    public function test_modal_json_endpoints_retain_owner_checks(): void
+    {
+        $preview = $this->postJson($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist'])->assertOk();
+        $this->signInAccount($this->account(['instructor']));
+        $this->getJson($this->url('edit'))->assertForbidden();
+        $this->postJson($this->url('preview'), ['alternative_answer' => 'Humanistic psychologist'])->assertForbidden();
+        $this->postJson($this->url('store'), ['preview_token' => $preview->json('preview_token')])->assertForbidden();
+        $this->assertDatabaseCount('assessment_item_choices', 1);
+    }
+
+    public function test_modal_forms_are_outside_the_grading_form_and_triggers_do_not_navigate(): void
+    {
+        $answer = $this->answer('Humanistic psychologist');
+        foreach ([route('instructor.assessments.show', $this->assessment), route('instructor.assessments.submissions.grade', $answer->submission)] as $url) {
+            $html = $this->get($url)->assertOk()->assertSee('js/accepted-answer-modal.js', false)->getContent();
+            $dom = new \DOMDocument;
+            @$dom->loadHTML($html);
+            $xpath = new \DOMXPath($dom);
+            $this->assertSame(1, $xpath->query('//*[@data-accepted-answer-modal]')->length);
+            $this->assertSame(0, $xpath->query('//*[@data-accepted-answer-modal]/ancestor::form')->length);
+            $this->assertSame(0, $xpath->query('//a[@data-accepted-answer-url]')->length);
+            $this->assertSame(1, $xpath->query('//button[@data-accepted-answer-url and @type="button" and @data-bs-target="#acceptedAnswerModal"]')->length);
+        }
     }
 
     public function test_students_see_recomputed_credit_without_submitting_again(): void
@@ -321,8 +385,8 @@ class AcceptedAnswerCorrectionTest extends AccountFeatureTestCase
 
     private function saveAlternative(string $alternative = 'Humanistic psychologist'): void
     {
-        $preview = $this->post($this->url('preview'), ['alternative_answer' => $alternative])->assertOk();
-        $this->post($this->url('store'), ['preview_token' => $preview->viewData('previewToken')])->assertSessionHasNoErrors();
+        $preview = $this->postJson($this->url('preview'), ['alternative_answer' => $alternative])->assertOk();
+        $this->postJson($this->url('store'), ['preview_token' => $preview->json('preview_token')])->assertOk();
     }
 
     private function answer(string $text, ?User $student = null, int $attempt = 1, string $status = Submission::STATUS_SUBMITTED): SubmissionAnswer

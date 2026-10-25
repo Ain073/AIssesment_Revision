@@ -132,6 +132,7 @@
     <script src="{{ asset('js/student-account-import.js') }}?v={{ filemtime(public_path('js/student-account-import.js')) }}"></script>
     <script src="{{ asset('js/portal-feedback.js') }}?v={{ filemtime(public_path('js/portal-feedback.js')) }}"></script>
     <script src="{{ asset('js/assessment-filters.js') }}?v={{ filemtime(public_path('js/assessment-filters.js')) }}"></script>
+    <script src="{{ asset('js/accepted-answer-modal.js') }}?v={{ filemtime(public_path('js/accepted-answer-modal.js')) }}"></script>
     <script src="{{ asset('js/class-forms.js') }}?v={{ filemtime(public_path('js/class-forms.js')) }}"></script>
     <script src="{{ asset('js/portal-tabs.js') }}?v={{ filemtime(public_path('js/portal-tabs.js')) }}"></script>
     <script src="{{ asset('js/portal-polling.js') }}?v={{ filemtime(public_path('js/portal-polling.js')) }}"></script>
