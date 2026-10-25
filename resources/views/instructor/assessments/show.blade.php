@@ -36,7 +36,7 @@
 
     @if ($isPublishedSnapshot)
         <div class="alert alert-info border-0">
-            This is a published assessment record. Details are shown for review, while questions are locked so student records remain unchanged.
+            This is a published assessment record. Questions and points are locked. Accepted alternatives for Identification questions can be added after previewing the score changes.
         </div>
     @endif
 
@@ -204,6 +204,9 @@
                                 </div>
                                 <div class="saved-question-actions">
                                     <span class="badge text-bg-light border rounded-1">{{ $item->points }} point{{ (float) $item->points == 1.0 ? '' : 's' }}</span>
+                                    @if ($isPublishedSnapshot && $assessment->publishAssessments->isNotEmpty() && $item->item_type === 'identification')
+                                        <a class="btn btn-outline-primary btn-sm" href="{{ route('instructor.assessments.items.accepted-answers.edit', [$assessment, $item]) }}">Add Accepted Alternative</a>
+                                    @endif
                                     <button
                                         class="btn btn-outline-primary btn-sm saved-question-action d-inline-flex align-items-center justify-content-center"
                                         data-bs-target="#editQuestionModal{{ $item->assessment_item_id }}"

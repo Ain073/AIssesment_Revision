@@ -39,6 +39,7 @@ class AssessmentResultController extends BaseController
         $passingScore = PassingRateSetting::passingScore($maxScore, $ownedPublishAssessment->class?->year_level);
         $submissions = $ownedPublishAssessment->submissions;
         $students = $ownedPublishAssessment->class?->enrolledStudentsCollection(['user']) ?? collect();
+        $enrolledStudents = $students->keyBy('student_profile_id');
         $submissionStudents = $submissions
             ->pluck('studentProfile')
             ->filter();
@@ -47,7 +48,7 @@ class AssessmentResultController extends BaseController
             ->concat($submissionStudents)
             ->unique('student_profile_id')
             ->sortBy(fn (StudentProfile $student): string => Str::lower($student->user?->displayName() ?? $student->student_number ?? ''))
-            ->map(function (StudentProfile $student) use ($ownedPublishAssessment, $submissions, $items, $maxScore, $passingScore): array {
+            ->map(function (StudentProfile $student) use ($ownedPublishAssessment, $submissions, $items, $maxScore, $passingScore, $enrolledStudents): array {
                 $attempts = $submissions
                     ->where('student_profile_id', $student->student_profile_id)
                     ->map(function (Submission $submission) use ($ownedPublishAssessment, $items, $maxScore, $passingScore): array {
@@ -97,6 +98,7 @@ class AssessmentResultController extends BaseController
 
                 return [
                     'student' => $student,
+                    'is_currently_enrolled' => $enrolledStudents->has($student->student_profile_id),
                     'attempts' => $attempts,
                     'best_attempt' => $bestAttempt,
                     'latest_submitted_attempt' => $latestSubmittedAttempt,
@@ -122,6 +124,8 @@ class AssessmentResultController extends BaseController
             'class' => $ownedPublishAssessment->class,
             'publishAssessment' => $ownedPublishAssessment,
             'studentResults' => $studentResults,
+            'submittedStudentsCount' => $studentResults->filter(fn (array $result): bool => $result['submitted_attempts_count'] > 0)->count(),
+            'currentEnrolledCount' => $enrolledStudents->count(),
             'analytics' => $analytics,
             'autoSubmittedCount' => $autoSubmittedCount,
             'isCompleted' => $isCompleted,
@@ -230,6 +234,7 @@ class AssessmentResultController extends BaseController
 
             if ($rawScore === null || $rawScore === '') {
                 $errors["essay_scores.{$answerId}"] = 'Please enter a score for this essay answer.';
+
                 continue;
             }
 
@@ -237,6 +242,7 @@ class AssessmentResultController extends BaseController
 
             if ($score > $maxPoints) {
                 $errors["essay_scores.{$answerId}"] = 'The score cannot exceed '.$this->formatReportNumber($maxPoints).' points.';
+
                 continue;
             }
 

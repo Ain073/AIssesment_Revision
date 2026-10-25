@@ -40,16 +40,25 @@
     </div>
 
     <div class="row g-3 mb-4">
-        <div class="col-md-6">
+        <div class="col-md-4">
             <section class="result-summary">
                 <p class="small fw-bold text-secondary text-uppercase mb-2">Students Submitted</p>
-                <div class="h2 fw-bold mb-1" style="color: var(--psu-navy);">{{ $analytics['takers_count'] }} / {{ $analytics['students_count'] }}</div>
+                <div class="h2 fw-bold mb-1" style="color: var(--psu-navy);">{{ $submittedStudentsCount }}</div>
+                <p class="small text-secondary mb-0">Includes students who are no longer enrolled.</p>
             </section>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-4">
             <section class="result-summary">
-                <p class="small fw-bold text-secondary text-uppercase mb-2">Auto Submitted</p>
+                <p class="small fw-bold text-secondary text-uppercase mb-2">Currently Enrolled</p>
+                <div class="h2 fw-bold mb-1" style="color: var(--psu-navy);">{{ $currentEnrolledCount }}</div>
+                <p class="small text-secondary mb-0">Current class roster.</p>
+            </section>
+        </div>
+        <div class="col-md-4">
+            <section class="result-summary">
+                <p class="small fw-bold text-secondary text-uppercase mb-2">Auto-submitted Attempts</p>
                 <div class="h2 fw-bold mb-1" style="color: var(--psu-navy);">{{ $autoSubmittedCount }}</div>
+                <p class="small text-secondary mb-0">Attempts submitted after reaching the warning limit.</p>
             </section>
         </div>
     </div>
@@ -94,6 +103,9 @@
                                         <span>
                                             <span class="fw-bold d-block" style="color: var(--psu-navy);">{{ $displayName }}</span>
                                             <span class="small text-secondary">{{ $student->student_number ?? 'No student number' }}</span>
+                                            @if (! $result['is_currently_enrolled'])
+                                                <span class="d-block mt-1"><span class="badge text-bg-light border rounded-1">No longer enrolled</span></span>
+                                            @endif
                                         </span>
                                     </div>
                                 </td>

@@ -15,6 +15,7 @@ use App\Http\Controllers\DepartmentChair\StudentController as DepartmentChairStu
 use App\Http\Controllers\DepartmentChair\SubjectController as DepartmentChairSubjectController;
 use App\Http\Controllers\DepartmentChair\TeacherController as DepartmentChairTeacherController;
 use App\Http\Controllers\DepartmentChair\UserController as DepartmentChairUserController;
+use App\Http\Controllers\Instructor\AcceptedAnswerController as InstructorAcceptedAnswerController;
 use App\Http\Controllers\Instructor\AssessmentController as InstructorAssessmentController;
 use App\Http\Controllers\Instructor\AssessmentItemController as InstructorAssessmentItemController;
 use App\Http\Controllers\Instructor\AssessmentPublishController as InstructorAssessmentPublishController;
@@ -143,6 +144,9 @@ Route::middleware(['auth', 'instructor', 'password_changed', 'no_cache'])
         Route::post('/assessments/{assessment}/items', [InstructorAssessmentItemController::class, 'storeAssessmentItem'])->name('assessments.items.store');
         Route::put('/assessments/{assessment}/items/{item}', [InstructorAssessmentItemController::class, 'updateAssessmentItem'])->whereUuid('item')->name('assessments.items.update');
         Route::delete('/assessments/{assessment}/items/{item}', [InstructorAssessmentItemController::class, 'destroyAssessmentItem'])->whereUuid('item')->name('assessments.items.destroy');
+        Route::get('/assessments/{assessment}/items/{item}/accepted-answers', [InstructorAcceptedAnswerController::class, 'edit'])->whereUuid(['assessment', 'item'])->name('assessments.items.accepted-answers.edit');
+        Route::post('/assessments/{assessment}/items/{item}/accepted-answers', [InstructorAcceptedAnswerController::class, 'preview'])->whereUuid(['assessment', 'item'])->name('assessments.items.accepted-answers.preview');
+        Route::post('/assessments/{assessment}/items/{item}/accepted-answers/confirm', [InstructorAcceptedAnswerController::class, 'store'])->whereUuid(['assessment', 'item'])->name('assessments.items.accepted-answers.store');
         Route::post('/assessments/{assessment}/publish', [InstructorAssessmentPublishController::class, 'publishAssessment'])->name('assessments.publish');
         Route::get('/reports', [InstructorReportController::class, 'reports'])->name('reports');
         Route::post('/reports/prepare', [InstructorReportController::class, 'prepareReports'])->name('reports.prepare');

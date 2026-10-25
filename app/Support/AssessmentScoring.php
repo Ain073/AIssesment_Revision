@@ -68,7 +68,7 @@ class AssessmentScoring
             ->where('is_correct', true)
             ->pluck('choice_text')
             ->map(fn ($choice): string => Str::lower(trim((string) $choice)))
-            ->filter();
+            ->filter(fn (string $choice): bool => $choice !== '');
         $studentAnswer = Str::lower(trim((string) $answer->answer_text));
 
         return $studentAnswer !== '' && $correctAnswers->contains($studentAnswer);

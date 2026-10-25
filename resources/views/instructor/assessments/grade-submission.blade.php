@@ -204,6 +204,9 @@
                                         <div class="col-lg-6">
                                             <p class="small fw-bold text-secondary text-uppercase mb-2">Correct Answer</p>
                                             <div class="answer-box answer-box-correct">{{ $correctAnswer }}</div>
+                                            @if ($item->item_type === 'identification')
+                                                <a class="btn btn-sm btn-outline-primary mt-2" href="{{ route('instructor.assessments.items.accepted-answers.edit', [$assessment, $item]) }}">Add Accepted Alternative</a>
+                                            @endif
                                         </div>
                                     @endif
 
