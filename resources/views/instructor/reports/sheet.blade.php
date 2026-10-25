@@ -440,5 +440,6 @@
 @endsection
 
 @push('scripts')
+    <script src="{{ asset('js/report-print-page.js') }}?v={{ filemtime(public_path('js/report-print-page.js')) }}"></script>
     @include('instructor.reports.report-sheet-page-code')
 @endpush

@@ -37,6 +37,18 @@
 }
 
 @media print {
+    @page {
+        @bottom-right {
+            content: "Page " counter(page) " of " counter(pages);
+            color: #6b7280;
+            font: italic 7pt Arial, Helvetica, sans-serif;
+        }
+    }
+
+    [data-report-page-margins] .report-document-control {
+        display: none !important;
+    }
+
     body.report-focus-mode .main-content {
         min-height: 0 !important;
     }

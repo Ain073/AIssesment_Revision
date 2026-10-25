@@ -10,7 +10,7 @@ return [
             'description' => '11.69 x 8.27 in',
             'width' => '11.69in',
             'height' => '8.27in',
-            'margin' => '0.35in 0.25in',
+            'margin' => '0.75in 0.25in 0.35in',
             'preview_ratio' => '0.9',
         ],
         'short' => [
@@ -18,7 +18,7 @@ return [
             'description' => '11 x 8.5 in',
             'width' => '11in',
             'height' => '8.5in',
-            'margin' => '0.35in 0.25in',
+            'margin' => '0.75in 0.25in 0.35in',
             'preview_ratio' => '0.846',
         ],
         'long' => [
@@ -26,7 +26,7 @@ return [
             'description' => '13 x 8.5 in',
             'width' => '13in',
             'height' => '8.5in',
-            'margin' => '0.35in 0.25in',
+            'margin' => '0.75in 0.25in 0.35in',
             'preview_ratio' => '1',
         ],
     ],

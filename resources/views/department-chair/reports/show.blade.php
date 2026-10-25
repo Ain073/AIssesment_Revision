@@ -191,6 +191,7 @@
 @endsection
 
 @push('scripts')
+    <script src="{{ asset('js/report-print-page.js') }}?v={{ filemtime(public_path('js/report-print-page.js')) }}"></script>
     <script>
         document.getElementById('paperSize')?.addEventListener('change', function () {
             const url = new URL(window.location.href);
