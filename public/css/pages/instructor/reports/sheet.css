@@ -36,6 +36,31 @@ body.report-focus-mode .page-container {
     gap: 0.5rem;
 }
 
+.report-ai-button {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.report-ai-model {
+    padding: 0.2rem 0.45rem;
+    border: 1px solid currentColor;
+    border-radius: 0.35rem;
+    background: transparent;
+    color: inherit;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.report-ai-button .report-ai-spinner,
+.report-ai-button[aria-busy="true"] .report-ai-icon {
+    display: none;
+}
+
+.report-ai-button[aria-busy="true"] .report-ai-spinner {
+    display: inline-block;
+}
+
 .report-paper-control {
     display: flex;
     align-items: center;

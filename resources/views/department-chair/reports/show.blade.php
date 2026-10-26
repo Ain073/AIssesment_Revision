@@ -52,13 +52,15 @@
                 </select>
                 <span class="report-paper-caption" id="paperSizeCaption">{{ $paper['description'] }}</span>
             </div>
+            {{-- Browser print export is temporarily hidden. Keep this button for easy restoration.
             <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" onclick="window.print()" type="button">
                 <span class="material-symbols-outlined fs-5">print</span>
                 Export
             </button>
+            --}}
             <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('department-chair.reports.pdf', ['publishAssessment' => $rows->first()['publishAssessment'], 'type' => $reportType, 'paper' => $selectedPaper]) }}" rel="noopener" target="_blank" title="Opens the saved report as a PDF">
                 <span class="material-symbols-outlined fs-5">picture_as_pdf</span>
-                Open PDF
+                Preview PDF
             </a>
         </div>
     </div>

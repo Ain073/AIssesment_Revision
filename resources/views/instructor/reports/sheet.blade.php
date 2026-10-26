@@ -88,13 +88,11 @@
                     @endforeach
                 </select>
             </div>
-            <div class="report-paper-control {{ $isFinalized ? 'd-none' : '' }}" id="aiModelLabel">
-                <span class="small fw-bold text-secondary">AI Model</span>
-                <strong class="text-nowrap">{{ config('services.ai_report.providers.openai.label', 'GPT-4.1') }}</strong>
-            </div>
-            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2 {{ $isFinalized ? 'd-none' : '' }}" id="aiDraftButton" type="button" data-bs-toggle="modal" data-bs-target="#confirmAiDraftModal">
-                <span class="material-symbols-outlined fs-5">auto_awesome</span>
-                Generate AI Draft
+            <button class="btn btn-outline-primary report-ai-button d-inline-flex align-items-center gap-2 {{ $isFinalized ? 'd-none' : '' }}" id="aiDraftButton" type="button" data-bs-toggle="modal" data-bs-target="#confirmAiDraftModal" aria-busy="false">
+                <span class="material-symbols-outlined fs-5 report-ai-icon" aria-hidden="true">auto_awesome</span>
+                <span class="spinner-border spinner-border-sm report-ai-spinner" aria-hidden="true"></span>
+                <span data-ai-draft-label>Generate AI Draft</span>
+                <span class="report-ai-model">{{ config('services.ai_report.providers.openai.label', 'GPT-4.1') }}</span>
             </button>
             <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2 {{ $isFinalized ? 'd-none' : '' }}" id="saveDraftButton" form="reportSheetForm" name="save_action" value="draft" type="submit">
                 <span class="material-symbols-outlined fs-5">save</span>
@@ -112,13 +110,15 @@
                 <span class="material-symbols-outlined fs-5">close</span>
                 Cancel
             </button>
+            {{-- Browser print export is temporarily hidden. Keep this button for easy restoration.
             <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" onclick="window.print()" type="button">
                 <span class="material-symbols-outlined fs-5">print</span>
                 Export
             </button>
+            --}}
             <a class="btn btn-outline-primary d-inline-flex align-items-center gap-2" href="{{ route('instructor.reports.pdf', ['type' => $reportType, 'paper' => $selectedPaper, 'publish_assessment_keys' => $publishAssessmentKeys->all()]) }}" rel="noopener" target="_blank" title="Save changes before opening the PDF">
                 <span class="material-symbols-outlined fs-5">picture_as_pdf</span>
-                Open Saved PDF
+                Preview PDF
             </a>
         </div>
     </div>
